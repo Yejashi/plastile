@@ -1,0 +1,737 @@
+{
+ "phase": "A",
+ "disposable": true,
+ "fixtureClass": "plastile-fixture",
+ "js": {
+  "letConst": true,
+  "arrow": true,
+  "classBasic": true,
+  "classFieldsPublic": "error: SyntaxError: Parse error",
+  "classPrivateFields": "error: SyntaxError: Parse error",
+  "defaultParams": true,
+  "exponent": true,
+  "arrayFind": true,
+  "arrayFrom": true,
+  "objectAssignValues": true,
+  "stringIncludes": true,
+  "mapIteration": true,
+  "computedKeys": true,
+  "shorthandMethods": true,
+  "labeledBreak": true,
+  "tryFinally": true,
+  "optionalCatchBinding": "error: SyntaxError: Parse error",
+  "templateLiterals": true,
+  "destructuringBasic": true,
+  "destructuringArrayRest": true,
+  "destructuringObjectRest": "error: SyntaxError: Parse error",
+  "objectSpread": "error: SyntaxError: Parse error",
+  "spread": true,
+  "mapSet": true,
+  "weakMap": true,
+  "weakRef": false,
+  "symbol": true,
+  "generators": true,
+  "forOf": true,
+  "promise": true,
+  "asyncAwait": "error: SyntaxError: Parse error",
+  "exponentAssign": true,
+  "optionalChaining": true,
+  "nullishCoalescing": true,
+  "logicalAssign": "error: SyntaxError: Parse error",
+  "numericSeparator": true,
+  "bigint": "error: SyntaxError: Parse error",
+  "arrayIncludes": true,
+  "arrayFlat": "error: TypeError: Property 'flat' of object 1,2 is not a function",
+  "arrayAt": "error: TypeError: Property 'at' of object 1,2 is not a function",
+  "objectEntries": true,
+  "objectFromEntries": "error: TypeError: Property 'fromEntries' of object function Object() { [native code] } is not a function",
+  "stringPad": true,
+  "proxyReflect": true,
+  "globalThis": false,
+  "typedArrays": true,
+  "structuredClone": false,
+  "queueMicrotask": false,
+  "setTimeout": false,
+  "performanceNow": false,
+  "consoleTime": true
+ },
+ "clocks": {
+  "dateNowMinStepMs": 1,
+  "dateNowSteps": 20
+ },
+ "qt": {
+  "callLater": true,
+  "rect": true,
+  "point": true,
+  "createQmlObject": true
+ },
+ "kwinGlobal": {
+  "properties": [
+   "objectName"
+  ],
+  "callables": [
+   "objectNameChanged",
+   "readConfig"
+  ]
+ },
+ "options": {
+  "properties": [
+   "activationDesktopPolicy",
+   "allowTearing",
+   "autoRaise",
+   "autoRaiseInterval",
+   "borderSnapZone",
+   "borderlessMaximizedWindows",
+   "centerSnapZone",
+   "clickRaise",
+   "commandActiveTitlebar1",
+   "commandActiveTitlebar2",
+   "commandActiveTitlebar3",
+   "commandAll1",
+   "commandAll2",
+   "commandAll3",
+   "commandInactiveTitlebar1",
+   "commandInactiveTitlebar2",
+   "commandInactiveTitlebar3",
+   "commandWindow1",
+   "commandWindow2",
+   "commandWindow3",
+   "commandWindowWheel",
+   "compositingMode",
+   "condensedTitle",
+   "cornerBarrier",
+   "delayFocusInterval",
+   "doubleClickBorderToMaximize",
+   "edgeBarrier",
+   "electricBorderAllScreenCorner",
+   "electricBorderCornerRatio",
+   "electricBorderMaximize",
+   "electricBorderTiling",
+   "focusPolicy",
+   "focusPolicyIsReasonable",
+   "focusStealingPreventionLevel",
+   "interactiveWindowMoveEnabled",
+   "keyCmdAllModKey",
+   "killPingTimeout",
+   "nextFocusPrefersMouse",
+   "objectName",
+   "operationMaxButtonLeftClick",
+   "operationMaxButtonMiddleClick",
+   "operationMaxButtonRightClick",
+   "operationTitlebarDblClick",
+   "overlayVirtualKeyboardOnWindows",
+   "perOutputVirtualDesktops",
+   "pictureInPictureHomeCorner",
+   "pictureInPictureMargin",
+   "placement",
+   "rollOverDesktops",
+   "separateScreenFocus",
+   "snapOnlyWhenOverlapping",
+   "windowSnapZone",
+   "xwaylandCrashPolicy",
+   "xwaylandMaxCrashCount"
+  ],
+  "callables": [
+   "activationDesktopPolicyChanged",
+   "allowTearingChanged",
+   "animationSpeedChanged",
+   "autoRaiseChanged",
+   "autoRaiseIntervalChanged",
+   "borderSnapZoneChanged",
+   "borderlessMaximizedWindowsChanged",
+   "centerSnapZoneChanged",
+   "clickRaiseChanged",
+   "commandActiveTitlebar1Changed",
+   "commandActiveTitlebar2Changed",
+   "commandActiveTitlebar3Changed",
+   "commandAll1Changed",
+   "commandAll2Changed",
+   "commandAll3Changed",
+   "commandInactiveTitlebar1Changed",
+   "commandInactiveTitlebar2Changed",
+   "commandInactiveTitlebar3Changed",
+   "commandWindow1Changed",
+   "commandWindow2Changed",
+   "commandWindow3Changed",
+   "commandWindowWheelChanged",
+   "compositingModeChanged",
+   "condensedTitleChanged",
+   "configChanged",
+   "cornerBarrierChanged",
+   "delayFocusIntervalChanged",
+   "doubleClickBorderToMaximizeChanged",
+   "edgeBarrierChanged",
+   "electricBorderAllScreenCornerChanged",
+   "electricBorderCornerRatioChanged",
+   "electricBorderMaximizeChanged",
+   "electricBorderTilingChanged",
+   "focusPolicyChanged",
+   "focusPolicyIsResonableChanged",
+   "focusStealingPreventionLevelChanged",
+   "interactiveWindowMoveEnabledChanged",
+   "keyCmdAllModKeyChanged",
+   "killPingTimeoutChanged",
+   "nextFocusPrefersMouseChanged",
+   "objectNameChanged",
+   "operationMaxButtonLeftClickChanged",
+   "operationMaxButtonMiddleClickChanged",
+   "operationMaxButtonRightClickChanged",
+   "operationTitlebarDblClickChanged",
+   "overlayVirtualKeyboardOnWindowsChanged",
+   "perOutputVirtualDesktopsChanged",
+   "pictureInPictureHomeCornerChanged",
+   "pictureInPictureMarginChanged",
+   "placementChanged",
+   "rollOverDesktopsChanged",
+   "separateScreenFocusChanged",
+   "snapOnlyWhenOverlappingChanged",
+   "windowSnapZoneChanged",
+   "xwaylandCrashPolicyChanged",
+   "xwaylandEavesdropsChanged",
+   "xwaylandEavesdropsMouseChanged",
+   "xwaylandEisNoPromptAppsChanged",
+   "xwaylandEisNoPromptChanged",
+   "xwaylandMaxCrashCountChanged"
+  ]
+ },
+ "workspace": {
+  "properties": [
+   "activeScreen",
+   "activeWindow",
+   "activities",
+   "currentActivity",
+   "currentDesktop",
+   "cursorPos",
+   "desktopGridHeight",
+   "desktopGridSize",
+   "desktopGridWidth",
+   "desktops",
+   "objectName",
+   "screenOrder",
+   "screens",
+   "stackingOrder",
+   "virtualDesktopNavigationWrapsAround",
+   "virtualScreenGeometry",
+   "virtualScreenSize",
+   "windows",
+   "workspaceHeight",
+   "workspaceSize",
+   "workspaceWidth"
+  ],
+  "callables": [
+   "activitiesChanged",
+   "activityAdded",
+   "activityRemoved",
+   "clientArea",
+   "constrain",
+   "createDesktop",
+   "currentActivityChanged",
+   "currentDesktopChanged",
+   "currentDesktopForScreen",
+   "cursorPosChanged",
+   "desktopLayoutChanged",
+   "desktopsChanged",
+   "getClient",
+   "hideOutline",
+   "isEffectActive",
+   "moveDesktop",
+   "objectNameChanged",
+   "raiseWindow",
+   "removeDesktop",
+   "rootTile",
+   "screenAt",
+   "screenOrderChanged",
+   "screensChanged",
+   "sendClientToScreen",
+   "setCurrentDesktopForScreen",
+   "showOutline",
+   "slotActivateAttentionWindow",
+   "slotIncreaseWindowOpacity",
+   "slotLowerWindowOpacity",
+   "slotSwitchDesktopDown",
+   "slotSwitchDesktopLeft",
+   "slotSwitchDesktopNext",
+   "slotSwitchDesktopPrevious",
+   "slotSwitchDesktopRight",
+   "slotSwitchDesktopUp",
+   "slotSwitchToAboveScreen",
+   "slotSwitchToBelowScreen",
+   "slotSwitchToLeftScreen",
+   "slotSwitchToNextScreen",
+   "slotSwitchToPrevScreen",
+   "slotSwitchToRightScreen",
+   "slotSwitchWindowDown",
+   "slotSwitchWindowLeft",
+   "slotSwitchWindowRight",
+   "slotSwitchWindowUp",
+   "slotToggleShowDesktop",
+   "slotWindowAbove",
+   "slotWindowBelow",
+   "slotWindowClose",
+   "slotWindowExcludeFromCapture",
+   "slotWindowExpandHorizontal",
+   "slotWindowExpandVertical",
+   "slotWindowFullScreen",
+   "slotWindowLower",
+   "slotWindowMaximize",
+   "slotWindowMaximizeHorizontal",
+   "slotWindowMaximizeVertical",
+   "slotWindowMinimize",
+   "slotWindowMove",
+   "slotWindowMoveDown",
+   "slotWindowMoveLeft",
+   "slotWindowMoveRight",
+   "slotWindowMoveUp",
+   "slotWindowNoBorder",
+   "slotWindowOnAllDesktops",
+   "slotWindowOperations",
+   "slotWindowQuickTileBottom",
+   "slotWindowQuickTileBottomLeft",
+   "slotWindowQuickTileBottomRight",
+   "slotWindowQuickTileLeft",
+   "slotWindowQuickTileRight",
+   "slotWindowQuickTileTop",
+   "slotWindowQuickTileTopLeft",
+   "slotWindowQuickTileTopRight",
+   "slotWindowRaise",
+   "slotWindowRaiseOrLower",
+   "slotWindowResize",
+   "slotWindowShrinkHorizontal",
+   "slotWindowShrinkVertical",
+   "slotWindowToAboveScreen",
+   "slotWindowToBelowScreen",
+   "slotWindowToDesktopDown",
+   "slotWindowToDesktopLeft",
+   "slotWindowToDesktopRight",
+   "slotWindowToDesktopUp",
+   "slotWindowToLeftScreen",
+   "slotWindowToNextDesktop",
+   "slotWindowToNextScreen",
+   "slotWindowToPrevScreen",
+   "slotWindowToPreviousDesktop",
+   "slotWindowToRightScreen",
+   "supportInformation",
+   "tilingForScreen",
+   "unconstrain",
+   "virtualDesktopNavigationWrapsAroundChanged",
+   "virtualScreenGeometryChanged",
+   "virtualScreenSizeChanged",
+   "windowActivated",
+   "windowAdded",
+   "windowAt",
+   "windowRemoved"
+  ]
+ },
+ "enums": {
+  "workspacePlacementArea": 0,
+  "workspaceMaximizeArea": 2,
+  "workspaceFullScreenArea": 4,
+  "workspaceWorkArea": 5
+ },
+ "windowsProperty": {
+  "ok": true,
+  "value": 1
+ },
+ "windowListMethod": {
+  "ok": false,
+  "error": "TypeError: Property 'windowList' of object KWin::DeclarativeScriptWorkspaceWrapper(0x5640de76b350) is not a function"
+ },
+ "windowsIsArray": {
+  "ok": true,
+  "value": false
+ },
+ "stackingOrder": {
+  "ok": true,
+  "value": 1
+ },
+ "activities": {
+  "ok": true,
+  "value": {
+   "list": 1,
+   "currentIsString": true,
+   "currentLength": 0
+  }
+ },
+ "desktops": {
+  "ok": true,
+  "value": [
+   {
+    "idType": "string",
+    "idLength": 36,
+    "x11DesktopNumber": 1,
+    "name": "Desktop 1"
+   }
+  ]
+ },
+ "desktopMembers": {
+  "ok": true,
+  "value": {
+   "properties": [
+    "id",
+    "name",
+    "objectName",
+    "x11DesktopNumber"
+   ],
+   "callables": [
+    "aboutToBeDestroyed",
+    "nameChanged",
+    "objectNameChanged",
+    "x11DesktopNumberChanged"
+   ]
+  }
+ },
+ "currentDesktop": {
+  "ok": true,
+  "value": 1
+ },
+ "screens": {
+  "ok": true,
+  "value": [
+   {
+    "members": {
+     "properties": [
+      "devicePixelRatio",
+      "geometry",
+      "manufacturer",
+      "model",
+      "name",
+      "objectName",
+      "serialNumber"
+     ],
+     "callables": [
+      "aboutToChange",
+      "blendingColorChanged",
+      "changed",
+      "currentModeChanged",
+      "descriptionChanged",
+      "geometryChanged",
+      "mapFromGlobal",
+      "mapToGlobal",
+      "objectNameChanged",
+      "scaleChanged",
+      "transformChanged"
+     ]
+    },
+    "name": "Virtual-0",
+    "geometry": {
+     "x": 0,
+     "y": 0,
+     "width": 1280,
+     "height": 800
+    },
+    "devicePixelRatio": 1,
+    "manufacturer": "",
+    "model": "",
+    "serialNumberPresent": false
+   },
+   {
+    "members": {
+     "properties": [
+      "devicePixelRatio",
+      "geometry",
+      "manufacturer",
+      "model",
+      "name",
+      "objectName",
+      "serialNumber"
+     ],
+     "callables": [
+      "aboutToChange",
+      "blendingColorChanged",
+      "changed",
+      "currentModeChanged",
+      "descriptionChanged",
+      "geometryChanged",
+      "mapFromGlobal",
+      "mapToGlobal",
+      "objectNameChanged",
+      "scaleChanged",
+      "transformChanged"
+     ]
+    },
+    "name": "Virtual-1",
+    "geometry": {
+     "x": 1280,
+     "y": 0,
+     "width": 1280,
+     "height": 800
+    },
+    "devicePixelRatio": 1,
+    "manufacturer": "",
+    "model": "",
+    "serialNumberPresent": false
+   }
+  ]
+ },
+ "screenOrder": {
+  "ok": true,
+  "value": [
+   "Virtual-0",
+   "Virtual-1"
+  ]
+ },
+ "activeScreen": {
+  "ok": true,
+  "value": "Virtual-0"
+ },
+ "screenAt": {
+  "ok": true,
+  "value": "Virtual-0"
+ },
+ "currentDesktopForScreen": {
+  "ok": true,
+  "value": [
+   1,
+   1
+  ]
+ },
+ "clientArea": {
+  "ok": true,
+  "value": [
+   {
+    "output": "Virtual-0",
+    "placement": {
+     "x": 0,
+     "y": 0,
+     "width": 1280,
+     "height": 800
+    },
+    "maximize": {
+     "x": 0,
+     "y": 0,
+     "width": 1280,
+     "height": 800
+    },
+    "fullscreen": {
+     "x": 0,
+     "y": 0,
+     "width": 1280,
+     "height": 800
+    }
+   },
+   {
+    "output": "Virtual-1",
+    "placement": {
+     "x": 1280,
+     "y": 0,
+     "width": 1280,
+     "height": 800
+    },
+    "maximize": {
+     "x": 1280,
+     "y": 0,
+     "width": 1280,
+     "height": 800
+    },
+    "fullscreen": {
+     "x": 1280,
+     "y": 0,
+     "width": 1280,
+     "height": 800
+    }
+   }
+  ]
+ },
+ "virtualScreenGeometry": {
+  "ok": true,
+  "value": {
+   "x": 0,
+   "y": 0,
+   "width": 2560,
+   "height": 800
+  }
+ },
+ "rootTile": {
+  "ok": true,
+  "value": [
+   {
+    "output": "Virtual-0",
+    "childCount": 3,
+    "relativeGeometry": {
+     "x": 0,
+     "y": 0,
+     "width": 1,
+     "height": 1
+    },
+    "absoluteGeometry": {
+     "x": 0,
+     "y": 0,
+     "width": 1280,
+     "height": 800
+    },
+    "absoluteGeometryInScreen": {
+     "x": 0,
+     "y": 0,
+     "width": 1280,
+     "height": 800
+    },
+    "padding": 4,
+    "minimumSize": {
+     "width": 0.15,
+     "height": 0.15
+    },
+    "isLayout": true,
+    "canBeRemoved": false,
+    "layoutDirection": 1,
+    "windowCount": 0
+   },
+   {
+    "output": "Virtual-1",
+    "childCount": 3,
+    "relativeGeometry": {
+     "x": 0,
+     "y": 0,
+     "width": 1,
+     "height": 1
+    },
+    "absoluteGeometry": {
+     "x": 1280,
+     "y": 0,
+     "width": 1280,
+     "height": 800
+    },
+    "absoluteGeometryInScreen": {
+     "x": 0,
+     "y": 0,
+     "width": 1280,
+     "height": 800
+    },
+    "padding": 4,
+    "minimumSize": {
+     "width": 0.15,
+     "height": 0.15
+    },
+    "isLayout": true,
+    "canBeRemoved": false,
+    "layoutDirection": 1,
+    "windowCount": 0
+   }
+  ]
+ },
+ "rootTileMembers": {
+  "ok": true,
+  "value": {
+   "properties": [
+    "absoluteGeometry",
+    "absoluteGeometryInScreen",
+    "canBeRemoved",
+    "isLayout",
+    "layoutDirection",
+    "minimumSize",
+    "model",
+    "objectName",
+    "padding",
+    "parent",
+    "positionInLayout",
+    "relativeGeometry",
+    "tiles",
+    "windows"
+   ],
+   "callables": [
+    "absoluteGeometryChanged",
+    "activeChanged",
+    "childTilesChanged",
+    "isLayoutChanged",
+    "layoutDirectionChanged",
+    "layoutModified",
+    "manage",
+    "minimumSizeChanged",
+    "moveByPixels",
+    "objectNameChanged",
+    "paddingChanged",
+    "pick",
+    "relativeGeometryChanged",
+    "remove",
+    "resizeByPixels",
+    "rowChanged",
+    "split",
+    "unmanage",
+    "windowAdded",
+    "windowGeometryChanged",
+    "windowRemoved",
+    "windowsChanged"
+   ]
+  }
+ },
+ "rootTileChildMembers": {
+  "ok": true,
+  "value": {
+   "properties": [
+    "absoluteGeometry",
+    "absoluteGeometryInScreen",
+    "canBeRemoved",
+    "isLayout",
+    "layoutDirection",
+    "minimumSize",
+    "objectName",
+    "padding",
+    "parent",
+    "positionInLayout",
+    "relativeGeometry",
+    "tiles",
+    "windows"
+   ],
+   "callables": [
+    "absoluteGeometryChanged",
+    "activeChanged",
+    "childTilesChanged",
+    "isLayoutChanged",
+    "layoutDirectionChanged",
+    "layoutModified",
+    "manage",
+    "minimumSizeChanged",
+    "moveByPixels",
+    "objectNameChanged",
+    "paddingChanged",
+    "relativeGeometryChanged",
+    "remove",
+    "resizeByPixels",
+    "rowChanged",
+    "split",
+    "unmanage",
+    "windowAdded",
+    "windowGeometryChanged",
+    "windowRemoved",
+    "windowsChanged"
+   ]
+  }
+ },
+ "tilingForScreen": {
+  "ok": true,
+  "value": {
+   "members": {
+    "properties": [
+     "model",
+     "objectName",
+     "rootTile"
+    ],
+    "callables": [
+     "bestTileForPosition",
+     "modelChanged",
+     "objectNameChanged",
+     "rootTileChanged",
+     "tileRemoved"
+    ]
+   },
+   "rootMatchesCurrentDesktopRoot": true
+  }
+ },
+ "shortcutHandler": {
+  "properties": [
+   "name",
+   "objectName",
+   "sequence",
+   "text"
+  ],
+  "callables": [
+   "activated",
+   "nameChanged",
+   "objectNameChanged",
+   "sequenceChanged",
+   "textChanged"
+  ]
+ },
+ "windowClasses": [
+  "plastile-fixture"
+ ]
+}

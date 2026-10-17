@@ -1,0 +1,13 @@
+{
+    "KPackageStructure": "KWin/Script",
+    "KPlugin": {
+        "Description": "Plastile M0 capability probe (disposable sessions only)",
+        "EnabledByDefault": false,
+        "Id": "plastile-probe-capability",
+        "License": "Undecided",
+        "Name": "Plastile capability probe",
+        "Version": "0.0.1"
+    },
+    "X-Plasma-API": "declarativescript",
+    "X-Plasma-MainScript": "ui/main.qml"
+}

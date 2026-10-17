@@ -1,0 +1,12 @@
+{
+ "kwinVersion": "kwin 6.7.5",
+ "outputs": 2,
+ "fixture": [
+  "fixtures/client/build/plastile-fixture",
+  "--ssd",
+  "--min",
+  "600x400"
+ ],
+ "fixtureClass": "plastile-fixture",
+ "kglobalaccelKwinShortcutNamesContainProbe": true
+}
