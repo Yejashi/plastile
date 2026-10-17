@@ -2,7 +2,7 @@
 
 An implementation blueprint for a fast, predictable, configurable tiling layer for KDE Plasma.
 
-**Repository status:** research and implementation plans only. No tiler has been implemented, installed, or benchmarked by this research. Performance numbers below are acceptance targets, not measured results.
+**Repository status:** research and implementation plans, plus M0 environment/capability probes and measurement tooling (see [implementation status](docs/status/STATUS.md)). No tiler has been implemented, installed, or benchmarked yet. Performance budgets in the plans are acceptance targets, not measured Plastile results.
 
 ## Start here
 

@@ -5,7 +5,7 @@
 **Evidence labels:**
 - **R** — runtime introspection or behaviour from [`probes/capability`](../../probes/capability), run in nested KWin 6.7.5. Raw results: [evidence/capabilities-a.json](evidence/capabilities-a.json) and [evidence/capabilities-b.json](evidence/capabilities-b.json).
 - **S** — observed source at tag `ab7df7cc`.
-- **M** — measured by the timing, lifecycle or constraints probes (summarised in [STATUS](STATUS.md)).
+- **M** — measured by the timing, lifecycle or constraints probes ([M0 probe report](M0_PROBE_REPORT.md)).
 
 ## Required adapter operations
 

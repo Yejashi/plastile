@@ -1,0 +1,386 @@
+{
+ "implementationCommit": "49bd3d4d576b22cecbd3614525a6514280aff473",
+ "runs": 3,
+ "samplesPerWorkloadPerRun": 300,
+ "seed": 1,
+ "layer": "nested KWin virtual backend (not physical)",
+ "workloads": {
+  "P01-resize": {
+   "samples": 900,
+   "successes": 900,
+   "noops": 0,
+   "failures": [],
+   "dispatchNs": {
+    "n": 900,
+    "min": 410760,
+    "p50": 506630,
+    "p95": 696681,
+    "p99": 776540,
+    "max": 896140
+   },
+   "writeNs": {
+    "n": 900,
+    "min": 3940,
+    "p50": 5320,
+    "p95": 11520,
+    "p99": 13090,
+    "max": 20260
+   },
+   "configureNs": {
+    "n": 900,
+    "min": 51370,
+    "p50": 70690,
+    "p95": 120890,
+    "p99": 319310,
+    "max": 369560
+   },
+   "commitNs": {
+    "n": 900,
+    "min": 99440,
+    "p50": 136470,
+    "p95": 214220,
+    "p99": 414820,
+    "max": 945621
+   },
+   "observedNs": {
+    "n": 900,
+    "min": 174780,
+    "p50": 244320,
+    "p95": 371380,
+    "p99": 516990,
+    "max": 1422871
+   },
+   "presentedNs": {
+    "n": 900,
+    "min": 941548,
+    "p50": 9249707,
+    "p95": 16675295,
+    "p99": 17613377,
+    "max": 17965169
+   },
+   "observationsPerRequest": {
+    "n": 900,
+    "min": 1,
+    "p50": 1,
+    "p95": 1,
+    "p99": 1,
+    "max": 1
+   },
+   "configuresPerRequest": {
+    "n": 900,
+    "min": 1,
+    "p50": 1,
+    "p95": 1,
+    "p99": 1,
+    "max": 1
+   },
+   "perRunObservedP50Ns": [
+    248160,
+    261620,
+    221830
+   ]
+  },
+  "P01-move": {
+   "samples": 900,
+   "successes": 898,
+   "noops": 2,
+   "failures": [],
+   "dispatchNs": {
+    "n": 898,
+    "min": 393650,
+    "p50": 493080,
+    "p95": 691130,
+    "p99": 800310,
+    "max": 1003650
+   },
+   "writeNs": {
+    "n": 898,
+    "min": 47620,
+    "p50": 63140,
+    "p95": 118050,
+    "p99": 229990,
+    "max": 343860
+   },
+   "configureNs": null,
+   "commitNs": null,
+   "observedNs": {
+    "n": 898,
+    "min": 27610,
+    "p50": 38040,
+    "p95": 71700,
+    "p99": 100861,
+    "max": 186330
+   },
+   "presentedNs": null,
+   "observationsPerRequest": {
+    "n": 898,
+    "min": 1,
+    "p50": 1,
+    "p95": 1,
+    "p99": 1,
+    "max": 1
+   },
+   "configuresPerRequest": {
+    "n": 898,
+    "min": 0,
+    "p50": 0,
+    "p95": 0,
+    "p99": 0,
+    "max": 0
+   },
+   "perRunObservedP50Ns": [
+    40160,
+    38050,
+    36790
+   ]
+  },
+  "P02-quicktile": {
+   "samples": 900,
+   "successes": 900,
+   "noops": 0,
+   "failures": [],
+   "dispatchNs": {
+    "n": 900,
+    "min": 413340,
+    "p50": 522311,
+    "p95": 708650,
+    "p99": 806410,
+    "max": 1276570
+   },
+   "writeNs": {
+    "n": 900,
+    "min": 38890,
+    "p50": 52290,
+    "p95": 86380,
+    "p99": 98550,
+    "max": 153590
+   },
+   "configureNs": {
+    "n": 900,
+    "min": 84520,
+    "p50": 125560,
+    "p95": 536271,
+    "p99": 662560,
+    "max": 1665940
+   },
+   "commitNs": {
+    "n": 900,
+    "min": 179040,
+    "p50": 250120,
+    "p95": 674910,
+    "p99": 831441,
+    "max": 3600531
+   },
+   "observedNs": {
+    "n": 900,
+    "min": 251970,
+    "p50": 362010,
+    "p95": 825331,
+    "p99": 949910,
+    "max": 3404511
+   },
+   "presentedNs": {
+    "n": 900,
+    "min": 4170038,
+    "p50": 13213732,
+    "p95": 20896243,
+    "p99": 33519824,
+    "max": 33773000
+   },
+   "observationsPerRequest": {
+    "n": 900,
+    "min": 1,
+    "p50": 1,
+    "p95": 1,
+    "p99": 1,
+    "max": 1
+   },
+   "configuresPerRequest": {
+    "n": 900,
+    "min": 1,
+    "p50": 1,
+    "p95": 1,
+    "p99": 1,
+    "max": 1
+   },
+   "perRunObservedP50Ns": [
+    338920,
+    407170,
+    336700
+   ]
+  },
+  "P02-reset": {
+   "samples": 900,
+   "successes": 899,
+   "noops": 1,
+   "failures": [],
+   "dispatchNs": {
+    "n": 899,
+    "min": 459690,
+    "p50": 605160,
+    "p95": 793991,
+    "p99": 869130,
+    "max": 1179960
+   },
+   "writeNs": {
+    "n": 899,
+    "min": 3380,
+    "p50": 4610,
+    "p95": 6230,
+    "p99": 8980,
+    "max": 15680
+   },
+   "configureNs": {
+    "n": 899,
+    "min": 48420,
+    "p50": 62320,
+    "p95": 455700,
+    "p99": 563960,
+    "max": 887080
+   },
+   "commitNs": {
+    "n": 899,
+    "min": 99790,
+    "p50": 132100,
+    "p95": 534740,
+    "p99": 670990,
+    "max": 1003730
+   },
+   "observedNs": {
+    "n": 899,
+    "min": 171340,
+    "p50": 241900,
+    "p95": 709080,
+    "p99": 818150,
+    "max": 1167880
+   },
+   "presentedNs": {
+    "n": 899,
+    "min": 4058848,
+    "p50": 12740881,
+    "p95": 20732234,
+    "p99": 33500517,
+    "max": 33728625
+   },
+   "observationsPerRequest": {
+    "n": 899,
+    "min": 1,
+    "p50": 1,
+    "p95": 1,
+    "p99": 1,
+    "max": 1
+   },
+   "configuresPerRequest": {
+    "n": 899,
+    "min": 1,
+    "p50": 1,
+    "p95": 1,
+    "p99": 1,
+    "max": 1
+   },
+   "perRunObservedP50Ns": [
+    232780,
+    261110,
+    222740
+   ]
+  }
+ },
+ "calibration": [
+  {
+   "clock": {
+    "resolutionNs": 1,
+    "nowNs": 34150527545779,
+    "exactAsDouble": true,
+    "meanCallNs": 333.24815,
+    "callDiffNs": {
+     "n": 20000,
+     "min": 240,
+     "p50": 290,
+     "p95": 400,
+     "p99": 590,
+     "max": 202370
+    },
+    "minNonzeroStepNs": 240
+   },
+   "callLater": {
+    "n": 200,
+    "min": 2880,
+    "p50": 2930,
+    "p95": 3300,
+    "p99": 6570,
+    "max": 31080
+   },
+   "coalesce": {
+    "scheduled": 1000,
+    "stableRuns": 1,
+    "freshRuns": 1000,
+    "stableScheduleNsPerCall": 262.57,
+    "freshScheduleNsPerCall": 1063.041
+   }
+  },
+  {
+   "clock": {
+    "resolutionNs": 1,
+    "nowNs": 34211060628461,
+    "exactAsDouble": true,
+    "meanCallNs": 329.77065,
+    "callDiffNs": {
+     "n": 20000,
+     "min": 230,
+     "p50": 290,
+     "p95": 400,
+     "p99": 510,
+     "max": 197570
+    },
+    "minNonzeroStepNs": 230
+   },
+   "callLater": {
+    "n": 200,
+    "min": 2870,
+    "p50": 2920,
+    "p95": 4470,
+    "p99": 7300,
+    "max": 31170
+   },
+   "coalesce": {
+    "scheduled": 1000,
+    "stableRuns": 1,
+    "freshRuns": 1000,
+    "stableScheduleNsPerCall": 251.04,
+    "freshScheduleNsPerCall": 945.44
+   }
+  },
+  {
+   "clock": {
+    "resolutionNs": 1,
+    "nowNs": 34267590756405,
+    "exactAsDouble": true,
+    "meanCallNs": 317.30155,
+    "callDiffNs": {
+     "n": 20000,
+     "min": 230,
+     "p50": 280,
+     "p95": 350,
+     "p99": 570,
+     "max": 199900
+    },
+    "minNonzeroStepNs": 230
+   },
+   "callLater": {
+    "n": 200,
+    "min": 2870,
+    "p50": 2930,
+    "p95": 3010,
+    "p99": 6550,
+    "max": 29310
+   },
+   "coalesce": {
+    "scheduled": 1000,
+    "stableRuns": 1,
+    "freshRuns": 1000,
+    "stableScheduleNsPerCall": 264.65,
+    "freshScheduleNsPerCall": 997.31
+   }
+  }
+ ]
+}
