@@ -1,0 +1,250 @@
+{
+ "schemaVersion": 1,
+ "collectedAtLocal": "2026-10-17T19:18:33-0400",
+ "collector": "tools/collect_environment.py (read-only)",
+ "repository": {
+  "revision": "5ba74652fbef3610f8cdb19cd830ace3c16d8427",
+  "dirty": true
+ },
+ "os": {
+  "NAME": "Arch Linux",
+  "ID": "arch",
+  "BUILD_ID": "rolling"
+ },
+ "kernel": "7.2.9-arch1-1",
+ "hardware": {
+  "cpu": "AMD Ryzen 5 5600X 6-Core Processor",
+  "logicalCpus": 12,
+  "memTotalGiB": 31.2,
+  "gpus": [
+   "Advanced Micro Devices, Inc. [AMD/ATI] Navi 48 [Radeon RX 9070/9070 XT/9070 GRE] (rev c0)"
+  ],
+  "cpuGovernor": "powersave",
+  "cpuEnergyPerformancePreference": "balance_performance"
+ },
+ "session": {
+  "XDG_SESSION_TYPE": "wayland",
+  "XDG_CURRENT_DESKTOP": "KDE",
+  "KDE_SESSION_VERSION": "6"
+ },
+ "packages": {
+  "kwin": "6.7.5-3",
+  "plasma-workspace": "6.7.5-3",
+  "plasma-desktop": "6.7.5-1",
+  "breeze": "6.7.5-1",
+  "kdecoration": "6.7.5-1",
+  "kscreen": "6.7.5-1",
+  "libkscreen": "6.7.5-1",
+  "qt6-base": "6.12.0-2",
+  "qt6-declarative": "6.12.0-1",
+  "qt6-wayland": "6.12.0-1",
+  "kcoreaddons": "6.30.0-2",
+  "kconfig": "6.30.0-1",
+  "kglobalaccel": "6.30.0-1",
+  "kpackage": "6.30.0-1",
+  "kwindowsystem": "6.30.0-1",
+  "plasma-activities": "6.7.5-1",
+  "xorg-xwayland": "24.1.14-1",
+  "wayland": "1.26.0-1",
+  "wayland-protocols": "1.49-1",
+  "mesa": "1:26.2.4-1",
+  "libdrm": "2.4.134-1",
+  "linux": "7.2.9.arch1-1",
+  "nodejs": "26.11.1-1",
+  "npm": "12.2.0-1",
+  "typescript": null,
+  "cmake": "4.4.4-1",
+  "gcc": "16.2.1+r23+gd564253eb6c8-1",
+  "clang": "23.1.1-1",
+  "python": "3.14.8-1",
+  "python-dbus": "1.5.0-1"
+ },
+ "kwin": {
+  "kwinVersion": "6.7.5",
+  "qtVersion": "6.12.0",
+  "operationMode": "Wayland",
+  "compositingType": "OpenGL",
+  "openglRenderer": "AMD Radeon RX 9070 XT (radeonsi, gfx1201, ACO, DRM 3.64, 7.2.9-arch1-1)",
+  "openglVersion": "4.6 (Core Profile) Mesa 26.2.4-arch1.1",
+  "openglPlatform": "EGL",
+  "loadedEffects": [
+   "blendchanges",
+   "blur",
+   "colorpicker",
+   "dialogparent",
+   "dimscreen",
+   "fadingpopups",
+   "frozenapp",
+   "fullscreen",
+   "highlightwindow",
+   "kscreen",
+   "login",
+   "logout",
+   "maximize",
+   "outputlocator",
+   "overview",
+   "scale",
+   "screenedge",
+   "screentransform",
+   "sessionquit",
+   "shakecursor",
+   "slide",
+   "slidingnotifications",
+   "slidingpopups",
+   "squash",
+   "startupfeedback",
+   "systembell",
+   "tileseditor",
+   "windowaperture",
+   "windowview",
+   "zoom"
+  ],
+  "options": {
+   "perOutputVirtualDesktops": "false",
+   "separateScreenFocus": "true",
+   "focusPolicy": "ClickToFocus",
+   "electricBorderTiling": "true",
+   "electricBorderMaximize": "true",
+   "borderlessMaximizedWindows": "false",
+   "placement": "5",
+   "windowSnapZone": "10",
+   "focusStealingPreventionLevel": "1",
+   "allowTearing": "true",
+   "animationSpeed": null
+  }
+ },
+ "outputs": [
+  {
+   "connector": "HDMI-A-1",
+   "type": 6,
+   "enabled": true,
+   "priority": 1,
+   "pos": {
+    "x": 1920,
+    "y": 0
+   },
+   "scale": 1,
+   "rotation": 1,
+   "mode": {
+    "size": {
+     "height": 1440,
+     "width": 2560
+    },
+    "refreshRate": 143.99899291992188
+   },
+   "vrrPolicy": null,
+   "hdr": false,
+   "sizeMM": {
+    "height": 336,
+    "width": 597
+   }
+  },
+  {
+   "connector": "DP-2",
+   "type": 14,
+   "enabled": true,
+   "priority": 2,
+   "pos": {
+    "x": 4480,
+    "y": 0
+   },
+   "scale": 1,
+   "rotation": 1,
+   "mode": {
+    "size": {
+     "height": 1080,
+     "width": 1920
+    },
+    "refreshRate": 100
+   },
+   "vrrPolicy": null,
+   "hdr": null,
+   "sizeMM": {
+    "height": 297,
+    "width": 528
+   }
+  },
+  {
+   "connector": "DP-1",
+   "type": 14,
+   "enabled": true,
+   "priority": 3,
+   "pos": {
+    "x": 0,
+    "y": 0
+   },
+   "scale": 1,
+   "rotation": 1,
+   "mode": {
+    "size": {
+     "height": 1080,
+     "width": 1920
+    },
+    "refreshRate": 60
+   },
+   "vrrPolicy": null,
+   "hdr": null,
+   "sizeMM": {
+    "height": 296,
+    "width": 527
+   }
+  }
+ ],
+ "virtualDesktops": {
+  "count": "6",
+  "rows": "1"
+ },
+ "activities": {
+  "serviceAvailable": true,
+  "count": 1
+ },
+ "config": {
+  "pluginsExplicitlyEnabled": [],
+  "pluginsExplicitlyDisabled": [],
+  "nativeTilingSections": 63,
+  "nativeTilingPaddings": [
+   "4"
+  ],
+  "decorationLibrary": "org.kde.kwin.aurorae.v2",
+  "windowRuleCount": 0,
+  "kwinEditTilesShortcut": "Meta+T",
+  "metaBindingsInKwinComponent": 33,
+  "installedScripts": {
+   "/usr/share/kwin/scripts": [
+    "virtualdesktopsonlyonprimary"
+   ],
+   "/usr/share/kwin-wayland/scripts": [
+    "desktopchangeosd",
+    "minimizeall",
+    "synchronizeskipswitcher",
+    "videowall"
+   ]
+  }
+ },
+ "tools": {
+  "kwin_wayland": true,
+  "kpackagetool6": true,
+  "qdbus6": true,
+  "busctl": true,
+  "dbus-daemon": true,
+  "kscreen-doctor": true,
+  "qml6": true,
+  "wayland-scanner": true,
+  "cmake": true,
+  "g++": true,
+  "clang": true,
+  "node": true,
+  "npm": true,
+  "tsc": false,
+  "python3": true,
+  "getcap": true,
+  "weston": false,
+  "cage": false,
+  "gamescope": false,
+  "wlr-randr": false,
+  "perf": false,
+  "valgrind": false,
+  "kwinWaylandFileCapabilities": "cap_sys_nice=ep",
+  "nodeVersion": "v26.11.1"
+ }
+}
