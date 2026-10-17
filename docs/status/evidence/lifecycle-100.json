@@ -1,0 +1,50 @@
+{
+ "cycles": 100,
+ "leakControl": false,
+ "windowCommand": "fixtures/client/build/plastile-fixture",
+ "baseline": {
+  "rssKiB": 235540,
+  "fds": null
+ },
+ "final": {
+  "rssKiB": 237932,
+  "fds": null
+ },
+ "rssKiBByCycle": [
+  236924,
+  237308,
+  237596,
+  237900,
+  237856,
+  237608,
+  237728,
+  237980,
+  238252,
+  238184
+ ],
+ "fdsByCycle": [
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  null
+ ],
+ "kwinShortcutNamesFirstLast": [
+  168,
+  168
+ ],
+ "staleRejectionKinds": [],
+ "staleRejectionCount": 0,
+ "postUnloadShortcutInvoke": [
+  "accepted"
+ ],
+ "leakClosureFiredAfterUnloadTotal": 0,
+ "kglobalshortcutsrcMentionsProbe": true,
+ "failures": [],
+ "pass": true
+}

@@ -1,0 +1,81 @@
+{
+ "purpose": "Attribute KWin RSS growth across 300 script reload cycles (nested KWin 6.7.5)",
+ "runs": {
+  "empty": {
+   "cycles": 300,
+   "baselineRssKiB": 235396,
+   "finalRssKiB": 235592,
+   "rssKiBByCycle": [
+    235592,
+    235576,
+    235576,
+    235580,
+    235580,
+    235584,
+    235584,
+    235588,
+    235588,
+    235588
+   ],
+   "rssDeltaKiB": 196
+  },
+  "empty+windowChurn": {
+   "cycles": 300,
+   "package": "empty",
+   "spawnWindow": true,
+   "baselineRssKiB": 232416,
+   "finalRssKiB": 235576,
+   "rssKiBByCycle": [
+    233628,
+    234196,
+    234192,
+    234676,
+    234680,
+    234716,
+    235144,
+    235136,
+    235204,
+    235604
+   ],
+   "rssDeltaKiB": 3160
+  },
+  "shortcut": {
+   "cycles": 300,
+   "package": "shortcut",
+   "spawnWindow": false,
+   "baselineRssKiB": 232292,
+   "finalRssKiB": 232556,
+   "rssKiBByCycle": [
+    232532,
+    232516,
+    232520,
+    232524,
+    232528,
+    232532,
+    232536,
+    232540,
+    232544,
+    232552
+   ],
+   "rssDeltaKiB": 264
+  },
+  "lifecycleProbe(+windowChurn)": {
+   "cycles": 300,
+   "baselineRssKiB": 235504,
+   "finalRssKiB": 239168,
+   "rssDeltaKiB": 3664,
+   "rssKiBByCycle": [
+    236884,
+    237892,
+    237724,
+    238188,
+    238316,
+    238212,
+    238608,
+    238772,
+    238720,
+    239048
+   ]
+  }
+ }
+}
