@@ -1,0 +1,13 @@
+{
+    "KPackageStructure": "KWin/Script",
+    "KPlugin": {
+        "Description": "Plastile M0 timing and scheduler probe (nested sessions with the measurement module only)",
+        "EnabledByDefault": false,
+        "Id": "plastile-probe-timing",
+        "License": "Undecided",
+        "Name": "Plastile timing probe",
+        "Version": "0.0.1"
+    },
+    "X-Plasma-API": "declarativescript",
+    "X-Plasma-MainScript": "ui/main.qml"
+}

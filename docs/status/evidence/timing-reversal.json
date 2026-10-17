@@ -1,0 +1,224 @@
+{
+ "configureDelayMs": 300,
+ "reversalGapMs": 50,
+ "scriptClock": {
+  "resolutionNs": 1,
+  "nowNs": 34133182406677,
+  "exactAsDouble": true,
+  "meanCallNs": 309.49065,
+  "callDiffNs": {
+   "n": 20000,
+   "min": 230,
+   "p50": 280,
+   "p95": 340,
+   "p99": 350,
+   "max": 188970
+  },
+  "minNonzeroStepNs": 230
+ },
+ "callLaterDelayNs": {
+  "n": 200,
+  "min": 2930,
+  "p50": 2970,
+  "p95": 3160,
+  "p99": 6300,
+  "max": 28680
+ },
+ "timerDelayNs": [
+  {
+   "intervalMs": 0,
+   "n": 100,
+   "min": 3200,
+   "p50": 3250,
+   "p95": 3640,
+   "p99": 14340,
+   "max": 47420
+  },
+  {
+   "intervalMs": 1,
+   "n": 100,
+   "min": 1017220,
+   "p50": 1019401,
+   "p95": 1042921,
+   "p99": 1067980,
+   "max": 1084390
+  },
+  {
+   "intervalMs": 16,
+   "n": 100,
+   "min": 16034997,
+   "p50": 16131446,
+   "p95": 16515307,
+   "p99": 16666017,
+   "max": 16703897
+  }
+ ],
+ "coalescing": {
+  "scheduled": 1000,
+  "stableRuns": 1,
+  "freshRuns": 1000,
+  "stableScheduleNsPerCall": 265.981,
+  "freshScheduleNsPerCall": 1076.45
+ },
+ "harnessDbusPingRttNs": {
+  "n": 500,
+  "min": 46870,
+  "p50": 54250,
+  "p95": 62210,
+  "p99": 73190,
+  "max": 425481
+ },
+ "dispatchSendToHandlerNs": {
+  "n": 500,
+  "min": 279491,
+  "p50": 304710,
+  "p95": 372470,
+  "p99": 438390,
+  "max": 503990
+ },
+ "invokeShortcutReplyRttNs": {
+  "n": 500,
+  "min": 273011,
+  "p50": 298860,
+  "p95": 371210,
+  "p99": 427660,
+  "max": 497420
+ },
+ "dispatchHandlerBeforeReply": 20,
+ "geometry": {
+  "requests": [
+   {
+    "seq": 1,
+    "name": "A",
+    "target": {
+     "x": 64,
+     "y": 40,
+     "width": 512,
+     "height": 400
+    },
+    "before": {
+     "x": 440,
+     "y": 236,
+     "width": 400,
+     "height": 328
+    },
+    "immediate": {
+     "x": 440,
+     "y": 236,
+     "width": 400,
+     "height": 328
+    },
+    "writeNs": 9670
+   },
+   {
+    "seq": 2,
+    "name": "B",
+    "target": {
+     "x": 64,
+     "y": 40,
+     "width": 768,
+     "height": 560
+    },
+    "before": {
+     "x": 64,
+     "y": 40,
+     "width": 512,
+     "height": 400
+    },
+    "immediate": {
+     "x": 64,
+     "y": 40,
+     "width": 512,
+     "height": 400
+    },
+    "writeNs": 10820
+   },
+   {
+    "seq": 3,
+    "name": "A",
+    "target": {
+     "x": 64,
+     "y": 40,
+     "width": 512,
+     "height": 400
+    },
+    "before": {
+     "x": 64,
+     "y": 40,
+     "width": 512,
+     "height": 400
+    },
+    "immediate": {
+     "x": 64,
+     "y": 40,
+     "width": 512,
+     "height": 400
+    },
+    "writeNs": 6480
+   },
+   {
+    "seq": 4,
+    "name": "A-moved",
+    "target": {
+     "x": 256,
+     "y": 80,
+     "width": 512,
+     "height": 400
+    },
+    "before": {
+     "x": 64,
+     "y": 40,
+     "width": 768,
+     "height": 560
+    },
+    "immediate": {
+     "x": 64,
+     "y": 40,
+     "width": 768,
+     "height": 560
+    },
+    "writeNs": 11440
+   },
+   {
+    "seq": 5,
+    "name": "A-moved-again",
+    "target": {
+     "x": 256,
+     "y": 80,
+     "width": 512,
+     "height": 400
+    },
+    "before": {
+     "x": 256,
+     "y": 80,
+     "width": 512,
+     "height": 400
+    },
+    "immediate": {
+     "x": 256,
+     "y": 80,
+     "width": 512,
+     "height": 400
+    },
+    "writeNs": 12080
+   }
+  ],
+  "observedCount": 3,
+  "clientConfigures": 3,
+  "clientCommits": 3,
+  "clientSuperseded": 0,
+  "finalObservedFrame": {
+   "x": 256,
+   "y": 80,
+   "width": 512,
+   "height": 400
+  },
+  "finalTarget": {
+   "x": 256,
+   "y": 80,
+   "width": 512,
+   "height": 400
+  },
+  "finalMatchesTarget": true
+ }
+}
