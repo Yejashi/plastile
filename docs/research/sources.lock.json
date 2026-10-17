@@ -1,0 +1,4584 @@
+{
+  "schemaVersion": 1,
+  "researchDateLocal": "2026-10-17",
+  "retrievedAtUtc": "2026-10-17T22:28:35.818261+00:00",
+  "scope": "Source-level architectural audit of selected paths in every listed project; acquisition is not a claim that every acquired line was manually audited. No runtime benchmark was executed.",
+  "limitations": [
+    "Current Codeberg repositories for anametologin/Krohnkite and Serroda/fluid-tile could not be read. GitHub snapshots may lag current upstream.",
+    "KWin development branch is not a compatibility baseline. Stable branch snapshots have separate immutable refs.",
+    "Issue reports are unverified workload leads, not current-version verdicts."
+  ],
+  "repositories": [
+    {
+      "repository": "esjeon/krohnkite",
+      "defaultSnapshotCommit": "bc6fe23afe4eb545a75755206e982b273426e32e",
+      "defaultSnapshotCommitDate": "2022-04-26T11:46:07Z",
+      "commitSubject": "Merge pull request #180 from eNV25/patch-1",
+      "acquiredFiles": [
+        {
+          "path": "LICENSE",
+          "ref": "bc6fe23afe4eb545a75755206e982b273426e32e",
+          "blob": "1cea3b6f856785e49a62eb5aac5f3200b80edbcc",
+          "size": 1087,
+          "lines": 22
+        },
+        {
+          "path": "Makefile",
+          "ref": "bc6fe23afe4eb545a75755206e982b273426e32e",
+          "blob": "d45fbb58ffe7674a5e2f767a21fc4d83c86d4e1f",
+          "size": 1985,
+          "lines": 77
+        },
+        {
+          "path": "README.md",
+          "ref": "bc6fe23afe4eb545a75755206e982b273426e32e",
+          "blob": "e78435f776f1756b7197dfafc05fc5cd7816cfa3",
+          "size": 8382,
+          "lines": 232
+        },
+        {
+          "path": "res/config.xml",
+          "ref": "bc6fe23afe4eb545a75755206e982b273426e32e",
+          "blob": "cae197b4291e7a69c31d00ff9aef40ec0ef63e9d",
+          "size": 6571,
+          "lines": 205
+        },
+        {
+          "path": "res/main.qml",
+          "ref": "bc6fe23afe4eb545a75755206e982b273426e32e",
+          "blob": "37dabe69219e4f9215e9cf37db0cc32b2783098e",
+          "size": 1928,
+          "lines": 54
+        },
+        {
+          "path": "res/package.json",
+          "ref": "bc6fe23afe4eb545a75755206e982b273426e32e",
+          "blob": "4dddf1db51e708a67b6a0d508827d4a5d43e9735",
+          "size": 599,
+          "lines": 27
+        },
+        {
+          "path": "res/popup.qml",
+          "ref": "bc6fe23afe4eb545a75755206e982b273426e32e",
+          "blob": "07f990c48523895f3dabf5874eb3b02c33dca586",
+          "size": 2774,
+          "lines": 83
+        },
+        {
+          "path": "src/common.ts",
+          "ref": "bc6fe23afe4eb545a75755206e982b273426e32e",
+          "blob": "6dc03c66e6c56c1f001330b2209cf55f441f9640",
+          "size": 3689,
+          "lines": 151
+        },
+        {
+          "path": "src/driver/kwin/kwinconfig.ts",
+          "ref": "bc6fe23afe4eb545a75755206e982b273426e32e",
+          "blob": "99fc86bb235bc9fbb357c34d6b8d5b07248fd77d",
+          "size": 6961,
+          "lines": 156
+        },
+        {
+          "path": "src/driver/kwin/kwindriver.ts",
+          "ref": "bc6fe23afe4eb545a75755206e982b273426e32e",
+          "blob": "b373f277ce1b67580002ebe981720d8a05095cd2",
+          "size": 13931,
+          "lines": 368
+        },
+        {
+          "path": "src/driver/kwin/kwinmousepoller.ts",
+          "ref": "bc6fe23afe4eb545a75755206e982b273426e32e",
+          "blob": "774f1671e430df5540d059cae4b9b8286bc66dcc",
+          "size": 3197,
+          "lines": 88
+        },
+        {
+          "path": "src/driver/kwin/kwinsettimeout.ts",
+          "ref": "bc6fe23afe4eb545a75755206e982b273426e32e",
+          "blob": "6fe09071afc13101ed979f16c95488b81030fdc3",
+          "size": 2194,
+          "lines": 57
+        },
+        {
+          "path": "src/driver/kwin/kwinsurface.ts",
+          "ref": "bc6fe23afe4eb545a75755206e982b273426e32e",
+          "blob": "e3330bbb8aa76d90c70575ba793efe6cebdb4316",
+          "size": 2743,
+          "lines": 68
+        },
+        {
+          "path": "src/driver/kwin/kwinwindow.ts",
+          "ref": "bc6fe23afe4eb545a75755206e982b273426e32e",
+          "blob": "8a1f26bba22224d42c9867707cea8ee2072c34b5",
+          "size": 8694,
+          "lines": 215
+        },
+        {
+          "path": "src/driver/test/testdriver.ts",
+          "ref": "bc6fe23afe4eb545a75755206e982b273426e32e",
+          "blob": "3b19fda76f3730cfa9a348e4c8656548889496fa",
+          "size": 4534,
+          "lines": 147
+        },
+        {
+          "path": "src/engine/control.ts",
+          "ref": "bc6fe23afe4eb545a75755206e982b273426e32e",
+          "blob": "5bfc2fd225cc3248649dadd5791ee2eab3469ead",
+          "size": 9117,
+          "lines": 219
+        },
+        {
+          "path": "src/engine/engine.ts",
+          "ref": "bc6fe23afe4eb545a75755206e982b273426e32e",
+          "blob": "8d54929917e31c4214fd0c3f7ee99daaf051307d",
+          "size": 17133,
+          "lines": 472
+        },
+        {
+          "path": "src/engine/enginecontext.ts",
+          "ref": "bc6fe23afe4eb545a75755206e982b273426e32e",
+          "blob": "6c2514a73459fbbe86aa33567f09df4a4d1624ed",
+          "size": 2202,
+          "lines": 59
+        },
+        {
+          "path": "src/engine/layoutstore.ts",
+          "ref": "bc6fe23afe4eb545a75755206e982b273426e32e",
+          "blob": "ec4965f4fa4b97791e44450c774be53018a27ca1",
+          "size": 3799,
+          "lines": 110
+        },
+        {
+          "path": "src/engine/window.ts",
+          "ref": "bc6fe23afe4eb545a75755206e982b273426e32e",
+          "blob": "7fe0c514c81e19937061ace8e0e04684e5611bc9",
+          "size": 6926,
+          "lines": 208
+        },
+        {
+          "path": "src/engine/windowstore.ts",
+          "ref": "bc6fe23afe4eb545a75755206e982b273426e32e",
+          "blob": "b175e0156d94b965843d446365d6a49cfef7c81c",
+          "size": 3392,
+          "lines": 107
+        },
+        {
+          "path": "src/extern/global.d.ts",
+          "ref": "bc6fe23afe4eb545a75755206e982b273426e32e",
+          "blob": "b8ce98e4a4410f8e7058cc3fdf945fb1f8d1c1fd",
+          "size": 1585,
+          "lines": 38
+        },
+        {
+          "path": "src/extern/kwin.d.ts",
+          "ref": "bc6fe23afe4eb545a75755206e982b273426e32e",
+          "blob": "a87f364d5bd5ceccd1682a9142fbf67ec10909ed",
+          "size": 3999,
+          "lines": 125
+        },
+        {
+          "path": "src/extern/plasma.d.ts",
+          "ref": "bc6fe23afe4eb545a75755206e982b273426e32e",
+          "blob": "5f4d5489a04d2ea360f9350d24a7e5577f557817",
+          "size": 3019,
+          "lines": 74
+        },
+        {
+          "path": "src/extern/qt.d.ts",
+          "ref": "bc6fe23afe4eb545a75755206e982b273426e32e",
+          "blob": "23e0abb3034271c4f4d603df3e4dad03cc8057b9",
+          "size": 1943,
+          "lines": 67
+        },
+        {
+          "path": "src/layouts/cascadelayout.ts",
+          "ref": "bc6fe23afe4eb545a75755206e982b273426e32e",
+          "blob": "7c1b59520ef24110f70e8731724e77421d0bcf48",
+          "size": 3913,
+          "lines": 105
+        },
+        {
+          "path": "src/layouts/floatinglayout.ts",
+          "ref": "bc6fe23afe4eb545a75755206e982b273426e32e",
+          "blob": "af05ba344a3eb6b991c1f89b3cef525f5e1971ab",
+          "size": 1727,
+          "lines": 42
+        },
+        {
+          "path": "src/layouts/layoutpart.ts",
+          "ref": "bc6fe23afe4eb545a75755206e982b273426e32e",
+          "blob": "febf5f20665db1f834c7ad9111a042f398657ace",
+          "size": 9277,
+          "lines": 255
+        },
+        {
+          "path": "src/layouts/layoututils.ts",
+          "ref": "bc6fe23afe4eb545a75755206e982b273426e32e",
+          "blob": "b0035c09b75e894dd78b95cf2938c2a5825fbcd8",
+          "size": 8488,
+          "lines": 207
+        },
+        {
+          "path": "src/layouts/monoclelayout.ts",
+          "ref": "bc6fe23afe4eb545a75755206e982b273426e32e",
+          "blob": "d7c33e54199d6925804570bb25ddbeaed6cafcf9",
+          "size": 2966,
+          "lines": 79
+        },
+        {
+          "path": "src/layouts/quarterlayout.ts",
+          "ref": "bc6fe23afe4eb545a75755206e982b273426e32e",
+          "blob": "3baa5e1e1add9a5892f76cf54ae113bb2f350ed5",
+          "size": 5927,
+          "lines": 135
+        },
+        {
+          "path": "src/layouts/spirallayout.ts",
+          "ref": "bc6fe23afe4eb545a75755206e982b273426e32e",
+          "blob": "2c99c7e4ddffc8b3e364a420b7485fc4f3dcb1f2",
+          "size": 3152,
+          "lines": 87
+        },
+        {
+          "path": "src/layouts/spreadlayout.ts",
+          "ref": "bc6fe23afe4eb545a75755206e982b273426e32e",
+          "blob": "8381ebfa64715f43ffc0667fafe8e904712da158",
+          "size": 3048,
+          "lines": 84
+        },
+        {
+          "path": "src/layouts/stairlayout.ts",
+          "ref": "bc6fe23afe4eb545a75755206e982b273426e32e",
+          "blob": "fe270a07872bbf646a121669ed97fb48c3021b26",
+          "size": 2825,
+          "lines": 81
+        },
+        {
+          "path": "src/layouts/threecolumnlayout.ts",
+          "ref": "bc6fe23afe4eb545a75755206e982b273426e32e",
+          "blob": "a80d663c301f7427449b45c21f62b9b0dce9b13c",
+          "size": 8682,
+          "lines": 211
+        },
+        {
+          "path": "src/layouts/tilelayout.ts",
+          "ref": "bc6fe23afe4eb545a75755206e982b273426e32e",
+          "blob": "f6b5167a84d5cddddd03c95eaa7dd5797d165596",
+          "size": 4483,
+          "lines": 130
+        },
+        {
+          "path": "src/util/debug.ts",
+          "ref": "bc6fe23afe4eb545a75755206e982b273426e32e",
+          "blob": "77f4e293075ac0297c3cfbb113ad520ef50529bc",
+          "size": 1816,
+          "lines": 44
+        },
+        {
+          "path": "src/util/func.ts",
+          "ref": "bc6fe23afe4eb545a75755206e982b273426e32e",
+          "blob": "414b4d7386ff3640735447212ba8b0bc2402c8d5",
+          "size": 3526,
+          "lines": 101
+        },
+        {
+          "path": "src/util/kwinutil.ts",
+          "ref": "bc6fe23afe4eb545a75755206e982b273426e32e",
+          "blob": "ec3e5cc5f6f81a628717139731af99cee08825d2",
+          "size": 1330,
+          "lines": 28
+        },
+        {
+          "path": "src/util/rect.ts",
+          "ref": "bc6fe23afe4eb545a75755206e982b273426e32e",
+          "blob": "94ab0d5aa7151eb5ef0d371a3c1f85c31b4e11d4",
+          "size": 3175,
+          "lines": 99
+        },
+        {
+          "path": "src/util/rectdelta.ts",
+          "ref": "bc6fe23afe4eb545a75755206e982b273426e32e",
+          "blob": "0c3183805385ffda28d5ad6a4164e242096920f9",
+          "size": 2070,
+          "lines": 54
+        },
+        {
+          "path": "src/util/wrappermap.ts",
+          "ref": "bc6fe23afe4eb545a75755206e982b273426e32e",
+          "blob": "b2c9d812a1e890c3a8893a20354dff264c0db3b0",
+          "size": 1993,
+          "lines": 54
+        },
+        {
+          "path": "test/tilelayout.spec.js",
+          "ref": "bc6fe23afe4eb545a75755206e982b273426e32e",
+          "blob": "34c24e66273f0e19b07f6b0076072d4e209bef28",
+          "size": 2715,
+          "lines": 71
+        },
+        {
+          "path": "tsconfig.json",
+          "ref": "bc6fe23afe4eb545a75755206e982b273426e32e",
+          "blob": "ac19460bbff90991bf064fa17d29875584cf6f27",
+          "size": 263,
+          "lines": 13
+        },
+        {
+          "path": "tslint.json",
+          "ref": "bc6fe23afe4eb545a75755206e982b273426e32e",
+          "blob": "d5d23425c38fef660a9ecee934c5d85cd57071e6",
+          "size": 400,
+          "lines": 16
+        }
+      ]
+    },
+    {
+      "repository": "anametologin/krohnkite",
+      "defaultSnapshotCommit": "f5865562955c45fddb9f4c6ae7e657140d670a95",
+      "defaultSnapshotCommitDate": "2025-12-11T10:32:49Z",
+      "commitSubject": "Update README.md",
+      "acquiredFiles": [
+        {
+          "path": "LICENSE",
+          "ref": "f5865562955c45fddb9f4c6ae7e657140d670a95",
+          "blob": "80f9cbe632576454a533ace7647c3a635d5b5158",
+          "size": 1153,
+          "lines": 23
+        },
+        {
+          "path": "Makefile",
+          "ref": "f5865562955c45fddb9f4c6ae7e657140d670a95",
+          "blob": "b591ffba9e4b49b69bea677e0a0211f48d8f4891",
+          "size": 2521,
+          "lines": 88
+        },
+        {
+          "path": "README.md",
+          "ref": "f5865562955c45fddb9f4c6ae7e657140d670a95",
+          "blob": "2332cfca72085dc853e10969a9ef29b02322a124",
+          "size": 10452,
+          "lines": 275
+        },
+        {
+          "path": "package-lock.json",
+          "ref": "f5865562955c45fddb9f4c6ae7e657140d670a95",
+          "blob": "d91bb15aea30e56197e5aaf28e4d64fa4ef57f80",
+          "size": 730,
+          "lines": 31
+        },
+        {
+          "path": "package.json",
+          "ref": "f5865562955c45fddb9f4c6ae7e657140d670a95",
+          "blob": "4dada4e5a38d94aada70d252b16d2414f7254b2d",
+          "size": 579,
+          "lines": 26
+        },
+        {
+          "path": "res/config.xml",
+          "ref": "f5865562955c45fddb9f4c6ae7e657140d670a95",
+          "blob": "a80bf792520787a5d8cad99117ff76733aacde60",
+          "size": 21906,
+          "lines": 608
+        },
+        {
+          "path": "res/dbus.qml",
+          "ref": "f5865562955c45fddb9f4c6ae7e657140d670a95",
+          "blob": "9951200f144c33f69076cc2d42e9971c74b7a68f",
+          "size": 1108,
+          "lines": 53
+        },
+        {
+          "path": "res/main.js",
+          "ref": "f5865562955c45fddb9f4c6ae7e657140d670a95",
+          "blob": "90dc6bee5967231e488065ed9d22056a35e197a9",
+          "size": 39,
+          "lines": 2
+        },
+        {
+          "path": "res/main.qml",
+          "ref": "f5865562955c45fddb9f4c6ae7e657140d670a95",
+          "blob": "b7665b3129c36998da64d5d10a0ed8370b13fc59",
+          "size": 1345,
+          "lines": 57
+        },
+        {
+          "path": "res/metadata.json",
+          "ref": "f5865562955c45fddb9f4c6ae7e657140d670a95",
+          "blob": "f95d1ffb21bf0a5220f41e37703dd12a68e3f8b6",
+          "size": 668,
+          "lines": 25
+        },
+        {
+          "path": "res/popup.qml",
+          "ref": "f5865562955c45fddb9f4c6ae7e657140d670a95",
+          "blob": "22c44c2021964768b3ea433fc7e0f5aff063182c",
+          "size": 1603,
+          "lines": 66
+        },
+        {
+          "path": "res/shortcuts.qml",
+          "ref": "f5865562955c45fddb9f4c6ae7e657140d670a95",
+          "blob": "ed5daf00a9d7576608c53dfbcdabb7ef01d8f552",
+          "size": 8855,
+          "lines": 402
+        },
+        {
+          "path": "src/common.ts",
+          "ref": "f5865562955c45fddb9f4c6ae7e657140d670a95",
+          "blob": "da535af5ac21967aff9f3696960d2ca69877c504",
+          "size": 12489,
+          "lines": 514
+        },
+        {
+          "path": "src/dock/dock.ts",
+          "ref": "f5865562955c45fddb9f4c6ae7e657140d670a95",
+          "blob": "8664421447162460b3b24ba00988e60157d3505d",
+          "size": 827,
+          "lines": 32
+        },
+        {
+          "path": "src/dock/dockcommon.ts",
+          "ref": "f5865562955c45fddb9f4c6ae7e657140d670a95",
+          "blob": "d81093a4209c144bc6dab96ae25fefaf6c01ffa1",
+          "size": 1534,
+          "lines": 72
+        },
+        {
+          "path": "src/dock/dockdefaultcfg.ts",
+          "ref": "f5865562955c45fddb9f4c6ae7e657140d670a95",
+          "blob": "9e8f18ed2af202641a00ef7e9f1e99dd6af72941",
+          "size": 5704,
+          "lines": 172
+        },
+        {
+          "path": "src/dock/dockentry.ts",
+          "ref": "f5865562955c45fddb9f4c6ae7e657140d670a95",
+          "blob": "d1168ceb92d043d832f5a5a929aeb173f8067b76",
+          "size": 19101,
+          "lines": 597
+        },
+        {
+          "path": "src/dock/dockparseusercfg.ts",
+          "ref": "f5865562955c45fddb9f4c6ae7e657140d670a95",
+          "blob": "7a3370b5a46efcbbb16b7558bc95b05f452396d0",
+          "size": 7293,
+          "lines": 248
+        },
+        {
+          "path": "src/dock/dockslot.ts",
+          "ref": "f5865562955c45fddb9f4c6ae7e657140d670a95",
+          "blob": "b9928fc276c0f6f79eaf72cd9a6ef0d463ef450d",
+          "size": 511,
+          "lines": 25
+        },
+        {
+          "path": "src/dock/dockstore.ts",
+          "ref": "f5865562955c45fddb9f4c6ae7e657140d670a95",
+          "blob": "ba13615f2f339aa2798902f0763b3e92bd64c204",
+          "size": 2737,
+          "lines": 100
+        },
+        {
+          "path": "src/driver/kwinconfig.ts",
+          "ref": "f5865562955c45fddb9f4c6ae7e657140d670a95",
+          "blob": "fb1c19668fa849f3ce5ea4b73cb36edd35796a84",
+          "size": 18058,
+          "lines": 553
+        },
+        {
+          "path": "src/driver/kwindbus.ts",
+          "ref": "f5865562955c45fddb9f4c6ae7e657140d670a95",
+          "blob": "d0e0657ebf74c975d4c99a2be920a328c80e6c57",
+          "size": 2408,
+          "lines": 80
+        },
+        {
+          "path": "src/driver/kwindriver.ts",
+          "ref": "f5865562955c45fddb9f4c6ae7e657140d670a95",
+          "blob": "e8d204cdc26a3df36d15d11df83a1b7b5222b573",
+          "size": 40386,
+          "lines": 1351
+        },
+        {
+          "path": "src/driver/kwinsettimeout.ts",
+          "ref": "f5865562955c45fddb9f4c6ae7e657140d670a95",
+          "blob": "8aec69d4d4928133752a399c57641c22e92e46e2",
+          "size": 1253,
+          "lines": 57
+        },
+        {
+          "path": "src/driver/kwinsurface.ts",
+          "ref": "f5865562955c45fddb9f4c6ae7e657140d670a95",
+          "blob": "3532fe56fb873c87fb28ed3793ace764d11fa261",
+          "size": 7753,
+          "lines": 263
+        },
+        {
+          "path": "src/driver/kwinwindow.ts",
+          "ref": "f5865562955c45fddb9f4c6ae7e657140d670a95",
+          "blob": "916d399cc3af039f2d38416dd8d8b6d319e9f775",
+          "size": 11002,
+          "lines": 355
+        },
+        {
+          "path": "src/engine/control.ts",
+          "ref": "f5865562955c45fddb9f4c6ae7e657140d670a95",
+          "blob": "a3bea7e5d92bc62afb79291bacd4b885e18a062b",
+          "size": 15587,
+          "lines": 497
+        },
+        {
+          "path": "src/engine/engine.ts",
+          "ref": "f5865562955c45fddb9f4c6ae7e657140d670a95",
+          "blob": "dafab79322cf2a9e3256943f51a93c56c5bb47f0",
+          "size": 28186,
+          "lines": 936
+        },
+        {
+          "path": "src/engine/enginecontext.ts",
+          "ref": "f5865562955c45fddb9f4c6ae7e657140d670a95",
+          "blob": "2451bedbc0d887f9e10d190681f1fe0199dd4659",
+          "size": 1821,
+          "lines": 68
+        },
+        {
+          "path": "src/engine/gaps.ts",
+          "ref": "f5865562955c45fddb9f4c6ae7e657140d670a95",
+          "blob": "2f5ef46469c51f66ff8a19815ac35c5cdd280a05",
+          "size": 5798,
+          "lines": 188
+        },
+        {
+          "path": "src/engine/layoutstore.ts",
+          "ref": "f5865562955c45fddb9f4c6ae7e657140d670a95",
+          "blob": "de1b091e921e5cd3e7eb02699d7b7c25c612d02f",
+          "size": 5037,
+          "lines": 167
+        },
+        {
+          "path": "src/engine/window.ts",
+          "ref": "f5865562955c45fddb9f4c6ae7e657140d670a95",
+          "blob": "5bdd7a601ef0a887ec4413d5292fe85d5d79edc5",
+          "size": 7455,
+          "lines": 278
+        },
+        {
+          "path": "src/engine/windowstore.ts",
+          "ref": "f5865562955c45fddb9f4c6ae7e657140d670a95",
+          "blob": "7400116fdabee36c72d2a24724fba64786e77621",
+          "size": 4146,
+          "lines": 134
+        },
+        {
+          "path": "src/extern/enums.ts",
+          "ref": "f5865562955c45fddb9f4c6ae7e657140d670a95",
+          "blob": "82b31b945eb0243bcabc8ccf6cf50a046bdf43e7",
+          "size": 955,
+          "lines": 58
+        },
+        {
+          "path": "src/extern/global.d.ts",
+          "ref": "f5865562955c45fddb9f4c6ae7e657140d670a95",
+          "blob": "925545e0fde7a733c1649cdb6e5ddd10fb590a45",
+          "size": 913,
+          "lines": 35
+        },
+        {
+          "path": "src/extern/kwin.d.ts",
+          "ref": "f5865562955c45fddb9f4c6ae7e657140d670a95",
+          "blob": "6673d179fc67f68cb3964a1aee3fa37d4f33a03b",
+          "size": 920,
+          "lines": 35
+        },
+        {
+          "path": "src/extern/output.kwin.d.ts",
+          "ref": "f5865562955c45fddb9f4c6ae7e657140d670a95",
+          "blob": "29ba20db161b10ba3f39ea95302135acfac3f08a",
+          "size": 573,
+          "lines": 25
+        },
+        {
+          "path": "src/extern/plasma.d.ts",
+          "ref": "f5865562955c45fddb9f4c6ae7e657140d670a95",
+          "blob": "c85cd259aa64db4e478b18fad2abc02efb34ec34",
+          "size": 1828,
+          "lines": 61
+        },
+        {
+          "path": "src/extern/qt.d.ts",
+          "ref": "f5865562955c45fddb9f4c6ae7e657140d670a95",
+          "blob": "00f79a9a2bc0d2099a00fe6d152d66984add271b",
+          "size": 1719,
+          "lines": 101
+        },
+        {
+          "path": "src/extern/tile.kwin.d.ts",
+          "ref": "f5865562955c45fddb9f4c6ae7e657140d670a95",
+          "blob": "48f7a1265149f6a9078c4ac7b874e908411c9e2a",
+          "size": 533,
+          "lines": 25
+        },
+        {
+          "path": "src/extern/virtualdesktop.kwin.d.ts",
+          "ref": "f5865562955c45fddb9f4c6ae7e657140d670a95",
+          "blob": "475a6193ffc1fac2462c7346cf08120749bdc7cd",
+          "size": 285,
+          "lines": 14
+        },
+        {
+          "path": "src/extern/window.kwin.d.ts",
+          "ref": "f5865562955c45fddb9f4c6ae7e657140d670a95",
+          "blob": "8f395c2347691f8147883c8cc3a8bc19ec9a17a2",
+          "size": 4711,
+          "lines": 162
+        },
+        {
+          "path": "src/extern/workspace.kwin.d.ts",
+          "ref": "f5865562955c45fddb9f4c6ae7e657140d670a95",
+          "blob": "b39df2e19027396299b32b7ec607af8aeb8eafbe",
+          "size": 4332,
+          "lines": 127
+        },
+        {
+          "path": "src/layouts/btreelayout.ts",
+          "ref": "f5865562955c45fddb9f4c6ae7e657140d670a95",
+          "blob": "6e355d679898e16f88ead613f951a4ffe4d8ce58",
+          "size": 3064,
+          "lines": 112
+        },
+        {
+          "path": "src/layouts/cascadelayout.ts",
+          "ref": "f5865562955c45fddb9f4c6ae7e657140d670a95",
+          "blob": "ff3de5fb33fc4c6595a3ebc98ff3728617217feb",
+          "size": 2888,
+          "lines": 119
+        },
+        {
+          "path": "src/layouts/column.ts",
+          "ref": "f5865562955c45fddb9f4c6ae7e657140d670a95",
+          "blob": "413ba535f321bfd508b0e0f6ac6919e7ae994e56",
+          "size": 3757,
+          "lines": 131
+        },
+        {
+          "path": "src/layouts/columns.ts",
+          "ref": "f5865562955c45fddb9f4c6ae7e657140d670a95",
+          "blob": "fb199d332c28d98f791bc80b85ae295704b022d5",
+          "size": 20608,
+          "lines": 612
+        },
+        {
+          "path": "src/layouts/floatinglayout.ts",
+          "ref": "f5865562955c45fddb9f4c6ae7e657140d670a95",
+          "blob": "901d919387d982680c91a9542e3fb607033b5e20",
+          "size": 787,
+          "lines": 35
+        },
+        {
+          "path": "src/layouts/layoutpart.ts",
+          "ref": "f5865562955c45fddb9f4c6ae7e657140d670a95",
+          "blob": "13f30ee2eef9fa779cb7bc7419d0f1c46e885604",
+          "size": 8116,
+          "lines": 302
+        },
+        {
+          "path": "src/layouts/layoututils.ts",
+          "ref": "f5865562955c45fddb9f4c6ae7e657140d670a95",
+          "blob": "be75ddaad4b6c45ddac6378ab3c62990278aea93",
+          "size": 7454,
+          "lines": 241
+        },
+        {
+          "path": "src/layouts/monoclelayout.ts",
+          "ref": "f5865562955c45fddb9f4c6ae7e657140d670a95",
+          "blob": "2c968803c780dc536da217ef424cd6e0e29726b1",
+          "size": 1947,
+          "lines": 82
+        },
+        {
+          "path": "src/layouts/quarterlayout.ts",
+          "ref": "f5865562955c45fddb9f4c6ae7e657140d670a95",
+          "blob": "4628af1cf21ac508c548fa95e8017d6d63dcb956",
+          "size": 5525,
+          "lines": 209
+        },
+        {
+          "path": "src/layouts/spirallayout.ts",
+          "ref": "f5865562955c45fddb9f4c6ae7e657140d670a95",
+          "blob": "3cd06a732b1c9ec71c812f4cb7e2aadfcec786e3",
+          "size": 2079,
+          "lines": 85
+        },
+        {
+          "path": "src/layouts/spreadlayout.ts",
+          "ref": "f5865562955c45fddb9f4c6ae7e657140d670a95",
+          "blob": "8bb100e284468c4275f6b314d300081c529708b2",
+          "size": 2026,
+          "lines": 78
+        },
+        {
+          "path": "src/layouts/stackedlayout.ts",
+          "ref": "f5865562955c45fddb9f4c6ae7e657140d670a95",
+          "blob": "b8e25f0e130e2502fdf30504a08d276b8e2dd0f2",
+          "size": 1637,
+          "lines": 75
+        },
+        {
+          "path": "src/layouts/stairlayout.ts",
+          "ref": "f5865562955c45fddb9f4c6ae7e657140d670a95",
+          "blob": "add57a34b1fb4ac0a4710155e83398648bf05b11",
+          "size": 1891,
+          "lines": 76
+        },
+        {
+          "path": "src/layouts/threecolumnlayout.ts",
+          "ref": "f5865562955c45fddb9f4c6ae7e657140d670a95",
+          "blob": "6d43e6fb3dc7ca89d42335731b8d5fbd2427ec28",
+          "size": 6766,
+          "lines": 229
+        },
+        {
+          "path": "src/layouts/tilelayout.ts",
+          "ref": "f5865562955c45fddb9f4c6ae7e657140d670a95",
+          "blob": "e349842d5cecf84f0b91a460acdb8bc6d5199d5c",
+          "size": 3431,
+          "lines": 141
+        },
+        {
+          "path": "src/util/debugwin.ts",
+          "ref": "f5865562955c45fddb9f4c6ae7e657140d670a95",
+          "blob": "bdcd2b9584a0c6a21f5111be3f8136a4be652c81",
+          "size": 2918,
+          "lines": 76
+        },
+        {
+          "path": "src/util/func.ts",
+          "ref": "f5865562955c45fddb9f4c6ae7e657140d670a95",
+          "blob": "d88040fe6e712684218d07238154291cc9d6c02e",
+          "size": 5849,
+          "lines": 217
+        },
+        {
+          "path": "src/util/kwinutil.ts",
+          "ref": "f5865562955c45fddb9f4c6ae7e657140d670a95",
+          "blob": "f6956d235d799cdf4de9af17c398103a6780d665",
+          "size": 376,
+          "lines": 15
+        },
+        {
+          "path": "src/util/log.ts",
+          "ref": "f5865562955c45fddb9f4c6ae7e657140d670a95",
+          "blob": "5fd1173d6b70c551233c0b16e394b57a8a7280ab",
+          "size": 6375,
+          "lines": 186
+        },
+        {
+          "path": "src/util/rect.ts",
+          "ref": "f5865562955c45fddb9f4c6ae7e657140d670a95",
+          "blob": "d280ba99d3a0c4e31b1532c0a51f62ba6c12d32b",
+          "size": 4722,
+          "lines": 209
+        },
+        {
+          "path": "src/util/rectdelta.ts",
+          "ref": "f5865562955c45fddb9f4c6ae7e657140d670a95",
+          "blob": "1198533dca3fb01dab53e70e233d3db209aa44af",
+          "size": 1052,
+          "lines": 45
+        },
+        {
+          "path": "src/util/validation.ts",
+          "ref": "f5865562955c45fddb9f4c6ae7e657140d670a95",
+          "blob": "db60d93b1c05599ef9f56f03e3fadc0e89b23750",
+          "size": 1763,
+          "lines": 74
+        },
+        {
+          "path": "src/util/windrose.ts",
+          "ref": "f5865562955c45fddb9f4c6ae7e657140d670a95",
+          "blob": "b30f8809b960579e76d7030f8ce64fabf288885c",
+          "size": 1554,
+          "lines": 74
+        },
+        {
+          "path": "src/util/wrappermap.ts",
+          "ref": "f5865562955c45fddb9f4c6ae7e657140d670a95",
+          "blob": "509f2cc0801dd9618b9e706ad645d3cf171934d6",
+          "size": 1033,
+          "lines": 44
+        },
+        {
+          "path": "tsconfig.json",
+          "ref": "f5865562955c45fddb9f4c6ae7e657140d670a95",
+          "blob": "91cfa6268081359e826e96c45305fac473b780fd",
+          "size": 282,
+          "lines": 15
+        },
+        {
+          "path": "tslint.json",
+          "ref": "f5865562955c45fddb9f4c6ae7e657140d670a95",
+          "blob": "d5d23425c38fef660a9ecee934c5d85cd57071e6",
+          "size": 400,
+          "lines": 16
+        }
+      ]
+    },
+    {
+      "repository": "Bismuth-Forge/bismuth",
+      "defaultSnapshotCommit": "ef69afe69f615149ab347e4402862ee900452a65",
+      "defaultSnapshotCommitDate": "2022-12-22T20:29:38Z",
+      "commitSubject": "docs: update README.md to include new Tumbleweed repo",
+      "acquiredFiles": [
+        {
+          "path": ".eslintrc.json",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "2079cc1ecf0111918016adc948936a9c5c8d7131",
+          "size": 1241,
+          "lines": 49
+        },
+        {
+          "path": "CMakeLists.txt",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "97e26f2ac82491ae5ad103eecc57fc967f1ceef2",
+          "size": 2488,
+          "lines": 82
+        },
+        {
+          "path": "LICENSE",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "31ff78791ee4e7126068edb4d3b360a74942c481",
+          "size": 16,
+          "lines": 10
+        },
+        {
+          "path": "LICENSES/BSD-3-Clause.txt",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "086d3992cb3a8f7000127bda96d6cbe673c8e788",
+          "size": 1459,
+          "lines": 12
+        },
+        {
+          "path": "LICENSES/CC-BY-4.0.txt",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "13ca539f377dc705af32b8d2ce89262298ea2f06",
+          "size": 17023,
+          "lines": 157
+        },
+        {
+          "path": "LICENSES/LGPL-3.0-or-later.txt",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "c9287dd363f6297420bfc4e43a6e9d4f7cee5807",
+          "size": 7427,
+          "lines": 72
+        },
+        {
+          "path": "LICENSES/MIT.txt",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "2071b23b0e08594ea6bc99ac71129ef992abf498",
+          "size": 1078,
+          "lines": 10
+        },
+        {
+          "path": "Makefile",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "2be0af38ae3b64e0e02bcc85bc9f49097cdaff9f",
+          "size": 557,
+          "lines": 38
+        },
+        {
+          "path": "README.md",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "95e693f20507a36eafcf0c3781a2994dae19ee06",
+          "size": 4143,
+          "lines": 145
+        },
+        {
+          "path": "package.json",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "5738b4a6e797cdcf036d020371071ff275c3ebfe",
+          "size": 711,
+          "lines": 26
+        },
+        {
+          "path": "src/CMakeLists.txt",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "649072b3663414be76e8294b2163f9492085ac17",
+          "size": 234,
+          "lines": 9
+        },
+        {
+          "path": "src/config/CMakeLists.txt",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "65c787564bb60a29eba7be1ac33c0bfae1077bdd",
+          "size": 229,
+          "lines": 9
+        },
+        {
+          "path": "src/config/kconf_update/CMakeLists.txt",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "dff21ef262198fa3272a2c9b2d347b8bc9a45930",
+          "size": 340,
+          "lines": 8
+        },
+        {
+          "path": "src/core/CMakeLists.txt",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "698eaf0578421a2553682ed09aea2aba83732838",
+          "size": 1162,
+          "lines": 49
+        },
+        {
+          "path": "src/core/controller.cpp",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "736fe0c5a71e625e854302dcd2ca6cfac89d107b",
+          "size": 1618,
+          "lines": 58
+        },
+        {
+          "path": "src/core/controller.hpp",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "96814f33bc01a3c598a59fd8db270df8e43627c5",
+          "size": 783,
+          "lines": 43
+        },
+        {
+          "path": "src/core/kconf_update/CMakeLists.txt",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "f410260d5cf1caaed1fd458d2187cf8870ec57c5",
+          "size": 158,
+          "lines": 5
+        },
+        {
+          "path": "src/core/kconf_update/legacy_shortcuts.cpp",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "6ac6a8205eded080e8e8422e915533e1f6fc4f40",
+          "size": 4677,
+          "lines": 103
+        },
+        {
+          "path": "src/core/kconf_update/legacy_shortcuts.hpp",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "9dfcbd7bc036e357173ad861eb9874a8fdec239d",
+          "size": 248,
+          "lines": 15
+        },
+        {
+          "path": "src/core/qml-plugin.cpp",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "1320ee73b27c2c639697fc046377b562f9bc73d3",
+          "size": 1232,
+          "lines": 56
+        },
+        {
+          "path": "src/core/qml-plugin.hpp",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "f8e37b79dfeca3814be7d3bb0c30ba83a1ef2217",
+          "size": 1183,
+          "lines": 57
+        },
+        {
+          "path": "src/core/ts-proxy.cpp",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "dd91fed4734e38dc3b7d5def8aedf3433839760f",
+          "size": 4929,
+          "lines": 134
+        },
+        {
+          "path": "src/core/ts-proxy.hpp",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "91829db9b8eebee107e9b74e5a7624efb3b00773",
+          "size": 915,
+          "lines": 48
+        },
+        {
+          "path": "src/kcm/CMakeLists.txt",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "aa5088446a3b868e591a3998bcafd735a81f6f8a",
+          "size": 938,
+          "lines": 36
+        },
+        {
+          "path": "src/kcm/bismuth.cpp",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "cde969e1869a293a04c28540ed586eb0a853779c",
+          "size": 1956,
+          "lines": 62
+        },
+        {
+          "path": "src/kcm/bismuth.h",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "272f302965dc205c4cc786359acec4dd81cb5c9d",
+          "size": 627,
+          "lines": 32
+        },
+        {
+          "path": "src/kcm/icons/CMakeLists.txt",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "43188a9f549907cebe9aea4f5c99b552b7daa441",
+          "size": 245,
+          "lines": 7
+        },
+        {
+          "path": "src/kcm/org.kde.KWin.xml",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "39df7e5f3a5b0eeda72d6e089259bb0845015615",
+          "size": 483,
+          "lines": 13
+        },
+        {
+          "path": "src/kcm/package/contents/ui/Appearance.qml",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "7be410aa66cecd435891f933615190389ee88711",
+          "size": 1356,
+          "lines": 59
+        },
+        {
+          "path": "src/kcm/package/contents/ui/Behaviour.qml",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "a976cf5cb2becfcf9dda6449e5809cbdc84ac34f",
+          "size": 4054,
+          "lines": 161
+        },
+        {
+          "path": "src/kcm/package/contents/ui/components/ConfigCheckBox.qml",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "90658857503fcaf9f8e5101606f21a8e8503164a",
+          "size": 513,
+          "lines": 25
+        },
+        {
+          "path": "src/kcm/package/contents/ui/components/ConfigSpinBox.qml",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "2330b1e575d7bab02ac9f3d837fd2d75c9b33f22",
+          "size": 713,
+          "lines": 29
+        },
+        {
+          "path": "src/kcm/package/contents/ui/components/ConfigTextField.qml",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "c76eeb4be5e9a4eada2dd699bab9ae1131a5f9a3",
+          "size": 516,
+          "lines": 25
+        },
+        {
+          "path": "src/kcm/package/contents/ui/components/PixelsConfigSpinBox.qml",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "865e6b5dfdeb357ad78ad90d780cbe202b267fd9",
+          "size": 557,
+          "lines": 21
+        },
+        {
+          "path": "src/kcm/package/contents/ui/components/RatioConfigSpinBox.qml",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "8d3296a3c363214b821d4a155acb37d987d8a718",
+          "size": 1254,
+          "lines": 45
+        },
+        {
+          "path": "src/kcm/package/contents/ui/main.qml",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "b59aab978c3d0fff252153e937e104d0962d2740",
+          "size": 1837,
+          "lines": 69
+        },
+        {
+          "path": "src/kcm/package/contents/ui/views/Layouts.qml",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "cd59dc1d3d5cb507fe114fcee87676ee35434a59",
+          "size": 2511,
+          "lines": 112
+        },
+        {
+          "path": "src/kcm/package/contents/ui/views/MonocleOverlay.qml",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "4ec1a86ec8d2da5ef211a13b5a2e69e8b7747306",
+          "size": 767,
+          "lines": 32
+        },
+        {
+          "path": "src/kcm/package/contents/ui/views/WindowRules.qml",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "da989b0ea57b98745274d361c0117899e4312168",
+          "size": 1793,
+          "lines": 68
+        },
+        {
+          "path": "src/kcm/package/contents/ui/views/WorkspaceRules.qml",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "3c1953745fe20f9efb5fe3c616ec2cc3359530f2",
+          "size": 1060,
+          "lines": 42
+        },
+        {
+          "path": "src/kdecoration/CMakeLists.txt",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "1e861064029408e3fc16e778153c42331372b8d9",
+          "size": 523,
+          "lines": 19
+        },
+        {
+          "path": "src/kdecoration/decoration.cpp",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "b962ada4552614229bb77c1f2b151be618957bbb",
+          "size": 3576,
+          "lines": 128
+        },
+        {
+          "path": "src/kdecoration/decoration.hpp",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "e3a9419fe37aac3090c91f1128b0d4bb6a6d003e",
+          "size": 1131,
+          "lines": 50
+        },
+        {
+          "path": "src/kdecoration/metadata.json",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "b514ed4421d8525561a677e8aea5287f7d7a4722",
+          "size": 361,
+          "lines": 14
+        },
+        {
+          "path": "src/kwinscript/CMakeLists.txt",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "9e2f7054609ab19346c0846e7cdf935a87789992",
+          "size": 2493,
+          "lines": 70
+        },
+        {
+          "path": "src/kwinscript/config.ts",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "4241ec034b522da391d516501d52b3a1962269c2",
+          "size": 1219,
+          "lines": 56
+        },
+        {
+          "path": "src/kwinscript/controller/action.ts",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "c83da63fc8b63e3eeb44f6dab2520d36ecc88b97",
+          "size": 14711,
+          "lines": 602
+        },
+        {
+          "path": "src/kwinscript/controller/index.ts",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "c5adb7fb114867a023addfa83bbc4db979375e15",
+          "size": 13610,
+          "lines": 448
+        },
+        {
+          "path": "src/kwinscript/driver/index.ts",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "f9cfdf156366acfaf419d1ecfd9f78eaedac307f",
+          "size": 12259,
+          "lines": 432
+        },
+        {
+          "path": "src/kwinscript/driver/surface.ts",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "afa4a7f51bd4ec20c8e9e528fbb10af94f0cf027",
+          "size": 2478,
+          "lines": 98
+        },
+        {
+          "path": "src/kwinscript/driver/window.ts",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "d5790756a2ed0642a8bf29b73d7516fa2be04ebd",
+          "size": 9277,
+          "lines": 342
+        },
+        {
+          "path": "src/kwinscript/engine/index.ts",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "c6539301be64c90754f952f8994baeeb82ccb5ae",
+          "size": 20714,
+          "lines": 742
+        },
+        {
+          "path": "src/kwinscript/engine/layout/cascade_layout.ts",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "4792096b144dabbad1b9d232efae61070f57d7c1",
+          "size": 3129,
+          "lines": 118
+        },
+        {
+          "path": "src/kwinscript/engine/layout/floating_layout.ts",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "5ee0ebc2b0bc51be4220838a4105ce41a1fd58d3",
+          "size": 1001,
+          "lines": 39
+        },
+        {
+          "path": "src/kwinscript/engine/layout/index.ts",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "e70a9a591af36bacfc0737f253e20f3e04d92711",
+          "size": 1225,
+          "lines": 57
+        },
+        {
+          "path": "src/kwinscript/engine/layout/layout_part.ts",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "46948502a492b0d5f43c435f77068e79bdb2fcab",
+          "size": 8112,
+          "lines": 310
+        },
+        {
+          "path": "src/kwinscript/engine/layout/layout_utils.ts",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "0a55c2758c4d6241cec103e50a2a590a4c77b9d8",
+          "size": 7226,
+          "lines": 233
+        },
+        {
+          "path": "src/kwinscript/engine/layout/monocle_layout.ts",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "f370856b7cb0bd57740c3f5403a24567c347c282",
+          "size": 1935,
+          "lines": 79
+        },
+        {
+          "path": "src/kwinscript/engine/layout/quarter_layout.ts",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "f85c4fff362f38f9ee3359ee1cfbaf611d12da29",
+          "size": 5608,
+          "lines": 216
+        },
+        {
+          "path": "src/kwinscript/engine/layout/spiral_layout.ts",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "6e0b74ade4a38aa5abe07e4012061ef5e3019492",
+          "size": 2697,
+          "lines": 111
+        },
+        {
+          "path": "src/kwinscript/engine/layout/spread_layout.ts",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "ae9eecd757fb989e0afa6a49d4577c108bca3b5a",
+          "size": 2286,
+          "lines": 84
+        },
+        {
+          "path": "src/kwinscript/engine/layout/stair_layout.ts",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "cfb6426f6490b40f35ea9b339b61c42ded50521f",
+          "size": 2072,
+          "lines": 80
+        },
+        {
+          "path": "src/kwinscript/engine/layout/three_column_layout.ts",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "db046ad456880bf69884da095c939f9916a01b86",
+          "size": 7612,
+          "lines": 246
+        },
+        {
+          "path": "src/kwinscript/engine/layout/tile_layout.ts",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "b17b3cdb0c61e8db822e1dc0fd6ad76b9c289e60",
+          "size": 4055,
+          "lines": 150
+        },
+        {
+          "path": "src/kwinscript/engine/layout_store.ts",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "8d1e8a68f24f2fdfeeca571f0edb3f76770ed3b6",
+          "size": 4081,
+          "lines": 142
+        },
+        {
+          "path": "src/kwinscript/engine/window.ts",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "3dd21b9d7e2c9882d315e6af2617356ce3b80e7c",
+          "size": 9073,
+          "lines": 391
+        },
+        {
+          "path": "src/kwinscript/engine/window_store.ts",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "4792b893f14d6acb102a9d6bfd371554bc75a1f6",
+          "size": 4251,
+          "lines": 165
+        },
+        {
+          "path": "src/kwinscript/extern/global.d.ts",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "382183d2b740b4806c816c1d18acabf33134cd1f",
+          "size": 887,
+          "lines": 30
+        },
+        {
+          "path": "src/kwinscript/extern/kwin.d.ts",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "2d427cf64be3e8ad7010e9622bb5057cfe765fda",
+          "size": 6317,
+          "lines": 287
+        },
+        {
+          "path": "src/kwinscript/extern/plasma.d.ts",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "a6c14e7177190fc85c82f8d4783942052e3ce30a",
+          "size": 1867,
+          "lines": 61
+        },
+        {
+          "path": "src/kwinscript/extern/proxy.d.ts",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "949dee4a2f5d265b9cadbeeca00e542bd3105043",
+          "size": 302,
+          "lines": 12
+        },
+        {
+          "path": "src/kwinscript/extern/qt.d.ts",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "62a1a8281935fa541c1a9ff8bcdfdae56746bd43",
+          "size": 1057,
+          "lines": 54
+        },
+        {
+          "path": "src/kwinscript/icons/CMakeLists.txt",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "0c73ca01b9c2c7d13b67fcb9b35044f99f8584b5",
+          "size": 661,
+          "lines": 24
+        },
+        {
+          "path": "src/kwinscript/index.ts",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "e6a9a0f499fb4b70e7aaeafeae2eaf66eec5ea14",
+          "size": 867,
+          "lines": 35
+        },
+        {
+          "path": "src/kwinscript/kconf_update/CMakeLists.txt",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "69fe0104d1e852e11f300d6d4bd4f1f04ffe22b0",
+          "size": 288,
+          "lines": 8
+        },
+        {
+          "path": "src/kwinscript/ui/main.qml",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "61b04b133406ed19b6525770189aea2860475b25",
+          "size": 1428,
+          "lines": 59
+        },
+        {
+          "path": "src/kwinscript/ui/popup.qml",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "78aa97895ff72abc0d93c8dda02fc11b780a3cbc",
+          "size": 3425,
+          "lines": 103
+        },
+        {
+          "path": "src/kwinscript/util/func.ts",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "ef7e8163843b2c69f9b4a544c8952914937b5ad6",
+          "size": 3011,
+          "lines": 116
+        },
+        {
+          "path": "src/kwinscript/util/log.ts",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "0428b5d2d34e916b9b2b0ce22d077b5f9e095977",
+          "size": 510,
+          "lines": 23
+        },
+        {
+          "path": "src/kwinscript/util/rect.ts",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "2157b4e5cc387705a80bc46b2c9f3bc3f33a4858",
+          "size": 2951,
+          "lines": 125
+        },
+        {
+          "path": "tests/CMakeLists.txt",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "7ac2709ac6da2db3b2f56c9da47cdcbd94658b28",
+          "size": 141,
+          "lines": 7
+        },
+        {
+          "path": "tests/core/CMakeLists.txt",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "0b0db6792d348fc50df82d9e6b880a7d896a0113",
+          "size": 405,
+          "lines": 19
+        },
+        {
+          "path": "tests/core/main.cpp",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "bb2c95c35c5ef8aeaeac8dfd42743812828f72a6",
+          "size": 610,
+          "lines": 26
+        },
+        {
+          "path": "tsconfig.json",
+          "ref": "ef69afe69f615149ab347e4402862ee900452a65",
+          "blob": "6747a6c8121f4540b5889cf7767057d362a7efe8",
+          "size": 490,
+          "lines": 24
+        }
+      ]
+    },
+    {
+      "repository": "zeroxoneafour/polonium",
+      "defaultSnapshotCommit": "227967ed448205d42b5e63e4cc4b868d72606467",
+      "defaultSnapshotCommitDate": "2026-09-08T19:53:45Z",
+      "commitSubject": "Merge pull request #217 from snis/feature/ultrawide-single-window",
+      "acquiredFiles": [
+        {
+          "path": ".vscode/extensions.json",
+          "ref": "227967ed448205d42b5e63e4cc4b868d72606467",
+          "blob": "aebec5a4a90c498b09dee4499ae9dfad37e4559b",
+          "size": 81,
+          "lines": 4
+        },
+        {
+          "path": ".vscode/settings.json",
+          "ref": "227967ed448205d42b5e63e4cc4b868d72606467",
+          "blob": "4988eb6eb3bf5dc551dbcdc8e699f6b1cd4fcf72",
+          "size": 69,
+          "lines": 6
+        },
+        {
+          "path": "Makefile",
+          "ref": "227967ed448205d42b5e63e4cc4b868d72606467",
+          "blob": "4a078d61d27215d609ca5788d8fb80cbbe23ad4b",
+          "size": 2112,
+          "lines": 83
+        },
+        {
+          "path": "eslint.config.mjs",
+          "ref": "227967ed448205d42b5e63e4cc4b868d72606467",
+          "blob": "6ee0e41ab2f6c27402c6ec733da80c2642175512",
+          "size": 489,
+          "lines": 20
+        },
+        {
+          "path": "package.json",
+          "ref": "227967ed448205d42b5e63e4cc4b868d72606467",
+          "blob": "4c5f5e93e2a21395525e2e633f6bbd97784e3939",
+          "size": 862,
+          "lines": 34
+        },
+        {
+          "path": "res/main.js",
+          "ref": "227967ed448205d42b5e63e4cc4b868d72606467",
+          "blob": "af88273001df43d2320625ae1fa62f6bc0a2e768",
+          "size": 141,
+          "lines": 4
+        },
+        {
+          "path": "res/main.xml",
+          "ref": "227967ed448205d42b5e63e4cc4b868d72606467",
+          "blob": "b0326f6892c510a93d62d59cf0e9f864f5b02cb4",
+          "size": 3675,
+          "lines": 58
+        },
+        {
+          "path": "res/metadata.json",
+          "ref": "227967ed448205d42b5e63e4cc4b868d72606467",
+          "blob": "1bc39aba696f9ac8ced52d6f4c8b35f68bcfbd0f",
+          "size": 698,
+          "lines": 23
+        },
+        {
+          "path": "src/controller/config.ts",
+          "ref": "227967ed448205d42b5e63e4cc4b868d72606467",
+          "blob": "0a8f4810bfa73bd2b460071e6b2e08d838166891",
+          "size": 5492,
+          "lines": 161
+        },
+        {
+          "path": "src/controller/console.ts",
+          "ref": "227967ed448205d42b5e63e4cc4b868d72606467",
+          "blob": "774cd26b48bb653a556005846679c82fd951be1e",
+          "size": 842,
+          "lines": 30
+        },
+        {
+          "path": "src/controller/event.ts",
+          "ref": "227967ed448205d42b5e63e4cc4b868d72606467",
+          "blob": "267f09ecad31c05e3d8a88c8ceb9aeef50649c6b",
+          "size": 8420,
+          "lines": 283
+        },
+        {
+          "path": "src/controller/handlers/dbus.ts",
+          "ref": "227967ed448205d42b5e63e4cc4b868d72606467",
+          "blob": "a8f1b1a802398b60abd3999c656444ffb0eac606",
+          "size": 2485,
+          "lines": 87
+        },
+        {
+          "path": "src/controller/handlers/index.ts",
+          "ref": "227967ed448205d42b5e63e4cc4b868d72606467",
+          "blob": "d697bf02936d9aaaa238f36b6a0231e2b89e3ba8",
+          "size": 222,
+          "lines": 6
+        },
+        {
+          "path": "src/controller/handlers/settings.ts",
+          "ref": "227967ed448205d42b5e63e4cc4b868d72606467",
+          "blob": "c1861d9545367efe0bd9b7a913c156abd4f86a9c",
+          "size": 1749,
+          "lines": 66
+        },
+        {
+          "path": "src/controller/handlers/shortcuts.ts",
+          "ref": "227967ed448205d42b5e63e4cc4b868d72606467",
+          "blob": "750d0d9535a9834a5870efabd76ae2420dc8df9b",
+          "size": 11901,
+          "lines": 340
+        },
+        {
+          "path": "src/controller/handlers/window.ts",
+          "ref": "227967ed448205d42b5e63e4cc4b868d72606467",
+          "blob": "b6c54257f1a4a34fa04cbf4bc3dadd51d8e09986",
+          "size": 8960,
+          "lines": 280
+        },
+        {
+          "path": "src/controller/handlers/workspace.ts",
+          "ref": "227967ed448205d42b5e63e4cc4b868d72606467",
+          "blob": "4f73c6d3209fc7d9b04b982dc386e1031fde056b",
+          "size": 3755,
+          "lines": 113
+        },
+        {
+          "path": "src/controller/index.ts",
+          "ref": "227967ed448205d42b5e63e4cc4b868d72606467",
+          "blob": "b273440b871ffcb51523fb5f46b416171c4df6d2",
+          "size": 24966,
+          "lines": 687
+        },
+        {
+          "path": "src/driver/buildlayout.ts",
+          "ref": "227967ed448205d42b5e63e4cc4b868d72606467",
+          "blob": "e32f1188d283e23d8398ebb721194c326faf7c42",
+          "size": 7125,
+          "lines": 190
+        },
+        {
+          "path": "src/driver/index.ts",
+          "ref": "227967ed448205d42b5e63e4cc4b868d72606467",
+          "blob": "2a042cbdcd82338af571587df0e38ee566fcec14",
+          "size": 16569,
+          "lines": 479
+        },
+        {
+          "path": "src/driver/updatetiles.ts",
+          "ref": "227967ed448205d42b5e63e4cc4b868d72606467",
+          "blob": "e7092f929bc445d529c2220719e9ee9c01e30eb6",
+          "size": 2193,
+          "lines": 69
+        },
+        {
+          "path": "src/engine/engine.ts",
+          "ref": "227967ed448205d42b5e63e4cc4b868d72606467",
+          "blob": "dc4520e8d733b7981bec90c69bc474cb6d52a051",
+          "size": 5180,
+          "lines": 173
+        },
+        {
+          "path": "src/engine/index.ts",
+          "ref": "227967ed448205d42b5e63e4cc4b868d72606467",
+          "blob": "3442e2ca2904110b1a27d876f6618e137ddc3748",
+          "size": 3046,
+          "lines": 96
+        },
+        {
+          "path": "src/engine/layouts/btree.ts",
+          "ref": "227967ed448205d42b5e63e4cc4b868d72606467",
+          "blob": "37896c64ce35bfeeb0d83faf8b0f8907afb76ed9",
+          "size": 7703,
+          "lines": 239
+        },
+        {
+          "path": "src/engine/layouts/half.ts",
+          "ref": "227967ed448205d42b5e63e4cc4b868d72606467",
+          "blob": "2af583345fa3f50048d26c8f4528119a69719874",
+          "size": 8598,
+          "lines": 241
+        },
+        {
+          "path": "src/engine/layouts/kwin.ts",
+          "ref": "227967ed448205d42b5e63e4cc4b868d72606467",
+          "blob": "b056a030381422eebb72109e675534ca8b4666be",
+          "size": 1546,
+          "lines": 50
+        },
+        {
+          "path": "src/engine/layouts/pager.ts",
+          "ref": "227967ed448205d42b5e63e4cc4b868d72606467",
+          "blob": "019efce4eae243e7e4272e33dba46d775db812a8",
+          "size": 3397,
+          "lines": 114
+        },
+        {
+          "path": "src/engine/layouts/pillars.ts",
+          "ref": "227967ed448205d42b5e63e4cc4b868d72606467",
+          "blob": "5fd13c5c9267447f2209a6e025fb123e95125351",
+          "size": 9805,
+          "lines": 283
+        },
+        {
+          "path": "src/engine/layouts/stackingcommon.ts",
+          "ref": "227967ed448205d42b5e63e4cc4b868d72606467",
+          "blob": "c1036b3765ffbedf4adf1ed75c1e6d0a1e3ddb1b",
+          "size": 1000,
+          "lines": 42
+        },
+        {
+          "path": "src/engine/layouts/threecolumn.ts",
+          "ref": "227967ed448205d42b5e63e4cc4b868d72606467",
+          "blob": "4ee3149093c9315d67c0be3dc627078b6115a8d4",
+          "size": 8688,
+          "lines": 253
+        },
+        {
+          "path": "src/extern/index.ts",
+          "ref": "227967ed448205d42b5e63e4cc4b868d72606467",
+          "blob": "2cff31c20fb983b8b64652c6adfd0ae18cc43817",
+          "size": 2125,
+          "lines": 80
+        },
+        {
+          "path": "src/index.ts",
+          "ref": "227967ed448205d42b5e63e4cc4b868d72606467",
+          "blob": "25575f7f8862eb344a3b1def5031ef5c047f98ae",
+          "size": 356,
+          "lines": 11
+        },
+        {
+          "path": "src/qml/dbus.qml",
+          "ref": "227967ed448205d42b5e63e4cc4b868d72606467",
+          "blob": "d660635c6928a4dd31dd347c53330bde69a88e17",
+          "size": 878,
+          "lines": 42
+        },
+        {
+          "path": "src/qml/main.qml",
+          "ref": "227967ed448205d42b5e63e4cc4b868d72606467",
+          "blob": "2303527566d42d94b5889ea49f3a55e152009000",
+          "size": 958,
+          "lines": 51
+        },
+        {
+          "path": "src/qml/settings.qml",
+          "ref": "227967ed448205d42b5e63e4cc4b868d72606467",
+          "blob": "be0acd19ea916e828bd57d365376beb40601ede1",
+          "size": 8435,
+          "lines": 273
+        },
+        {
+          "path": "src/qml/shortcuts.qml",
+          "ref": "227967ed448205d42b5e63e4cc4b868d72606467",
+          "blob": "b3607d4b945adef211e766ed6a62b01ea9702ac9",
+          "size": 6387,
+          "lines": 281
+        },
+        {
+          "path": "src/util/geometry.ts",
+          "ref": "227967ed448205d42b5e63e4cc4b868d72606467",
+          "blob": "fa2296b3aca1ad94e71b66c4a70473ed016de000",
+          "size": 2350,
+          "lines": 66
+        },
+        {
+          "path": "src/util/index.ts",
+          "ref": "227967ed448205d42b5e63e4cc4b868d72606467",
+          "blob": "eccb94866af87c60f7dcd2b236af945497774d03",
+          "size": 184,
+          "lines": 5
+        },
+        {
+          "path": "src/util/queue.ts",
+          "ref": "227967ed448205d42b5e63e4cc4b868d72606467",
+          "blob": "b045ed7a8cc56301773b4361979454c8faa714ff",
+          "size": 2340,
+          "lines": 96
+        },
+        {
+          "path": "src/util/stack.ts",
+          "ref": "227967ed448205d42b5e63e4cc4b868d72606467",
+          "blob": "53987cc73f64233a3981d43a3d9d4c1b21ceb93c",
+          "size": 1953,
+          "lines": 85
+        },
+        {
+          "path": "src/util/stacklike.ts",
+          "ref": "227967ed448205d42b5e63e4cc4b868d72606467",
+          "blob": "f90a9cd3b1ea4263582cb24737d865357a14fa25",
+          "size": 1351,
+          "lines": 61
+        },
+        {
+          "path": "tsconfig.json",
+          "ref": "227967ed448205d42b5e63e4cc4b868d72606467",
+          "blob": "8edb8630ef32a2f1e1f39bc4750fca509555a549",
+          "size": 277,
+          "lines": 13
+        }
+      ]
+    },
+    {
+      "repository": "peterfajdiga/karousel",
+      "defaultSnapshotCommit": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+      "defaultSnapshotCommitDate": "2026-08-23T12:11:18Z",
+      "commitSubject": "Improve detection of edge resize",
+      "acquiredFiles": [
+        {
+          "path": ".vscode/launch.json",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "1a6c65a3e0f6d77051f3eae2cc5af7b6b51e60e9",
+          "size": 768,
+          "lines": 27
+        },
+        {
+          "path": ".vscode/settings.json",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "40f09a9db24d8a5673fd7ece4a1dbd2187cb2d1e",
+          "size": 152,
+          "lines": 8
+        },
+        {
+          "path": ".vscode/tasks.json",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "c80e53d71de93d569aa97da5000e6d43b06626e3",
+          "size": 204,
+          "lines": 11
+        },
+        {
+          "path": "LICENSE",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "f288702d2fa16d3cdf0035b15a9fcbc552cd88e7",
+          "size": 35149,
+          "lines": 675
+        },
+        {
+          "path": "Makefile",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "b47ef8f32c61affe52f3841e0141e7ebc6656701",
+          "size": 1019,
+          "lines": 39
+        },
+        {
+          "path": "README.md",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "019ae9cef1f4d1fd917ffbc03ece72aa6b5b99a2",
+          "size": 9697,
+          "lines": 87
+        },
+        {
+          "path": "eslint.config.mjs",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "1d7ec6fd7c5575157e9e51469cc9d5e8a16939fd",
+          "size": 322,
+          "lines": 16
+        },
+        {
+          "path": "package.json",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "290eee2a5e36603c9d39e2e95c825ddb613589a8",
+          "size": 119,
+          "lines": 8
+        },
+        {
+          "path": "package/contents/ui/main.qml",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "4c5db2f47f9a69f595a598f2bafbebfc0d44e010",
+          "size": 2225,
+          "lines": 74
+        },
+        {
+          "path": "package/metadata.json",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "c55b71e6706b606c8b804fe4a2e7b6bf3762b200",
+          "size": 742,
+          "lines": 22
+        },
+        {
+          "path": "src/extern/global.d.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "f88762d340435b2a6d4e73d9411c63084d0d9c13",
+          "size": 344,
+          "lines": 9
+        },
+        {
+          "path": "src/generators/config/main.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "af424bb1cb4b6dc58c5e2cc99745f576d52a362c",
+          "size": 789,
+          "lines": 25
+        },
+        {
+          "path": "src/generators/config/tsconfig.json",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "19449826414804f48ebd0d70d98a5435a6ac4440",
+          "size": 137,
+          "lines": 9
+        },
+        {
+          "path": "src/generators/docs/keyBindings.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "81913a15070a19e843efb18b9e23615be86a2fa1",
+          "size": 1992,
+          "lines": 69
+        },
+        {
+          "path": "src/generators/docs/keyBindingsBbcode/main.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "97656e42e0109081d1c0d979168aaf9fa0de14bf",
+          "size": 166,
+          "lines": 8
+        },
+        {
+          "path": "src/generators/docs/keyBindingsBbcode/tsconfig.json",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "547862f5ed565318b87e0a4ffd73744be913c93e",
+          "size": 175,
+          "lines": 10
+        },
+        {
+          "path": "src/generators/docs/keyBindingsFmt/main.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "7a4aaee011cec2d7dfb9d7694cc51d4c383bf618",
+          "size": 192,
+          "lines": 10
+        },
+        {
+          "path": "src/generators/docs/keyBindingsFmt/tsconfig.json",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "547862f5ed565318b87e0a4ffd73744be913c93e",
+          "size": 175,
+          "lines": 10
+        },
+        {
+          "path": "src/generators/docs/keyBindingsMarkdown/main.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "f8cc0195f38c05ea7fc849a89d4742c5da982bdd",
+          "size": 258,
+          "lines": 14
+        },
+        {
+          "path": "src/generators/docs/keyBindingsMarkdown/tsconfig.json",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "547862f5ed565318b87e0a4ffd73744be913c93e",
+          "size": 175,
+          "lines": 10
+        },
+        {
+          "path": "src/lib/behavior/PresetWidths.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "8ed9c7faacb8f67831877fdcdfcd28ff0d7ed828",
+          "size": 2468,
+          "lines": 63
+        },
+        {
+          "path": "src/lib/behavior/columnResizer/ContextualResizer.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "97dd485d2b9978fa843345b54cc7eb06abe01e20",
+          "size": 4550,
+          "lines": 108
+        },
+        {
+          "path": "src/lib/behavior/columnResizer/RawResizer.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "48598237ee6009254dc3010235fb5e6653d90fee",
+          "size": 1580,
+          "lines": 44
+        },
+        {
+          "path": "src/lib/behavior/scrollClamper/CenterClamper.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "ba660d6cac8517677a493745658e216a7adbb5dd",
+          "size": 533,
+          "lines": 14
+        },
+        {
+          "path": "src/lib/behavior/scrollClamper/EdgeClamper.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "79e14acbac97c46170fbb1a6fca90c3a2dc444b4",
+          "size": 322,
+          "lines": 11
+        },
+        {
+          "path": "src/lib/behavior/scroller/CenteredScroller.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "286e61b6063463df49abe5e40d58286bb7b4b694",
+          "size": 138,
+          "lines": 6
+        },
+        {
+          "path": "src/lib/behavior/scroller/GroupedScroller.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "3c5f46cc7bc6855b7ab94de9cc2e289ccb8aa95f",
+          "size": 139,
+          "lines": 6
+        },
+        {
+          "path": "src/lib/behavior/scroller/LazyScroller.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "8b9c079d2b40b4b826d4fe769ef3cce5583e4d92",
+          "size": 131,
+          "lines": 6
+        },
+        {
+          "path": "src/lib/config/config.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "0f22600795b07e066c8753b9a1b1b96ca5440cb2",
+          "size": 845,
+          "lines": 31
+        },
+        {
+          "path": "src/lib/config/definition.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "3a76fea2b986fbe894e3b2e9052731ddf1d5f624",
+          "size": 3941,
+          "lines": 208
+        },
+        {
+          "path": "src/lib/extern/dbuscall.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "b112aac9256947685eaf418833fe3c351c8c3477",
+          "size": 59,
+          "lines": 4
+        },
+        {
+          "path": "src/lib/extern/global.d.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "b9ccdc11ce2662d26e5e25c82eb0a3d74c71961a",
+          "size": 32,
+          "lines": 2
+        },
+        {
+          "path": "src/lib/extern/kwin.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "dbc983cba1650af9dcdffe1d77dd4656447a5fb2",
+          "size": 3222,
+          "lines": 115
+        },
+        {
+          "path": "src/lib/extern/notification.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "557911316e51f8d7400cdfc3505e9a8faa1c9a68",
+          "size": 68,
+          "lines": 4
+        },
+        {
+          "path": "src/lib/extern/qt.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "3d7b164850281376cb153bb655c50ed8f473dc00",
+          "size": 963,
+          "lines": 53
+        },
+        {
+          "path": "src/lib/keyBindings/Actions.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "1d5684182b80fc29d7134a355f6c516aecd89882",
+          "size": 21751,
+          "lines": 546
+        },
+        {
+          "path": "src/lib/keyBindings/definition.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "d87299c47b0ec987df5436432568249a18953290",
+          "size": 12670,
+          "lines": 314
+        },
+        {
+          "path": "src/lib/keyBindings/loader.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "23a5f8c9ba6c9b6a136d856413d08c9172e6f36b",
+          "size": 1911,
+          "lines": 69
+        },
+        {
+          "path": "src/lib/layout/Column.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "ea850b9feb2b58a2a1973c3cba4d253485cb5d30",
+          "size": 11012,
+          "lines": 346
+        },
+        {
+          "path": "src/lib/layout/Desktop.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "f1bb760c6daca887611f8d9af68a26708b1c7395",
+          "size": 9412,
+          "lines": 283
+        },
+        {
+          "path": "src/lib/layout/Grid.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "e4aa914c5db83478170559e46fd05b9ee5c483b1",
+          "size": 7609,
+          "lines": 236
+        },
+        {
+          "path": "src/lib/layout/LayoutConfig.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "535041a94ec2e684f7e925622522db5a4d173485",
+          "size": 385,
+          "lines": 15
+        },
+        {
+          "path": "src/lib/layout/Range.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "ed1af506c288ddfcb20f8aa0111f6009184fa329",
+          "size": 1161,
+          "lines": 48
+        },
+        {
+          "path": "src/lib/layout/Window.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "d2520d43536fa284b6d7c860842e2fb272997a30",
+          "size": 5122,
+          "lines": 145
+        },
+        {
+          "path": "src/lib/rules/ClientMatcher.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "730bdbc2554af570256ca02528189ee9e08d8c09",
+          "size": 540,
+          "lines": 20
+        },
+        {
+          "path": "src/lib/rules/DesktopFilter.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "8226955284f8c485621ba96683518c7f7598bb86",
+          "size": 1030,
+          "lines": 31
+        },
+        {
+          "path": "src/lib/rules/WindowRule.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "a52b5784ae8135a19dacf7bc733709eddc150f54",
+          "size": 108,
+          "lines": 6
+        },
+        {
+          "path": "src/lib/rules/WindowRuleEnforcer.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "b109494db95292d3da127445cba8a78bff5e157d",
+          "size": 3545,
+          "lines": 97
+        },
+        {
+          "path": "src/lib/utils/Delayer.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "374493850b3853e173c7e311cca6d1aecf962385",
+          "size": 485,
+          "lines": 26
+        },
+        {
+          "path": "src/lib/utils/Doer.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "4bb4cdf6301a1c33f3d5472e4c4114c3ee10bb8b",
+          "size": 255,
+          "lines": 18
+        },
+        {
+          "path": "src/lib/utils/LinkedList.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "704fb5a31033f18aa66bd82f00819e246f3f25e0",
+          "size": 5796,
+          "lines": 217
+        },
+        {
+          "path": "src/lib/utils/RateLimiter.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "24aa98e7c4a16d156966bb5085ddd3870e38a62c",
+          "size": 505,
+          "lines": 25
+        },
+        {
+          "path": "src/lib/utils/ShortcutAction.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "24544c5eca1a1960013a8098b7eafbd95b482b7e",
+          "size": 1032,
+          "lines": 38
+        },
+        {
+          "path": "src/lib/utils/SignalManager.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "b8deb5b904ff62c5d4b622a940ca3a7753f69b3e",
+          "size": 561,
+          "lines": 20
+        },
+        {
+          "path": "src/lib/utils/collections.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "b91a11832dc53b852100b7fa68bc7cf9ac71d792",
+          "size": 956,
+          "lines": 40
+        },
+        {
+          "path": "src/lib/utils/fillSpace.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "c1c6840467784e342a0b00ddcdf4dbf97fb31a23",
+          "size": 3506,
+          "lines": 99
+        },
+        {
+          "path": "src/lib/utils/functions.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "d1db2055f22fe92e77e69e37742ba4eb630c8459",
+          "size": 635,
+          "lines": 29
+        },
+        {
+          "path": "src/lib/utils/log.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "946be483e30fa243132779335594c8dce698b47a",
+          "size": 72,
+          "lines": 4
+        },
+        {
+          "path": "src/lib/utils/math.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "07457319658bc4a8af093c2335b29712a969eda8",
+          "size": 1224,
+          "lines": 58
+        },
+        {
+          "path": "src/lib/utils/strings.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "e7808b325cab7ea864e1a81e0a948145131ec790",
+          "size": 99,
+          "lines": 4
+        },
+        {
+          "path": "src/lib/workspace.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "284452e3a44605fe2aaf7b183be2f5d00f4427db",
+          "size": 1850,
+          "lines": 59
+        },
+        {
+          "path": "src/lib/world/ClientManager.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "a846dd417dd597493adaef67f691b1ad6b6586bb",
+          "size": 8645,
+          "lines": 239
+        },
+        {
+          "path": "src/lib/world/ClientWrapper.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "f33521f2735fd0562f114534e6e885c2dc3fe7bd",
+          "size": 6586,
+          "lines": 184
+        },
+        {
+          "path": "src/lib/world/Clients.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "6e950a03bf17f000359ad0566b9e80c2580f7abb",
+          "size": 2392,
+          "lines": 62
+        },
+        {
+          "path": "src/lib/world/DesktopManager.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "bcbc46a2df5cabd3a661ab6dcef2a49de3311f8f",
+          "size": 5032,
+          "lines": 146
+        },
+        {
+          "path": "src/lib/world/FocusPassing.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "135dbcf10bde711c54f0c41f3cc68fd3d1589083",
+          "size": 1219,
+          "lines": 52
+        },
+        {
+          "path": "src/lib/world/PinManager.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "8d94a829447990a2d3b8694fa9ed58f355e1dc99",
+          "size": 2818,
+          "lines": 87
+        },
+        {
+          "path": "src/lib/world/World.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "b70d83acb9dd9cc9e2b64211ca63df48fc3dca21",
+          "size": 6437,
+          "lines": 166
+        },
+        {
+          "path": "src/lib/world/clientState/Docked.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "dfb2236987416b1dcf6ec489d1bad83ac0b9691e",
+          "size": 832,
+          "lines": 26
+        },
+        {
+          "path": "src/lib/world/clientState/Floating.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "a1d6c4d738ce40e403bdd1da782f4b2dd070590e",
+          "size": 2451,
+          "lines": 65
+        },
+        {
+          "path": "src/lib/world/clientState/Manager.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "c0b0e308ae9a0cebfe5d51528e86bff610f3a7da",
+          "size": 638,
+          "lines": 27
+        },
+        {
+          "path": "src/lib/world/clientState/Pinned.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "a3258dc564fcfee950f11bf37b999feaeea286d7",
+          "size": 3867,
+          "lines": 92
+        },
+        {
+          "path": "src/lib/world/clientState/Tiled.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "5ffda767b4c63f956075eeec3dbfd583064974c1",
+          "size": 11530,
+          "lines": 268
+        },
+        {
+          "path": "src/lib/world/clientState/TiledMinimized.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "c51c4b269eaff028506e8ba58f08d89f9dd54812",
+          "size": 1122,
+          "lines": 32
+        },
+        {
+          "path": "src/main/main.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "1d201fbfbba2c7de48ffb7954eda0457240b026c",
+          "size": 254,
+          "lines": 12
+        },
+        {
+          "path": "src/main/tsconfig.json",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "a0fd6d8f963e860f55f0d9ccdb3198d69e7d7ab9",
+          "size": 128,
+          "lines": 9
+        },
+        {
+          "path": "src/tests/flows/centerFocused.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "6409b95532a7ba58510ff1f215d0404a77549313",
+          "size": 1924,
+          "lines": 44
+        },
+        {
+          "path": "src/tests/flows/columnMoveToDesktop.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "839151fee30df3f270df304f517ef3a978a9dd70",
+          "size": 3333,
+          "lines": 71
+        },
+        {
+          "path": "src/tests/flows/columnWidthConstraints.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "a18778704ce5d905687aa13e4c6191fc98e24c14",
+          "size": 1384,
+          "lines": 34
+        },
+        {
+          "path": "src/tests/flows/columnsSqueezeSide.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "983410f002af21f890a9d38e0c5d6252858e904e",
+          "size": 5053,
+          "lines": 125
+        },
+        {
+          "path": "src/tests/flows/cursorFollowsFocus.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "ebcaa77f7b31961a17a76668bd5239bb55f31fa8",
+          "size": 1841,
+          "lines": 37
+        },
+        {
+          "path": "src/tests/flows/desktopFiltering.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "b2af302d2bc0602a68a39ae4d0ab230d552a7f46",
+          "size": 2887,
+          "lines": 74
+        },
+        {
+          "path": "src/tests/flows/destroy.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "18f22c7b72edbd722a03b8ae64c6ae77196a4086",
+          "size": 1391,
+          "lines": 32
+        },
+        {
+          "path": "src/tests/flows/dragTiled.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "eebd970a6b35bc9d30398df741977dab2c8e803c",
+          "size": 1557,
+          "lines": 35
+        },
+        {
+          "path": "src/tests/flows/externalResize.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "3d08bc6d8401d67c387fbda1c22345500eeddc02",
+          "size": 2073,
+          "lines": 45
+        },
+        {
+          "path": "src/tests/flows/followWindowToDesktop.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "c1a29d5806a3c1f3bd75799f04d7efbecbcc0eed",
+          "size": 442,
+          "lines": 11
+        },
+        {
+          "path": "src/tests/flows/layering.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "d658074dc58576e0ba1f63dd44ef2aa657450c50",
+          "size": 7442,
+          "lines": 192
+        },
+        {
+          "path": "src/tests/flows/layout.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "c752c885c02a4daf7f8c9e9369334157716a8141",
+          "size": 5218,
+          "lines": 99
+        },
+        {
+          "path": "src/tests/flows/lazyScroller.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "069c39a4e2d3527ae6a4f915e5d574b5a3d1ebe5",
+          "size": 2147,
+          "lines": 48
+        },
+        {
+          "path": "src/tests/flows/maximization.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "52df28412f5fdc6e771c19cbd3a738d3b75cf18e",
+          "size": 16554,
+          "lines": 342
+        },
+        {
+          "path": "src/tests/flows/passFocus.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "1fa2be4566e784de968480d546ffc19c058e048e",
+          "size": 1281,
+          "lines": 38
+        },
+        {
+          "path": "src/tests/flows/pinning.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "90cec38dc1ac26f7740c1eb6ca8c10b69885a19f",
+          "size": 2375,
+          "lines": 53
+        },
+        {
+          "path": "src/tests/flows/presetWidths.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "a4cbc24d07f3b6488dcf1ec874004333030398ce",
+          "size": 9269,
+          "lines": 233
+        },
+        {
+          "path": "src/tests/flows/stacked.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "1b448664bd34332861bfbb8e9a6604bb8dd9516a",
+          "size": 1266,
+          "lines": 31
+        },
+        {
+          "path": "src/tests/flows/userResize.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "64f43df5421f389b3ad36e95967e80841873b5be",
+          "size": 5518,
+          "lines": 111
+        },
+        {
+          "path": "src/tests/flows/verticalResize.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "43c3e2c26c6cef479fc92e439f2335bdf37bb827",
+          "size": 7391,
+          "lines": 166
+        },
+        {
+          "path": "src/tests/main.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "bbd630e634098c535223f58d054c86f63a6ce60b",
+          "size": 13,
+          "lines": 2
+        },
+        {
+          "path": "src/tests/tsconfig.json",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "c1834c66951528f82f6bc55cb17af43c1d0cc6a2",
+          "size": 177,
+          "lines": 11
+        },
+        {
+          "path": "src/tests/units/behavior/PresetWidths.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "a34b99ffd01ece9381b6100c30cb657b782a606a",
+          "size": 1851,
+          "lines": 47
+        },
+        {
+          "path": "src/tests/units/rules/DesktopFilter.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "21f072f548390e4fae6caa6d9bcee98d76e9fd08",
+          "size": 2523,
+          "lines": 42
+        },
+        {
+          "path": "src/tests/units/rules/WindowRuleEnforcer.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "45005cfbbeeb790aa21c1523bb9df770f0d1abf5",
+          "size": 2158,
+          "lines": 45
+        },
+        {
+          "path": "src/tests/units/utils/RateLimiter.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "643b9c9cdcd725b6edf5a3f25fc4c8cbc03f4d63",
+          "size": 664,
+          "lines": 23
+        },
+        {
+          "path": "src/tests/units/utils/fillSpace.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "797cae7a5711327c003d639f5a0745d4b4b89a94",
+          "size": 7090,
+          "lines": 247
+        },
+        {
+          "path": "src/tests/units/utils/math.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "5b681c0ece330f25af6c91669aa9e742d2e10bc0",
+          "size": 1319,
+          "lines": 54
+        },
+        {
+          "path": "src/tests/units/world/Clients.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "3b2edfb5e6605f5490009c359611f0f0e1a0ef0c",
+          "size": 1699,
+          "lines": 37
+        },
+        {
+          "path": "src/tests/utils/Assert.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "459105cd6968363b4b2d7bd283b6e54a9400a77b",
+          "size": 9072,
+          "lines": 296
+        },
+        {
+          "path": "src/tests/utils/TestRunner.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "67961f2e38794fdd280aa05b72ebb10930f89f7c",
+          "size": 722,
+          "lines": 30
+        },
+        {
+          "path": "src/tests/utils/config.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "94cbb0675f5bbc4666eb531e052a5bb773ad7880",
+          "size": 171,
+          "lines": 8
+        },
+        {
+          "path": "src/tests/utils/extern/node.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "a4fe697c1ab1cab245321bbc0d404c27bcb706ad",
+          "size": 79,
+          "lines": 5
+        },
+        {
+          "path": "src/tests/utils/global.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "e827deca5742fdb360290d4a2cf98423dc228e13",
+          "size": 2455,
+          "lines": 72
+        },
+        {
+          "path": "src/tests/utils/mocks/MockKwinClient.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "8d11d79f5dcbecd9d0f5032b75b2dce053cac0fd",
+          "size": 9295,
+          "lines": 257
+        },
+        {
+          "path": "src/tests/utils/mocks/MockQSignal.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "848e0dfc2e0789554f16b49706090cc032b926f5",
+          "size": 492,
+          "lines": 20
+        },
+        {
+          "path": "src/tests/utils/mocks/MockQmlPoint.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "e7be3def7f5f7a11c3dc77d63426b73a4a34b71c",
+          "size": 256,
+          "lines": 16
+        },
+        {
+          "path": "src/tests/utils/mocks/MockQmlRect.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "2cbc80f31516e6ab52945905193635d828e14cc0",
+          "size": 1574,
+          "lines": 74
+        },
+        {
+          "path": "src/tests/utils/mocks/MockQmlSize.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "f52d6b2c9c6b16a5b89c1d10b4ac0d88fec6b5a4",
+          "size": 151,
+          "lines": 9
+        },
+        {
+          "path": "src/tests/utils/mocks/MockQmlTimer.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "c2ba3e4de52036efb9b554f831585dfad8ed9248",
+          "size": 293,
+          "lines": 14
+        },
+        {
+          "path": "src/tests/utils/mocks/MockQt.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "2a8da68d82c8f4bc2b03cc04e4507e24bce9bf61",
+          "size": 1519,
+          "lines": 48
+        },
+        {
+          "path": "src/tests/utils/mocks/MockShortcutHandler.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "ca89443bf147e027a9a0726147358fbf1e21f475",
+          "size": 171,
+          "lines": 8
+        },
+        {
+          "path": "src/tests/utils/mocks/MockWorkspace.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "4d5f10452231c5b0f08319b70bb30993578a6cea",
+          "size": 5078,
+          "lines": 146
+        },
+        {
+          "path": "src/tests/utils/random.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "6dfe860e3d911dba674adc553fe25a5295811953",
+          "size": 1338,
+          "lines": 60
+        },
+        {
+          "path": "src/tests/utils/timeControl.ts",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "29066ef86be7d68fd9ae6da0f48320ef0dc6940b",
+          "size": 294,
+          "lines": 14
+        },
+        {
+          "path": "src/tsconfig.json",
+          "ref": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+          "blob": "713b62451c726dccb671cc25d95de976b10c7e2c",
+          "size": 279,
+          "lines": 13
+        }
+      ]
+    },
+    {
+      "repository": "Serroda/fluid-tile",
+      "defaultSnapshotCommit": "a980ec9c19e49ec84ab3665e1cd4a4d30adf1570",
+      "defaultSnapshotCommitDate": "2026-03-23T13:04:36Z",
+      "commitSubject": "chore: update version",
+      "acquiredFiles": [
+        {
+          "path": "README.md",
+          "ref": "a980ec9c19e49ec84ab3665e1cd4a4d30adf1570",
+          "blob": "d3878047b8209930de34b8b33b7d7560536e2f90",
+          "size": 3450,
+          "lines": 87
+        },
+        {
+          "path": "contents/code/blocklist.mjs",
+          "ref": "a980ec9c19e49ec84ab3665e1cd4a4d30adf1570",
+          "blob": "ffd467ef5da2c0f81f438f78cd3e325f8e8ba189",
+          "size": 1010,
+          "lines": 43
+        },
+        {
+          "path": "contents/code/desktops.mjs",
+          "ref": "a980ec9c19e49ec84ab3665e1cd4a4d30adf1570",
+          "blob": "a07671dc8551ad8c5806da60f7fbc01def98dddc",
+          "size": 7346,
+          "lines": 280
+        },
+        {
+          "path": "contents/code/main.mjs",
+          "ref": "a980ec9c19e49ec84ab3665e1cd4a4d30adf1570",
+          "blob": "6deae7bac22d06d303b54b90d75e239b8c2f454c",
+          "size": 10885,
+          "lines": 378
+        },
+        {
+          "path": "contents/code/queue.mjs",
+          "ref": "a980ec9c19e49ec84ab3665e1cd4a4d30adf1570",
+          "blob": "b139206dad2edadb7d68942a0ead45ad1490435b",
+          "size": 439,
+          "lines": 28
+        },
+        {
+          "path": "contents/code/shortcuts.mjs",
+          "ref": "a980ec9c19e49ec84ab3665e1cd4a4d30adf1570",
+          "blob": "4b36209dd3487a95a5633ae43193528761cc48d2",
+          "size": 1117,
+          "lines": 41
+        },
+        {
+          "path": "contents/code/tiles.mjs",
+          "ref": "a980ec9c19e49ec84ab3665e1cd4a4d30adf1570",
+          "blob": "2c338804ecfe9ccdb929039e983c27c50eb1a81e",
+          "size": 8645,
+          "lines": 359
+        },
+        {
+          "path": "contents/code/timer.mjs",
+          "ref": "a980ec9c19e49ec84ab3665e1cd4a4d30adf1570",
+          "blob": "50d0c27d05c92699a9930eebdff4ab07411f5ca0",
+          "size": 648,
+          "lines": 29
+        },
+        {
+          "path": "contents/code/ui.mjs",
+          "ref": "a980ec9c19e49ec84ab3665e1cd4a4d30adf1570",
+          "blob": "07f5a677937154aa6780b475de038b19bf5f2009",
+          "size": 8971,
+          "lines": 320
+        },
+        {
+          "path": "contents/code/userspace.mjs",
+          "ref": "a980ec9c19e49ec84ab3665e1cd4a4d30adf1570",
+          "blob": "8e87cf6ab8f7f042b2d064a13bb7158bb09a4591",
+          "size": 652,
+          "lines": 29
+        },
+        {
+          "path": "contents/code/windows.mjs",
+          "ref": "a980ec9c19e49ec84ab3665e1cd4a4d30adf1570",
+          "blob": "c8e08dfb330c65dd21aeadf92ba2c965c60c73ca",
+          "size": 14568,
+          "lines": 528
+        },
+        {
+          "path": "contents/config/main.xml",
+          "ref": "a980ec9c19e49ec84ab3665e1cd4a4d30adf1570",
+          "blob": "3bff977b86e36c9793b6d7f4e13585341f61f864",
+          "size": 4004,
+          "lines": 86
+        },
+        {
+          "path": "contents/ui/components/Shortcut.qml",
+          "ref": "a980ec9c19e49ec84ab3665e1cd4a4d30adf1570",
+          "blob": "d626787450bbdeedb0814a20b72632c77dc6611d",
+          "size": 346,
+          "lines": 20
+        },
+        {
+          "path": "contents/ui/components/Theme.qml",
+          "ref": "a980ec9c19e49ec84ab3665e1cd4a4d30adf1570",
+          "blob": "617bf2effe9b02bb7e16aee103c3cc8e9ae537d2",
+          "size": 718,
+          "lines": 19
+        },
+        {
+          "path": "contents/ui/components/Tile.qml",
+          "ref": "a980ec9c19e49ec84ab3665e1cd4a4d30adf1570",
+          "blob": "78ddc90feffc7786b6d63c88b8dd735849a715bb",
+          "size": 1237,
+          "lines": 49
+        },
+        {
+          "path": "contents/ui/components/UICompact.qml",
+          "ref": "a980ec9c19e49ec84ab3665e1cd4a4d30adf1570",
+          "blob": "79c32a8e4b81c65d3eef6c77a70f291fa571bb21",
+          "size": 1754,
+          "lines": 50
+        },
+        {
+          "path": "contents/ui/components/UIFullscreen.qml",
+          "ref": "a980ec9c19e49ec84ab3665e1cd4a4d30adf1570",
+          "blob": "02e5873e5f79449eeaefb8eb576c1e5f15ede0d6",
+          "size": 761,
+          "lines": 27
+        },
+        {
+          "path": "contents/ui/components/UIPopup.qml",
+          "ref": "a980ec9c19e49ec84ab3665e1cd4a4d30adf1570",
+          "blob": "dafffe59f1370d356c48a1a37bcaba0bf2fb8b8a",
+          "size": 667,
+          "lines": 26
+        },
+        {
+          "path": "contents/ui/main.qml",
+          "ref": "a980ec9c19e49ec84ab3665e1cd4a4d30adf1570",
+          "blob": "5fc5c048555a3d54b3b1eebe514d73cbe7cdd2c4",
+          "size": 4810,
+          "lines": 150
+        },
+        {
+          "path": "metadata.json",
+          "ref": "a980ec9c19e49ec84ab3665e1cd4a4d30adf1570",
+          "blob": "0ce9f21e7b3eb2696f0a7954b495dbfc08d86d8a",
+          "size": 603,
+          "lines": 23
+        }
+      ]
+    },
+    {
+      "repository": "gerritdevriese/kzones",
+      "defaultSnapshotCommit": "e261b5ffb7af5d16a42764349783b464c70719af",
+      "defaultSnapshotCommitDate": "2026-09-07T12:55:19Z",
+      "commitSubject": "Merge pull request #220 from Henri-J-Norden/zone_indicator_on_top",
+      "acquiredFiles": [
+        {
+          "path": "LICENSE.md",
+          "ref": "e261b5ffb7af5d16a42764349783b464c70719af",
+          "blob": "f288702d2fa16d3cdf0035b15a9fcbc552cd88e7",
+          "size": 35149,
+          "lines": 675
+        },
+        {
+          "path": "Makefile",
+          "ref": "e261b5ffb7af5d16a42764349783b464c70719af",
+          "blob": "c7ca01033479fa6856db6c4d73cb3fa27608537d",
+          "size": 3238,
+          "lines": 104
+        },
+        {
+          "path": "README.md",
+          "ref": "e261b5ffb7af5d16a42764349783b464c70719af",
+          "blob": "c38d12d783fc93b376d63396388f3ab682c95102",
+          "size": 12469,
+          "lines": 380
+        },
+        {
+          "path": "examples/advanced.json",
+          "ref": "e261b5ffb7af5d16a42764349783b464c70719af",
+          "blob": "59188cb739d8dd978ce6f53890af8fe1518454d8",
+          "size": 1868,
+          "lines": 89
+        },
+        {
+          "path": "examples/simple.json",
+          "ref": "e261b5ffb7af5d16a42764349783b464c70719af",
+          "blob": "9ec7bb292f8e2b9dd192650443ea0f199372d68a",
+          "size": 503,
+          "lines": 26
+        },
+        {
+          "path": "src/contents/code/core.mjs",
+          "ref": "e261b5ffb7af5d16a42764349783b464c70719af",
+          "blob": "0cb7c30f9ebf36281f9d880d9a732cb414feca6c",
+          "size": 2897,
+          "lines": 78
+        },
+        {
+          "path": "src/contents/code/main.js",
+          "ref": "e261b5ffb7af5d16a42764349783b464c70719af",
+          "blob": "f44e140757242e592cf472eb2d521a6495b72ad1",
+          "size": 300,
+          "lines": 8
+        },
+        {
+          "path": "src/contents/code/utils.mjs",
+          "ref": "e261b5ffb7af5d16a42764349783b464c70719af",
+          "blob": "b44fc0f0e7d834bd634463a7b4dc49912981591a",
+          "size": 849,
+          "lines": 26
+        },
+        {
+          "path": "src/contents/config/main.xml",
+          "ref": "e261b5ffb7af5d16a42764349783b464c70719af",
+          "blob": "42d0a09d646b88a29e77905e94656d4e75af57ea",
+          "size": 4086,
+          "lines": 152
+        },
+        {
+          "path": "src/contents/ui/components/ColorHelper.qml",
+          "ref": "e261b5ffb7af5d16a42764349783b464c70719af",
+          "blob": "be7aa0bf11e176b9d51c3b61228b069e7bec65c9",
+          "size": 1653,
+          "lines": 56
+        },
+        {
+          "path": "src/contents/ui/components/Debug.qml",
+          "ref": "e261b5ffb7af5d16a42764349783b464c70719af",
+          "blob": "ccff7d6f6b6c256126e8c5934608b5c2859f4309",
+          "size": 1475,
+          "lines": 62
+        },
+        {
+          "path": "src/contents/ui/components/Indicator.qml",
+          "ref": "e261b5ffb7af5d16a42764349783b464c70719af",
+          "blob": "fff73e1b130a9c476d9b5639e319b3c33b150753",
+          "size": 1583,
+          "lines": 63
+        },
+        {
+          "path": "src/contents/ui/components/Selector.qml",
+          "ref": "e261b5ffb7af5d16a42764349783b464c70719af",
+          "blob": "c0cda35820ea283bec5da857c2fc5c253d168108",
+          "size": 1969,
+          "lines": 85
+        },
+        {
+          "path": "src/contents/ui/components/Shadow.qml",
+          "ref": "e261b5ffb7af5d16a42764349783b464c70719af",
+          "blob": "12a9f4bf8a99cbc19729210a583168a52014eea9",
+          "size": 479,
+          "lines": 24
+        },
+        {
+          "path": "src/contents/ui/components/Shortcuts.qml",
+          "ref": "e261b5ffb7af5d16a42764349783b464c70719af",
+          "blob": "c1fb467ff1a0df20dd47a91d449999998570dca3",
+          "size": 4734,
+          "lines": 183
+        },
+        {
+          "path": "src/contents/ui/components/Zones.qml",
+          "ref": "e261b5ffb7af5d16a42764349783b464c70719af",
+          "blob": "1fa5837fd7b442f9a0269597f2283998a93eb0b5",
+          "size": 5588,
+          "lines": 125
+        },
+        {
+          "path": "src/contents/ui/main.qml",
+          "ref": "e261b5ffb7af5d16a42764349783b464c70719af",
+          "blob": "4d5966c97660750c2d3c3e9a70b73b865511f142",
+          "size": 34766,
+          "lines": 826
+        },
+        {
+          "path": "src/metadata.json",
+          "ref": "e261b5ffb7af5d16a42764349783b464c70719af",
+          "blob": "0426b47df061b98592473a54374aa7ceac4d23b4",
+          "size": 899,
+          "lines": 29
+        }
+      ]
+    },
+    {
+      "repository": "darkstego/Mudeer",
+      "defaultSnapshotCommit": "0967c4637fe5504bfc56d4e0434505194d674c6f",
+      "defaultSnapshotCommitDate": "2026-09-29T19:08:15Z",
+      "commitSubject": "Reload the script in KWin after make install",
+      "acquiredFiles": [
+        {
+          "path": "LICENSE",
+          "ref": "0967c4637fe5504bfc56d4e0434505194d674c6f",
+          "blob": "76121c7bdac10340c8e0ef26bd895efcfcd10613",
+          "size": 1066,
+          "lines": 22
+        },
+        {
+          "path": "Makefile",
+          "ref": "0967c4637fe5504bfc56d4e0434505194d674c6f",
+          "blob": "a243d43aa3c18fcf816f5c1b8851d2b11e2ef39e",
+          "size": 668,
+          "lines": 25
+        },
+        {
+          "path": "README.org",
+          "ref": "0967c4637fe5504bfc56d4e0434505194d674c6f",
+          "blob": "42e4d07ab6ea5da5d193c1875c8e6864bfb7ffb5",
+          "size": 8680,
+          "lines": 184
+        },
+        {
+          "path": "package/contents/code/main.js",
+          "ref": "0967c4637fe5504bfc56d4e0434505194d674c6f",
+          "blob": "0c505f4038ec3ed55b48936981d739fb04bb3532",
+          "size": 7876,
+          "lines": 258
+        },
+        {
+          "path": "package/contents/config/main.xml",
+          "ref": "0967c4637fe5504bfc56d4e0434505194d674c6f",
+          "blob": "540465cd3dec3cb847408393e1ec92016eb800e6",
+          "size": 890,
+          "lines": 25
+        },
+        {
+          "path": "package/metadata.json",
+          "ref": "0967c4637fe5504bfc56d4e0434505194d674c6f",
+          "blob": "b95b1dcd90626d45ab7937f2111a62a339770633",
+          "size": 715,
+          "lines": 25
+        }
+      ]
+    },
+    {
+      "repository": "kwin-scripts/kwin-tiling",
+      "defaultSnapshotCommit": "ab03bc34d76faa8c1511050c6b4d835825b4882d",
+      "defaultSnapshotCommitDate": "2022-11-08T21:32:00Z",
+      "commitSubject": "Formally declare this unmaintained",
+      "acquiredFiles": [
+        {
+          "path": "LICENSE",
+          "ref": "ab03bc34d76faa8c1511050c6b4d835825b4882d",
+          "blob": "e90dfed1a31ed1c0c22befce22c6f37f9cf5f2bb",
+          "size": 17987,
+          "lines": 341
+        },
+        {
+          "path": "README.org",
+          "ref": "ab03bc34d76faa8c1511050c6b4d835825b4882d",
+          "blob": "2284c95449f92b3bfd1739a8263cbfb3a82d2088",
+          "size": 186,
+          "lines": 11
+        },
+        {
+          "path": "contents/code/bladelayout.js",
+          "ref": "ab03bc34d76faa8c1511050c6b4d835825b4882d",
+          "blob": "4bc85957ef51410a7ad4ffc1fc448dfe1e4785df",
+          "size": 4483,
+          "lines": 114
+        },
+        {
+          "path": "contents/code/containerTree.js",
+          "ref": "ab03bc34d76faa8c1511050c6b4d835825b4882d",
+          "blob": "c1b7212206c4169758eb3390d38a08d5b25c7145",
+          "size": 8394,
+          "lines": 259
+        },
+        {
+          "path": "contents/code/gridlayout.js",
+          "ref": "ab03bc34d76faa8c1511050c6b4d835825b4882d",
+          "blob": "dadc860b25c6e661bb2ee6584c2f5af6a7e15c28",
+          "size": 32076,
+          "lines": 801
+        },
+        {
+          "path": "contents/code/halflayout.js",
+          "ref": "ab03bc34d76faa8c1511050c6b4d835825b4882d",
+          "blob": "67b7d9047f73e3e2213ca01dd8881d5bf8859e79",
+          "size": 13616,
+          "lines": 296
+        },
+        {
+          "path": "contents/code/i3layout.js",
+          "ref": "ab03bc34d76faa8c1511050c6b4d835825b4882d",
+          "blob": "0ec1a804587bba5c31ccf6963afa7038a280925a",
+          "size": 6322,
+          "lines": 183
+        },
+        {
+          "path": "contents/code/ignored.js",
+          "ref": "ab03bc34d76faa8c1511050c6b4d835825b4882d",
+          "blob": "27930578263403ea77398593a53c822a00c305e0",
+          "size": 5267,
+          "lines": 129
+        },
+        {
+          "path": "contents/code/layout.js",
+          "ref": "ab03bc34d76faa8c1511050c6b4d835825b4882d",
+          "blob": "0cd24e848fbef3b8a3363a9ea940b454d5795a5c",
+          "size": 10676,
+          "lines": 324
+        },
+        {
+          "path": "contents/code/signal.js",
+          "ref": "ab03bc34d76faa8c1511050c6b4d835825b4882d",
+          "blob": "8d88ee15e9b27fa2af3ed1c3f74eab6f7cc35430",
+          "size": 1870,
+          "lines": 63
+        },
+        {
+          "path": "contents/code/spirallayout.js",
+          "ref": "ab03bc34d76faa8c1511050c6b4d835825b4882d",
+          "blob": "e3b94eecb78dfe82604a5623e6e4605c7c1ff215",
+          "size": 4099,
+          "lines": 109
+        },
+        {
+          "path": "contents/code/tests.js",
+          "ref": "ab03bc34d76faa8c1511050c6b4d835825b4882d",
+          "blob": "6718420b4e76e044349d3aed92cf4f55dce94dba",
+          "size": 1896,
+          "lines": 58
+        },
+        {
+          "path": "contents/code/tile.js",
+          "ref": "ab03bc34d76faa8c1511050c6b4d835825b4882d",
+          "blob": "d09507534c79fbc70471d3991452edb093e0241c",
+          "size": 15743,
+          "lines": 463
+        },
+        {
+          "path": "contents/code/tilelist.js",
+          "ref": "ab03bc34d76faa8c1511050c6b4d835825b4882d",
+          "blob": "85626246a49316b3209fb2a4e1420c67f2bc1fb6",
+          "size": 15607,
+          "lines": 456
+        },
+        {
+          "path": "contents/code/tiling.js",
+          "ref": "ab03bc34d76faa8c1511050c6b4d835825b4882d",
+          "blob": "de5c117e1120a951a046936f3f1833a3ca9fdf60",
+          "size": 16434,
+          "lines": 450
+        },
+        {
+          "path": "contents/code/tilingmanager.js",
+          "ref": "ab03bc34d76faa8c1511050c6b4d835825b4882d",
+          "blob": "6625675dd545fe1e37819049be1d5c09ab70dde0",
+          "size": 58570,
+          "lines": 1318
+        },
+        {
+          "path": "contents/code/util.js",
+          "ref": "ab03bc34d76faa8c1511050c6b4d835825b4882d",
+          "blob": "125aaade75cc82fc84d2cd890d61b0cc93dbb143",
+          "size": 10415,
+          "lines": 331
+        },
+        {
+          "path": "contents/config/main.xml",
+          "ref": "ab03bc34d76faa8c1511050c6b4d835825b4882d",
+          "blob": "58184a9f555a7c7d628b20a0d5034c70d22f15f7",
+          "size": 4024,
+          "lines": 102
+        },
+        {
+          "path": "contents/ui/layoutosd.qml",
+          "ref": "ab03bc34d76faa8c1511050c6b4d835825b4882d",
+          "blob": "7011022a52c29a66f69507ceca1a91b9df336712",
+          "size": 3621,
+          "lines": 109
+        },
+        {
+          "path": "contents/ui/main.qml",
+          "ref": "ab03bc34d76faa8c1511050c6b4d835825b4882d",
+          "blob": "6dada5a5e77a69ea4e6dc50f1596a9be1b79d391",
+          "size": 2321,
+          "lines": 69
+        }
+      ]
+    },
+    {
+      "repository": "lingtjien/Grid-Tiling-Kwin",
+      "defaultSnapshotCommit": "725c25b8242c603cbe0659f1e148f029241d2e76",
+      "defaultSnapshotCommitDate": "2026-08-22T14:56:45Z",
+      "commitSubject": "change behavior to be more mathematically correct",
+      "acquiredFiles": [
+        {
+          "path": "LICENSE",
+          "ref": "725c25b8242c603cbe0659f1e148f029241d2e76",
+          "blob": "bab183f06e2ec9dcd4aa2530e1bf337368d48236",
+          "size": 35081,
+          "lines": 675
+        },
+        {
+          "path": "README.md",
+          "ref": "725c25b8242c603cbe0659f1e148f029241d2e76",
+          "blob": "a648f948d84176a2f8943e98447341a67dcbf101",
+          "size": 6702,
+          "lines": 90
+        },
+        {
+          "path": "contents/component/activity.mjs",
+          "ref": "725c25b8242c603cbe0659f1e148f029241d2e76",
+          "blob": "b2ca7b66e70fe2d9099aa1c189f64d7f871a065a",
+          "size": 2244,
+          "lines": 81
+        },
+        {
+          "path": "contents/component/config.mjs",
+          "ref": "725c25b8242c603cbe0659f1e148f029241d2e76",
+          "blob": "cecc442821a93f8780784ab7916938a4793df3c3",
+          "size": 3567,
+          "lines": 130
+        },
+        {
+          "path": "contents/component/desktop.mjs",
+          "ref": "725c25b8242c603cbe0659f1e148f029241d2e76",
+          "blob": "2d9333472d090317f75d5967716b24f983383ec5",
+          "size": 2498,
+          "lines": 86
+        },
+        {
+          "path": "contents/component/layout.mjs",
+          "ref": "725c25b8242c603cbe0659f1e148f029241d2e76",
+          "blob": "de659829fbc017aa51078c8dd31e08fd1540dced",
+          "size": 1004,
+          "lines": 40
+        },
+        {
+          "path": "contents/component/list.mjs",
+          "ref": "725c25b8242c603cbe0659f1e148f029241d2e76",
+          "blob": "f3fefc3088e9c8b418ae9d616f850d5822cfac33",
+          "size": 3137,
+          "lines": 106
+        },
+        {
+          "path": "contents/component/main.mjs",
+          "ref": "725c25b8242c603cbe0659f1e148f029241d2e76",
+          "blob": "6c483db44c1ad0ccac81661b341f5c718fb48871",
+          "size": 1018,
+          "lines": 43
+        },
+        {
+          "path": "contents/component/manager.mjs",
+          "ref": "725c25b8242c603cbe0659f1e148f029241d2e76",
+          "blob": "75f027ab4fdca292073bead207377d947540f47d",
+          "size": 6718,
+          "lines": 248
+        },
+        {
+          "path": "contents/component/output.mjs",
+          "ref": "725c25b8242c603cbe0659f1e148f029241d2e76",
+          "blob": "016f2b22a41d01e6198c3b9066f29f73364959ed",
+          "size": 6617,
+          "lines": 226
+        },
+        {
+          "path": "contents/component/shared.mjs",
+          "ref": "725c25b8242c603cbe0659f1e148f029241d2e76",
+          "blob": "0f65ef3ba7cb7fec3ee8eadf8e741c7da01a5fe0",
+          "size": 421,
+          "lines": 16
+        },
+        {
+          "path": "contents/component/shortcut.mjs",
+          "ref": "725c25b8242c603cbe0659f1e148f029241d2e76",
+          "blob": "21b9438764172d5f35d5ed4184c26b83959fc575",
+          "size": 2554,
+          "lines": 96
+        },
+        {
+          "path": "contents/config/main.xml",
+          "ref": "725c25b8242c603cbe0659f1e148f029241d2e76",
+          "blob": "ef4dd51c058bb3fde3177a4d5303b082fe3f5182",
+          "size": 6001,
+          "lines": 194
+        },
+        {
+          "path": "contents/ui/main.qml",
+          "ref": "725c25b8242c603cbe0659f1e148f029241d2e76",
+          "blob": "286d56f2da35ebd4ddd885823347738c88a797ea",
+          "size": 3019,
+          "lines": 143
+        },
+        {
+          "path": "metadata.json",
+          "ref": "725c25b8242c603cbe0659f1e148f029241d2e76",
+          "blob": "d75cd2cb6d861c0e9fabf6ab92bcd825bdb0197c",
+          "size": 485,
+          "lines": 19
+        }
+      ]
+    },
+    {
+      "repository": "KDE/kwin",
+      "defaultSnapshotCommit": "c08459bfa82671f14904e3eda513335a2b0fd7f9",
+      "defaultSnapshotCommitDate": "2026-10-17T02:09:07Z",
+      "commitSubject": "GIT_SILENT Sync po/docbooks with svn",
+      "acquiredFiles": [
+        {
+          "path": "CMakeLists.txt",
+          "ref": "c08459bfa82671f14904e3eda513335a2b0fd7f9",
+          "blob": "9d2362ff167587d9ddd371d044660569d2f5397a",
+          "size": 17336,
+          "lines": 556
+        },
+        {
+          "path": "src/scripting/workspace_wrapper.h",
+          "ref": "c08459bfa82671f14904e3eda513335a2b0fd7f9",
+          "blob": "aaeaae44110b09c926a0cdb5a7c85e30f467537d",
+          "size": 20047,
+          "lines": 668
+        },
+        {
+          "path": "src/scripting/workspace_wrapper.cpp",
+          "ref": "c08459bfa82671f14904e3eda513335a2b0fd7f9",
+          "blob": "a14e8cc4d28dc942eab74d90b6149119c9350c7f",
+          "size": 16405,
+          "lines": 533
+        },
+        {
+          "path": "src/scripting/scripting.cpp",
+          "ref": "c08459bfa82671f14904e3eda513335a2b0fd7f9",
+          "blob": "b46d858ead6365dec03d0be04a33199db8e759fa",
+          "size": 28552,
+          "lines": 853
+        },
+        {
+          "path": "src/scripting/scripting.h",
+          "ref": "c08459bfa82671f14904e3eda513335a2b0fd7f9",
+          "blob": "ed5b27da95589c11b5b3063023eb5717d6843148",
+          "size": 12182,
+          "lines": 395
+        },
+        {
+          "path": "src/scripting/shortcuthandler.cpp",
+          "ref": "c08459bfa82671f14904e3eda513335a2b0fd7f9",
+          "blob": "5182d2eb5b113bf5470171448e686adbd5765fa0",
+          "size": 1988,
+          "lines": 98
+        },
+        {
+          "path": "src/scripting/shortcuthandler.h",
+          "ref": "c08459bfa82671f14904e3eda513335a2b0fd7f9",
+          "blob": "a46e1804cdac82c3cc8c4ad7724e816e4cfba18e",
+          "size": 2691,
+          "lines": 106
+        },
+        {
+          "path": "src/scripting/dbuscall.cpp",
+          "ref": "c08459bfa82671f14904e3eda513335a2b0fd7f9",
+          "blob": "8fa8428cc98e314c7f97b16d943677d1738e82df",
+          "size": 1198,
+          "lines": 51
+        },
+        {
+          "path": "src/scripting/documentation-global.xml",
+          "ref": "c08459bfa82671f14904e3eda513335a2b0fd7f9",
+          "blob": "e0a2c3d0af0f9d350ede32d7dca7e6fb2741473a",
+          "size": 10402,
+          "lines": 145
+        },
+        {
+          "path": "src/tiles/tile.h",
+          "ref": "c08459bfa82671f14904e3eda513335a2b0fd7f9",
+          "blob": "09232fad301f0df9e91e70081c4923d2a41640e6",
+          "size": 6608,
+          "lines": 261
+        },
+        {
+          "path": "src/tiles/tile.cpp",
+          "ref": "c08459bfa82671f14904e3eda513335a2b0fd7f9",
+          "blob": "9ff01ffbf718df08e6eb7b8117bebece3150a7e1",
+          "size": 16821,
+          "lines": 663
+        },
+        {
+          "path": "src/tiles/customtile.cpp",
+          "ref": "c08459bfa82671f14904e3eda513335a2b0fd7f9",
+          "blob": "6817fc852250e3d831777bd582c2ff0ec46c30a6",
+          "size": 17325,
+          "lines": 491
+        },
+        {
+          "path": "src/tiles/tilemanager.cpp",
+          "ref": "c08459bfa82671f14904e3eda513335a2b0fd7f9",
+          "blob": "f2a3cd8a48882426e3c4f34e4a8fccd42ba2fa9e",
+          "size": 14706,
+          "lines": 410
+        },
+        {
+          "path": "src/tiles/tilemanager.h",
+          "ref": "c08459bfa82671f14904e3eda513335a2b0fd7f9",
+          "blob": "4121c534e561540890e3dee4b87d78478a9310d2",
+          "size": 2230,
+          "lines": 90
+        },
+        {
+          "path": "src/window.h",
+          "ref": "c08459bfa82671f14904e3eda513335a2b0fd7f9",
+          "blob": "211cda53b0e90accda02c35d46156d6b38541a23",
+          "size": 74073,
+          "lines": 2361
+        },
+        {
+          "path": "src/window.cpp",
+          "ref": "c08459bfa82671f14904e3eda513335a2b0fd7f9",
+          "blob": "7397006fc4d2920016be86aed2f9f75ef0b41ec5",
+          "size": 144472,
+          "lines": 4664
+        },
+        {
+          "path": "src/xdgshellwindow.cpp",
+          "ref": "c08459bfa82671f14904e3eda513335a2b0fd7f9",
+          "blob": "e477dc61adb055f0233b50104df928c2ac52256a",
+          "size": 67209,
+          "lines": 2072
+        },
+        {
+          "path": "src/xdgshellwindow.h",
+          "ref": "c08459bfa82671f14904e3eda513335a2b0fd7f9",
+          "blob": "7ef7789b464802d54a2b612d40d65c6395d37806",
+          "size": 11696,
+          "lines": 319
+        },
+        {
+          "path": "src/waylandwindow.cpp",
+          "ref": "c08459bfa82671f14904e3eda513335a2b0fd7f9",
+          "blob": "559a334cc3420ba44a94a542a4387ee1d4844f79",
+          "size": 6960,
+          "lines": 267
+        },
+        {
+          "path": "src/workspace.h",
+          "ref": "c08459bfa82671f14904e3eda513335a2b0fd7f9",
+          "blob": "eebb64fa6f5f6da2233a5f20319fd25a2992a72c",
+          "size": 26885,
+          "lines": 859
+        },
+        {
+          "path": "src/workspace.cpp",
+          "ref": "c08459bfa82671f14904e3eda513335a2b0fd7f9",
+          "blob": "686b32ef64f195a6b4bcc0fcc7557a2f14537038",
+          "size": 116942,
+          "lines": 3171
+        },
+        {
+          "path": "src/placement.cpp",
+          "ref": "c08459bfa82671f14904e3eda513335a2b0fd7f9",
+          "blob": "edb5ca33776a08b0c6869140266137ad5c2e63a8",
+          "size": 31232,
+          "lines": 900
+        },
+        {
+          "path": "src/virtualdesktops.h",
+          "ref": "c08459bfa82671f14904e3eda513335a2b0fd7f9",
+          "blob": "a4af774c767f8507f3573be30f4b506a2ea628ef",
+          "size": 20955,
+          "lines": 658
+        },
+        {
+          "path": "src/core/renderloop.cpp",
+          "ref": "c08459bfa82671f14904e3eda513335a2b0fd7f9",
+          "blob": "6a3d6c99cdc7009f80e7e29f06706295f7dada94",
+          "size": 14092,
+          "lines": 369
+        },
+        {
+          "path": "src/core/renderloop.h",
+          "ref": "c08459bfa82671f14904e3eda513335a2b0fd7f9",
+          "blob": "3078b9ce2694269397b72114711a9c81655567a3",
+          "size": 4081,
+          "lines": 136
+        },
+        {
+          "path": "src/effect/effect.h",
+          "ref": "c08459bfa82671f14904e3eda513335a2b0fd7f9",
+          "blob": "20e0fc03eebf0019215a5ea96a2e4cf3d1484ae6",
+          "size": 39638,
+          "lines": 1207
+        },
+        {
+          "path": "src/effect/effecthandler.h",
+          "ref": "c08459bfa82671f14904e3eda513335a2b0fd7f9",
+          "blob": "55a679aff54079facac4493a73e5ca78b637d5a2",
+          "size": 41816,
+          "lines": 1123
+        },
+        {
+          "path": "src/effect/effectwindow.h",
+          "ref": "c08459bfa82671f14904e3eda513335a2b0fd7f9",
+          "blob": "30564749c108a17ea3cd657a203b7170e43f45d8",
+          "size": 32103,
+          "lines": 971
+        },
+        {
+          "path": "autotests/integration/quick_tiling_test.cpp",
+          "ref": "c08459bfa82671f14904e3eda513335a2b0fd7f9",
+          "blob": "1515850468b50864484e36f68d09806a46c75385",
+          "size": 118303,
+          "lines": 2500
+        },
+        {
+          "path": "autotests/integration/xdgshellwindow_test.cpp",
+          "ref": "c08459bfa82671f14904e3eda513335a2b0fd7f9",
+          "blob": "f6de2797d0c452b4f3e2115b642176c554e36c05",
+          "size": 146417,
+          "lines": 2996
+        },
+        {
+          "path": "autotests/integration/move_resize_window_test.cpp",
+          "ref": "c08459bfa82671f14904e3eda513335a2b0fd7f9",
+          "blob": "4238930a970885ebae21d3c7d41a92adc2512cde",
+          "size": 67703,
+          "lines": 1458
+        },
+        {
+          "path": "src/plugins/tileseditor/tileseditoreffect.cpp",
+          "ref": "c08459bfa82671f14904e3eda513335a2b0fd7f9",
+          "blob": "fddb91750747409c648a6ff5f99c010b32a888fe",
+          "size": 2960,
+          "lines": 119
+        },
+        {
+          "path": "CMakeLists.txt",
+          "ref": "717f774ec8db995c53a086d334ce89d118d8b80d",
+          "blob": "73f0feaf5a8249ab99e61838ea1a1bd1bf6ba6ac",
+          "size": 17015,
+          "lines": 546,
+          "label": "Plasma-6.7"
+        },
+        {
+          "path": "src/scripting/workspace_wrapper.h",
+          "ref": "717f774ec8db995c53a086d334ce89d118d8b80d",
+          "blob": "c3aa9203633b6b32337e4dce04c6b3ea2e8a0f9e",
+          "size": 19929,
+          "lines": 662,
+          "label": "Plasma-6.7"
+        },
+        {
+          "path": "src/scripting/workspace_wrapper.cpp",
+          "ref": "717f774ec8db995c53a086d334ce89d118d8b80d",
+          "blob": "27afaf8d07a153523c26d2847924d2cb08ecd8f7",
+          "size": 16410,
+          "lines": 533,
+          "label": "Plasma-6.7"
+        },
+        {
+          "path": "src/tiles/tile.h",
+          "ref": "717f774ec8db995c53a086d334ce89d118d8b80d",
+          "blob": "c44a56d5d7748e4241c0ad021e1e0555c6e1f853",
+          "size": 5188,
+          "lines": 185,
+          "label": "Plasma-6.7"
+        },
+        {
+          "path": "src/tiles/tile.cpp",
+          "ref": "717f774ec8db995c53a086d334ce89d118d8b80d",
+          "blob": "85cfb975a8c360b6664190c7fe0c3636c9bc54fd",
+          "size": 15271,
+          "lines": 593,
+          "label": "Plasma-6.7"
+        },
+        {
+          "path": "src/tiles/customtile.cpp",
+          "ref": "717f774ec8db995c53a086d334ce89d118d8b80d",
+          "blob": "a1ec5bb979d381a005bc78de1de2786226f96a72",
+          "size": 17458,
+          "lines": 494,
+          "label": "Plasma-6.7"
+        },
+        {
+          "path": "src/tiles/tilemanager.cpp",
+          "ref": "717f774ec8db995c53a086d334ce89d118d8b80d",
+          "blob": "f2a3cd8a48882426e3c4f34e4a8fccd42ba2fa9e",
+          "size": 14706,
+          "lines": 410,
+          "label": "Plasma-6.7"
+        },
+        {
+          "path": "src/window.h",
+          "ref": "717f774ec8db995c53a086d334ce89d118d8b80d",
+          "blob": "f1a5283af72a33647d27ecc04c695731591db022",
+          "size": 69362,
+          "lines": 2188,
+          "label": "Plasma-6.7"
+        },
+        {
+          "path": "src/xdgshellwindow.cpp",
+          "ref": "717f774ec8db995c53a086d334ce89d118d8b80d",
+          "blob": "9bda96aa2da1d3ef581b9054ec0107cd5dd71d7b",
+          "size": 68725,
+          "lines": 2107,
+          "label": "Plasma-6.7"
+        },
+        {
+          "path": "src/core/output.h",
+          "ref": "717f774ec8db995c53a086d334ce89d118d8b80d",
+          "blob": "d0c40e6ecf24ff2a1cc5e1aa91517818d0b03fd6",
+          "size": 12533,
+          "lines": 487,
+          "label": "Plasma-6.7"
+        },
+        {
+          "path": "src/scripting/scripting.cpp",
+          "ref": "717f774ec8db995c53a086d334ce89d118d8b80d",
+          "blob": "d3363c53e30fc8731c3477ec998ae4446c338868",
+          "size": 31093,
+          "lines": 895,
+          "label": "Plasma-6.7"
+        },
+        {
+          "path": "src/virtualdesktops.h",
+          "ref": "717f774ec8db995c53a086d334ce89d118d8b80d",
+          "blob": "2952bd7356a468e923386f1efdf429ecd4724cb1",
+          "size": 20867,
+          "lines": 655,
+          "label": "Plasma-6.7"
+        },
+        {
+          "path": "CMakeLists.txt",
+          "ref": "21e5e225370fbcaf7e49bd97751f9c29c280e2c6",
+          "blob": "37d819ed9be37532482f5d3eb2b92889ab9b307f",
+          "size": 17334,
+          "lines": 556,
+          "label": "Plasma-6.8"
+        },
+        {
+          "path": "src/scripting/workspace_wrapper.h",
+          "ref": "21e5e225370fbcaf7e49bd97751f9c29c280e2c6",
+          "blob": "aaeaae44110b09c926a0cdb5a7c85e30f467537d",
+          "size": 20047,
+          "lines": 668,
+          "label": "Plasma-6.8"
+        },
+        {
+          "path": "src/scripting/workspace_wrapper.cpp",
+          "ref": "21e5e225370fbcaf7e49bd97751f9c29c280e2c6",
+          "blob": "a14e8cc4d28dc942eab74d90b6149119c9350c7f",
+          "size": 16405,
+          "lines": 533,
+          "label": "Plasma-6.8"
+        },
+        {
+          "path": "src/tiles/tile.h",
+          "ref": "21e5e225370fbcaf7e49bd97751f9c29c280e2c6",
+          "blob": "973b92ee5d6ad46f620c0445b36dc4e71b9bfb98",
+          "size": 6362,
+          "lines": 254,
+          "label": "Plasma-6.8"
+        },
+        {
+          "path": "src/tiles/tile.cpp",
+          "ref": "21e5e225370fbcaf7e49bd97751f9c29c280e2c6",
+          "blob": "510917e01fceb568149d6b06045eaa303ec348af",
+          "size": 15275,
+          "lines": 593,
+          "label": "Plasma-6.8"
+        },
+        {
+          "path": "src/tiles/customtile.cpp",
+          "ref": "21e5e225370fbcaf7e49bd97751f9c29c280e2c6",
+          "blob": "6817fc852250e3d831777bd582c2ff0ec46c30a6",
+          "size": 17325,
+          "lines": 491,
+          "label": "Plasma-6.8"
+        },
+        {
+          "path": "src/tiles/tilemanager.cpp",
+          "ref": "21e5e225370fbcaf7e49bd97751f9c29c280e2c6",
+          "blob": "f2a3cd8a48882426e3c4f34e4a8fccd42ba2fa9e",
+          "size": 14706,
+          "lines": 410,
+          "label": "Plasma-6.8"
+        },
+        {
+          "path": "src/window.h",
+          "ref": "21e5e225370fbcaf7e49bd97751f9c29c280e2c6",
+          "blob": "2924a7721d3de606adb1aa487cfaae9f6373cc4f",
+          "size": 74074,
+          "lines": 2361,
+          "label": "Plasma-6.8"
+        },
+        {
+          "path": "src/xdgshellwindow.cpp",
+          "ref": "21e5e225370fbcaf7e49bd97751f9c29c280e2c6",
+          "blob": "e477dc61adb055f0233b50104df928c2ac52256a",
+          "size": 67209,
+          "lines": 2072,
+          "label": "Plasma-6.8"
+        },
+        {
+          "path": "src/core/output.h",
+          "ref": "21e5e225370fbcaf7e49bd97751f9c29c280e2c6",
+          "blob": "891ae98485bb3293cda0e8526b62a341a57cd6b6",
+          "size": 14240,
+          "lines": 550,
+          "label": "Plasma-6.8"
+        },
+        {
+          "path": "src/scripting/scripting.cpp",
+          "ref": "21e5e225370fbcaf7e49bd97751f9c29c280e2c6",
+          "blob": "b46d858ead6365dec03d0be04a33199db8e759fa",
+          "size": 28552,
+          "lines": 853,
+          "label": "Plasma-6.8"
+        },
+        {
+          "path": "src/virtualdesktops.h",
+          "ref": "21e5e225370fbcaf7e49bd97751f9c29c280e2c6",
+          "blob": "54099ac53bb027d807b18d795c1353e2954378b6",
+          "size": 20937,
+          "lines": 658,
+          "label": "Plasma-6.8"
+        }
+      ]
+    },
+    {
+      "repository": "fuddlesworth/PlasmaZones",
+      "defaultSnapshotCommit": "b0345bd89c7187ab5aa5386656bd1fd0a34cc05d",
+      "defaultSnapshotCommitDate": "2026-10-16T18:03:04Z",
+      "commitSubject": "chore(release): prepare 3.5.1",
+      "acquiredFiles": [
+        {
+          "path": "README.md",
+          "ref": "b0345bd89c7187ab5aa5386656bd1fd0a34cc05d",
+          "blob": "6ee73a9a101797e4eb7d8d82b076b0e6b6b90434",
+          "size": 13524,
+          "lines": 281
+        },
+        {
+          "path": "CMakeLists.txt",
+          "ref": "b0345bd89c7187ab5aa5386656bd1fd0a34cc05d",
+          "blob": "fb633ef2f22031d83a363f3c1a683fca850989d2",
+          "size": 26187,
+          "lines": 524
+        },
+        {
+          "path": "plasmazones/kwin-effect/CMakeLists.txt",
+          "ref": "b0345bd89c7187ab5aa5386656bd1fd0a34cc05d",
+          "blob": "a2b55fb6334de9eef207c6315cf3ed256224d2a4",
+          "size": 18406,
+          "lines": 357
+        },
+        {
+          "path": "plasmazones/kwin-effect/kwincompat.h",
+          "ref": "b0345bd89c7187ab5aa5386656bd1fd0a34cc05d",
+          "blob": "7ce303af778ada624b7c302d2fd1895025a58496",
+          "size": 9768,
+          "lines": 203
+        },
+        {
+          "path": "plasmazones/kwin-effect/compositor/compositorbridge.cpp",
+          "ref": "b0345bd89c7187ab5aa5386656bd1fd0a34cc05d",
+          "blob": "e0b9ad57dbaccd159c61dc6c9f24b0094a978590",
+          "size": 12125,
+          "lines": 326
+        },
+        {
+          "path": "plasmazones/kwin-effect/compositor/compositorclock.cpp",
+          "ref": "b0345bd89c7187ab5aa5386656bd1fd0a34cc05d",
+          "blob": "4e7ccb58a518b2158cb97037094f19f9c923cf9d",
+          "size": 7045,
+          "lines": 162
+        },
+        {
+          "path": "plasmazones/kwin-effect/compositor/deferredwindowcommits.h",
+          "ref": "b0345bd89c7187ab5aa5386656bd1fd0a34cc05d",
+          "blob": "00e394021b3181c09283149c79df0f25f1806dfc",
+          "size": 4312,
+          "lines": 118
+        },
+        {
+          "path": "plasmazones/kwin-effect/compositor/windowanimator.cpp",
+          "ref": "b0345bd89c7187ab5aa5386656bd1fd0a34cc05d",
+          "blob": "0b196e0b6c7931f2084e7914ba36d80c17b9f7e0",
+          "size": 30498,
+          "lines": 658
+        },
+        {
+          "path": "plasmazones/kwin-effect/compositor/windowanimator.h",
+          "ref": "b0345bd89c7187ab5aa5386656bd1fd0a34cc05d",
+          "blob": "4ab2cba238c50dbd092a4bb56a62a308e0055348",
+          "size": 10267,
+          "lines": 245
+        },
+        {
+          "path": "plasmazones/kwin-effect/compositor/stripviewanimator.cpp",
+          "ref": "b0345bd89c7187ab5aa5386656bd1fd0a34cc05d",
+          "blob": "0eb04735e047f32eb29e7a2f42da48450b79a530",
+          "size": 13267,
+          "lines": 338
+        },
+        {
+          "path": "plasmazones/kwin-effect/plasmazoneseffect/daemon_apply.cpp",
+          "ref": "b0345bd89c7187ab5aa5386656bd1fd0a34cc05d",
+          "blob": "69218be215c537925e1e66da5483fd03e9532e57",
+          "size": 65695,
+          "lines": 1136
+        },
+        {
+          "path": "plasmazones/kwin-effect/plasmazoneseffect/daemon_bringup.cpp",
+          "ref": "b0345bd89c7187ab5aa5386656bd1fd0a34cc05d",
+          "blob": "0700ac7b5c3da7514aaa633795c6def6beaf3e32",
+          "size": 52948,
+          "lines": 888
+        },
+        {
+          "path": "plasmazones/kwin-effect/plasmazoneseffect/window_geometry_apply.cpp",
+          "ref": "b0345bd89c7187ab5aa5386656bd1fd0a34cc05d",
+          "blob": "451d88ca3a63579c476c2be9c08157547fc19c9f",
+          "size": 60034,
+          "lines": 978
+        },
+        {
+          "path": "plasmazones/kwin-effect/plasmazoneseffect/window_connections.cpp",
+          "ref": "b0345bd89c7187ab5aa5386656bd1fd0a34cc05d",
+          "blob": "2cde3a9ef9d95309f16e13f6a05c259724f7b5bb",
+          "size": 61574,
+          "lines": 1012
+        },
+        {
+          "path": "plasmazones/kwin-effect/plasmazoneseffect/window_lifecycle.cpp",
+          "ref": "b0345bd89c7187ab5aa5386656bd1fd0a34cc05d",
+          "blob": "29a807002dfa517959c71f63c4b81f071c13e20c",
+          "size": 60113,
+          "lines": 1084
+        },
+        {
+          "path": "plasmazones/kwin-effect/plasmazoneseffect/lifecycle_wiring_daemon.cpp",
+          "ref": "b0345bd89c7187ab5aa5386656bd1fd0a34cc05d",
+          "blob": "244bee4cba61932c5fac267d8e0de513de367752",
+          "size": 31350,
+          "lines": 521
+        },
+        {
+          "path": "plasmazones/kwin-effect/plasmazoneseffect/window_identity.cpp",
+          "ref": "b0345bd89c7187ab5aa5386656bd1fd0a34cc05d",
+          "blob": "a7976c10ee437a168d33a2d2c2b7bc722ecd4e7d",
+          "size": 27345,
+          "lines": 551
+        },
+        {
+          "path": "plasmazones/kwin-effect/plasmazoneseffect/paint_pipeline.cpp",
+          "ref": "b0345bd89c7187ab5aa5386656bd1fd0a34cc05d",
+          "blob": "7a079a32708c7177466e564dcaabd737eddd2928",
+          "size": 135876,
+          "lines": 2139
+        },
+        {
+          "path": "plasmazones/kwin-effect/tilinghandler/signals.cpp",
+          "ref": "b0345bd89c7187ab5aa5386656bd1fd0a34cc05d",
+          "blob": "5d92273cf09d89584d8caf90058d5f511f95f75d",
+          "size": 52711,
+          "lines": 858
+        },
+        {
+          "path": "plasmazones/kwin-effect/tilinghandler/tiling.cpp",
+          "ref": "b0345bd89c7187ab5aa5386656bd1fd0a34cc05d",
+          "blob": "2162faaaf961ae4810432669d8f2086dbf8c22ff",
+          "size": 191440,
+          "lines": 2863
+        },
+        {
+          "path": "phosphor-libs/libs/phosphor-tile-engine/src/autotileengine/core.cpp",
+          "ref": "b0345bd89c7187ab5aa5386656bd1fd0a34cc05d",
+          "blob": "34024d3158f6f8296e1722de270f8d9fa7525d1a",
+          "size": 20332,
+          "lines": 374
+        },
+        {
+          "path": "phosphor-libs/libs/phosphor-tile-engine/src/autotileengine/retile.cpp",
+          "ref": "b0345bd89c7187ab5aa5386656bd1fd0a34cc05d",
+          "blob": "d652136fe897ce38b9d9de1b9576c41f78eb6c47",
+          "size": 21524,
+          "lines": 506
+        },
+        {
+          "path": "phosphor-libs/libs/phosphor-tile-engine/src/autotileengine/layout_apply.cpp",
+          "ref": "b0345bd89c7187ab5aa5386656bd1fd0a34cc05d",
+          "blob": "e2bbf46d00407a5bf6d0493e41ac7683bfdaf308",
+          "size": 42011,
+          "lines": 800
+        },
+        {
+          "path": "phosphor-libs/libs/phosphor-tile-engine/src/autotileengine/window_lifecycle.cpp",
+          "ref": "b0345bd89c7187ab5aa5386656bd1fd0a34cc05d",
+          "blob": "1a09790dbd5b27fb5aab860a0b771e51568c3826",
+          "size": 56246,
+          "lines": 1030
+        },
+        {
+          "path": "phosphor-libs/libs/phosphor-tiles/include/PhosphorTiles/TilingAlgorithm.h",
+          "ref": "b0345bd89c7187ab5aa5386656bd1fd0a34cc05d",
+          "blob": "3fe77daba9c3cd65d3ce17fd2df8ace94cd10876",
+          "size": 21575,
+          "lines": 525
+        },
+        {
+          "path": "phosphor-libs/libs/phosphor-tiles/src/luautilealgorithm.cpp",
+          "ref": "b0345bd89c7187ab5aa5386656bd1fd0a34cc05d",
+          "blob": "b8d624f694f14494ee1b41feea44abccac0bf0b3",
+          "size": 43429,
+          "lines": 1004
+        },
+        {
+          "path": "phosphor-libs/libs/phosphor-tiles/src/splittree.cpp",
+          "ref": "b0345bd89c7187ab5aa5386656bd1fd0a34cc05d",
+          "blob": "2b5db5964981296539af61bce91e975371442693",
+          "size": 21792,
+          "lines": 657
+        },
+        {
+          "path": "phosphor-libs/libs/phosphor-scroll-engine/src/scrollengine/engine_apply.cpp",
+          "ref": "b0345bd89c7187ab5aa5386656bd1fd0a34cc05d",
+          "blob": "de6575b724308b0cf6b18ffa9aa55b784951e76c",
+          "size": 60560,
+          "lines": 999
+        },
+        {
+          "path": "phosphor-libs/libs/phosphor-compositor/include/PhosphorCompositor/DaemonClient.h",
+          "ref": "b0345bd89c7187ab5aa5386656bd1fd0a34cc05d",
+          "blob": "2f928f265c93f2edf7eab4feef339331acd1db31",
+          "size": 7522,
+          "lines": 168
+        },
+        {
+          "path": "phosphor-libs/libs/phosphor-compositor/include/PhosphorCompositor/DebouncedAction.h",
+          "ref": "b0345bd89c7187ab5aa5386656bd1fd0a34cc05d",
+          "blob": "65663c546c7cde06aa83dbcf6b55871644c88671",
+          "size": 4098,
+          "lines": 148
+        }
+      ]
+    },
+    {
+      "repository": "baskerville/bspwm",
+      "defaultSnapshotCommit": "e11eff4cb3333216ad03c815609a4ed79e08929c",
+      "defaultSnapshotCommitDate": "2026-01-08T18:04:42Z",
+      "commitSubject": "Fix floating window border offset bug in configure_request",
+      "acquiredFiles": [
+        {
+          "path": "src/ewmh.c",
+          "ref": "e11eff4cb3333216ad03c815609a4ed79e08929c",
+          "blob": "52f7e53a91d185e8b32c16d20e2a76929052c221",
+          "size": 8794,
+          "lines": 300
+        },
+        {
+          "path": "README.md",
+          "ref": "e11eff4cb3333216ad03c815609a4ed79e08929c",
+          "blob": "222872101fe3569eafa133c208b91447bb41da91",
+          "size": 9567,
+          "lines": 195
+        },
+        {
+          "path": "src/tree.c",
+          "ref": "e11eff4cb3333216ad03c815609a4ed79e08929c",
+          "blob": "52055c591b444d0a785f28d700d6984b1870f43f",
+          "size": 54669,
+          "lines": 2310
+        },
+        {
+          "path": "src/window.c",
+          "ref": "e11eff4cb3333216ad03c815609a4ed79e08929c",
+          "blob": "7edf5d45ef76472f952379b44f4faacf354a5f75",
+          "size": 27181,
+          "lines": 997
+        }
+      ]
+    },
+    {
+      "repository": "i3/i3",
+      "defaultSnapshotCommit": "be04c853ee7fa01a82a0c81f8217565395e2627c",
+      "defaultSnapshotCommitDate": "2026-10-12T06:27:01Z",
+      "commitSubject": "Fix a link to Arch Linux wiki (#6658)",
+      "acquiredFiles": [
+        {
+          "path": "src/tree.c",
+          "ref": "be04c853ee7fa01a82a0c81f8217565395e2627c",
+          "blob": "0d505fbef08654cdcd2713d6f04ab89e8df0b144",
+          "size": 25647,
+          "lines": 747
+        },
+        {
+          "path": "src/render.c",
+          "ref": "be04c853ee7fa01a82a0c81f8217565395e2627c",
+          "blob": "939fe94842101e39d5047d0a1972250f80b592fe",
+          "size": 17709,
+          "lines": 497
+        },
+        {
+          "path": "README.md",
+          "ref": "be04c853ee7fa01a82a0c81f8217565395e2627c",
+          "blob": "c66c4c3566c0d09c54c166e35fcb2411ded08f40",
+          "size": 942,
+          "lines": 16
+        },
+        {
+          "path": "src/ewmh.c",
+          "ref": "be04c853ee7fa01a82a0c81f8217565395e2627c",
+          "blob": "3929e7c3f620b8a0962868b1151d4e6c2324d83a",
+          "size": 12486,
+          "lines": 395
+        }
+      ]
+    }
+  ],
+  "evidence": {
+    "P01-driver": {
+      "repository": "esjeon/krohnkite",
+      "commit": "bc6fe23afe4eb545a75755206e982b273426e32e",
+      "path": "src/driver/kwin/kwindriver.ts",
+      "url": "https://github.com/esjeon/krohnkite/blob/bc6fe23afe4eb545a75755206e982b273426e32e/src/driver/kwin/kwindriver.ts",
+      "symbols": "KWinDriver.main, bindEvents, connect, enter; first-show fallback and nested-event suppression",
+      "lines": 367
+    },
+    "P01-engine": {
+      "repository": "esjeon/krohnkite",
+      "commit": "bc6fe23afe4eb545a75755206e982b273426e32e",
+      "path": "src/engine/engine.ts",
+      "url": "https://github.com/esjeon/krohnkite/blob/bc6fe23afe4eb545a75755206e982b273426e32e/src/engine/engine.ts",
+      "symbols": "TilingEngine.arrange, arrangeScreen; solve each visible screen and commit window state",
+      "lines": 471
+    },
+    "P01-window": {
+      "repository": "esjeon/krohnkite",
+      "commit": "bc6fe23afe4eb545a75755206e982b273426e32e",
+      "path": "src/driver/kwin/kwinwindow.ts",
+      "url": "https://github.com/esjeon/krohnkite/blob/bc6fe23afe4eb545a75755206e982b273426e32e/src/driver/kwin/kwinwindow.ts",
+      "symbols": "KWinWindow.commit and adjustGeometry; geometry, borders, min/max and increments",
+      "lines": 214
+    },
+    "P01-layout": {
+      "repository": "esjeon/krohnkite",
+      "commit": "bc6fe23afe4eb545a75755206e982b273426e32e",
+      "path": "src/layouts/tilelayout.ts",
+      "url": "https://github.com/esjeon/krohnkite/blob/bc6fe23afe4eb545a75755206e982b273426e32e/src/layouts/tilelayout.ts",
+      "symbols": "Master/stack application and layout adjustment",
+      "lines": 129
+    },
+    "P01-state": {
+      "repository": "esjeon/krohnkite",
+      "commit": "bc6fe23afe4eb545a75755206e982b273426e32e",
+      "path": "src/engine/window.ts",
+      "url": "https://github.com/esjeon/krohnkite/blob/bc6fe23afe4eb545a75755206e982b273426e32e/src/engine/window.ts",
+      "symbols": "WindowState, desired and float geometry, commit",
+      "lines": 207
+    },
+    "P02-driver": {
+      "repository": "anametologin/krohnkite",
+      "commit": "f5865562955c45fddb9f4c6ae7e657140d670a95",
+      "path": "src/driver/kwindriver.ts",
+      "url": "https://github.com/anametologin/krohnkite/blob/f5865562955c45fddb9f4c6ae7e657140d670a95/src/driver/kwindriver.ts",
+      "symbols": "KWinDriver.enter, output movement polling, modern window signals",
+      "lines": 1350
+    },
+    "P02-engine": {
+      "repository": "anametologin/krohnkite",
+      "commit": "f5865562955c45fddb9f4c6ae7e657140d670a95",
+      "path": "src/engine/engine.ts",
+      "url": "https://github.com/anametologin/krohnkite/blob/f5865562955c45fddb9f4c6ae7e657140d670a95/src/engine/engine.ts",
+      "symbols": "Surface collection, capacity and overflow transfers, arrangeScreen",
+      "lines": 935
+    },
+    "P02-window": {
+      "repository": "anametologin/krohnkite",
+      "commit": "f5865562955c45fddb9f4c6ae7e657140d670a95",
+      "path": "src/driver/kwinwindow.ts",
+      "url": "https://github.com/anametologin/krohnkite/blob/f5865562955c45fddb9f4c6ae7e657140d670a95/src/driver/kwinwindow.ts",
+      "symbols": "Geometry assignment, output confinement, pointer actions",
+      "lines": 354
+    },
+    "P02-timer": {
+      "repository": "anametologin/krohnkite",
+      "commit": "f5865562955c45fddb9f4c6ae7e657140d670a95",
+      "path": "src/driver/kwinsettimeout.ts",
+      "url": "https://github.com/anametologin/krohnkite/blob/f5865562955c45fddb9f4c6ae7e657140d670a95/src/driver/kwinsettimeout.ts",
+      "symbols": "Pooled dynamically created QML Timer instances",
+      "lines": 56
+    },
+    "P02-readme": {
+      "repository": "anametologin/krohnkite",
+      "commit": "f5865562955c45fddb9f4c6ae7e657140d670a95",
+      "path": "README.md",
+      "url": "https://github.com/anametologin/krohnkite/blob/f5865562955c45fddb9f4c6ae7e657140d670a95/README.md",
+      "symbols": "Explicit Codeberg migration and reload warning",
+      "lines": 274
+    },
+    "P03-driver": {
+      "repository": "Bismuth-Forge/bismuth",
+      "commit": "ef69afe69f615149ab347e4402862ee900452a65",
+      "path": "src/kwinscript/driver/index.ts",
+      "url": "https://github.com/Bismuth-Forge/bismuth/blob/ef69afe69f615149ab347e4402862ee900452a65/src/kwinscript/driver/index.ts",
+      "symbols": "DriverImpl, connection registry, drop, enter",
+      "lines": 431
+    },
+    "P03-engine": {
+      "repository": "Bismuth-Forge/bismuth",
+      "commit": "ef69afe69f615149ab347e4402862ee900452a65",
+      "path": "src/kwinscript/engine/index.ts",
+      "url": "https://github.com/Bismuth-Forge/bismuth/blob/ef69afe69f615149ab347e4402862ee900452a65/src/kwinscript/engine/index.ts",
+      "symbols": "TypeScript engine and arrangement",
+      "lines": 741
+    },
+    "P03-core": {
+      "repository": "Bismuth-Forge/bismuth",
+      "commit": "ef69afe69f615149ab347e4402862ee900452a65",
+      "path": "src/core/controller.cpp",
+      "url": "https://github.com/Bismuth-Forge/bismuth/blob/ef69afe69f615149ab347e4402862ee900452a65/src/core/controller.cpp",
+      "symbols": "C++ action registration through KGlobalAccel",
+      "lines": 57
+    },
+    "P03-proxy": {
+      "repository": "Bismuth-Forge/bismuth",
+      "commit": "ef69afe69f615149ab347e4402862ee900452a65",
+      "path": "src/core/ts-proxy.cpp",
+      "url": "https://github.com/Bismuth-Forge/bismuth/blob/ef69afe69f615149ab347e4402862ee900452a65/src/core/ts-proxy.cpp",
+      "symbols": "Bridge from TypeScript to supporting C++ functionality",
+      "lines": 133
+    },
+    "P03-kcm": {
+      "repository": "Bismuth-Forge/bismuth",
+      "commit": "ef69afe69f615149ab347e4402862ee900452a65",
+      "path": "src/kcm/package/contents/ui/main.qml",
+      "url": "https://github.com/Bismuth-Forge/bismuth/blob/ef69afe69f615149ab347e4402862ee900452a65/src/kcm/package/contents/ui/main.qml",
+      "symbols": "KCM settings shell and page integration",
+      "lines": 68
+    },
+    "P04-controller": {
+      "repository": "zeroxoneafour/polonium",
+      "commit": "227967ed448205d42b5e63e4cc4b868d72606467",
+      "path": "src/controller/index.ts",
+      "url": "https://github.com/zeroxoneafour/polonium/blob/227967ed448205d42b5e63e4cc4b868d72606467/src/controller/index.ts",
+      "symbols": "Event/post-event queues, processingEvents, per-display rebuilds",
+      "lines": 686
+    },
+    "P04-events": {
+      "repository": "zeroxoneafour/polonium",
+      "commit": "227967ed448205d42b5e63e4cc4b868d72606467",
+      "path": "src/controller/event.ts",
+      "url": "https://github.com/zeroxoneafour/polonium/blob/227967ed448205d42b5e63e4cc4b868d72606467/src/controller/event.ts",
+      "symbols": "Display key, simplifyEvents, duplicate/cancellation passes",
+      "lines": 282
+    },
+    "P04-config": {
+      "repository": "zeroxoneafour/polonium",
+      "commit": "227967ed448205d42b5e63e4cc4b868d72606467",
+      "path": "src/controller/config.ts",
+      "url": "https://github.com/zeroxoneafour/polonium/blob/227967ed448205d42b5e63e4cc4b868d72606467/src/controller/config.ts",
+      "symbols": "RebuildDelay default and engine/rule options",
+      "lines": 160
+    },
+    "P04-build": {
+      "repository": "zeroxoneafour/polonium",
+      "commit": "227967ed448205d42b5e63e4cc4b868d72606467",
+      "path": "src/driver/buildlayout.ts",
+      "url": "https://github.com/zeroxoneafour/polonium/blob/227967ed448205d42b5e63e4cc4b868d72606467/src/driver/buildlayout.ts",
+      "symbols": "BFS reconciliation, matchChildren, temporary minimum sizing",
+      "lines": 189
+    },
+    "P04-driver": {
+      "repository": "zeroxoneafour/polonium",
+      "commit": "227967ed448205d42b5e63e4cc4b868d72606467",
+      "path": "src/driver/index.ts",
+      "url": "https://github.com/zeroxoneafour/polonium/blob/227967ed448205d42b5e63e4cc4b868d72606467/src/driver/index.ts",
+      "symbols": "Window/tile maps, buildLayout, Tile.manage, native tile callbacks",
+      "lines": 478
+    },
+    "P04-btree": {
+      "repository": "zeroxoneafour/polonium",
+      "commit": "227967ed448205d42b5e63e4cc4b868d72606467",
+      "path": "src/engine/layouts/btree.ts",
+      "url": "https://github.com/zeroxoneafour/polonium/blob/227967ed448205d42b5e63e4cc4b868d72606467/src/engine/layouts/btree.ts",
+      "symbols": "Persistent binary-tree engine and insertion strategies",
+      "lines": 238
+    },
+    "P04-main": {
+      "repository": "zeroxoneafour/polonium",
+      "commit": "227967ed448205d42b5e63e4cc4b868d72606467",
+      "path": "src/qml/main.qml",
+      "url": "https://github.com/zeroxoneafour/polonium/blob/227967ed448205d42b5e63e4cc4b868d72606467/src/qml/main.qml",
+      "symbols": "Declarative root, timer, handlers and TypeScript entry",
+      "lines": 50
+    },
+    "P05-world": {
+      "repository": "peterfajdiga/karousel",
+      "commit": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+      "path": "src/lib/world/World.ts",
+      "url": "https://github.com/peterfajdiga/karousel/blob/8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b/src/lib/world/World.ts",
+      "symbols": "Command/update flow and output settle delayer",
+      "lines": 165
+    },
+    "P05-context": {
+      "repository": "peterfajdiga/karousel",
+      "commit": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+      "path": "src/lib/world/DesktopManager.ts",
+      "url": "https://github.com/peterfajdiga/karousel/blob/8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b/src/lib/world/DesktopManager.ts",
+      "symbols": "activity|desktop key and selectedScreen model",
+      "lines": 145
+    },
+    "P05-wrapper": {
+      "repository": "peterfajdiga/karousel",
+      "commit": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+      "path": "src/lib/world/ClientWrapper.ts",
+      "url": "https://github.com/peterfajdiga/karousel/blob/8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b/src/lib/world/ClientWrapper.ts",
+      "symbols": "place, geometry manipulation guard and Wayland workaround",
+      "lines": 183
+    },
+    "P05-grid": {
+      "repository": "peterfajdiga/karousel",
+      "commit": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+      "path": "src/lib/layout/Grid.ts",
+      "url": "https://github.com/peterfajdiga/karousel/blob/8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b/src/lib/layout/Grid.ts",
+      "symbols": "Column linked list, arrange, width updates, resize-finish delay",
+      "lines": 235
+    },
+    "P05-column": {
+      "repository": "peterfajdiga/karousel",
+      "commit": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+      "path": "src/lib/layout/Column.ts",
+      "url": "https://github.com/peterfajdiga/karousel/blob/8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b/src/lib/layout/Column.ts",
+      "symbols": "Column arrangement and stacked windows",
+      "lines": 345
+    },
+    "P05-tiled": {
+      "repository": "peterfajdiga/karousel",
+      "commit": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+      "path": "src/lib/world/clientState/Tiled.ts",
+      "url": "https://github.com/peterfajdiga/karousel/blob/8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b/src/lib/world/clientState/Tiled.ts",
+      "symbols": "Resize ownership and external-geometry rate limiter",
+      "lines": 267
+    },
+    "P05-signals": {
+      "repository": "peterfajdiga/karousel",
+      "commit": "8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b",
+      "path": "src/lib/utils/SignalManager.ts",
+      "url": "https://github.com/peterfajdiga/karousel/blob/8b9f0b62b2922703d7c25a79d5d49ae93cd3f93b/src/lib/utils/SignalManager.ts",
+      "symbols": "Connection lifecycle management",
+      "lines": 19
+    },
+    "P06-main": {
+      "repository": "Serroda/fluid-tile",
+      "commit": "a980ec9c19e49ec84ab3665e1cd4a4d30adf1570",
+      "path": "contents/code/main.mjs",
+      "url": "https://github.com/Serroda/fluid-tile/blob/a980ec9c19e49ec84ab3665e1cd4a4d30adf1570/contents/code/main.mjs",
+      "symbols": "Engine lifecycle, tile changes, deferral and layout overflow",
+      "lines": 377
+    },
+    "P06-windows": {
+      "repository": "Serroda/fluid-tile",
+      "commit": "a980ec9c19e49ec84ab3665e1cd4a4d30adf1570",
+      "path": "contents/code/windows.mjs",
+      "url": "https://github.com/Serroda/fluid-tile/blob/a980ec9c19e49ec84ab3665e1cd4a4d30adf1570/contents/code/windows.mjs",
+      "symbols": "Native assignment, shadow tile, extension and geometry",
+      "lines": 527
+    },
+    "P06-tiles": {
+      "repository": "Serroda/fluid-tile",
+      "commit": "a980ec9c19e49ec84ab3665e1cd4a4d30adf1570",
+      "path": "contents/code/tiles.mjs",
+      "url": "https://github.com/Serroda/fluid-tile/blob/a980ec9c19e49ec84ab3665e1cd4a4d30adf1570/contents/code/tiles.mjs",
+      "symbols": "Native layout parsing and tile selection",
+      "lines": 358
+    },
+    "P06-timer": {
+      "repository": "Serroda/fluid-tile",
+      "commit": "a980ec9c19e49ec84ab3665e1cd4a4d30adf1570",
+      "path": "contents/code/timer.mjs",
+      "url": "https://github.com/Serroda/fluid-tile/blob/a980ec9c19e49ec84ab3665e1cd4a4d30adf1570/contents/code/timer.mjs",
+      "symbols": "Per-ID timer jobs and restart semantics",
+      "lines": 28
+    },
+    "P06-qml": {
+      "repository": "Serroda/fluid-tile",
+      "commit": "a980ec9c19e49ec84ab3665e1cd4a4d30adf1570",
+      "path": "contents/ui/main.qml",
+      "url": "https://github.com/Serroda/fluid-tile/blob/a980ec9c19e49ec84ab3665e1cd4a4d30adf1570/contents/ui/main.qml",
+      "symbols": "QML timer instantiation and 350/300 ms special-path defaults",
+      "lines": 149
+    },
+    "P07-retile": {
+      "repository": "fuddlesworth/PlasmaZones",
+      "commit": "b0345bd89c7187ab5aa5386656bd1fd0a34cc05d",
+      "path": "phosphor-libs/libs/phosphor-tile-engine/src/autotileengine/retile.cpp",
+      "url": "https://github.com/fuddlesworth/PlasmaZones/blob/b0345bd89c7187ab5aa5386656bd1fd0a34cc05d/phosphor-libs/libs/phosphor-tile-engine/src/autotileengine/retile.cpp",
+      "symbols": "Queued per-screen coalescing, immediate operations, bounded retry",
+      "lines": 505
+    },
+    "P07-apply": {
+      "repository": "fuddlesworth/PlasmaZones",
+      "commit": "b0345bd89c7187ab5aa5386656bd1fd0a34cc05d",
+      "path": "plasmazones/kwin-effect/plasmazoneseffect/window_geometry_apply.cpp",
+      "url": "https://github.com/fuddlesworth/PlasmaZones/blob/b0345bd89c7187ab5aa5386656bd1fd0a34cc05d/plasmazones/kwin-effect/plasmazoneseffect/window_geometry_apply.cpp",
+      "symbols": "Commanded versus committed geometry, stamps, no-op guard, stale-ack handling",
+      "lines": 977
+    },
+    "P07-batch": {
+      "repository": "fuddlesworth/PlasmaZones",
+      "commit": "b0345bd89c7187ab5aa5386656bd1fd0a34cc05d",
+      "path": "plasmazones/kwin-effect/plasmazoneseffect/daemon_apply.cpp",
+      "url": "https://github.com/fuddlesworth/PlasmaZones/blob/b0345bd89c7187ab5aa5386656bd1fd0a34cc05d/plasmazones/kwin-effect/plasmazoneseffect/daemon_apply.cpp",
+      "symbols": "slotApplyGeometriesBatch, per-window commands and context checks",
+      "lines": 1135
+    },
+    "P07-daemon": {
+      "repository": "fuddlesworth/PlasmaZones",
+      "commit": "b0345bd89c7187ab5aa5386656bd1fd0a34cc05d",
+      "path": "phosphor-libs/libs/phosphor-compositor/include/PhosphorCompositor/DaemonClient.h",
+      "url": "https://github.com/fuddlesworth/PlasmaZones/blob/b0345bd89c7187ab5aa5386656bd1fd0a34cc05d/phosphor-libs/libs/phosphor-compositor/include/PhosphorCompositor/DaemonClient.h",
+      "symbols": "D-Bus client and geometry handler boundary",
+      "lines": 167
+    },
+    "P07-clock": {
+      "repository": "fuddlesworth/PlasmaZones",
+      "commit": "b0345bd89c7187ab5aa5386656bd1fd0a34cc05d",
+      "path": "plasmazones/kwin-effect/compositor/compositorclock.cpp",
+      "url": "https://github.com/fuddlesworth/PlasmaZones/blob/b0345bd89c7187ab5aa5386656bd1fd0a34cc05d/plasmazones/kwin-effect/compositor/compositorclock.cpp",
+      "symbols": "Compositor clock integration",
+      "lines": 161
+    },
+    "P07-animation": {
+      "repository": "fuddlesworth/PlasmaZones",
+      "commit": "b0345bd89c7187ab5aa5386656bd1fd0a34cc05d",
+      "path": "plasmazones/kwin-effect/compositor/windowanimator.cpp",
+      "url": "https://github.com/fuddlesworth/PlasmaZones/blob/b0345bd89c7187ab5aa5386656bd1fd0a34cc05d/plasmazones/kwin-effect/compositor/windowanimator.cpp",
+      "symbols": "Animation ownership, retargeting, repaint and cleanup",
+      "lines": 657
+    },
+    "P07-deferred": {
+      "repository": "fuddlesworth/PlasmaZones",
+      "commit": "b0345bd89c7187ab5aa5386656bd1fd0a34cc05d",
+      "path": "plasmazones/kwin-effect/compositor/deferredwindowcommits.h",
+      "url": "https://github.com/fuddlesworth/PlasmaZones/blob/b0345bd89c7187ab5aa5386656bd1fd0a34cc05d/plasmazones/kwin-effect/compositor/deferredwindowcommits.h",
+      "symbols": "Cancellable per-window deferred operations and lifetime safety",
+      "lines": 117
+    },
+    "P07-luau": {
+      "repository": "fuddlesworth/PlasmaZones",
+      "commit": "b0345bd89c7187ab5aa5386656bd1fd0a34cc05d",
+      "path": "phosphor-libs/libs/phosphor-tiles/src/luautilealgorithm.cpp",
+      "url": "https://github.com/fuddlesworth/PlasmaZones/blob/b0345bd89c7187ab5aa5386656bd1fd0a34cc05d/phosphor-libs/libs/phosphor-tiles/src/luautilealgorithm.cpp",
+      "symbols": "Separate VM policy, cached metadata, watchdog invocation, bounded zone validation",
+      "lines": 1003
+    },
+    "P07-compat": {
+      "repository": "fuddlesworth/PlasmaZones",
+      "commit": "b0345bd89c7187ab5aa5386656bd1fd0a34cc05d",
+      "path": "plasmazones/kwin-effect/kwincompat.h",
+      "url": "https://github.com/fuddlesworth/PlasmaZones/blob/b0345bd89c7187ab5aa5386656bd1fd0a34cc05d/plasmazones/kwin-effect/kwincompat.h",
+      "symbols": "Explicit 6.7 versus 6.8 rendering API differences",
+      "lines": 202
+    },
+    "P07-bridge": {
+      "repository": "fuddlesworth/PlasmaZones",
+      "commit": "b0345bd89c7187ab5aa5386656bd1fd0a34cc05d",
+      "path": "plasmazones/kwin-effect/compositor/compositorbridge.cpp",
+      "url": "https://github.com/fuddlesworth/PlasmaZones/blob/b0345bd89c7187ab5aa5386656bd1fd0a34cc05d/plasmazones/kwin-effect/compositor/compositorbridge.cpp",
+      "symbols": "Native KWin access and window lifetime filtering",
+      "lines": 325
+    },
+    "P08-qml": {
+      "repository": "gerritdevriese/kzones",
+      "commit": "e261b5ffb7af5d16a42764349783b464c70719af",
+      "path": "src/contents/ui/main.qml",
+      "url": "https://github.com/gerritdevriese/kzones/blob/e261b5ffb7af5d16a42764349783b464c70719af/src/contents/ui/main.qml",
+      "symbols": "Overlay geometry, moveClientToZone, visible-only pointer polling",
+      "lines": 825
+    },
+    "P08-core": {
+      "repository": "gerritdevriese/kzones",
+      "commit": "e261b5ffb7af5d16a42764349783b464c70719af",
+      "path": "src/contents/code/core.mjs",
+      "url": "https://github.com/gerritdevriese/kzones/blob/e261b5ffb7af5d16a42764349783b464c70719af/src/contents/code/core.mjs",
+      "symbols": "Configuration defaults including polling and zone layout data",
+      "lines": 77
+    },
+    "P08-selector": {
+      "repository": "gerritdevriese/kzones",
+      "commit": "e261b5ffb7af5d16a42764349783b464c70719af",
+      "path": "src/contents/ui/components/Selector.qml",
+      "url": "https://github.com/gerritdevriese/kzones/blob/e261b5ffb7af5d16a42764349783b464c70719af/src/contents/ui/components/Selector.qml",
+      "symbols": "Visual zone selection interaction",
+      "lines": 84
+    },
+    "P09-main": {
+      "repository": "darkstego/Mudeer",
+      "commit": "0967c4637fe5504bfc56d4e0434505194d674c6f",
+      "path": "package/contents/code/main.js",
+      "url": "https://github.com/darkstego/Mudeer/blob/0967c4637fe5504bfc56d4e0434505194d674c6f/package/contents/code/main.js",
+      "symbols": "Tile.getGeometry, move, sequential shortcuts, portrait rotation",
+      "lines": 257
+    },
+    "P10-manager": {
+      "repository": "kwin-scripts/kwin-tiling",
+      "commit": "ab03bc34d76faa8c1511050c6b4d835825b4882d",
+      "path": "contents/code/tilingmanager.js",
+      "url": "https://github.com/kwin-scripts/kwin-tiling/blob/ab03bc34d76faa8c1511050c6b4d835825b4882d/contents/code/tilingmanager.js",
+      "symbols": "Workspace signals, tile manager, per-context layout management",
+      "lines": 1317
+    },
+    "P10-tiling": {
+      "repository": "kwin-scripts/kwin-tiling",
+      "commit": "ab03bc34d76faa8c1511050c6b4d835825b4882d",
+      "path": "contents/code/tiling.js",
+      "url": "https://github.com/kwin-scripts/kwin-tiling/blob/ab03bc34d76faa8c1511050c6b4d835825b4882d/contents/code/tiling.js",
+      "symbols": "_updateAllTiles, screen clipping and gaps",
+      "lines": 449
+    },
+    "P10-i3": {
+      "repository": "kwin-scripts/kwin-tiling",
+      "commit": "ab03bc34d76faa8c1511050c6b4d835825b4882d",
+      "path": "contents/code/i3layout.js",
+      "url": "https://github.com/kwin-scripts/kwin-tiling/blob/ab03bc34d76faa8c1511050c6b4d835825b4882d/contents/code/i3layout.js",
+      "symbols": "i3-style container tree layout",
+      "lines": 182
+    },
+    "P10-qml": {
+      "repository": "kwin-scripts/kwin-tiling",
+      "commit": "ab03bc34d76faa8c1511050c6b4d835825b4882d",
+      "path": "contents/ui/main.qml",
+      "url": "https://github.com/kwin-scripts/kwin-tiling/blob/ab03bc34d76faa8c1511050c6b4d835825b4882d/contents/ui/main.qml",
+      "symbols": "500 ms screen resize and 1 ms geometry timers",
+      "lines": 68
+    },
+    "P11-manager": {
+      "repository": "lingtjien/Grid-Tiling-Kwin",
+      "commit": "725c25b8242c603cbe0659f1e148f029241d2e76",
+      "path": "contents/component/manager.mjs",
+      "url": "https://github.com/lingtjien/Grid-Tiling-Kwin/blob/725c25b8242c603cbe0659f1e148f029241d2e76/contents/component/manager.mjs",
+      "symbols": "Lifecycle, force geometry, context delay, restore and teardown",
+      "lines": 247
+    },
+    "P11-layout": {
+      "repository": "lingtjien/Grid-Tiling-Kwin",
+      "commit": "725c25b8242c603cbe0659f1e148f029241d2e76",
+      "path": "contents/component/layout.mjs",
+      "url": "https://github.com/lingtjien/Grid-Tiling-Kwin/blob/725c25b8242c603cbe0659f1e148f029241d2e76/contents/component/layout.mjs",
+      "symbols": "Activity dispatch and render traversal",
+      "lines": 39
+    },
+    "P11-output": {
+      "repository": "lingtjien/Grid-Tiling-Kwin",
+      "commit": "725c25b8242c603cbe0659f1e148f029241d2e76",
+      "path": "contents/component/output.mjs",
+      "url": "https://github.com/lingtjien/Grid-Tiling-Kwin/blob/725c25b8242c603cbe0659f1e148f029241d2e76/contents/component/output.mjs",
+      "symbols": "Per-output lists, capacity, movement and resizing",
+      "lines": 225
+    },
+    "P11-list": {
+      "repository": "lingtjien/Grid-Tiling-Kwin",
+      "commit": "725c25b8242c603cbe0659f1e148f029241d2e76",
+      "path": "contents/component/list.mjs",
+      "url": "https://github.com/lingtjien/Grid-Tiling-Kwin/blob/725c25b8242c603cbe0659f1e148f029241d2e76/contents/component/list.mjs",
+      "symbols": "Row geometry, dividers, renderGeometry before KWin writes",
+      "lines": 105
+    },
+    "P11-config": {
+      "repository": "lingtjien/Grid-Tiling-Kwin",
+      "commit": "725c25b8242c603cbe0659f1e148f029241d2e76",
+      "path": "contents/component/config.mjs",
+      "url": "https://github.com/lingtjien/Grid-Tiling-Kwin/blob/725c25b8242c603cbe0659f1e148f029241d2e76/contents/component/config.mjs",
+      "symbols": "Cached configuration and delay default",
+      "lines": 129
+    },
+    "P11-main": {
+      "repository": "lingtjien/Grid-Tiling-Kwin",
+      "commit": "725c25b8242c603cbe0659f1e148f029241d2e76",
+      "path": "contents/component/main.mjs",
+      "url": "https://github.com/lingtjien/Grid-Tiling-Kwin/blob/725c25b8242c603cbe0659f1e148f029241d2e76/contents/component/main.mjs",
+      "symbols": "Workspace signal registration and destroy",
+      "lines": 42
+    },
+    "KDEV-window": {
+      "repository": "KDE/kwin",
+      "commit": "c08459bfa82671f14904e3eda513335a2b0fd7f9",
+      "path": "src/window.cpp",
+      "url": "https://github.com/KDE/kwin/blob/c08459bfa82671f14904e3eda513335a2b0fd7f9/src/window.cpp",
+      "symbols": "moveResize, requestedTile, requestTile and deprecated tile setter",
+      "lines": 4663
+    },
+    "KDEV-xdg": {
+      "repository": "KDE/kwin",
+      "commit": "c08459bfa82671f14904e3eda513335a2b0fd7f9",
+      "path": "src/xdgshellwindow.cpp",
+      "url": "https://github.com/KDE/kwin/blob/c08459bfa82671f14904e3eda513335a2b0fd7f9/src/xdgshellwindow.cpp",
+      "symbols": "scheduleConfigure, handleCommit, moveResizeInternal, handleRoleCommit",
+      "lines": 2071
+    },
+    "KDEV-scripting": {
+      "repository": "KDE/kwin",
+      "commit": "c08459bfa82671f14904e3eda513335a2b0fd7f9",
+      "path": "src/scripting/scripting.cpp",
+      "url": "https://github.com/KDE/kwin/blob/c08459bfa82671f14904e3eda513335a2b0fd7f9/src/scripting/scripting.cpp",
+      "symbols": "QJSEngine, declarative QQmlComponent, script load/unload and config changes",
+      "lines": 852
+    },
+    "KDEV-shortcut": {
+      "repository": "KDE/kwin",
+      "commit": "c08459bfa82671f14904e3eda513335a2b0fd7f9",
+      "path": "src/scripting/shortcuthandler.cpp",
+      "url": "https://github.com/KDE/kwin/blob/c08459bfa82671f14904e3eda513335a2b0fd7f9/src/scripting/shortcuthandler.cpp",
+      "symbols": "Shortcut registration and lifetime",
+      "lines": 97
+    },
+    "KDEV-loop": {
+      "repository": "KDE/kwin",
+      "commit": "c08459bfa82671f14904e3eda513335a2b0fd7f9",
+      "path": "src/core/renderloop.cpp",
+      "url": "https://github.com/KDE/kwin/blob/c08459bfa82671f14904e3eda513335a2b0fd7f9/src/core/renderloop.cpp",
+      "symbols": "Frame scheduling and presentation bookkeeping",
+      "lines": 368
+    },
+    "KDEV-tests": {
+      "repository": "KDE/kwin",
+      "commit": "c08459bfa82671f14904e3eda513335a2b0fd7f9",
+      "path": "autotests/integration/quick_tiling_test.cpp",
+      "url": "https://github.com/KDE/kwin/blob/c08459bfa82671f14904e3eda513335a2b0fd7f9/autotests/integration/quick_tiling_test.cpp",
+      "symbols": "Existing compositor-level tiling tests",
+      "lines": 2499
+    },
+    "I3-render": {
+      "repository": "i3/i3",
+      "commit": "be04c853ee7fa01a82a0c81f8217565395e2627c",
+      "path": "src/render.c",
+      "url": "https://github.com/i3/i3/blob/be04c853ee7fa01a82a0c81f8217565395e2627c/src/render.c",
+      "symbols": "Recursive container layout, splits, stacked/tabbed and dock areas",
+      "lines": 496
+    },
+    "I3-tree": {
+      "repository": "i3/i3",
+      "commit": "be04c853ee7fa01a82a0c81f8217565395e2627c",
+      "path": "src/tree.c",
+      "url": "https://github.com/i3/i3/blob/be04c853ee7fa01a82a0c81f8217565395e2627c/src/tree.c",
+      "symbols": "tree_render: calculate rectangles then x_push_changes",
+      "lines": 746
+    },
+    "I3-ewmh": {
+      "repository": "i3/i3",
+      "commit": "be04c853ee7fa01a82a0c81f8217565395e2627c",
+      "path": "src/ewmh.c",
+      "url": "https://github.com/i3/i3/blob/be04c853ee7fa01a82a0c81f8217565395e2627c/src/ewmh.c",
+      "symbols": "Desktop and active-window metadata integration",
+      "lines": 394
+    },
+    "BSP-tree": {
+      "repository": "baskerville/bspwm",
+      "commit": "e11eff4cb3333216ad03c815609a4ed79e08929c",
+      "path": "src/tree.c",
+      "url": "https://github.com/baskerville/bspwm/blob/e11eff4cb3333216ad03c815609a4ed79e08929c/src/tree.c",
+      "symbols": "arrange and apply_layout on persistent binary tree",
+      "lines": 2309
+    },
+    "BSP-window": {
+      "repository": "baskerville/bspwm",
+      "commit": "e11eff4cb3333216ad03c815609a4ed79e08929c",
+      "path": "src/window.c",
+      "url": "https://github.com/baskerville/bspwm/blob/e11eff4cb3333216ad03c815609a4ed79e08929c/src/window.c",
+      "symbols": "Window manage/resize and XCB configure operations",
+      "lines": 996
+    },
+    "BSP-ewmh": {
+      "repository": "baskerville/bspwm",
+      "commit": "e11eff4cb3333216ad03c815609a4ed79e08929c",
+      "path": "src/ewmh.c",
+      "url": "https://github.com/baskerville/bspwm/blob/e11eff4cb3333216ad03c815609a4ed79e08929c/src/ewmh.c",
+      "symbols": "EWMH desktop, work area and client properties",
+      "lines": 299
+    },
+    "K67-workspace": {
+      "repository": "KDE/kwin",
+      "commit": "717f774ec8db995c53a086d334ce89d118d8b80d",
+      "path": "src/scripting/workspace_wrapper.h",
+      "url": "https://github.com/KDE/kwin/blob/717f774ec8db995c53a086d334ce89d118d8b80d/src/scripting/workspace_wrapper.h",
+      "symbols": "rootTile, currentDesktopForScreen, clientArea, deprecated tilingForScreen",
+      "lines": 661
+    },
+    "K67-window": {
+      "repository": "KDE/kwin",
+      "commit": "717f774ec8db995c53a086d334ce89d118d8b80d",
+      "path": "src/window.h",
+      "url": "https://github.com/KDE/kwin/blob/717f774ec8db995c53a086d334ce89d118d8b80d/src/window.h",
+      "symbols": "Script-visible properties, signals, output mutability and requested tile compatibility",
+      "lines": 2187
+    },
+    "K67-tile": {
+      "repository": "KDE/kwin",
+      "commit": "717f774ec8db995c53a086d334ce89d118d8b80d",
+      "path": "src/tiles/tile.cpp",
+      "url": "https://github.com/KDE/kwin/blob/717f774ec8db995c53a086d334ce89d118d8b80d/src/tiles/tile.cpp",
+      "symbols": "setRelativeGeometry, work-area conversion, padding, manage/unmanage",
+      "lines": 592
+    },
+    "K67-tile-header": {
+      "repository": "KDE/kwin",
+      "commit": "717f774ec8db995c53a086d334ce89d118d8b80d",
+      "path": "src/tiles/tile.h",
+      "url": "https://github.com/KDE/kwin/blob/717f774ec8db995c53a086d334ce89d118d8b80d/src/tiles/tile.h",
+      "symbols": "Invokable surface and default minimum size",
+      "lines": 184
+    },
+    "K67-custom": {
+      "repository": "KDE/kwin",
+      "commit": "717f774ec8db995c53a086d334ce89d118d8b80d",
+      "path": "src/tiles/customtile.cpp",
+      "url": "https://github.com/KDE/kwin/blob/717f774ec8db995c53a086d334ce89d118d8b80d/src/tiles/customtile.cpp",
+      "symbols": "Split, remove and sibling geometry propagation",
+      "lines": 493
+    },
+    "K67-manager": {
+      "repository": "KDE/kwin",
+      "commit": "717f774ec8db995c53a086d334ce89d118d8b80d",
+      "path": "src/tiles/tilemanager.cpp",
+      "url": "https://github.com/KDE/kwin/blob/717f774ec8db995c53a086d334ce89d118d8b80d/src/tiles/tilemanager.cpp",
+      "symbols": "Output/desktop roots and debounced settings persistence",
+      "lines": 409
+    },
+    "K67-xdg": {
+      "repository": "KDE/kwin",
+      "commit": "717f774ec8db995c53a086d334ce89d118d8b80d",
+      "path": "src/xdgshellwindow.cpp",
+      "url": "https://github.com/KDE/kwin/blob/717f774ec8db995c53a086d334ce89d118d8b80d/src/xdgshellwindow.cpp",
+      "symbols": "Asynchronous configure and client commit semantics",
+      "lines": 2106
+    },
+    "K67-version": {
+      "repository": "KDE/kwin",
+      "commit": "717f774ec8db995c53a086d334ce89d118d8b80d",
+      "path": "CMakeLists.txt",
+      "url": "https://github.com/KDE/kwin/blob/717f774ec8db995c53a086d334ce89d118d8b80d/CMakeLists.txt",
+      "symbols": "Exact development version string and dependencies",
+      "lines": 545
+    },
+    "K68-workspace": {
+      "repository": "KDE/kwin",
+      "commit": "21e5e225370fbcaf7e49bd97751f9c29c280e2c6",
+      "path": "src/scripting/workspace_wrapper.h",
+      "url": "https://github.com/KDE/kwin/blob/21e5e225370fbcaf7e49bd97751f9c29c280e2c6/src/scripting/workspace_wrapper.h",
+      "symbols": "rootTile, currentDesktopForScreen, clientArea, deprecated tilingForScreen",
+      "lines": 667
+    },
+    "K68-window": {
+      "repository": "KDE/kwin",
+      "commit": "21e5e225370fbcaf7e49bd97751f9c29c280e2c6",
+      "path": "src/window.h",
+      "url": "https://github.com/KDE/kwin/blob/21e5e225370fbcaf7e49bd97751f9c29c280e2c6/src/window.h",
+      "symbols": "Script-visible properties, signals, output mutability and requested tile compatibility",
+      "lines": 2360
+    },
+    "K68-tile": {
+      "repository": "KDE/kwin",
+      "commit": "21e5e225370fbcaf7e49bd97751f9c29c280e2c6",
+      "path": "src/tiles/tile.cpp",
+      "url": "https://github.com/KDE/kwin/blob/21e5e225370fbcaf7e49bd97751f9c29c280e2c6/src/tiles/tile.cpp",
+      "symbols": "setRelativeGeometry, work-area conversion, padding, manage/unmanage",
+      "lines": 592
+    },
+    "K68-tile-header": {
+      "repository": "KDE/kwin",
+      "commit": "21e5e225370fbcaf7e49bd97751f9c29c280e2c6",
+      "path": "src/tiles/tile.h",
+      "url": "https://github.com/KDE/kwin/blob/21e5e225370fbcaf7e49bd97751f9c29c280e2c6/src/tiles/tile.h",
+      "symbols": "Invokable surface and default minimum size",
+      "lines": 253
+    },
+    "K68-custom": {
+      "repository": "KDE/kwin",
+      "commit": "21e5e225370fbcaf7e49bd97751f9c29c280e2c6",
+      "path": "src/tiles/customtile.cpp",
+      "url": "https://github.com/KDE/kwin/blob/21e5e225370fbcaf7e49bd97751f9c29c280e2c6/src/tiles/customtile.cpp",
+      "symbols": "Split, remove and sibling geometry propagation",
+      "lines": 490
+    },
+    "K68-manager": {
+      "repository": "KDE/kwin",
+      "commit": "21e5e225370fbcaf7e49bd97751f9c29c280e2c6",
+      "path": "src/tiles/tilemanager.cpp",
+      "url": "https://github.com/KDE/kwin/blob/21e5e225370fbcaf7e49bd97751f9c29c280e2c6/src/tiles/tilemanager.cpp",
+      "symbols": "Output/desktop roots and debounced settings persistence",
+      "lines": 409
+    },
+    "K68-xdg": {
+      "repository": "KDE/kwin",
+      "commit": "21e5e225370fbcaf7e49bd97751f9c29c280e2c6",
+      "path": "src/xdgshellwindow.cpp",
+      "url": "https://github.com/KDE/kwin/blob/21e5e225370fbcaf7e49bd97751f9c29c280e2c6/src/xdgshellwindow.cpp",
+      "symbols": "Asynchronous configure and client commit semantics",
+      "lines": 2071
+    },
+    "K68-version": {
+      "repository": "KDE/kwin",
+      "commit": "21e5e225370fbcaf7e49bd97751f9c29c280e2c6",
+      "path": "CMakeLists.txt",
+      "url": "https://github.com/KDE/kwin/blob/21e5e225370fbcaf7e49bd97751f9c29c280e2c6/CMakeLists.txt",
+      "symbols": "Exact development version string and dependencies",
+      "lines": 555
+    }
+  }
+}

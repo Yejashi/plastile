@@ -1,0 +1,7 @@
+# Generated implementation evidence may contain private desktop metadata.
+/artifacts/
+/build/
+/dist/
+/node_modules/
+__pycache__/
+*.pyc
