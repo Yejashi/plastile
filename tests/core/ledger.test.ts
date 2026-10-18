@@ -42,6 +42,28 @@ test("E04 replay: A->B->A with B committed late is caught as stale (G05/G06)", (
   assert.equal(L.observe(e, A), "settled");
 });
 
+test("D8: an intermediate size committed after a newer request is superseded, not corrected", () => {
+  const C = rect(0, 0, 640, 480);
+  const e = L.newEntry(A);
+  L.recordWrite(e, B, 1, 0, "plan", A, A);   // configure B (size differs from the committed A)
+  L.recordWrite(e, C, 2, 10, "plan", A, A);  // configure C, sent too: A is still the committed size
+  assert.equal(L.observe(e, B), "superseded", "C's configure is still on its way");
+  assert.equal(e.outstanding, true);
+  assert.equal(L.observe(e, C), "settled");
+  // Its configure lost: at the deadline the intermediate size is no answer and never a constraint.
+  const f = L.newEntry(A);
+  L.recordWrite(f, B, 1, 0, "plan", A, A);
+  L.recordWrite(f, C, 2, 10, "plan", A, A);
+  L.observe(f, B);
+  assert.equal(L.expire(f, B).kind, "correct");
+  // A settled request whose older configure commits after it: nothing else is coming, correct.
+  const g = L.newEntry(A);
+  const moved = rect(100, 0, 512, 400);
+  L.recordWrite(g, B, 1, 0, "plan", A, A);
+  assert.equal(L.recordWrite(g, moved, 2, 10, "plan", A, moved), true, "committed size: position applied synchronously");
+  assert.equal(L.observe(g, rect(0, 0, 768, 560)), "stale");
+});
+
 test("corrections are bounded per desired target and reset for a new target", () => {
   const e = L.newEntry(A);
   L.recordWrite(e, B, 1, 0, "plan", A, A);

@@ -398,6 +398,8 @@ export class Engine {
         this.counters.stale++;
         if (this.ownsGeometry(r)) { this.corrections.add(id); this.ensureFlush(); }
         break;
+      case "superseded": this.counters.superseded++; break; // the newer configure follows; deadline-bounded
+
       case "partial": this.counters.partial++; break;
       case "external":
         this.counters.external++;

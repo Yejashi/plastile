@@ -219,6 +219,70 @@ test("G05/G06: A->B->A with a delayed client ends at A with one correction", () 
   assert.equal(e.outstandingCount(), 0);
 });
 
+test("D8/C09: a burst with queued configures writes each target once; intermediate commits are not corrected", () => {
+  const h = new MockHost();
+  h.outs = [{ id: "O1", name: "O1", geometry: rect(0, 0, 1920, 3000), scale: 1 }];
+  const e = h.start();
+  const ids: string[] = [];
+  const client = { delay: 30, delayMode: "each" as const }; // every configure commits in order
+  for (let wave = 0; wave < 2; ++wave) {
+    for (let i = 0; i < 16; ++i) { const id = `w${wave}-${i}`; ids.push(id); h.open(id, client); }
+    h.drain();
+    h.advance(10); // the next wave maps before the first wave's configures commit
+  }
+  h.advance(5000);
+  assertTiling(tiledFrames(h, ids), rect(0, 0, 1920, 3000));
+  assert.ok(e.counters.superseded > 0, "intermediate sizes were observed");
+  assert.equal(e.counters.corrections, 0, "no correction for an intermediate size");
+  for (const id of ids) {
+    const targets = h.writes.filter((w) => w.id === id).map((w) => JSON.stringify(w.target));
+    assert.equal(new Set(targets).size, targets.length, `${id}: a target written twice ${targets}`);
+  }
+  assert.ok(h.writes.length / ids.length <= 1.5, `writes per window ${h.writes.length / ids.length}`);
+  assert.equal(e.outstandingCount(), 0);
+});
+
+test("G06: an old target committed after a newer, different one causes no rollback and no correction", () => {
+  const { h, e } = setup(["a", "b", "c"], { c: { delay: 300, delayMode: "each" } });
+  h.advance(1000);
+  h.active = "a";
+  e.execute("plastile.resize.grow");
+  h.advance(50);
+  e.execute("plastile.resize.grow"); // a second, different size while the first is in flight
+  h.advance(260);                    // the first configure commits now: an intermediate size
+  assert.equal(e.counters.superseded, 1);
+  assert.equal(e.outstandingCount(), 1, "the newer request is still awaited");
+  h.advance(2000);
+  const ref = setup(["a", "b", "c"]);
+  ref.h.active = "a";
+  ref.e.execute("plastile.resize.grow");
+  ref.e.execute("plastile.resize.grow");
+  ref.h.drain();
+  assert.ok(rectNear(h.windows.get("c")!.frame, ref.h.windows.get("c")!.frame), `c at ${JSON.stringify(h.windows.get("c")!.frame)}`);
+  assert.equal(e.counters.corrections, 0);
+  assert.equal(h.writesTo("c"), ref.h.writesTo("c"), "one write per target, as with a prompt client");
+});
+
+test("D8: a newer configure that never commits is corrected at the deadline; the intermediate size is not learned", () => {
+  const { h, e } = setup(["a", "b", "c"], { c: { delay: 300, delayMode: "each" } });
+  h.advance(1000);
+  h.active = "a";
+  e.execute("plastile.resize.grow");
+  h.advance(50);
+  e.execute("plastile.resize.grow");
+  const c = h.windows.get("c")!;
+  c.configures.splice(1); // the client loses the second configure
+  h.advance(5000);
+  assert.equal(e.counters.learned, 0, "an older target's size is no constraint");
+  assert.equal(e.counters.corrections, 1, "one correction at the deadline");
+  const ref = setup(["a", "b", "c"]);
+  ref.h.active = "a";
+  ref.e.execute("plastile.resize.grow");
+  ref.e.execute("plastile.resize.grow");
+  ref.h.drain();
+  assert.ok(rectNear(c.frame, ref.h.windows.get("c")!.frame), `c at ${JSON.stringify(c.frame)}`);
+});
+
 test("G08/E07: a client obeying a larger minimum is learned once; no oscillation", () => {
   const h = new MockHost();
   const e = h.start();

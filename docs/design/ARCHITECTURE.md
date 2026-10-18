@@ -208,7 +208,7 @@ Each request records `{instanceEpoch, windowGeneration, contextKey, contextRevis
 ### Ordinary outcomes
 
 - Observed approximately equals current target: mark request settled at the observation layer; do not label it presented.
-- Observed equals a previous target while a newer target remains outstanding: classify as an older observation; do not change policy. Wait for a relevant event/deadline before a correction.
+- Observed equals a previous target while a newer target remains outstanding: classify as an older observation; do not change policy. Wait for a relevant event/deadline before a correction. The exception is a newer request KWin never forwarded: KWin sends a configure only for a size other than the committed one, so a request whose size equalled the frame read just before it was written (the return-to-A case, E04) is corrected once on the late commit. Any other newer request has its own configure in flight, and re-sending it would only duplicate that configure (measured as burst write amplification, D8).
 - Observed reflects an active user resize: update interaction state, not the request completion state. On release, map the accepted boundary movement to layout ratios and solve once.
 - Observed differs because constraints were learned: update accepted constraints and recompute the affected context once.
 - Observed differs after an explicit external/native tiling action: yield according to behavior policy instead of snapping back forever.

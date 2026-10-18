@@ -6,7 +6,9 @@
 // window later lands on B. The ledger therefore keeps desired, last-requested and
 // observed geometry separate, never treats "observed equals target" as settled
 // while another request is in flight, recognizes stale observations of older
-// targets, and bounds corrective writes. At the convergence deadline it learns a
+// targets, and bounds corrective writes. Only a late commit whose newer request
+// KWin dropped is corrected; an intermediate size of a burst is followed by its own
+// configure and is waited for (D8). At the convergence deadline it learns a
 // constraint only from a size the client actually committed: an unchanged size is
 // no answer (slow or stalled client), and a commit a few pixels short of the target
 // (character-cell rounding) is accepted as the answer rather than learned as a maximum.
@@ -154,7 +156,8 @@ export type Observation =
   | "untracked"   // no request yet
   | "settled"     // observed the outstanding target
   | "confirmed"   // observed the already-settled target again
-  | "stale"       // observed an older issued target (late commit), newer target still wanted
+  | "stale"       // an older target committed late and nothing newer will follow (E04): correct
+  | "superseded"  // an older target committed while the newer request is still on its way: wait
   | "partial"     // in flight: neither the target nor an older one (e.g. move applied, size pending)
   | "external";   // the frame changed after settlement: user, application or KWin
 
@@ -162,9 +165,9 @@ export function observe(e: LedgerEntry, observed: Rect): Observation {
   e.observed = observed;
   if (!e.request) return "untracked";
   // A superseded target whose size had never been observed arriving now is a late
-  // commit (E04: B committed after the return to A). Its size lands at the window's
-  // current position, hence size matching. Sizes already seen before (e.g. the old
-  // committed size shown while a move applies first) are partial, not stale.
+  // commit (E04: B committed after the return to A). Its position depends on moves
+  // made since, hence size matching. Sizes already seen before (e.g. the old committed
+  // size shown while a move applies first) are partial, not stale.
   const current = e.request.rect;
   const last = e.history.length - 1;
   let late = false;
@@ -184,8 +187,30 @@ export function observe(e: LedgerEntry, observed: Rect): Observation {
     if (e.outstanding) { settle(e); return "settled"; }
     return "confirmed";
   }
-  if (late) return "stale";
+  if (late) return droppedConfigure(e) ? "stale" : "superseded";
   return e.outstanding ? "partial" : "external";
+}
+
+/**
+ * Nothing newer is on its way to the client after a late commit (D8, E04). KWin sends a
+ * configure only for a size other than the committed one, so a current request whose size
+ * equalled the frame read just before it was written was never sent: the late commit leaves
+ * the window at the old target until corrected. Any other outstanding request has its own
+ * configure in flight (an intermediate size of a burst committing in order), and correcting
+ * it would only send that configure twice; the convergence deadline covers a lost one.
+ */
+function droppedConfigure(e: LedgerEntry): boolean {
+  return !e.outstanding || (e.before !== null && e.request !== null && sizeNear(e.before, e.request.rect, e.tol));
+}
+
+/** The size of an issued target older than the current one and different from it (a superseded commit). */
+function olderTargetSize(e: LedgerEntry, observed: Rect): boolean {
+  const current = e.request?.rect ?? null;
+  for (let i = 0; i < e.history.length - 1; ++i) {
+    const h = e.history[i].rect;
+    if (sizeNear(observed, h, e.tol) && !(current && sizeNear(h, current, e.tol))) return true;
+  }
+  return false;
 }
 
 export function canCorrect(e: LedgerEntry): boolean {
@@ -224,7 +249,8 @@ function withinRounding(target: Rect, observed: Rect, tol: number): boolean {
  * learn it as a constraint (bounded: one learning step per target) rather than
  * fighting. A size still equal to the one read before the request is no answer at all
  * (slow, stalled or ignoring client) and is never learned: correct within budget, then
- * diverge.
+ * diverge. Neither is an older target's size (a superseded configure committed, the
+ * current one did not).
  */
 export function expire(e: LedgerEntry, observedNow: Rect | null): Expiry {
   if (e.request && rectNear(observedNow, e.request.rect, e.tol)) { settle(e); return { kind: "settled" }; }
@@ -234,7 +260,7 @@ export function expire(e: LedgerEntry, observedNow: Rect | null): Expiry {
     settle(e);
     return { kind: "accepted" };
   }
-  const answered = !(e.before && observedNow && sizeNear(observedNow, e.before, e.tol));
+  const answered = !!observedNow && !(e.before && sizeNear(observedNow, e.before, e.tol)) && !olderTargetSize(e, observedNow);
   if (target && observedNow && answered) {
     const minW = observedNow.width > target.width + e.tol ? observedNow.width : 0;
     const minH = observedNow.height > target.height + e.tol ? observedNow.height : 0;

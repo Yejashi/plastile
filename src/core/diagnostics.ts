@@ -13,7 +13,10 @@ export interface Counters {
   observations: number;
   observationsDuringApply: number;
   settled: number;
+  /** Late commits of an older target with nothing newer following (E04): corrected. */
   stale: number;
+  /** Late commits of an older target while the newer request is still on its way (D8): not corrected. */
+  superseded: number;
   partial: number;
   external: number;
   learned: number;
@@ -34,7 +37,7 @@ export function newCounters(): Counters {
   return {
     solves: 0, flushes: 0, commands: 0, commandsQueued: 0, writes: 0, corrections: 0, skipOutstanding: 0,
     skipNoop: 0, skipDiverged: 0, observations: 0, observationsDuringApply: 0, settled: 0, stale: 0,
-    partial: 0, external: 0, learned: 0, accepted: 0, diverged: 0, deadlines: 0, overflow: 0, adopted: 0, removed: 0,
+    superseded: 0, partial: 0, external: 0, learned: 0, accepted: 0, diverged: 0, deadlines: 0, overflow: 0, adopted: 0, removed: 0,
     staleEvents: 0, errors: 0, raises: 0, activations: 0,
   };
 }
