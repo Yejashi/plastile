@@ -33,6 +33,7 @@ const LAYOUTS: Record<LayoutKind, AnyLayout> = {
   floating,
 };
 const LAYOUT_CYCLE: readonly LayoutKind[] = ["master-stack", "bsp", "monocle", "floating"];
+const DIVERGED = "did not reach its target after bounded corrections";
 
 export interface WindowRules {
   readonly mode?: "tiled" | "floating" | "excluded";
@@ -351,6 +352,7 @@ export class Engine {
     switch (o) {
       case "settled":
         this.counters.settled++;
+        if (r.exception === DIVERGED) r.exception = null; // a slow client got there after all
         this.trace.record(this.svc.now(), "settled", id);
         this.disarmIfIdle();
         break;
@@ -633,7 +635,7 @@ export class Engine {
     for (const id of ids) {
       const r = this.recs.get(id);
       if (!r || !this.ownsGeometry(r) || !r.ledger.desired) continue;
-      if (rectNear(r.frame, r.ledger.desired, r.ledger.tol)) continue;
+      if (rectNear(r.frame, r.ledger.desired, r.ledger.tol) || rectNear(r.frame, r.ledger.accepted, r.ledger.tol)) continue;
       if (!L.canCorrect(r.ledger)) continue;
       this.write(r, r.ledger.desired, "correction");
     }
@@ -803,15 +805,18 @@ export class Engine {
       this.trace.record(now, "deadline", r.id, x.kind);
       if (x.kind === "learn") {
         this.counters.learned++;
-        if (x.min) r.learnedMin = { width: Math.max(r.learnedMin?.width ?? 0, x.min.width), height: Math.max(r.learnedMin?.height ?? 0, x.min.height) };
-        if (x.max) r.learnedMax = { width: Math.min(r.learnedMax?.width ?? Infinity, x.max.width), height: Math.min(r.learnedMax?.height ?? Infinity, x.max.height) };
+        const m = L.mergeLearned(r.learnedMin, r.learnedMax, x.min, x.max);
+        r.learnedMin = m.min;
+        r.learnedMax = m.max;
         r.exception = `accepted ${r.frame.width}x${r.frame.height} instead of the requested size; learned as a constraint`;
         if (r.ctx) this.markDirty(r.ctx);
+      } else if (x.kind === "accepted") {
+        this.counters.accepted++;
       } else if (x.kind === "correct") {
         if (this.ownsGeometry(r)) this.corrections.add(r.id);
       } else if (x.kind === "diverged") {
         this.counters.diverged++;
-        r.exception = "did not reach its target after bounded corrections";
+        r.exception = DIVERGED;
       }
     }
     if (next < Infinity) this.armDeadline(next);

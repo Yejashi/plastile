@@ -526,3 +526,41 @@ test("I01/L11: a drag that ends in KWin's drag-to-maximize is not a swap; unmaxi
   h.drain();
   for (const id of ["a", "b", "c"]) assert.ok(rectNear(h.windows.get(id)!.frame, slots.get(id)!), `${id} back in its slot`);
 });
+
+test("G04: a client slower than the deadline is not learned as a constraint and still reaches its slot", () => {
+  const ref = setup(["a", "b"]).h; // same layout with prompt clients: the slot b must reach
+  const slot = ref.windows.get("b")!.frame;
+  const { h, e } = setup(["a", "b"], { b: { delay: 1000 } });
+  h.advance(10_000);
+  assert.equal(e.counters.learned, 0);
+  const ex = e.explain("b")!;
+  assert.equal(ex.learnedMin, null);
+  assert.equal(ex.learnedMax, null);
+  assert.ok(rectNear(h.windows.get("b")!.frame, slot), `b at ${JSON.stringify(h.windows.get("b")!.frame)}`);
+  assert.equal(ex.exception, null, "converged: no stale divergence explanation");
+  assertTiling(tiledFrames(h, ["a", "b"]), AREA);
+});
+
+test("G12: a client that never answers is not learned as a constraint", () => {
+  const { h, e } = setup(["a", "b"], { b: { ignore: true, delay: 10 } });
+  h.advance(10_000);
+  assert.equal(e.counters.learned, 0);
+  assert.equal(e.explain("b")!.learnedMax, null);
+});
+
+test("G09: a client that rounds its size down (character cells) is accepted, and grows with its slot", () => {
+  const { h, e } = setup(["a", "b"], { b: { commitOffset: { width: -7, height: -10 } } });
+  h.advance(5000);
+  assert.equal(e.counters.learned, 0, "rounding is not a maximum");
+  const writes = h.writes.length;
+  h.advance(5000);
+  assert.equal(h.writes.length, writes, "accepted: no repeated requests");
+  h.close("a");
+  h.advance(5000);
+  const b = h.windows.get("b")!.frame;
+  assert.ok(b.width >= 1264 - 7 && b.height >= 784 - 10, `b grew with its slot: ${JSON.stringify(b)}`);
+  assert.ok(b.x === 8 && b.y === 8, "placed at the slot origin");
+  const settled = h.writes.length;
+  h.advance(5000);
+  assert.equal(h.writes.length, settled, "converged after growing");
+});

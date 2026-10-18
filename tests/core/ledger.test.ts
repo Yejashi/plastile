@@ -97,6 +97,54 @@ test("G03: device-pixel snapping at a fractional scale settles instead of being 
   assert.equal(L.decideWrite(scaled, target, accepted), "skip-noop", "no repeated fractional correction");
 });
 
+test("deadline: a size unchanged since the request is no answer; corrected, then diverged, never learned", () => {
+  const e = L.newEntry(A);
+  const t = rect(100, 0, 768, 560);
+  const moved = rect(100, 0, 512, 400); // position applies synchronously; the size has not been committed
+  L.recordWrite(e, t, 1, 0, "plan", A, moved);
+  assert.equal(L.expire(e, moved).kind, "correct");
+  L.recordWrite(e, t, 2, 750, "correction", moved, moved);
+  assert.equal(L.expire(e, moved).kind, "correct");
+  L.recordWrite(e, t, 3, 1500, "correction", moved, moved);
+  assert.equal(L.expire(e, moved).kind, "diverged");
+  assert.equal(L.observe(e, t), "settled", "the late commit of the target still settles it");
+  assert.equal(e.status, "settled");
+});
+
+test("deadline: a commit a few pixels short of the target (cell rounding) is accepted, not learned", () => {
+  const e = L.newEntry(A);
+  const t = rect(707, 8, 565, 784);
+  const rounded = rect(707, 8, 558, 774);
+  L.recordWrite(e, t, 1, 0, "plan", A, rect(707, 8, 512, 400));
+  assert.equal(L.observe(e, rounded), "partial");
+  assert.equal(L.expire(e, rounded).kind, "accepted");
+  assert.equal(e.outstanding, false);
+  assert.equal(L.decideWrite(e, t, rounded), "skip-noop", "the same plan is not re-requested");
+  assert.equal(L.observe(e, rounded), "confirmed");
+  assert.equal(L.observe(e, rect(707, 8, 300, 300)), "external", "a real change is still noticed");
+  assert.equal(L.decideWrite(e, rect(8, 8, 1264, 784), rounded), "write", "a larger slot is requested in full");
+  // A clear shortfall is still a maximum; an excess is always a minimum.
+  const m = L.newEntry(A);
+  L.recordWrite(m, t, 1, 0, "plan", A, rect(707, 8, 512, 400));
+  const x = L.expire(m, rect(707, 8, 400, 784));
+  assert.ok(x.kind === "learn" && x.max?.width === 400 && x.min === null, JSON.stringify(x));
+  const n = L.newEntry(A);
+  L.recordWrite(n, t, 1, 0, "plan", A, rect(707, 8, 512, 400));
+  const y = L.expire(n, rect(707, 8, 570, 784));
+  assert.ok(y.kind === "learn" && y.min?.width === 570, JSON.stringify(y));
+});
+
+test("learned bounds only tighten and never become contradictory (min above max)", () => {
+  const a = L.mergeLearned(null, null, null, { width: 400, height: Infinity });
+  assert.deepEqual(a, { min: null, max: { width: 400, height: Infinity } });
+  const b = L.mergeLearned(a.min, a.max, { width: 565, height: 0 }, null);
+  assert.deepEqual(b, { min: { width: 565, height: 0 }, max: { width: Infinity, height: Infinity } }, "newest wins");
+  const c = L.mergeLearned(b.min, b.max, { width: 500, height: 300 }, null);
+  assert.deepEqual(c.min, { width: 565, height: 300 }, "a minimum only grows");
+  const d = L.mergeLearned(c.min, c.max, null, { width: 520, height: Infinity });
+  assert.deepEqual(d, { min: { width: 0, height: 300 }, max: { width: 520, height: Infinity } });
+});
+
 test("frameTolerance: half a pixel at scale 1, plus one device pixel otherwise", () => {
   assert.equal(frameTolerance(1), 0.5);
   assert.equal(frameTolerance(2), 1);
