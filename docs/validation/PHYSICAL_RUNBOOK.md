@@ -8,8 +8,9 @@ The runbook itself has not been run. Plastile ran in a physical session once, ru
 laptop (KWin 6.7.5, eDP-1 2256×1504 @ 60 Hz, scale 1.35, package 0.1.0 and the persistence helper): install,
 shortcut registration, placement and persistence across a re-login worked, and the session exposed first-run
 diagnosability problems (a user could not tell monocle from a dead tiler)
-([evidence](../status/evidence/physical-first-run-20261018.json)). That covers part of P0 and P1 only. Until the
-runbook has been run, Plastile remains a **candidate** with the physical gate open.
+([evidence](../status/evidence/physical-first-run-20261018.json)). That covers part of P0 and P1 only. The runbook then ran on the reference desktop with the owner's consent
+(P0, P1, P2a–c, P3, P4, P5, P7 so far; [evidence](../status/evidence/physical-runbook-20261018.json)). Until it is
+complete, Plastile remains a **candidate** with the physical gate open.
 
 ## 1. What was validated where
 

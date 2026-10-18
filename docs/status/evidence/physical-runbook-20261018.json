@@ -1,0 +1,570 @@
+{
+ "what": "Physical runbook (owner consent 2026-10-18), reference desktop; steps P0, P1, P2a-c, P3, P4, P5, P7 (P6, P8 pending; P2d, P2e skipped by the owner)",
+ "layer": "physical",
+ "commit": "97fec4a (merged first-run fixes); package 0.1.0 from tools/release.py, installed with tools/install.sh install + install-helper",
+ "environment": {
+  "kwin": "6.7.5",
+  "qt": "6.12.0",
+  "compositing": "OpenGL",
+  "outputs": [
+   {
+    "name": "HDMI-A-1",
+    "mode": "2560x1440@144",
+    "scale": 1
+   },
+   {
+    "name": "DP-2",
+    "mode": "1920x1080@100",
+    "scale": 1
+   },
+   {
+    "name": "DP-1",
+    "mode": "1920x1080@60",
+    "scale": 1
+   }
+  ],
+  "virtualDesktops": 6,
+  "activities": 1
+ },
+ "P0": {
+  "pass": true,
+  "sessionCheckExit": 0
+ },
+ "P1": {
+  "pass": true,
+  "notes": [
+   "enabled with kwriteconfig6 + Scripting.start on the owner's behalf (consent C1); Plastile started at once",
+   "default diagnostics level: 'plastile notice started 0.1.0: 14 windows ...; layout master-stack on <output> / Desktop 1' in the user journal; no qt.qml.usedbeforedeclared lines",
+   "the plastile-state helper was activated by the session bus (dbus-broker under systemd) on the first Read",
+   "Log counters: errors 0, corrections 0, persistence active, osd idle; explain classified the active window",
+   "68 shortcuts registered; one conflict reported by Plastile and session_check: Meta+Ctrl+S (Plastile suspend) vs Wacom tablet 'Toggle stylus mode'",
+   "settings dialog: not clicked through physically (no pointer injection); covered nested by settings-dialog-T28"
+  ],
+  "finding": "the owner's kitty opens new windows maximized (no KWin rule, no kitty option found): Plastile suspends them (explain: 'tiling of this window is suspended while it is maximized'), so in this setup new terminals are never tiled"
+ },
+ "P2a": {
+  "pass": true,
+  "phases": [
+   {
+    "phase": "initial tiling on the active output",
+    "converged": true,
+    "maxConfiguresPerWindow": 0,
+    "reversals": 0,
+    "counters": {
+     "solves": 0,
+     "writes": 0,
+     "corrections": 0,
+     "diverged": 0,
+     "overflow": 0,
+     "errors": 0
+    }
+   },
+   {
+    "phase": "send active fixture to next output (1)",
+    "converged": true,
+    "maxConfiguresPerWindow": 2,
+    "reversals": 0,
+    "counters": {
+     "solves": 2,
+     "writes": 3,
+     "corrections": 0,
+     "diverged": 0,
+     "overflow": 0,
+     "errors": 0
+    }
+   },
+   {
+    "phase": "send it to next output (2)",
+    "converged": true,
+    "maxConfiguresPerWindow": 1,
+    "reversals": 0,
+    "counters": {
+     "solves": 1,
+     "writes": 0,
+     "corrections": 0,
+     "diverged": 0,
+     "overflow": 0,
+     "errors": 0
+    }
+   },
+   {
+    "phase": "send it to next output (3, back)",
+    "converged": true,
+    "maxConfiguresPerWindow": 2,
+    "reversals": 0,
+    "counters": {
+     "solves": 1,
+     "writes": 3,
+     "corrections": 0,
+     "diverged": 0,
+     "overflow": 0,
+     "errors": 0
+    }
+   }
+  ],
+  "visual": "per-output tiling, no overlap, panel respected"
+ },
+ "P2b": {
+  "pass": true,
+  "deviation": "scales applied to HDMI-A-1 (where the fixtures open; the injector cannot move the pointer), not DP-1",
+  "phases": [
+   {
+    "phase": "scale 1.25",
+    "converged": true,
+    "maxConfiguresPerWindow": 2,
+    "reversals": 0,
+    "counters": {
+     "solves": 1,
+     "writes": 5,
+     "corrections": 1,
+     "diverged": 0,
+     "overflow": 0,
+     "errors": 0
+    }
+   },
+   {
+    "phase": "scale 1.5",
+    "converged": true,
+    "maxConfiguresPerWindow": 2,
+    "reversals": 0,
+    "counters": {
+     "solves": 1,
+     "writes": 4,
+     "corrections": 0,
+     "diverged": 0,
+     "overflow": 0,
+     "errors": 0
+    }
+   },
+   {
+    "phase": "scale 1.75",
+    "converged": true,
+    "maxConfiguresPerWindow": 2,
+    "reversals": 0,
+    "counters": {
+     "solves": 1,
+     "writes": 4,
+     "corrections": 0,
+     "diverged": 0,
+     "overflow": 0,
+     "errors": 0
+    }
+   },
+   {
+    "phase": "scale back to 1",
+    "converged": true,
+    "maxConfiguresPerWindow": 2,
+    "reversals": 0,
+    "counters": {
+     "solves": 1,
+     "writes": 4,
+     "corrections": 0,
+     "diverged": 0,
+     "overflow": 0,
+     "errors": 0
+    }
+   }
+  ],
+  "restored": true
+ },
+ "P2c": {
+  "pass": true,
+  "phases": [
+   {
+    "phase": "send one fixture to DP-2",
+    "converged": true,
+    "maxConfiguresPerWindow": 2,
+    "reversals": 0,
+    "counters": {
+     "solves": 2,
+     "writes": 3,
+     "corrections": 0,
+     "diverged": 0,
+     "overflow": 0,
+     "errors": 0
+    }
+   },
+   {
+    "phase": "monocle on DP-2 (OSD)",
+    "converged": true,
+    "maxConfiguresPerWindow": 0,
+    "reversals": 0,
+    "counters": {
+     "solves": 1,
+     "writes": 0,
+     "corrections": 0,
+     "diverged": 0,
+     "overflow": 0,
+     "errors": 0
+    }
+   },
+   {
+    "phase": "priority: DP-2 primary",
+    "converged": true,
+    "maxConfiguresPerWindow": 2,
+    "reversals": 0,
+    "counters": {
+     "solves": 4,
+     "writes": 4,
+     "corrections": 0,
+     "diverged": 0,
+     "overflow": 0,
+     "errors": 0
+    }
+   },
+   {
+    "phase": "priority restored",
+    "converged": true,
+    "maxConfiguresPerWindow": 2,
+    "reversals": 0,
+    "counters": {
+     "solves": 4,
+     "writes": 5,
+     "corrections": 1,
+     "diverged": 0,
+     "overflow": 0,
+     "errors": 0
+    }
+   },
+   {
+    "phase": "monocle off on DP-2 (OSD)",
+    "converged": true,
+    "maxConfiguresPerWindow": 0,
+    "reversals": 0,
+    "counters": {
+     "solves": 1,
+     "writes": 0,
+     "corrections": 0,
+     "diverged": 0,
+     "overflow": 0,
+     "errors": 0
+    }
+   }
+  ],
+  "restored": true,
+  "osd": "Plasma's OSD showed 'Monocle layout \u2014 New Desktop on DP-2' (screenshot)"
+ },
+ "P2d": "skipped by the owner (cable unplug)",
+ "P2e": "skipped by the owner (suspend)",
+ "P3": {
+  "pass": true,
+  "method": "a temporary test panel on DP-2 (the owner's own panel untouched; restored check: identical panel properties)",
+  "phases": [
+   {
+    "phase": "03a add a test panel (right edge)",
+    "converged": true,
+    "maxConfiguresPerWindow": 1,
+    "reversals": 0,
+    "counters": {
+     "solves": 1,
+     "writes": 4,
+     "corrections": 0,
+     "diverged": 0,
+     "overflow": 0,
+     "errors": 0
+    }
+   },
+   {
+    "phase": "03d test panel height 80",
+    "converged": true,
+    "maxConfiguresPerWindow": 1,
+    "reversals": 0,
+    "counters": {
+     "solves": 1,
+     "writes": 4,
+     "corrections": 0,
+     "diverged": 0,
+     "overflow": 0,
+     "errors": 0
+    }
+   },
+   {
+    "phase": "03d test panel height 48",
+    "converged": true,
+    "maxConfiguresPerWindow": 1,
+    "reversals": 0,
+    "counters": {
+     "solves": 1,
+     "writes": 4,
+     "corrections": 0,
+     "diverged": 0,
+     "overflow": 0,
+     "errors": 0
+    }
+   },
+   {
+    "phase": "03b test panel auto-hide on",
+    "converged": true,
+    "maxConfiguresPerWindow": 1,
+    "reversals": 0,
+    "counters": {
+     "solves": 1,
+     "writes": 4,
+     "corrections": 0,
+     "diverged": 0,
+     "overflow": 0,
+     "errors": 0
+    }
+   },
+   {
+    "phase": "03b test panel auto-hide off",
+    "converged": true,
+    "maxConfiguresPerWindow": 1,
+    "reversals": 0,
+    "counters": {
+     "solves": 1,
+     "writes": 4,
+     "corrections": 0,
+     "diverged": 0,
+     "overflow": 0,
+     "errors": 0
+    }
+   },
+   {
+    "phase": "03b test panel dodge windows on",
+    "converged": true,
+    "maxConfiguresPerWindow": 1,
+    "reversals": 0,
+    "counters": {
+     "solves": 1,
+     "writes": 4,
+     "corrections": 0,
+     "diverged": 0,
+     "overflow": 0,
+     "errors": 0
+    }
+   },
+   {
+    "phase": "03b test panel dodge windows off",
+    "converged": true,
+    "maxConfiguresPerWindow": 1,
+    "reversals": 0,
+    "counters": {
+     "solves": 1,
+     "writes": 4,
+     "corrections": 0,
+     "diverged": 0,
+     "overflow": 0,
+     "errors": 0
+    }
+   },
+   {
+    "phase": "03c test panel floating on",
+    "converged": true,
+    "maxConfiguresPerWindow": 0,
+    "reversals": 0,
+    "counters": {
+     "solves": 0,
+     "writes": 0,
+     "corrections": 0,
+     "diverged": 0,
+     "overflow": 0,
+     "errors": 0
+    }
+   },
+   {
+    "phase": "03c test panel floating off",
+    "converged": true,
+    "maxConfiguresPerWindow": 0,
+    "reversals": 0,
+    "counters": {
+     "solves": 0,
+     "writes": 0,
+     "corrections": 0,
+     "diverged": 0,
+     "overflow": 0,
+     "errors": 0
+    }
+   },
+   {
+    "phase": "03e test panel to bottom edge",
+    "converged": true,
+    "maxConfiguresPerWindow": 1,
+    "reversals": 0,
+    "counters": {
+     "solves": 1,
+     "writes": 4,
+     "corrections": 0,
+     "diverged": 0,
+     "overflow": 0,
+     "errors": 0
+    }
+   },
+   {
+    "phase": "03a remove the test panel",
+    "converged": true,
+    "maxConfiguresPerWindow": 1,
+    "reversals": 0,
+    "counters": {
+     "solves": 1,
+     "writes": 4,
+     "corrections": 0,
+     "diverged": 0,
+     "overflow": 0,
+     "errors": 0
+    }
+   }
+  ],
+  "defectFound": "during a first attempt (test windows on DP-2, panel added on DP-2), KWin moved a tiled window on a hidden desktop into the new work area; Plastile corrected it toward the stale tile and marked it diverged (fix in progress)"
+ },
+ "P4": {
+  "pass": true,
+  "phases": [
+   {
+    "phase": "04 create activity B (1 -> 2 activities)",
+    "converged": true,
+    "maxConfiguresPerWindow": 0,
+    "reversals": 0,
+    "counters": {
+     "solves": 1,
+     "writes": 0,
+     "corrections": 0,
+     "diverged": 0,
+     "overflow": 0,
+     "errors": 0
+    }
+   },
+   {
+    "phase": "04 switch to B",
+    "converged": true,
+    "maxConfiguresPerWindow": 1,
+    "reversals": 0,
+    "counters": {
+     "solves": 0,
+     "writes": 0,
+     "corrections": 0,
+     "diverged": 0,
+     "overflow": 0,
+     "errors": 0
+    }
+   },
+   {
+    "phase": "04 open two windows on B",
+    "converged": true,
+    "maxConfiguresPerWindow": 0,
+    "reversals": 0,
+    "counters": {
+     "solves": 2,
+     "writes": 3,
+     "corrections": 0,
+     "diverged": 0,
+     "overflow": 0,
+     "errors": 0
+    }
+   },
+   {
+    "phase": "04 switch back to A",
+    "converged": true,
+    "maxConfiguresPerWindow": 1,
+    "reversals": 0,
+    "counters": {
+     "solves": 0,
+     "writes": 0,
+     "corrections": 0,
+     "diverged": 0,
+     "overflow": 0,
+     "errors": 0
+    }
+   },
+   {
+    "phase": "04 switch to B again",
+    "converged": true,
+    "maxConfiguresPerWindow": 1,
+    "reversals": 0,
+    "counters": {
+     "solves": 0,
+     "writes": 0,
+     "corrections": 0,
+     "diverged": 0,
+     "overflow": 0,
+     "errors": 0
+    }
+   },
+   {
+    "phase": "04 back to A again",
+    "converged": true,
+    "maxConfiguresPerWindow": 1,
+    "reversals": 0,
+    "counters": {
+     "solves": 0,
+     "writes": 0,
+     "corrections": 0,
+     "diverged": 0,
+     "overflow": 0,
+     "errors": 0
+    }
+   },
+   {
+    "phase": "04 create activity C while tiled",
+    "converged": true,
+    "maxConfiguresPerWindow": 0,
+    "reversals": 0,
+    "counters": {
+     "solves": 1,
+     "writes": 0,
+     "corrections": 0,
+     "diverged": 0,
+     "overflow": 0,
+     "errors": 0
+    }
+   },
+   {
+    "phase": "04 delete activity C",
+    "converged": true,
+    "maxConfiguresPerWindow": 0,
+    "reversals": 0,
+    "counters": {
+     "solves": 1,
+     "writes": 0,
+     "corrections": 0,
+     "diverged": 0,
+     "overflow": 0,
+     "errors": 0
+    }
+   },
+   {
+    "phase": "04 close B's windows, delete activity B (2 -> 1)",
+    "converged": true,
+    "maxConfiguresPerWindow": 0,
+    "reversals": 0,
+    "counters": {
+     "solves": 1,
+     "writes": 0,
+     "corrections": 0,
+     "diverged": 0,
+     "overflow": 0,
+     "errors": 0
+    }
+   }
+  ],
+  "restored": "only the original activity remains, current"
+ },
+ "P5": {
+  "pass": true,
+  "apps": [
+   "dolphin (Wayland)",
+   "chromium (Wayland, temporary profile)",
+   "gnome-calculator",
+   "systemsettings (overflow float on 1920x1080 with 4 windows)",
+   "dolphin (XWayland, QT_QPA_PLATFORM=xcb)",
+   "xmessage (X11)",
+   "zenity --info (dialog floated)"
+  ],
+  "notTested": "in-app actions (menus, tabs, fullscreen buttons, titlebar clicks: G14/G15): the injector sends Meta chords only"
+ },
+ "P7": {
+  "pass": true,
+  "keys": {
+   "delivered": 19,
+   "notDelivered": 0,
+   "skipped": [
+    "plastile.runtime.toggle-suspend"
+   ]
+  },
+  "manual": {
+   "Meta+T": "KWin's tile editor opens with Plastile loaded; while open it grabs the keyboard, so a second injected Meta+T did not close it (closed through kglobalaccel 'Edit Tiles')",
+   "Meta+Ctrl+S": "reached Plastile despite the Wacom conflict: 'tiling paused' / 'tiling resumed' notices",
+   "Meta+Shift+S": "not tested (Spectacle overlay needs Esc)"
+  }
+ }
+}
