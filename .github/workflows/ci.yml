@@ -4,10 +4,12 @@
 #   - It runs the pure/replay TypeScript tests, the type check, the bundle build,
 #     the documentation integrity check, the release-zip reproducibility check and
 #     the native test-tool builds.
-#   - It does not yet run the nested-KWin integration scenarios
-#     (python3 tests/integration/run.py; locally via tools/sandbox/), and it CANNOT
-#     run physical-session checks. Those layers are reported as NOT RUN, never as
-#     passed.
+#   - The integration-nested job runs the nested-KWin scenarios against real
+#     kwin_wayland 6.7.5 (Ubuntu 26.10 packages) inside a disposable chroot built by
+#     tools/sandbox/create.sh: virtual backend, private D-Bus, QPainter compositing.
+#     Scenarios needing a capability the runner lacks report SKIP by ID.
+#   - It CANNOT run physical-session checks (real outputs, input-to-photon latency);
+#     those are reported as NOT RUN, never as passed.
 #
 # Nothing here publishes, installs into a home directory, or touches a compositor.
 
@@ -157,7 +159,7 @@ jobs:
             echo "|---|---|"
             echo "| Node ${NODE_MAJOR} type check, tests/core (pure + replay), bundle, docs check, release --check, fixture builds | required: job status ${{ job.status }} |"
             echo "| libei-dev install + tools/input build | ${{ steps.input_build.outcome }} |"
-            echo "| Nested KWin integration scenarios (${SCENARIO_COUNT:-?} registered) | **NOT RUN** in CI: run locally with \`sudo tools/sandbox/run.sh -- python3 tests/integration/run.py\` |"
+            echo "| Nested KWin integration scenarios (${SCENARIO_COUNT:-?} registered here) | run by the integration-nested job |"
             echo "| Physical-session checks | **NOT RUN**: requires a live Plasma Wayland desktop |"
             echo
             echo "See docs/status/CI.md for the TEST_MATRIX coverage split."
@@ -219,3 +221,55 @@ jobs:
             echo "Status: ${{ job.status }}. The settings-check binary is only built, not run"
             echo "(it needs a display)."
           } >> "$GITHUB_STEP_SUMMARY"
+
+  integration-nested:
+    # Nested KWin layer (TEST_MATRIX "Nested compositor integration"). Real
+    # kwin_wayland from Ubuntu 26.10 packages in a disposable chroot created by the
+    # committed tools/sandbox/create.sh (same scripts as local runs), virtual backend,
+    # private D-Bus, no GPU (QPainter compositing). Not a physical-session result.
+    name: Nested KWin integration (Ubuntu 26.10 sandbox)
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Create the KWin sandbox (debootstrap Ubuntu 26.10)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends debootstrap
+          sudo PLASTILE_SANDBOX_APPS=0 tools/sandbox/create.sh /opt/plastile-kwin-sandbox stonking
+
+      - name: Build inside the sandbox (npm ci, bundle, fixtures, input injector)
+        run: |
+          sudo tools/sandbox/run.sh -- bash -euc '
+            npm ci
+            npm run build
+            make -C fixtures/client
+            make -C fixtures/xclient
+            make -C tools/input
+          '
+
+      - name: Run nested integration scenarios
+        run: |
+          sudo tools/sandbox/run.sh -- python3 tests/integration/run.py --markdown artifacts/integration-summary.md
+
+      - name: Job summary
+        if: always()
+        run: |
+          if [ -f artifacts/integration-summary.md ]; then
+            cat artifacts/integration-summary.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Nested integration did not produce a summary (setup failed)." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload integration reports and KWin logs
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: nested-integration-${{ github.sha }}
+          if-no-files-found: warn
+          retention-days: 14
+          path: |
+            artifacts/integration/**/report.json
+            artifacts/integration/**/kwin.log
+            artifacts/integration-summary.md

@@ -196,7 +196,9 @@ presentation) have no tests because the features do not exist.
 
 ## 4. Open items
 
-- Nested scenarios in CI: the disposable Ubuntu 26.10 sandbox ([tools/sandbox](../../tools/sandbox/README.md))
-  runs on a hosted runner without a self-hosted machine. A CI job using it is prepared and will be
-  enabled once the known nested product failures are fixed, so CI does not go red on known
-  defects. KWin 6.8 coverage is being added separately.
+- Nested scenarios in CI: the `integration-nested` job builds the disposable Ubuntu 26.10 sandbox
+  ([tools/sandbox](../../tools/sandbox/README.md)) on the hosted runner and runs the whole suite
+  against KWin 6.7.5 (QPainter compositing, so GL-only checks report SKIP). It was enabled once the
+  suite passed locally in that sandbox (637/637 checks, 67 scenarios, 2 SKIP on 2026-10-18).
+- KWin 6.8 in CI: the pinned Nix environment ([tools/sandbox/nix](../../tools/sandbox/nix/README.md))
+  runs the suite locally; a CI job follows once the 6.7.5 job is green on the runner.
