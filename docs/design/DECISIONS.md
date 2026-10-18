@@ -179,7 +179,9 @@ contexts: [{outputKey, desktopId, activity, layout, masterStack}], floats: [{app
 outputKey, area}]}`, at most 64 entries of each. Contexts come from `Engine.contextPreferences()`. Floats are
 recorded only when the user floats a window with *Toggle floating*, and are forgotten when the user tiles it again.
 Any invalid field rejects the whole snapshot. Migrations (`src/persist/migrate.ts`) are pure per-version steps.
-Version 1 is the first schema, so the chain is still empty, and a newer schema is rejected.
+Version 1 is the first schema, so the chain is still empty, and a newer schema is rejected. *(Schema 2 adds each
+float's `windowHint`, with the first migration; see the [ADR-020
+addendum](#addendum-same-window-float-hint-and-a-bounded-start-up-hold-2026-10-18).)*
 
 At load the runtime reads both slots before the first solve and applies the valid one with the highest generation.
 It logs one line if any slot was rejected. If a slot holds a newer schema, nothing is written that session, which
@@ -431,7 +433,8 @@ asynchronous versioned messages".
   `DBusCall` (org.kde.kwin 3.0, as in ADR-015): one call object per request, destroyed with its reply, plus the
   one-shot maintenance Timer for the debounce. The QtCore `Settings` path is removed.
 - **Asynchronous load.** The runtime sends one `Read` at start-up and tiles with defaults at once; it never waits
-  for the reply. The reply applies the newest valid slot by the same generation and slot rules, except what the user
+  for the reply. *(Changed by the [addendum](#addendum-same-window-float-hint-and-a-bounded-start-up-hold-2026-10-18):
+  the first solve waits for the reply, at most 250 ms.)* The reply applies the newest valid slot by the same generation and slot rules, except what the user
   changed since start-up: a context whose preferences changed keeps the user's values, and an application whose
   float decision changed keeps it (the engine now says which context or application identity a preference change
   touched). Saved floats are matched against the windows live at that moment (Q06 unchanged). Affected contexts
@@ -511,7 +514,8 @@ Nested scenarios (each passed twice, KWin 6.7.5):
   install-helper` builds and installs it, and `tools/release.py` ships its source tarball
   `dist/plastile-state-<version>.tar.gz`. The `.kwinscript` stays script-only; with it alone Plastile keeps its
   preferences in memory and logs `plastile warn persistence unavailable` once.
-- Restore is asynchronous. The first solve uses defaults and the saved preferences apply one reply later, as a
+- *(Changed by the [addendum](#addendum-same-window-float-hint-and-a-bounded-start-up-hold-2026-10-18): this now
+  happens only when the reply takes longer than the 250 ms start-up hold.)* Restore is asynchronous. The first solve uses defaults and the saved preferences apply one reply later, as a
   re-solve: 5–10 ms after start in nested runs, helper activation included. A restored layout can therefore change
   once, visibly, right after start-up. A newly opened window whose saved float arrives after its first tile write
   floats one configure later.
@@ -527,3 +531,75 @@ Nested scenarios (each passed twice, KWin 6.7.5):
 
 **Revisit if** the start-up re-solve is visible as a hitch on a physical session, the load callback grows past a
 frame for real snapshots, or KWin gains a supported asynchronous file write for scripts.
+
+### Addendum: same-window float hint and a bounded start-up hold (2026-10-18)
+
+**Status:** accepted (2026-10-18), the owner's decisions; task T27, found by `reenable-floats-T19` and
+`resume-floats-T19`.
+
+**Context.** Two consequences of the matching rule and of the asynchronous load fought the user. A saved float was
+matched by application identity only, so after a disable and re-enable a float the user had moved while Plastile was
+disabled was moved back to the rectangle saved at unload (recorded by `reenable-floats-T19`: one restore write to the
+old rectangle). And because the first solve ran before the helper's reply, every restored float was first tiled and
+then moved back one reply later, and a restored layout or ratio changed once right after start (both T19 scenarios
+failed their no-write checks on `f3d1f8f`).
+
+**Decision 1: a same-window hint (schema 2).** Each saved float also records `windowHint`, the KWin window id
+(`internalId`, Plastile's `WindowId`) of the window it was taken from. At restore, a live window with exactly that id
+is the window the user floated: it floats again at the frame it had when this runtime started (`start()`'s initial
+snapshot, kept on the record), clamped or relocated by the usual float rules only if needed, with a write only if it
+is not there, and that frame becomes its float preference, so it is what the next save stores. No ambiguity rule
+applies to a hint match, and a preference whose hinted window is live is not given to another window of the
+application. Otherwise the application identity rule is unchanged (Q06: exactly one live window of that identity gets
+the saved rectangle; two or more get ordinary insertion and the preference waits).
+
+The hint is not durable identity, which ADR-013 forbids. KWin gives every window a new random `QUuid` id, so after a
+KWin restart, a logout or an application relaunch it names no live window, and the identity rule applies as before
+(`persist-reload-restart-T27`'s restart half). It only identifies the same window within one KWin session, across a
+script unload and load.
+
+`SCHEMA_VERSION` is 2. The first migration (`src/persist/migrate.ts`, fixtures `tests/fixtures/persist/v1.json` ->
+`v2-from-v1.json`) adds `windowHint: ""` to every float. Validation accepts any string of at most 128 characters,
+`""` included. A version-1 file loads (migrated) and is rewritten as version 2 by the next save, into the other slot;
+a version-3 file is read-only like any newer schema. A Plastile of schema 1 treats a version-2 file the same way:
+read-only for that session.
+
+**Decision 2: the first solve waits for the saved state, bounded.** With a store (`Persistence.qml`), `start()`
+adopts the initial windows but does not solve; the Persister releases it when the load finished (reply applied, reply
+failed, helper absent or a malformed reply) or after `LOAD_HOLD_MS` = 250 ms, whichever comes first. The deadline is
+the store's one-shot maintenance timer, which no save needs while the load is pending, and unload cancels it. During
+the hold, window events and commands update the model at once (a command is dispatched and answered as usual; focus
+commands activate immediately) and their geometry stays dirty work; nothing is solved, corrected or tiled. The release
+schedules the engine's next flush, so the reply callback itself still writes no geometry. A reply after the deadline is
+applied as before, as a re-solve. Without a store there is no hold; recording builds do not hold either (the recorder
+has no input for the release, and replays model no persistence). This is a bounded wait once per script start, not a
+settle timer: no command waits for it, and it ends on the reply.
+
+**Evidence** (nested KWin 6.7.5, virtual backend, other agents' suites sharing the CPUs; `Date.now()` in QV4, so
+millisecond resolution; from `plastile info start-up hold released` lines):
+
+- Reply latency, from the load request to the release: 0–2 ms with the helper already running (n=27), 6–11 ms when the
+  request activates the helper on a fresh bus (n=10), across the persistence scenarios of one run.
+- The deadline (helper delaying every request by 4 s, `persist-helper-delayed-Q05`): released after 212–254 ms (n=3;
+  a QML `Timer`, observed firing up to 15% early); defaults, then the saved ratio applied once when the reply arrived.
+- `reenable-floats-T19`: after a disable and re-enable, the three user floats (one moved while disabled, one of an
+  application with three windows) float where they are; KWin's own `frameGeometryChanged` for them stays silent and
+  Plastile writes none of them. With the hint match disabled (identity only), the moved float was put back at the
+  rectangle saved at unload and the check fails (mutation run).
+- `resume-floats-T19`: the floats' frames do not change at re-enable, no write.
+- `persist-ambiguous-Q06`: with the floated window still open and a second instance opened while disabled, the float
+  goes to the floated window only; after that window closed, two instances are ambiguous as before, and one instance
+  gets the saved rectangle by identity.
+
+**Consequences.**
+
+- The visible start-up re-solve of ADR-020 now happens only when the reply takes longer than 250 ms.
+- Start-up tiling is delayed by the reply latency, about 1–11 ms nested, at most 250 ms. Not measured on a physical
+  session, where helper activation through dbus-broker and systemd may be slower.
+- A saved float follows its window across script reloads even when the user moved it, and even with several windows
+  of the application open. Two windows of one application can still not both have saved positions: preferences stay
+  keyed by application identity.
+- The snapshot grows by up to 64 short hints (about 3 KB at the caps).
+
+**Revisit if** a physical session shows helper activation regularly above 250 ms, or the hold is visible as a
+start-up delay.

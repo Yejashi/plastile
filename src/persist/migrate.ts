@@ -9,11 +9,21 @@ export type RawSnapshot = Record<string, unknown>;
 export type Step = (raw: RawSnapshot) => RawSnapshot;
 
 /**
- * Steps by source version. Version 1 is the first schema that shipped, so there is nothing to
- * migrate yet; the next schema change adds `1: (v1) => v2` here with input/output fixtures in
- * tests/fixtures/persist/.
+ * Steps by source version, each with input/output fixtures in tests/fixtures/persist/
+ * (`vN.json` migrates to `vM-from-vN.json`, M = N + 1).
+ *
+ * 1 -> 2: every float gains `windowHint`, the id of the window its rectangle was taken from (a
+ * same-session hint, never identity; ADR-020 addendum). A version-1 float names no window: "".
+ * Anything that is not a float object is passed through unchanged, for validation to judge.
  */
-export const MIGRATIONS: Readonly<Record<number, Step>> = {};
+export const MIGRATIONS: Readonly<Record<number, Step>> = {
+  1: (v1) => {
+    const fs = v1.floats;
+    if (!Array.isArray(fs)) return { ...v1, schemaVersion: 2 };
+    const floats = fs.map((f: unknown) => (typeof f === "object" && f !== null && !Array.isArray(f) ? { ...f, windowHint: "" } : f));
+    return { ...v1, schemaVersion: 2, floats };
+  },
+};
 
 export type Migrated =
   | { readonly ok: true; readonly value: RawSnapshot; readonly from: number }

@@ -211,7 +211,9 @@ class Session:
         while True:
             c = self.counters()
             frames = {f["caption"]: f["frame"] for f in self.frames_list()}
-            if frames != last:
+            # `holding`: the first solve still waits for the saved state (bounded, ADR-020 addendum); quiet counts
+            # from its end.
+            if frames != last or c.get("holding"):
                 last, stable_since = frames, time.monotonic()
             if c["outstanding"] == 0 and time.monotonic() - stable_since >= quiet:
                 return c

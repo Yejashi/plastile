@@ -17,7 +17,7 @@ import json
 import time
 from pathlib import Path
 
-from harness import (Session, delta, explain, near, steady_connections, tiling_errors, trace, trace_since, last_trace_t,
+from harness import (Listener, Session, delta, explain, near, steady_connections, tiling_errors, trace, trace_since, last_trace_t,
                      window_info)
 from scenarios import Checks, scenario, script_objects
 from scenarios_contexts import PerOutputSession, full, per_screen
@@ -609,6 +609,20 @@ def writes_by(recs: list[dict], wid: dict[str, str]) -> dict[str, int]:
     return {cap: w[i] for cap, i in wid.items() if w.get(i)}
 
 
+def restores_by(recs: list[dict], wid: dict[str, str]) -> dict[str, dict]:
+    """Per window, from Plastile's trace: how each saved float was matched (`by`: "window" for the same-window hint,
+    "app" for the application identity rule; ADR-020 addendum), the rectangle a hint match used, and how many restore
+    writes the window got. Work attribution only: where the window is, is the oracle's to say."""
+    out: dict[str, dict] = {}
+    for cap, i in wid.items():
+        rf = [r.get("data") or {} for r in recs if r.get("kind") == "restore-float" and r.get("id") == i]
+        rw = sum(1 for r in recs if r.get("kind") == "write" and r.get("id") == i
+                 and (r.get("data") or {}).get("reason") == "restore")
+        if rf or rw:
+            out[cap] = {"by": [d.get("by") for d in rf], "rect": [d.get("rect") for d in rf], "restoreWrites": rw}
+    return out
+
+
 def close_inspector(s: Session, caption: str) -> None:
     """explain opens Plastile's inspector (an excluded window); activating another window closes it."""
     s.act(caption, "workspace.activeWindow = w")
@@ -713,23 +727,35 @@ def resume_floats(out: Path, c: Checks):
           b["windows"] == live == 5, {"windows": b["windows"], "live": live})
 
         # A later disable/re-enable: what Plastile saved for 4 is where the user moved it while suspended, so
-        # the new runtime (which has only the live windows and the saved preferences) finds it there.
+        # the new runtime (which has only the live windows and the saved preferences) finds it there. The first
+        # solve waits for the saved state (bounded start-up hold, ADR-020 addendum), and each float comes back as
+        # the same window (its hint) without a write: KWin's own frame signals for 2 and 4 stay silent.
+        from scenarios_persist import pload
         s.unload()
-        s.load()
+        # Loaded before Plastile and left loaded to the end of the session: unloading it while Plastile (loaded after
+        # it) runs made the next one-shot script never run (observed twice; KWin's script ids look like counts).
+        lis = Listener(s, "plt-resume", frames=(fx(2), fx(4)))
+        loff = s.kw.mark()
+        pload(s)  # an event wait: the helper's reply (the saved state) has been applied
         cc = s.settle()
+        moves = {k: [ln.rsplit(" ", 1)[1] for ln in lis.lines("frame", loff) if f" {k}|" in ln] for k in (fx(2), fx(4))}
         recs = trace(s)  # a fresh runtime: its whole trace is the adoption
         f = {k: info(s, k)["frame"] for k in (fx(2), fx(4))}
         dec = {i: decision(s, fx(i)) for i in (2, 4)}
         close_inspector(s, fx(1))
         wr = writes_by(recs, wid)
-        facts["reenable"] = {"writes": wr, "frames": f, "explain": dec,
+        rb = restores_by(recs, wid)
+        facts["reenable"] = {"writes": wr, "restores": rb, "frames": f, "explain": dec, "kwinFrameChanges": moves,
                              "counters": {k: cc["counters"][k] for k in ("restored", "restoreAmbiguous")}}
         c("re-enable after the resume: 2 and 4 float again at the user's latest rectangles (4: the move made while "
-          "suspended), restored from the saved preferences without a write (oracle, explain, trace)",
+          "suspended), matched as the same windows, restored without a write: KWin never changed their frames "
+          "(oracle, KWin frame signals, explain, trace)",
           near(f[fx(2)], u2, 0.5) and near(f[fx(4)], u4_moved, 0.5) and fx(2) not in wr and fx(4) not in wr
+          and not moves[fx(2)] and not moves[fx(4)]
+          and all((rb.get(fx(i)) or {}).get("by") == ["window"] for i in (2, 4))
           and all(dec[i]["userMode"] == "floating" for i in (2, 4)) and cc["counters"]["restored"] == 2,
-          {"frames": f, "want": {"2": u2, "4": u4_moved}, "older4": u4, "writes": wr, "explain": dec,
-           "counters": facts["reenable"]["counters"]})
+          {"frames": f, "want": {"2": u2, "4": u4_moved}, "older4": u4, "writes": wr, "restores": rb, "explain": dec,
+           "kwinFrameChanges": moves, "counters": facts["reenable"]["counters"]})
 
         # Ordinary user floats afterwards: Toggle floating tiles 4, and again floats it where the user last put it.
         s.act(fx(4), "workspace.activeWindow = w")
@@ -754,14 +780,18 @@ def resume_floats(out: Path, c: Checks):
 @scenario("reenable-floats-T19")
 def reenable_floats(out: Path, c: Checks):
     """User floats survive a disable/re-enable (unload/load). The new runtime has only the live inventory and
-    the saved preferences (T27), so a float comes back when its application has one window open (the
-    documented rule, docs/user/TROUBLESHOOTING.md; Q06).
+    the saved preferences (T27). Each saved float names the window it was taken from (a same-session hint,
+    ADR-020 addendum): a live window with that id is the window the user floated, so it floats again where it
+    is now, whatever other windows its application has. The application identity rule (Q06) is for other
+    windows and is covered by persist-ambiguous-Q06.
 
     Fixtures 9 and 10 (applications of their own) are floated and placed; 2 is quick-tiled by KWin; 1 is
     floated but shares its application with 2 and 3. Disabled: 3 closes, 4 opens and the user moves 10.
-    Re-enable: 9 floats at its rectangle unwritten; 2 stays KWin's; the peers tile; 1 is re-tiled (its
-    float is withheld as ambiguous, as documented); where 10 ends up is recorded."""
-    from scenarios_persist import spawn_app
+    Re-enable: the first solve waits for the saved state (bounded start-up hold, ADR-020 addendum), so each float
+    comes back without a write, where the window was when Plastile was enabled: 9 and 1 at their rectangles, 10
+    where the user moved it, never at the rectangle saved at unload. KWin's own frame signals for them stay
+    silent. 2 stays KWin's; 4 tiles."""
+    from scenarios_persist import pload, spawn_app
     facts: dict = {}
     ua = {"x": 150, "y": 110, "width": 520, "height": 380}
     ub = {"x": 640, "y": 300, "width": 460, "height": 340}
@@ -785,7 +815,7 @@ def reenable_floats(out: Path, c: Checks):
           {"explain": d0, "q2": q2})
 
         s.unload()
-        saves = s.log_lines(r"plastile debug state saved .*\"reason\":\"unload\"", off)
+        saves = s.log_lines(r"plastile debug state save issued .*\"reason\":\"unload\"", off)
         s.kill(3)
         s.spawn(4)
         moved = place(s, fx(10), ub_moved)
@@ -793,34 +823,63 @@ def reenable_floats(out: Path, c: Checks):
           len(saves) == 1 and moved and info(s, fx(3)) is None, {"saves": saves[-1:], "moved": moved})
         wid = {k: info(s, k)["id"] for k in (fx(1), fx(2), fx(4), fx(9), fx(10))}
 
-        s.load()
+        floats = (fx(1), fx(9), fx(10))
+        # KWin's own frameGeometryChanged, independent of Plastile. Loaded before Plastile and left loaded to the
+        # end of the session: unloading it while Plastile (loaded after it) runs made the next one-shot script never
+        # run (observed twice; KWin's script ids look like counts).
+        lis = Listener(s, "plt-reenable", frames=floats)
+        loff = s.kw.mark()
+        pload(s)  # an event wait: the helper's reply (the saved state) has been applied
         cc = s.settle()
+        moves = {k: [ln.rsplit(" ", 1)[1] for ln in lis.lines("frame", loff) if f" {k}|" in ln] for k in floats}
         recs = trace(s)  # a fresh runtime: its whole trace is the adoption
         f = {k: info(s, k) for k in wid}
         dec = {i: decision(s, fx(i)) for i in (1, 2, 4, 9, 10)}
         wr = writes_by(recs, wid)
+        rb = restores_by(recs, wid)
         restore = {k: cc["counters"][k] for k in ("restored", "restoreAmbiguous")}
-        facts["adopt"] = {"writes": wr, "solves": readable(solves_in(recs)), "counters": restore, "explain": dec,
-                          "frames": {k: v["frame"] for k, v in f.items()}}
-        c("re-enable: 9 floats at the user's rectangle and is not written (oracle, explain, trace)",
+        held = s.log_lines(r"plastile info start-up hold released", loff)
+        facts["adopt"] = {"writes": wr, "restores": rb, "solves": readable(solves_in(recs)), "counters": restore,
+                          "explain": dec, "frames": {k: v["frame"] for k, v in f.items()}, "kwinFrameChanges": moves,
+                          "hold": [ln.split("released ", 1)[1] for ln in held]}
+
+        def same_window(k: str, want: dict) -> bool:
+            """Matched by its hint at `want`; never written by Plastile, and KWin never changed its frame: the first
+            solve waited for the saved state (ADR-020 addendum), so the window was not tiled first."""
+            r = rb.get(k) or {}
+            return (r.get("by") == ["window"] and near(r["rect"][0] or {}, want, 0.5) and k not in wr
+                    and not moves.get(k))
+        c("re-enable: the first solve waited for the saved state and was released by the helper's reply (log)",
+          len(held) == 1 and '"by":"reply"' in held[0], facts["adopt"]["hold"])
+        c("re-enable: 9 floats again at the user's rectangle, matched as the same window; KWin's frame never changed "
+          "and Plastile wrote nothing to it (oracle, KWin frame signals, explain, trace)",
           near(f[fx(9)]["frame"], ua, 0.5) and dec[9]["mode"] == "floating" and dec[9]["userMode"] == "floating"
-          and fx(9) not in wr, {"frame": f[fx(9)]["frame"], "want": ua, "explain": dec[9], "writes": wr})
+          and same_window(fx(9), ua), {"frame": f[fx(9)]["frame"], "want": ua, "explain": dec[9], "restore": rb.get(fx(9)),
+                                       "kwinFrameChanges": moves[fx(9)], "writes": wr.get(fx(9), 0)})
         facts["movedWhileDisabled"] = {"frame": f[fx(10)]["frame"], "saved": ub, "moved": ub_moved,
                                        "keptLive": near(f[fx(10)]["frame"], ub_moved, 0.5),
-                                       "restoredSaved": near(f[fx(10)]["frame"], ub, 0.5), "writes": wr.get(fx(10), 0)}
-        c("re-enable: 10, moved while Plastile was disabled, floats again (explain); its position is recorded (facts)",
-          dec[10]["mode"] == "floating" and dec[10]["userMode"] == "floating", facts["movedWhileDisabled"])
+                                       "restoredSaved": near(f[fx(10)]["frame"], ub, 0.5), "writes": wr.get(fx(10), 0),
+                                       "restore": rb.get(fx(10)), "kwinFrameChanges": moves[fx(10)]}
+        c("re-enable: 10, moved while Plastile was disabled, floats again where the user moved it, not at the rectangle "
+          "saved at unload; KWin's frame never changed, no write (oracle, KWin frame signals, explain, trace)",
+          near(f[fx(10)]["frame"], ub_moved, 0.5) and not near(f[fx(10)]["frame"], ub, 0.5)
+          and dec[10]["mode"] == "floating" and dec[10]["userMode"] == "floating" and same_window(fx(10), ub_moved),
+          facts["movedWhileDisabled"])
         c("re-enable: 2 keeps KWin's quick tile; Plastile yields it again and does not write it (oracle, explain, trace)",
           near(f[fx(2)]["frame"], q2, 0.5) and f[fx(2)]["tile"] and dec[2]["mode"] == "native" and fx(2) not in wr,
           {"frame": f[fx(2)]["frame"], "quickTile": q2, "explain": dec[2]})
-        peers = tiles(s, (fx(1), fx(4)))
-        c("re-enable: 1's float is withheld (its application has three windows open: documented, Q06) and 1 re-tiles "
-          "with 4 over the whole area (oracle, gaps>=8, coverage, explain, counters)",
-          not tiling_errors(peers, area, GAP) and covered(peers, area) >= 0.97 and dec[1]["mode"] == "tiled"
-          and dec[4]["mode"] == "tiled" and restore["restoreAmbiguous"] >= 1,
-          {"frames": {x["caption"]: x["frame"] for x in peers}, "errors": tiling_errors(peers, area, GAP),
-           "explain": {1: dec[1], 4: dec[4]}, "counters": restore})
-        c("re-enable: two floats restored from the saved preferences, 9 and 10 (counters)", restore["restored"] == 2, restore)
+        c("re-enable: 1 is the window the user floated, so it floats again at its rectangle although its application "
+          "has three windows open (no ambiguity rule for the same window; oracle, KWin frame signals, explain, trace)",
+          near(f[fx(1)]["frame"], u1, 0.5) and dec[1]["mode"] == "floating" and dec[1]["userMode"] == "floating"
+          and same_window(fx(1), u1), {"frame": f[fx(1)]["frame"], "want": u1, "explain": dec[1], "restore": rb.get(fx(1)),
+                                       "kwinFrameChanges": moves[fx(1)], "writes": wr.get(fx(1), 0)})
+        peers = tiles(s, (fx(4),))
+        c("re-enable: 4, opened while disabled, tiles the whole area beside KWin's quick tile (oracle, gaps>=8, coverage, "
+          "explain)", not tiling_errors(peers, area, GAP) and covered(peers, area) >= 0.97 and dec[4]["mode"] == "tiled"
+          and fx(4) not in rb, {"frames": {x["caption"]: x["frame"] for x in peers}, "errors": tiling_errors(peers, area, GAP),
+                                "explain": dec[4]})
+        c("re-enable: three floats restored, 9, 10 and 1, none ambiguous (counters)",
+          restore == {"restored": 3, "restoreAmbiguous": 0}, restore)
         close_inspector(s, fx(4))
         n = s.settle()["windows"]
         c("re-enable: Plastile tracks the 5 live windows, not the closed 3 (counters)", n == 5, n)

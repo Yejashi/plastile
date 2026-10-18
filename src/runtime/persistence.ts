@@ -23,6 +23,12 @@ import { buildSnapshot, contentOf, parse, serialize, type Snapshot } from "../pe
 export const DEBOUNCE_MS = 2000;
 /** Re-arming for less than this would be noise: write now instead. */
 const SLACK_MS = 50;
+/**
+ * Longest the first solve waits for the saved state at start-up (ADR-020 addendum). A bounded
+ * wait once per script start, not a settle timer: it ends early on the helper's reply (or its
+ * failure), and no command waits for it.
+ */
+export const LOAD_HOLD_MS = 250;
 export const SLOTS = 2;
 /** The helper's D-Bus name (diagnostics). */
 export const HELPER = "org.kde.plastile.State";
@@ -92,7 +98,13 @@ export class Persister {
   private touchedContexts = new Set<string>();
   private touchedApps = new Set<string>();
   private alive = true;
+  /** The start-up hold's release (ADR-020 addendum): called once, on the load's outcome or at LOAD_HOLD_MS. */
+  private ready: (() => void) | null = null;
+  private holdArmed = false;
+  private loadStart = 0;
+  private loadStartNs = 0;
   private readonly due = (): void => this.onDue();
+  private readonly holdDue = (): void => { this.holdArmed = false; this.release("deadline"); };
   private readonly store: StateStore | undefined;
   private readonly model: PrefsModel;
   private readonly svc: PersistServices;
@@ -103,15 +115,44 @@ export class Persister {
     this.svc = svc;
   }
 
-  /** Request the saved state. Returns at once; the reply is applied when it arrives (onLoaded). */
-  load(): void {
-    if (!this.store) { this.state = "off"; return; }
+  /**
+   * Request the saved state. Returns at once; the reply is applied when it arrives (onLoaded).
+   * `ready`, when given, is the start-up hold's release: called once, when the load finished
+   * (reply applied, reply failed, helper absent) or LOAD_HOLD_MS after this call, whichever is
+   * first; at once when there is no store. The deadline is the store's one-shot maintenance timer,
+   * which no save needs while the load is pending.
+   */
+  load(ready?: () => void): void {
+    if (!this.store) { this.state = "off"; if (ready) ready(); return; }
     this.state = "loading";
+    this.loadStart = this.svc.now();
+    this.loadStartNs = this.svc.clockNs ? this.svc.clockNs() : 0;
+    if (ready) {
+      this.ready = ready;
+      this.holdArmed = true;
+      try { this.store.schedule(LOAD_HOLD_MS, this.holdDue); } catch (_e) { this.holdArmed = false; }
+    }
     try {
       this.store.read((texts) => this.onLoaded(texts), () => this.onLoadFailed("no reply"));
     } catch (e) {
       this.onLoadFailed(String(e));
     }
+    if (ready && !this.holdArmed) this.release("deadline"); // no timer could be armed: never hold unbounded
+  }
+
+  /** End the start-up hold (once): cancel its deadline unless that is what fired, then release. */
+  private release(by: "reply" | "failed" | "deadline"): void {
+    const f = this.ready;
+    if (!f) return;
+    this.ready = null;
+    if (this.holdArmed && this.store) {
+      this.holdArmed = false;
+      try { this.store.cancel(); } catch (_e) { /* gone */ }
+    }
+    const clock = this.svc.clockNs;
+    this.svc.log("info", "start-up hold released", { by, heldMs: this.svc.now() - this.loadStart,
+      heldNs: clock ? clock() - this.loadStartNs : null });
+    f();
   }
 
   private onLoadFailed(why: string): void {
@@ -122,6 +163,7 @@ export class Persister {
     this.touchedApps.clear();
     this.svc.log("warn", `persistence unavailable (the ${HELPER} helper did not answer: not installed or failed); `
       + "preferences are kept in memory only", { reason: why.slice(0, 300) });
+    this.release("failed");
   }
 
   private onLoaded(texts: unknown): void {
@@ -167,11 +209,14 @@ export class Persister {
       const ro = future ? "; written by a newer Plastile: nothing is saved this session" : "";
       this.svc.log("warn", `saved state rejected: ${problems.join("; ")}; ${use}${ro}`);
     } else {
+      const replyMs = this.svc.now() - this.loadStart;
       this.svc.log("info", best ? "saved state loaded" : "no saved state", best
         ? { generation: best.snap.generation, contexts: best.snap.contexts.length, floats: best.snap.floats.length,
-            keptUserChanges: kept, applyNs, parseNs }
-        : { applyNs, parseNs });
+            keptUserChanges: kept, applyNs, parseNs, replyMs }
+        : { applyNs, parseNs, replyMs });
     }
+    // The saved state is in the model: the held first solve can run (in the engine's next flush).
+    this.release("reply");
     if (this.state !== "active") { this.dirty = false; return; }
     // Changes made while the load was pending are saved now, a quiet period after the last one.
     if (this.dirty) this.arm();
@@ -193,7 +238,7 @@ export class Persister {
         const app = { appId: f.appId, resourceName: f.resourceName, role: f.role };
         const k = identityKey(app);
         if (k !== null && this.touchedApps.has(k)) { kept++; continue; }
-        list.push({ app, float: { rect: f.rect, output: f.outputKey, area: f.area } });
+        list.push({ app, float: { rect: f.rect, output: f.outputKey, area: f.area }, window: f.windowHint });
       }
       if (list.length > 0) this.model.restoreFloats(list);
     }
@@ -307,8 +352,10 @@ export class Persister {
   /** Clean unload: one final write if dirty, then no timer, no further work, and replies are ignored. */
   shutdown(): void {
     if (!this.alive) return;
-    if (this.armed && this.store) { try { this.store.cancel(); } catch (_e) { /* gone */ } }
+    if ((this.armed || this.holdArmed) && this.store) { try { this.store.cancel(); } catch (_e) { /* gone */ } }
     this.armed = false;
+    this.holdArmed = false;
+    this.ready = null; // unloaded while holding: nothing is released into a stopped engine
     if (this.state === "loading" && this.dirty) {
       // The slots' generations are unknown until the reply: writing now could replace the newest slot.
       this.svc.log("info", "unloaded before the saved state arrived; this session's changes were not saved");

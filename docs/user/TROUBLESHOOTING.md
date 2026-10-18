@@ -64,7 +64,8 @@ qdbus6 org.kde.kglobalaccel /component/kwin org.kde.kglobalaccel.Component.invok
 | `configRevision` | Increases with every configuration attempt that differs from the previous input. |
 | `shortcuts` | The startup shortcut check: `state` (`pending`, `done` or `unavailable`) and the number of `conflicts` ([details](SHORTCUTS.md#conflict-report)). |
 | `inspectorOpen` | Whether the *Explain active window* inspector is open. |
-| `counters.restored`, `restoreAmbiguous` | Saved float positions given to the one open window of their application, and ones withheld because several windows of the application were open. |
+| `counters.restored`, `restoreAmbiguous` | Saved floats given back: to the window they were saved from when it is still open (after a disable and re-enable), otherwise to the one open window of their application; and ones withheld because several windows of the application were open. |
+| `holding` | `true` only right after Plastile starts while it waits for the saved state before its first layout (at most 250 ms). |
 | `persistence` | Saved state: `state` (`loading` until the helper answered; `active`; `memory` when the persistence helper is not installed or did not answer; `read-only` when a newer Plastile's file is present; `off`), the `generation` last loaded or saved, this load's confirmed `writes`, `issued` and `failed` saves, `skipped` (unchanged) saves, and whether a save is pending (`dirty`, `armed`, `inflight`: a request the helper has not answered yet). |
 
 A healthy idle session shows no change between two dumps taken a few seconds apart. Measured: 3 s of idle produced no flushes, deadlines or writes.
