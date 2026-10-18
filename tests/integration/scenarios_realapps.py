@@ -244,6 +244,9 @@ def run_app(app: App, out: Path, c: Checks) -> None:
     run_dir = str(s.kw.run_dir)
     try:
         with s:
+            # NestedKwin picks a fresh session root when it starts (mkdtemp): read the run
+            # directory now, or the sweeps and the survivor check look at a path nothing uses.
+            run_dir = str(s.kw.run_dir)
             infra = {s.kw.kwin_pid, s.kw._dbus.pid if s.kw._dbus else -1}
             s.spawn(1); s.spawn(2)
             s.load(); s.settle()
