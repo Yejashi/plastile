@@ -27,10 +27,9 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 sys.path.insert(0, str(ROOT / "tests/integration"))
 from harness import Session  # noqa: E402
-from workloads import stack_output_height  # noqa: E402
+from workloads import measure_env, stack_output_height  # noqa: E402
 
 PERF = re.compile(r"plastile perf (\{.*\})$")
-MEASURE = ROOT / "build/measure/qml"
 WORKLOADS = ("ratio", "swap", "focus")
 
 
@@ -58,7 +57,7 @@ def main() -> int:
     rng = random.Random(args.seed)
     for n in [int(x) for x in args.counts.split(",")]:
         height = stack_output_height(n)
-        with Session(out / f"n{n}", width=1920, height=height, extra_env={"QML_IMPORT_PATH": str(MEASURE)},
+        with Session(out / f"n{n}", width=1920, height=height, extra_env=measure_env(),
                      qml=HERE / "main.qml", config={"diagnostics": "info"}) as s:
             for i in range(1, n + 1):
                 s.spawn(i, wait=False)
