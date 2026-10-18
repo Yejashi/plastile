@@ -470,6 +470,20 @@ class NestedKwin:
             return None
         return int(out[0]) if out else None
 
+    def terminate_kwin(self, timeout: float = 15.0) -> int | None:
+        """SIGTERM this session's own nested KWin (the signal a session manager sends at logout) and wait for it
+        to exit; the private bus stays up. Returns its exit status (None if it had to be killed)."""
+        if self._kwin is None:
+            return None
+        proc, self._kwin = self._kwin, None
+        proc.send_signal(signal.SIGTERM)
+        try:
+            return proc.wait(timeout=timeout)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+            proc.wait(timeout=3.0)
+            return None
+
     def kwin_rss_kib(self) -> int | None:
         if not self._kwin:
             return None

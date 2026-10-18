@@ -254,18 +254,47 @@ def helper_pid(s: Session) -> int | None:
     return s.kw.bus_pid(STATE_SERVICE)
 
 
-def kwin_round_trips(s: Session, n: int = 30) -> list[float]:
+def kwin_round_trips(s: Session, n: int = 30, seconds: float | None = None) -> list[float]:
     """KWin main-thread responsiveness: round trips (ms) of org.kde.kwin.Scripting.isScriptLoaded, a method that
-    KWin's main thread executes, over a persistent connection to the private bus."""
+    KWin's main thread executes, over a persistent connection to the private bus. n samples 10 ms apart, or, with
+    `seconds`, samples 10 ms apart for that long (a stall anywhere in the window shows as one long round trip)."""
     conn = s.kw._bus_connection()
     m = conn.get_object("org.kde.KWin", "/Scripting").get_dbus_method("isScriptLoaded", "org.kde.kwin.Scripting")
-    out = []
-    for _ in range(n):
+    out: list[float] = []
+    end = time.monotonic() + seconds if seconds is not None else None
+    while (len(out) < n) if end is None else (time.monotonic() < end):
         t = time.monotonic()
         m("plastile")
         out.append(round((time.monotonic() - t) * 1000, 3))
         time.sleep(0.01)
     return out
+
+
+def stall_control(s: Session, ms: int = 400) -> dict:
+    """Positive control for kwin_round_trips: a one-shot KWin script busy-loops `ms` on KWin's main thread while a
+    second bus connection, in a thread, samples the same round trip. The probe must see that stall, or a quiet
+    result while the helper is stopped would prove nothing."""
+    import dbus
+    conn = dbus.bus.BusConnection(s.kw.bus_address)
+    m = conn.get_object("org.kde.KWin", "/Scripting").get_dbus_method("isScriptLoaded", "org.kde.kwin.Scripting")
+    samples: list[float] = []
+    stop = threading.Event()
+
+    def sample() -> None:
+        while not stop.is_set():
+            t = time.monotonic()
+            m("plastile")
+            samples.append(round((time.monotonic() - t) * 1000, 3))
+            time.sleep(0.01)
+    th = threading.Thread(target=sample, daemon=True)
+    th.start()
+    time.sleep(0.2)
+    s.js(f"const t0 = Date.now(); while (Date.now() - t0 < {ms}) {{}}")
+    time.sleep(0.2)
+    stop.set()
+    th.join(3)
+    conn.close()
+    return q(samples)
 
 
 def q(xs: list[float]) -> dict:
@@ -398,6 +427,68 @@ def persist_reload_restart(out: Path, c: Checks):
           tiling_errors(s.frames_list(), s.area(), GAP))
         c("no errors or JS exceptions logged (restart)", not unexpected(s), unexpected(s)[:5])
     c("facts (recorded, always passes)", True, facts)
+
+
+# ------------------------------------------------------------- T27: KWin exits
+def master_ratio(snap: dict | None) -> float | None:
+    return next((x["masterStack"]["ratio"] for x in (snap or {}).get("contexts", []) if x["outputKey"] == "Virtual-0"
+                 and x.get("masterStack")), None)
+
+
+@scenario("persist-kwin-exit-T27")
+def persist_kwin_exit(out: Path, c: Checks):
+    """KWin itself exits (SIGTERM, the signal a session manager sends at logout) while a change is still inside the
+    2 s debounce: Plastile's teardown sends the final Write and the helper stores it after KWin is gone. Three times
+    with the helper running, three times with the helper exited for idleness (test knob PLASTILE_STATE_TEST_IDLE_MS),
+    so that the final Write has to activate a new helper while KWin exits. A nested approximation of a logout: the
+    private bus stays up, which a real session's bus and service manager need not do."""
+    trials = []
+    for mode in ("running", "idle-exited"):
+        for i in range(3):
+            base = out / f"{mode}-{i}/xdg"
+            env = {"PLASTILE_STATE_TEST_IDLE_MS": "300"} if mode == "idle-exited" else None
+            s = psession(out / f"{mode}-{i}/s", base, helper_env=env)
+            with s:
+                s.spawn(1); s.spawn(2)
+                pload(s); s.settle()
+                s.act(fx(1), "workspace.activeWindow = w")
+                s.cmd("resize.grow")  # 0.55 -> 0.6, saved by the deadline
+                g1 = wait_generation(s, base, 1, 6)
+                if mode == "idle-exited":
+                    s.wait_for(lambda: helper_pid(s) is None, 5, "the helper exits for idleness")
+                had_helper = helper_pid(s) is not None
+                t_cmd = time.monotonic()
+                s.cmd("resize.grow")  # 0.6 -> 0.65, still inside the debounce at exit
+                time.sleep(0.15)
+                t_term = time.monotonic()
+                rc = s.kw.terminate_kwin()
+                s.loaded = False  # KWin is gone: nothing to unload
+                for f in s.fixtures.values():  # the clients lost their compositor; drop their pipes quietly
+                    try:
+                        f.proc.stdin.close()
+                    except OSError:
+                        pass
+                s.fixtures.clear()
+                g2 = wait_generation(s, base, 2, 5)
+                stops = [float(ln.split()[0]) for ln in s.log_lines(r"plastile info stopped")]
+                trials.append({"mode": mode, "helperRunningAtExit": had_helper, "firstSave": g1, "kwinExit": rc,
+                               "termAfterCommandS": round(t_term - t_cmd, 3),
+                               # QT_MESSAGE_PATTERN %{time boot} is CLOCK_MONOTONIC, as time.monotonic()
+                               "teardownAfterCommandS": [round(t - t_cmd, 3) for t in stops],
+                               "generationAfterExit": g2, "ratio": master_ratio(newest(base)),
+                               "errors": unexpected(s)[:3]})
+    for mode in ("running", "idle-exited"):
+        ts = [t for t in trials if t["mode"] == mode]
+        c(f"precondition ({mode}): the first save landed; the helper was {'running' if mode == 'running' else 'gone'} "
+          "at exit", all(t["firstSave"] == 1 and t["helperRunningAtExit"] == (mode == "running") for t in ts), ts)
+        c(f"KWin exit ({mode}): Plastile's teardown ran before the 2 s deadline could fire (log, under 1.5 s after the "
+          "change)", all(len(t["teardownAfterCommandS"]) == 1 and t["teardownAfterCommandS"][0] < 1.5 for t in ts),
+          [t["teardownAfterCommandS"] for t in ts])
+        c(f"KWin exit ({mode}): 3 of 3 final Writes reached the helper after KWin exited (generation 2, ratio 0.65; "
+          "file)", all(t["generationAfterExit"] == 2 and t["ratio"] is not None and abs(t["ratio"] - 0.65) < 1e-9
+                       for t in ts), [(t["generationAfterExit"], t["ratio"]) for t in ts])
+    c("no errors or JS exceptions logged", not any(t["errors"] for t in trials), [t["errors"] for t in trials])
+    c("facts (recorded, always passes)", True, trials)
 
 
 # --------------------------------------------------------------------- Q06
@@ -585,12 +676,17 @@ def persist_helper_stopped(out: Path, c: Checks):
         c("precondition: a first save landed and the helper owns its bus name", g1 == 1 and pid is not None,
           {"generation": g1, "pid": pid})
         facts["baselineRoundTripMs"] = q(kwin_round_trips(s))
+        facts["controlStallRoundTripMs"] = stall_control(s, 400)
+        c("control: the round-trip probe sees a 400 ms stall of KWin's main thread (a busy one-shot script; max >= 300 ms)",
+          facts["controlStallRoundTripMs"].get("max", 0) >= 300, facts["controlStallRoundTripMs"])
         watch = Inotify(base / "state/plastile")
         os.kill(pid, signal.SIGSTOP)
         t_stop = time.monotonic()
         try:
             s.cmd("resize.grow")  # 0.6 -> 0.65: its save comes due 2 s later and waits for the stopped helper
-            time.sleep(2.6)
+            # Sampled continuously across the moment the save is issued (2 s after the change): a save that
+            # blocked KWin's thread, even briefly, would show here as one long round trip.
+            due_rt = kwin_round_trips(s, seconds=2.6)
             inflight = s.counters()["persistence"]
             stopped_rt = kwin_round_trips(s)
             widths = []
@@ -612,9 +708,12 @@ def persist_helper_stopped(out: Path, c: Checks):
         g3 = wait_generation(s, base, 3, 6)
         time.sleep(0.3)
         watch.close()
-        facts.update({"stoppedRoundTripMs": q(stopped_rt), "stoppedSeconds": round(stopped_for, 1), "inflight": inflight,
+        facts.update({"dueRoundTripMs": q(due_rt), "stoppedRoundTripMs": q(stopped_rt), "stoppedSeconds": round(stopped_for, 1), "inflight": inflight,
                       "afterLaterChanges": still, "widths": widths, "events": describe(watch.events, t_cont)})
-        bq, sq = facts["baselineRoundTripMs"], facts["stoppedRoundTripMs"]
+        bq, sq, dq = facts["baselineRoundTripMs"], facts["stoppedRoundTripMs"], facts["dueRoundTripMs"]
+        c("Q05: KWin's main thread keeps answering while the save to the stopped helper comes due and is issued "
+          "(round trips every 10 ms for 2.6 s: p50 within baseline + 5 ms, max < 250 ms)",
+          dq.get("n", 0) >= 50 and dq["p50"] <= bq["p50"] + 5 and dq["max"] < 250, {"baseline": bq, "acrossDue": dq})
         c("Q05: KWin's main thread answers at its normal latency while the helper is stopped (D-Bus round trip p50 within "
           "baseline + 5 ms, max < 250 ms)", sq["p50"] <= bq["p50"] + 5 and sq["max"] < 250, {"baseline": bq, "stopped": sq})
         c("Q05: commands complete while the helper is stopped (each grow/shrink visible in the oracle within 3 s)",
