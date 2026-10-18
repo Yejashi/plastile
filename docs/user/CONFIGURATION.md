@@ -16,7 +16,7 @@ These are the keys in `kwinrc` and the fields of the settings dialog. Defaults c
 
 | Key | Default | Accepted values | Meaning |
 |---|---|---|---|
-| `layout` | `master-stack` | `master-stack`, `bsp`, `monocle`, `floating`, `scrolling` | Layout for every context, unless an override or a session command changes it. `scrolling` is experimental and not offered by the settings dialog; set it in `kwinrc` or the JSON document ([scrolling](#scrolling-layout-settings-experimental)). |
+| `layout` | `master-stack` | `master-stack`, `bsp`, `monocle`, `floating`, `scrolling`, `zones` | Layout for every context, unless an override or a session command changes it. `scrolling` and `zones` are experimental and not offered by the settings dialog; set them in `kwinrc` or the JSON document ([scrolling](#scrolling-layout-settings-experimental), [zones](#zones-layout-settings-experimental)). |
 | `gapInner` | `8` | integer 0–200 (px) | Gap between neighbouring tiles. |
 | `gapOuter` | `8` | integer 0–200 (px) | Gap between tiles and the edge of the usable area, the same on all four sides. The JSON document can set each edge. |
 | `singleWindowGaps` | `true` | `true`, `false` | Keeps the outer gap when a context has a single tiled window. `false` lets a lone window fill the area. |
@@ -40,6 +40,7 @@ These are the keys in `kwinrc` and the fields of the settings dialog. Defaults c
   "defaults": { },
   "overrides": [ ],
   "rules": [ ],
+  "zoneLayouts": [ ],
   "diagnostics": { "level": "warn", "traceCapacity": 2048 }
 }
 ```
@@ -51,6 +52,7 @@ These are the keys in `kwinrc` and the fields of the settings dialog. Defaults c
 | `overrides` | no | Up to 64 per-context settings patches, selected by output, desktop or activity. |
 | `rules` | no | Up to 256 window rules, selected by application id, resource name, title, window type, transience, output, desktop or activity. |
 | `diagnostics` | no | `level` and `traceCapacity`, with the same values as the flat keys. The JSON wins when both are set. |
+| `zoneLayouts` | no | Up to 16 zone layouts for the experimental zones layout ([below](#zones-layout-settings-experimental)). |
 
 ### Settings patch
 
@@ -59,7 +61,7 @@ A settings patch is used by `defaults` and by each override's `set`. Every field
 | Field | Values | Notes |
 |---|---|---|
 | `enabled` | boolean | `false` stops tiling in the matching contexts: windows there are treated as floating. |
-| `layout` | `master-stack`, `bsp`, `monocle`, `floating`, `scrolling` | `scrolling` is experimental. |
+| `layout` | `master-stack`, `bsp`, `monocle`, `floating`, `scrolling`, `zones` | `scrolling` and `zones` are experimental. |
 | `gaps.inner` | integer 0–200 | |
 | `gaps.outer` | integer 0–200, or `{ "top", "right", "bottom", "left" }` (each 0–200, any subset) | A number sets all four edges. |
 | `masterStack.ratio` | strictly between 0 and 1 (clamped to 0.05–0.95 when solving) | |
@@ -73,6 +75,7 @@ A settings patch is used by `defaults` and by each override's `set`. Every field
 | `scrolling.policy` | `lazy`, `centered` | Experimental scrolling layout ([below](#scrolling-layout-settings-experimental)). Default `lazy`. |
 | `scrolling.defaultWidth` | greater than 0, at most 1 | Width of a new column as a fraction of the usable width. Default 0.5. |
 | `scrolling.widthPresets` | 1–8 fractions, each greater than 0 and at most 1, strictly ascending | Widths *Scrolling: cycle column width* steps through. Default `[0.3333, 0.5, 0.6667, 1]` (exactly ⅓, ½, ⅔, 1). An override's list replaces the inherited one. |
+| `zones.layout` | the id of a built-in or configured zone layout | Experimental zones layout ([below](#zones-layout-settings-experimental)): which zone layout a zones context uses. Default `halves`. |
 | `overflow` | `float-new` | The only implemented policy. Other values are rejected. |
 | `singleWindowGaps` | boolean | |
 | `followOnSend` | boolean | Default `false`. When `true`, *Send window to next/previous desktop* also shows that desktop on the window's screen (only that screen when KWin's per-screen desktops are on) and activates the window. *Send window to next/previous output* needs no switch: KWin itself moves the window onto the destination screen's current desktop and keeps it active, so `true` only adds the activation. The value of the context the window is sent **from** decides. JSON only (no flat key). |
@@ -101,6 +104,35 @@ The scrolling layout ([README](README.md#scrolling-experimental)) is off unless 
 - *Grow* and *Shrink* change the focused column's width by `masterStack.ratioStep` (the flat `ratioStep`).
 
 A configuration change that leaves a context's layout as scrolling keeps its columns. One that changes it to another layout, or disables tiling there, brings every off-screen window back first.
+
+### Zones layout settings (experimental)
+
+The zones layout ([README](README.md#zones-experimental)) is off unless `layout` is `zones` in a context. It is experimental: covered by mock and nested-KWin tests only, with its physical-monitor checks still open. Its settings exist only in the JSON document:
+
+```json
+{
+  "schemaVersion": 1,
+  "zoneLayouts": [
+    { "id": "wide-centre", "zones": [
+      { "x": 0, "y": 0, "width": 0.25, "height": 1 },
+      { "x": 0.25, "y": 0, "width": 0.5, "height": 1 },
+      { "x": 0.75, "y": 0, "width": 0.25, "height": 1 } ] }
+  ],
+  "defaults": { "zones": { "layout": "main-side" } },
+  "overrides": [
+    { "id": "zones-on-the-wide-screen", "match": { "outputName": "DP-1" },
+      "set": { "layout": "zones", "zones": { "layout": "wide-centre" } } }
+  ],
+  "rules": [
+    { "id": "terminal-right", "match": { "appId": "org.kde.konsole" }, "actions": { "zone": 3 } }
+  ]
+}
+```
+
+- **Built-in zone layouts:** `halves` (left, right), `thirds` (three columns), `grid-2x2` (top left, top right, bottom left, bottom right) and `main-side` (60 % left, 40 % right). Zones are numbered in list order.
+- **`zoneLayouts`:** each entry has an `id` (1–64 characters, unique) and 1–32 `zones`. A zone is `x`, `y`, `width` and `height` as fractions of the usable area (the screen's work area minus the outer gaps): `x` and `y` from 0 to 1, `width` and `height` from 0.02 to 1, and `x + width` and `y + height` at most 1. Fractions are compared to six decimals, so `0.3333` + `0.6667` ends exactly at the edge. Zones may overlap. An entry with a built-in's id replaces that built-in; the others are added after the built-ins.
+- **`zones.layout`:** which zone layout a zones context starts with. An unknown id is an error that names the known ones. *Zones: next zone layout* changes it for one context for the session.
+- **Gaps:** zones use the same gaps as the other layouts: the outer gap at the area edges and exactly one inner gap where two zones meet. `singleWindowGaps: false` does not apply to zones.
 
 ### Overrides
 
@@ -150,6 +182,7 @@ A rule changes how a window is treated:
   - `normal` forces the decoration on while tiled.
   - Measured in nested KWin (scenario `classify-rule-border-Q10-T16`), including a user's own border change winning.
 - **`insert`:** `after-focus`, `end` or `master`. It sets where this window enters the context's order, replacing `masterInsert` for that window. The order is what master/stack lays out and what monocle cycles through; in BSP the new window splits the tile chosen by `bsp.insert`. This action is **untested** beyond validation.
+- **`zone`:** an integer 1–32 (experimental zones layout). When the window joins a context whose layout is `zones`, it is placed in that zone of the context's zone layout. If that zone layout has fewer zones, the window stays an ordinary floating window and its explanation says why. A window already in the context is not moved by a rule change. Unit-tested with the mock compositor only.
 - **`minSize`:** `{ "width": W, "height": H }` in logical pixels (each 1–8192; either may be omitted). The smallest tile this window is useful in. Layouts treat it as the window's minimum size, so a tile is never made smaller; when the layout cannot give it that much room, the window floats as an overflow (`exception: overflow: ...`) and gets a new attempt when room may have appeared (another window closes, the work area or the configuration changes). It never exceeds the application's own maximum size. Measured in nested KWin 6.7.5 and 6.8.0 (scenario `rules-context-T25`) and unit-tested with the mock compositor.
 
 Actions that are **not supported** in this version are rejected with a message that names the alternative:
@@ -357,6 +390,7 @@ The line is `plastile info explain {...}` with these fields:
 - a rule action this version does not support (`layout`, placement on an output, desktop or activity, `overflow`), each with the alternative in the message
 - a `minSize` with neither `width` nor `height`, or a value outside 1–8192
 - a scrolling `policy` other than `lazy` or `centered`, a width outside (0, 1], or `widthPresets` that is empty, longer than 8 or not strictly ascending
+- more than 16 `zoneLayouts`, a zone layout with no zones or more than 32, a duplicate or empty zone layout id, a zone coordinate that is not a finite number in its range, a zone narrower or shorter than 0.02, or one that extends past the right or bottom edge; a `zones.layout` naming no known zone layout; a rule `zone` outside 1–32
 
 **Warnings** (the configuration still activates): an empty `set`, empty `actions`. (Unknown flat keys would be a warning too, but in KWin they never reach the validator; see [Flat keys](#flat-keys).)
 
