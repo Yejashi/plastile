@@ -202,7 +202,7 @@ def late_min_size(out: Path, c: Checks):
     facts: dict = {}
     with Session(out, config={"traceCapacity": 8192}) as s:
         # Fixture 3 first: it becomes the master (691 px wide, below the 700 px minimum it raises later).
-        f3 = s.spawn(3, "--clamp", "--late-min-size", "700,500,2500")
+        f3 = s.spawn(3, "--clamp", "--late-min-size", "700,500,4000")
         s.spawn(1); s.spawn(2)
         s.load(); s.settle()
         # Every configure makes this client enforce its minimum, so all focus changes happen before the hint.
