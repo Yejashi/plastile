@@ -118,6 +118,13 @@ export interface FloatRect {
 }
 
 /** A user's float decision for an application (T27): kept after its window closes, for persistence. */
+/**
+ * What a persisted preference change touched (T27): a context's layout preferences, or the float
+ * preference of an application identity (identityKey). Persistence keeps these user decisions over
+ * a saved state that arrives later (ADR-020).
+ */
+export type PersistScope = { readonly context: ContextKey } | { readonly app: string };
+
 export interface FloatPreference {
   readonly app: AppIdentity;
   readonly float: FloatRect;
@@ -263,7 +270,7 @@ export class Engine {
    * Called (cheaply, possibly from a command) when something persistence saves changed: a
    * context preference or a user float decision. The listener only marks state dirty.
    */
-  onPersistChange: (() => void) | null = null;
+  onPersistChange: ((scope: PersistScope) => void) | null = null;
   /** Windows being resized interactively whose frame changed since the last flush (liveResize). */
   private liveResize = new Set<WindowId>();
   /** The resized frame each live solve used, so an unchanged frame solves nothing. */
@@ -586,6 +593,7 @@ export class Engine {
         if (r.exception === DIVERGED) r.exception = null; // a slow client got there after all
         this.trace.record(this.svc.now(), "settled", id);
         this.disarmIfIdle();
+        if (this.restoreChecks.has(id)) this.ensureFlush(); // a restore waited for this request
         break;
       case "stale":
         this.counters.stale++;
@@ -1573,7 +1581,7 @@ export class Engine {
         if (o.changed) state = o.state;
       }
       c.states[kindL] = state;
-      this.persistChanged(); // a dragged divider is a ratio preference
+      this.persistChanged({ context: c.key }); // a dragged divider is a ratio preference
     }
     L.cancel(r.ledger);
     r.ledger.request = null; // the user owned the frame; the next plan target is a fresh request
@@ -1696,7 +1704,7 @@ export class Engine {
         c.layoutOverride = next;
         if (next === "floating") this.restoreFloatRects(c);
         this.solveNow(c);
-        this.persistChanged();
+        this.persistChanged({ context: c.key });
         return ok(c.members.slice());
       }
       const cmd: LayoutCommand | null =
@@ -1730,7 +1738,7 @@ export class Engine {
       c.layoutOverride = null;
       c.states = {};
       this.solveNow(c);
-      this.persistChanged();
+      this.persistChanged({ context: c.key });
       return ok(c.members.slice());
     }
     if (family === "scroll") return this.scrollCommand(c, r, action);
@@ -1748,7 +1756,7 @@ export class Engine {
     if (!o.changed) return { status: "noop", reason: o.reason ?? "no change", targets: [] };
     c.states[kind] = o.state;
     this.solveNow(c);
-    this.persistChanged();
+    this.persistChanged({ context: c.key });
     return { status: "accepted", targets: c.members.slice() };
   }
 
@@ -1837,7 +1845,7 @@ export class Engine {
     this.pendingFloats.delete(key); // the user's newer decision replaces the saved one
     this.floatPrefs.set(key, { app: { appId: r.meta.appId, resourceName: r.meta.resourceName, role: r.meta.role }, float: r.floatRect });
     if (this.floatPrefs.size > FLOATS_MAX) this.floatPrefs.delete(this.floatPrefs.keys().next().value as string);
-    this.persistChanged();
+    this.persistChanged({ app: key });
   }
 
   /** The user tiled a window they had floated: its application no longer has a float preference. */
@@ -1845,11 +1853,11 @@ export class Engine {
     const key = identityKey(r.meta);
     if (key === null) return;
     const a = this.floatPrefs.delete(key), b = this.pendingFloats.delete(key);
-    if (a || b) this.persistChanged();
+    if (a || b) this.persistChanged({ app: key });
   }
 
-  private persistChanged(): void {
-    if (this.alive && this.onPersistChange) this.onPersistChange();
+  private persistChanged(scope: PersistScope): void {
+    if (this.alive && this.onPersistChange) this.onPersistChange(scope);
   }
 
   /**
@@ -1865,6 +1873,14 @@ export class Engine {
       if (this.pendingFloats.size === 0) return;
       const r = this.recs.get(id);
       if (!r || r.userMode !== null || (r.mode !== "tiled" && r.mode !== "floating")) continue;
+      if (r.ledger.outstanding) {
+        // Its tile request is still in flight (a saved state that arrived after the window was
+        // tiled, ADR-020): KWin drops a write back to the committed frame while a configure is
+        // outstanding, and the window would land on the tile. Checked again once the request
+        // settles or its deadline passes.
+        this.restoreChecks.add(id);
+        continue;
+      }
       const key = identityKey(r.meta);
       let live = 0;
       if (key !== null && this.pendingFloats.has(key)) {
@@ -2602,12 +2618,6 @@ export class Engine {
       if (!r.restoreChecked && r.mode !== "pending") { r.restoreChecked = true; this.restoreChecks.add(r.id); }
     }
     if (this.restoreChecks.size > 0) this.ensureFlush();
-  }
-
-  /** Some window is being moved or resized interactively (maintenance work waits for the end). */
-  isInteracting(): boolean {
-    for (const r of this.recs.values()) if (r.states.interactive !== "none") return true;
-    return false;
   }
 
   outstandingCount(): number {

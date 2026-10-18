@@ -38,8 +38,11 @@ export interface RuntimeEnv {
   readonly inspector?: InspectorHost;
   /** The lazily created zones overlay (package/contents/ui/ZoneOverlay.qml, experimental); absent: zone.show only logs. */
   readonly zones?: ZoneOverlayHost;
-  // ---- persistence (T27) ----
-  /** Saved session preferences (package/contents/ui/Persistence.qml); absent: nothing is loaded or saved. */
+  // ---- persistence (T27, ADR-020) ----
+  /**
+   * Saved session preferences: package/contents/ui/Persistence.qml, asynchronous calls to the
+   * plastile-state helper. Absent: nothing is loaded or saved.
+   */
   readonly state?: StateStore;
 }
 
@@ -121,15 +124,16 @@ export function createRuntime(env: RuntimeEnv): Runtime {
 
   const engine = new Engine(adapter, svc, options(snapshot!));
   const initial = adapter.attach(engine, snapshot!.usesTitleRules);
-  // ---- persistence (T27, ADR-013): loaded before the first solve; saved as maintenance work ----
+  // ---- persistence (T27, ADR-020): requested at start-up, applied when the helper replies ----
   const persister = new Persister(env.state, engine, {
     now: svc.now, log, stamp: () => new Date().toISOString(), clockNs: env.perf ? env.clockNs : undefined,
   });
-  persister.load();
-  engine.onPersistChange = () => persister.markDirty();
+  engine.onPersistChange = (scope) => persister.markDirty(scope);
   // ---- end T27 ----
+  // Tiling starts with defaults now; the saved state never delays the first solve.
   engine.start(initial);
   log("info", `started ${VERSION}`, { windows: initial.length, configRevision: snapshot!.revision });
+  persister.load();
 
   // KWin emits configChanged after every reconfigure (its own, the reload command's, other
   // settings pages'), once after a script loads; the settings dialog's Apply alone emits nothing.
@@ -278,7 +282,8 @@ export function createRuntime(env: RuntimeEnv): Runtime {
       if (audit) audit.cancel();
       if (env.inspector) env.inspector.close();
       if (env.zones) env.zones.destroy();
-      // The last save reads the engine's preferences, so it precedes the engine's stop (T27).
+      // The last save reads the engine's preferences, so it precedes the engine's stop (T27); it is
+      // one asynchronous Write, sent before Persistence.qml's call objects are destroyed.
       persister.shutdown();
       // Invalidate first (engine stops deferred work and restores owned state), then disconnect.
       engine.stop();
