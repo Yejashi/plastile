@@ -139,6 +139,15 @@ class NestedKwin:
             "QT_LOGGING_RULES": "js=true;qml=true;kwin_scripting=true",
             "QT_MESSAGE_PATTERN": "%{time boot} %{category} %{message}",
         })
+        # The user's own directories in the search paths (Plasma adds ~/.config/kdedefaults, the
+        # user's theme defaults) would make nested clients depend on the user's look; system and
+        # Nix store entries stay.
+        home = os.path.expanduser("~").rstrip("/") + "/"
+        for k in ("XDG_CONFIG_DIRS", "XDG_DATA_DIRS"):
+            if k in env:
+                env[k] = ":".join(d for d in env[k].split(":") if d and not (d.rstrip("/") + "/").startswith(home))
+                if not env[k]:
+                    del env[k]
         env.update(self.extra_env)
         return env
 
@@ -168,8 +177,9 @@ class NestedKwin:
         # The private bus reads activation files from $XDG_DATA_HOME/dbus-1/services (the session
         # configuration's standard directories, taken from its environment). The directory exists
         # before the bus starts so that files added later are found too.
-        services = self.root / "data/dbus-1/services"
-        services.mkdir(parents=True)
+        # A caller may move XDG_DATA_HOME (extra_env): the files go where the bus will look.
+        services = Path(self.env()["XDG_DATA_HOME"]) / "dbus-1/services"
+        services.mkdir(parents=True, exist_ok=True)
         for name, text in self.dbus_services.items():
             (services / name).write_text(text)
         # Without an explicit decoration library the isolated config draws no

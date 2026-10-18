@@ -99,7 +99,8 @@ class PackagedSession(Session):
         self.zip_path = zip_path
         self.prepare_result: dict | None = None
         self.kw = NestedKwin(out, outputs=outputs, width=width, height=height,
-                             kwinrc=kwinrc_text(enabled), prepare=self._prepare if zip_path else None)
+                             kwinrc=kwinrc_text(enabled), prepare=self._prepare if zip_path else None,
+                             dbus_services=self.kw.dbus_services)
 
     def _prepare(self, kw: NestedKwin) -> None:
         self.prepare_result = sh(kw, "install", str(self.zip_path))

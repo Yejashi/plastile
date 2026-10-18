@@ -83,7 +83,8 @@ class SettingsSession(Session):
         super().__init__(out)
         self.zip_path = zip_path
         self.prepare_result: dict | None = None
-        self.kw = NestedKwin(out, kwinrc=kwinrc_text(True), prepare=self._prepare, extra_env=SESSION_ENV)
+        self.kw = NestedKwin(out, kwinrc=kwinrc_text(True), prepare=self._prepare, extra_env=SESSION_ENV,
+                             dbus_services=self.kw.dbus_services)
 
     def _prepare(self, kw: NestedKwin) -> None:
         self.prepare_result = sh(kw, "install", str(self.zip_path))
