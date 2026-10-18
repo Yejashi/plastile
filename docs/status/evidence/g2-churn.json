@@ -1,0 +1,3421 @@
+{
+ "purpose": "T34 P14/P15 resource tracking and idle",
+ "churn-p14": {
+  "implementationCommit": "329f7d3f4da470ca0bdce707cb93dfcaadbf9fd2",
+  "implementationDirty": false,
+  "machineStart": {
+   "loadavg": [
+    "2.74",
+    "3.11",
+    "3.04"
+   ],
+   "busyProcessesPct": [
+    {
+     "comm": "polkitd",
+     "cpuPct": 80.9
+    },
+    {
+     "comm": "tailscaled",
+     "cpuPct": 30.6
+    },
+    {
+     "comm": "gdm",
+     "cpuPct": 21.7
+    },
+    {
+     "comm": "systemd",
+     "cpuPct": 18.8
+    },
+    {
+     "comm": "NetworkManager",
+     "cpuPct": 10.9
+    },
+    {
+     "comm": "WebExtensions",
+     "cpuPct": 9.9
+    },
+    {
+     "comm": "ksystemstats",
+     "cpuPct": 3.9
+    },
+    {
+     "comm": "dbus-broker",
+     "cpuPct": 3.9
+    }
+   ],
+   "nestedKwinRunning": 0
+  },
+  "summary": {
+   "probe": "P14",
+   "cycles": 100,
+   "fixtures": 4,
+   "delayedFixtureMs": 200,
+   "openCloseEachCycle": true,
+   "pendingAtUnload": "resize.grow / resize.shrink alternating, with one 200 ms-delayed client",
+   "cyclesWithOutstandingAtUnload": 100,
+   "maxOutstandingAtUnload": 4,
+   "connections": {
+    "baseline": 80,
+    "min": 80,
+    "max": 80,
+    "constant": true
+   },
+   "windows": {
+    "baseline": 4,
+    "constant": true
+   },
+   "shortcutNames": {
+    "first": 235,
+    "min": 235,
+    "max": 235
+   },
+   "rssKiB": {
+    "beforeCycles": 264156,
+    "afterCycles": 270456,
+    "delta": 6300,
+    "byCycle": [
+     264004,
+     266056,
+     269444,
+     267020,
+     267580,
+     269680,
+     269820,
+     269932,
+     267860,
+     270800
+    ],
+    "secondHalfDelta": 776,
+    "trendAfterCycle10": {
+     "warmupFrom": 10,
+     "points": 90,
+     "slopeKiBPerUnit": 23.486,
+     "spreadKiB": 4752
+    },
+    "anonTrendAfterCycle10": {
+     "warmupFrom": 10,
+     "points": 90,
+     "slopeKiBPerUnit": 12.963,
+     "spreadKiB": 1908
+    }
+   },
+   "scriptObjects": {
+    "min": 1,
+    "max": 1
+   },
+   "deadInstanceLines": 0,
+   "errorWarnExceptionLines": 0,
+   "errorWarnSamples": [],
+   "finalCounters": {
+    "solves": 3,
+    "flushes": 4,
+    "commands": 0,
+    "commandsQueued": 0,
+    "writes": 9,
+    "corrections": 1,
+    "skipOutstanding": 0,
+    "skipNoop": 5,
+    "skipDiverged": 0,
+    "observations": 8,
+    "observationsDuringApply": 0,
+    "settled": 7,
+    "stale": 1,
+    "superseded": 0,
+    "partial": 0,
+    "external": 0,
+    "learned": 0,
+    "accepted": 0,
+    "diverged": 0,
+    "deadlines": 0,
+    "overflow": 0,
+    "reclassified": 5,
+    "adopted": 5,
+    "removed": 1,
+    "staleEvents": 0,
+    "errors": 0,
+    "raises": 0,
+    "activations": 0,
+    "liveSolves": 0,
+    "restored": 0,
+    "restoreAmbiguous": 0,
+    "reparks": 0,
+    "invalidSlots": 0
+   },
+   "finalLayoutErrors": [],
+   "secondsTotal": 105.9,
+   "failures": [],
+   "pass": true
+  }
+ },
+ "churn-p14-control": {
+  "implementationCommit": "329f7d3f4da470ca0bdce707cb93dfcaadbf9fd2",
+  "implementationDirty": false,
+  "machineStart": {
+   "loadavg": [
+    "4.51",
+    "3.60",
+    "3.22"
+   ],
+   "busyProcessesPct": [
+    {
+     "comm": "python3",
+     "cpuPct": 98.9
+    },
+    {
+     "comm": "polkitd",
+     "cpuPct": 80.1
+    },
+    {
+     "comm": "tailscaled",
+     "cpuPct": 30.7
+    },
+    {
+     "comm": "gdm",
+     "cpuPct": 21.8
+    },
+    {
+     "comm": "systemd",
+     "cpuPct": 16.8
+    },
+    {
+     "comm": "NetworkManager",
+     "cpuPct": 9.9
+    },
+    {
+     "comm": "dbus-broker",
+     "cpuPct": 5.9
+    },
+    {
+     "comm": "openclaw-gatewa",
+     "cpuPct": 3.0
+    }
+   ],
+   "nestedKwinRunning": 0
+  },
+  "summary": {
+   "probe": "P14-control",
+   "script": "probes/lifecycle/empty-package (empty Item)",
+   "cycles": 100,
+   "fixtures": 4,
+   "openCloseEachCycle": true,
+   "shortcutNames": {
+    "min": 167,
+    "max": 167
+   },
+   "rssKiB": {
+    "beforeCycles": 251932,
+    "afterCycles": 256336,
+    "delta": 4404,
+    "byCycle": [
+     252672,
+     257028,
+     257052,
+     256224,
+     257432,
+     256176,
+     256504,
+     256332,
+     256292,
+     256108
+    ],
+    "secondHalfDelta": 452,
+    "trendAfterCycle10": {
+     "warmupFrom": 10,
+     "points": 90,
+     "slopeKiBPerUnit": -4.493,
+     "spreadKiB": 1672
+    },
+    "anonTrendAfterCycle10": {
+     "warmupFrom": 10,
+     "points": 90,
+     "slopeKiBPerUnit": 1.088,
+     "spreadKiB": 1196
+    }
+   },
+   "secondsTotal": 5.3
+  }
+ },
+ "churn-p15": {
+  "implementationCommit": "329f7d3f4da470ca0bdce707cb93dfcaadbf9fd2",
+  "implementationDirty": false,
+  "machineStart": {
+   "loadavg": [
+    "3.64",
+    "3.10",
+    "3.07"
+   ],
+   "busyProcessesPct": [
+    {
+     "comm": "polkitd",
+     "cpuPct": 80.0
+    },
+    {
+     "comm": "tailscaled",
+     "cpuPct": 29.6
+    },
+    {
+     "comm": "gdm",
+     "cpuPct": 20.7
+    },
+    {
+     "comm": "systemd",
+     "cpuPct": 16.8
+    },
+    {
+     "comm": "NetworkManager",
+     "cpuPct": 9.9
+    },
+    {
+     "comm": "dbus-broker",
+     "cpuPct": 4.9
+    },
+    {
+     "comm": "plasmashell",
+     "cpuPct": 3.0
+    },
+    {
+     "comm": "ksystemstats",
+     "cpuPct": 3.0
+    }
+   ],
+   "nestedKwinRunning": 0
+  },
+  "summary": {
+   "probe": "P15",
+   "seed": 7,
+   "minutesRequested": 20.0,
+   "churnSeconds": 1200.1,
+   "ops": 4254,
+   "opCounts": {
+    "open": 555,
+    "close": 550,
+    "minimize": 529,
+    "unminimize": 530,
+    "toggle-float": 506,
+    "swap": 546,
+    "ratio": 527,
+    "layout.next": 511
+   },
+   "windowRange": [
+    2,
+    8
+   ],
+   "gapMsRange": [
+    100,
+    400
+   ],
+   "clientConfigureDelaysMs": "seeded choice of 0/0/0/120/300 per spawned window",
+   "finalCounters": {
+    "solves": 2944,
+    "flushes": 2288,
+    "commands": 2090,
+    "commandsQueued": 0,
+    "writes": 4265,
+    "corrections": 81,
+    "skipOutstanding": 104,
+    "skipNoop": 2906,
+    "skipDiverged": 0,
+    "observations": 3974,
+    "observationsDuringApply": 67,
+    "settled": 3510,
+    "stale": 51,
+    "superseded": 1,
+    "partial": 0,
+    "external": 0,
+    "learned": 0,
+    "accepted": 0,
+    "diverged": 0,
+    "deadlines": 11,
+    "overflow": 0,
+    "reclassified": 1064,
+    "adopted": 558,
+    "removed": 550,
+    "staleEvents": 0,
+    "errors": 0,
+    "raises": 780,
+    "activations": 0,
+    "liveSolves": 0,
+    "restored": 0,
+    "restoreAmbiguous": 70,
+    "reparks": 0,
+    "invalidSlots": 0
+   },
+   "finalOutstanding": 0,
+   "rssKiB": {
+    "afterLoad": 267816,
+    "afterChurn": 337140,
+    "afterIdle": 337128,
+    "churnDelta": 69324,
+    "trendAfter120sPerMinute": {
+     "warmupFrom": 2.0,
+     "points": 38,
+     "slopeKiBPerUnit": 1199.385,
+     "spreadKiB": 89648
+    },
+    "anonTrendAfter120sPerMinute": {
+     "warmupFrom": 2.0,
+     "points": 38,
+     "slopeKiBPerUnit": 127.7,
+     "spreadKiB": 3436
+    }
+   },
+   "connections": {
+    "min": 46,
+    "max": 148,
+    "perWindowAtEnd": 18.5
+   },
+   "errorWarnExceptionLines": 0,
+   "errorWarnSamples": [],
+   "idle": {
+    "method": "utime+stime of the nested kwin_wayland from /proc/<pid>/stat (USER_HZ=100, 10 ms resolution), and per thread /proc/<pid>/task/*/schedstat run time (ns) and voluntary context switches (wakeups); fixtures left mapped and idle; the harness touches KWin only at the window boundaries",
+    "caveat": "nested KWin on a desktop machine with its own background load (machine state recorded); CPU figures are indicative",
+    "machine": {
+     "t": "2026-10-18T15:53:34",
+     "loadavg": [
+      "2.15",
+      "2.57",
+      "2.81"
+     ],
+     "cpuGovernor": "powersave",
+     "energyPerformancePreference": "balance_performance",
+     "cpus": 12,
+     "busyProcessesPct": [
+      {
+       "comm": "polkitd",
+       "cpuPct": 80.1
+      },
+      {
+       "comm": "tailscaled",
+       "cpuPct": 30.7
+      },
+      {
+       "comm": "gdm",
+       "cpuPct": 19.8
+      },
+      {
+       "comm": "systemd",
+       "cpuPct": 17.8
+      },
+      {
+       "comm": "NetworkManager",
+       "cpuPct": 10.9
+      },
+      {
+       "comm": "WebExtensions",
+       "cpuPct": 9.9
+      },
+      {
+       "comm": "dbus-broker",
+       "cpuPct": 4.0
+      },
+      {
+       "comm": "plasmashell",
+       "cpuPct": 3.0
+      }
+     ],
+     "nestedKwinRunning": 1,
+     "liveKwinRunning": 1
+    },
+    "loadAverageAtEnd": [
+     "2.15",
+     "2.57",
+     "2.81"
+    ],
+    "resolutionMs": 10,
+    "zeroMeans": "fewer than one clock tick (10 ms) of KWin CPU in the window, i.e. < 10 ms per 60 s",
+    "pairs": [
+     {
+      "pair": 0,
+      "loaded": {
+       "state": "loaded",
+       "seconds": 60.0,
+       "cpuMs": 0,
+       "countersDelta": {},
+       "plastileLogLines": 0,
+       "rssKiB": 337120,
+       "threads": {
+        "seconds": 60.005,
+        "cpuMsTicks": 0,
+        "cpuMsSchedstat": 0.0,
+        "wakeupsVoluntary": 0,
+        "involuntarySwitches": 0,
+        "wakeupsPerSecond": 0.0,
+        "threads": 22,
+        "threadsStarted": 0,
+        "threadsEnded": 7
+       },
+       "series5s": [
+        {
+         "wakeups": 0,
+         "runMs": 0.0
+        },
+        {
+         "wakeups": 0,
+         "runMs": 0.0
+        },
+        {
+         "wakeups": 0,
+         "runMs": 0.0
+        },
+        {
+         "wakeups": 0,
+         "runMs": 0.0
+        },
+        {
+         "wakeups": 0,
+         "runMs": 0.0
+        },
+        {
+         "wakeups": 0,
+         "runMs": 0.0
+        },
+        {
+         "wakeups": 0,
+         "runMs": 0.0
+        },
+        {
+         "wakeups": 0,
+         "runMs": 0.0
+        },
+        {
+         "wakeups": 0,
+         "runMs": 0.0
+        },
+        {
+         "wakeups": 0,
+         "runMs": 0.0
+        },
+        {
+         "wakeups": 0,
+         "runMs": 0.0
+        },
+        {
+         "wakeups": 0,
+         "runMs": 0.0
+        }
+       ],
+       "cpuMsPerMinute": 0.0
+      },
+      "unloaded": {
+       "state": "unloaded",
+       "seconds": 60.01,
+       "cpuMs": 0,
+       "rssKiB": 337184,
+       "threads": {
+        "seconds": 60.005,
+        "cpuMsTicks": 0,
+        "cpuMsSchedstat": 0.0,
+        "wakeupsVoluntary": 0,
+        "involuntarySwitches": 0,
+        "wakeupsPerSecond": 0.0,
+        "threads": 22,
+        "threadsStarted": 0,
+        "threadsEnded": 0
+       },
+       "series5s": [
+        {
+         "wakeups": 0,
+         "runMs": 0.0
+        },
+        {
+         "wakeups": 0,
+         "runMs": 0.0
+        },
+        {
+         "wakeups": 0,
+         "runMs": 0.0
+        },
+        {
+         "wakeups": 0,
+         "runMs": 0.0
+        },
+        {
+         "wakeups": 0,
+         "runMs": 0.0
+        },
+        {
+         "wakeups": 0,
+         "runMs": 0.0
+        },
+        {
+         "wakeups": 0,
+         "runMs": 0.0
+        },
+        {
+         "wakeups": 0,
+         "runMs": 0.0
+        },
+        {
+         "wakeups": 0,
+         "runMs": 0.0
+        },
+        {
+         "wakeups": 0,
+         "runMs": 0.0
+        },
+        {
+         "wakeups": 0,
+         "runMs": 0.0
+        },
+        {
+         "wakeups": 0,
+         "runMs": 0.0
+        }
+       ],
+       "cpuMsPerMinute": 0.0
+      },
+      "sensitivityBurst": {
+       "oneShotScripts": 30,
+       "seconds": 0.47,
+       "cpuMs": 80
+      },
+      "differenceMsPerMinute": 0.0,
+      "schedstatDifferenceMsPerMinute": 0.0,
+      "wakeupDifferencePerSecond": 0.0
+     },
+     {
+      "pair": 1,
+      "loaded": {
+       "state": "loaded",
+       "seconds": 60.0,
+       "cpuMs": 0,
+       "countersDelta": {},
+       "plastileLogLines": 0,
+       "rssKiB": 337148,
+       "threads": {
+        "seconds": 60.004,
+        "cpuMsTicks": 0,
+        "cpuMsSchedstat": 0.0,
+        "wakeupsVoluntary": 0,
+        "involuntarySwitches": 0,
+        "wakeupsPerSecond": 0.0,
+        "threads": 22,
+        "threadsStarted": 0,
+        "threadsEnded": 1
+       },
+       "series5s": [
+        {
+         "wakeups": 0,
+         "runMs": 0.0
+        },
+        {
+         "wakeups": 0,
+         "runMs": 0.0
+        },
+        {
+         "wakeups": 0,
+         "runMs": 0.0
+        },
+        {
+         "wakeups": 0,
+         "runMs": 0.0
+        },
+        {
+         "wakeups": 0,
+         "runMs": 0.0
+        },
+        {
+         "wakeups": 0,
+         "runMs": 0.0
+        },
+        {
+         "wakeups": 0,
+         "runMs": 0.0
+        },
+        {
+         "wakeups": 0,
+         "runMs": 0.0
+        },
+        {
+         "wakeups": 0,
+         "runMs": 0.0
+        },
+        {
+         "wakeups": 0,
+         "runMs": 0.0
+        },
+        {
+         "wakeups": 0,
+         "runMs": 0.0
+        },
+        {
+         "wakeups": 0,
+         "runMs": 0.0
+        }
+       ],
+       "cpuMsPerMinute": 0.0
+      },
+      "unloaded": {
+       "state": "unloaded",
+       "seconds": 60.0,
+       "cpuMs": 0,
+       "rssKiB": 337144,
+       "threads": {
+        "seconds": 60.004,
+        "cpuMsTicks": 0,
+        "cpuMsSchedstat": 0.0,
+        "wakeupsVoluntary": 0,
+        "involuntarySwitches": 0,
+        "wakeupsPerSecond": 0.0,
+        "threads": 22,
+        "threadsStarted": 0,
+        "threadsEnded": 0
+       },
+       "series5s": [
+        {
+         "wakeups": 0,
+         "runMs": 0.0
+        },
+        {
+         "wakeups": 0,
+         "runMs": 0.0
+        },
+        {
+         "wakeups": 0,
+         "runMs": 0.0
+        },
+        {
+         "wakeups": 0,
+         "runMs": 0.0
+        },
+        {
+         "wakeups": 0,
+         "runMs": 0.0
+        },
+        {
+         "wakeups": 0,
+         "runMs": 0.0
+        },
+        {
+         "wakeups": 0,
+         "runMs": 0.0
+        },
+        {
+         "wakeups": 0,
+         "runMs": 0.0
+        },
+        {
+         "wakeups": 0,
+         "runMs": 0.0
+        },
+        {
+         "wakeups": 0,
+         "runMs": 0.0
+        },
+        {
+         "wakeups": 0,
+         "runMs": 0.0
+        },
+        {
+         "wakeups": 0,
+         "runMs": 0.0
+        }
+       ],
+       "cpuMsPerMinute": 0.0
+      },
+      "sensitivityBurst": {
+       "oneShotScripts": 30,
+       "seconds": 0.46,
+       "cpuMs": 70
+      },
+      "differenceMsPerMinute": 0.0,
+      "schedstatDifferenceMsPerMinute": 0.0,
+      "wakeupDifferencePerSecond": 0.0
+     },
+     {
+      "pair": 2,
+      "loaded": {
+       "state": "loaded",
+       "seconds": 60.0,
+       "cpuMs": 0,
+       "countersDelta": {},
+       "plastileLogLines": 0,
+       "rssKiB": 337128,
+       "threads": {
+        "seconds": 60.004,
+        "cpuMsTicks": 0,
+        "cpuMsSchedstat": 0.0,
+        "wakeupsVoluntary": 0,
+        "involuntarySwitches": 0,
+        "wakeupsPerSecond": 0.0,
+        "threads": 22,
+        "threadsStarted": 0,
+        "threadsEnded": 1
+       },
+       "series5s": [
+        {
+         "wakeups": 0,
+         "runMs": 0.0
+        },
+        {
+         "wakeups": 0,
+         "runMs": 0.0
+        },
+        {
+         "wakeups": 0,
+         "runMs": 0.0
+        },
+        {
+         "wakeups": 0,
+         "runMs": 0.0
+        },
+        {
+         "wakeups": 0,
+         "runMs": 0.0
+        },
+        {
+         "wakeups": 0,
+         "runMs": 0.0
+        },
+        {
+         "wakeups": 0,
+         "runMs": 0.0
+        },
+        {
+         "wakeups": 0,
+         "runMs": 0.0
+        },
+        {
+         "wakeups": 0,
+         "runMs": 0.0
+        },
+        {
+         "wakeups": 0,
+         "runMs": 0.0
+        },
+        {
+         "wakeups": 0,
+         "runMs": 0.0
+        },
+        {
+         "wakeups": 0,
+         "runMs": 0.0
+        }
+       ],
+       "cpuMsPerMinute": 0.0
+      },
+      "unloaded": {
+       "state": "unloaded",
+       "seconds": 60.0,
+       "cpuMs": 0,
+       "rssKiB": 337128,
+       "threads": {
+        "seconds": 60.004,
+        "cpuMsTicks": 0,
+        "cpuMsSchedstat": 0.0,
+        "wakeupsVoluntary": 0,
+        "involuntarySwitches": 0,
+        "wakeupsPerSecond": 0.0,
+        "threads": 22,
+        "threadsStarted": 0,
+        "threadsEnded": 0
+       },
+       "series5s": [
+        {
+         "wakeups": 0,
+         "runMs": 0.0
+        },
+        {
+         "wakeups": 0,
+         "runMs": 0.0
+        },
+        {
+         "wakeups": 0,
+         "runMs": 0.0
+        },
+        {
+         "wakeups": 0,
+         "runMs": 0.0
+        },
+        {
+         "wakeups": 0,
+         "runMs": 0.0
+        },
+        {
+         "wakeups": 0,
+         "runMs": 0.0
+        },
+        {
+         "wakeups": 0,
+         "runMs": 0.0
+        },
+        {
+         "wakeups": 0,
+         "runMs": 0.0
+        },
+        {
+         "wakeups": 0,
+         "runMs": 0.0
+        },
+        {
+         "wakeups": 0,
+         "runMs": 0.0
+        },
+        {
+         "wakeups": 0,
+         "runMs": 0.0
+        },
+        {
+         "wakeups": 0,
+         "runMs": 0.0
+        }
+       ],
+       "cpuMsPerMinute": 0.0
+      },
+      "sensitivityBurst": {
+       "oneShotScripts": 30,
+       "seconds": 0.47,
+       "cpuMs": 70
+      },
+      "differenceMsPerMinute": 0.0,
+      "schedstatDifferenceMsPerMinute": 0.0,
+      "wakeupDifferencePerSecond": 0.0
+     }
+    ],
+    "counterDeltasZeroWhileLoaded": true,
+    "meanLoadedMsPerMinute": 0.0,
+    "meanUnloadedMsPerMinute": 0.0
+   },
+   "failures": [],
+   "pass": true,
+   "samplesEvery30s": [
+    {
+     "tSeconds": 0.0,
+     "windowsLive": 3,
+     "outstanding": 0,
+     "connections": 63,
+     "windows": 3,
+     "rssKiB": 267824,
+     "rssAnonKiB": 67444,
+     "badLines": 0,
+     "corrections": 0,
+     "errors": 0
+    },
+    {
+     "tSeconds": 30.3,
+     "windowsLive": 5,
+     "outstanding": 0,
+     "connections": 97,
+     "windows": 5,
+     "rssKiB": 290984,
+     "rssAnonKiB": 70960,
+     "badLines": 0,
+     "corrections": 3,
+     "errors": 0
+    },
+    {
+     "tSeconds": 60.2,
+     "windowsLive": 6,
+     "outstanding": 0,
+     "connections": 114,
+     "windows": 6,
+     "rssKiB": 293176,
+     "rssAnonKiB": 71784,
+     "badLines": 0,
+     "corrections": 6,
+     "errors": 0
+    },
+    {
+     "tSeconds": 90.1,
+     "windowsLive": 4,
+     "outstanding": 0,
+     "connections": 80,
+     "windows": 4,
+     "rssKiB": 321968,
+     "rssAnonKiB": 72412,
+     "badLines": 0,
+     "corrections": 7,
+     "errors": 0
+    },
+    {
+     "tSeconds": 120.1,
+     "windowsLive": 2,
+     "outstanding": 0,
+     "connections": 46,
+     "windows": 2,
+     "rssKiB": 270612,
+     "rssAnonKiB": 72384,
+     "badLines": 0,
+     "corrections": 7,
+     "errors": 0
+    },
+    {
+     "tSeconds": 150.1,
+     "windowsLive": 3,
+     "outstanding": 0,
+     "connections": 63,
+     "windows": 3,
+     "rssKiB": 291476,
+     "rssAnonKiB": 72760,
+     "badLines": 0,
+     "corrections": 9,
+     "errors": 0
+    },
+    {
+     "tSeconds": 180.1,
+     "windowsLive": 7,
+     "outstanding": 0,
+     "connections": 131,
+     "windows": 7,
+     "rssKiB": 302216,
+     "rssAnonKiB": 73324,
+     "badLines": 0,
+     "corrections": 12,
+     "errors": 0
+    },
+    {
+     "tSeconds": 210.0,
+     "windowsLive": 5,
+     "outstanding": 0,
+     "connections": 97,
+     "windows": 5,
+     "rssKiB": 306096,
+     "rssAnonKiB": 73172,
+     "badLines": 0,
+     "corrections": 14,
+     "errors": 0
+    },
+    {
+     "tSeconds": 240.0,
+     "windowsLive": 6,
+     "outstanding": 0,
+     "connections": 114,
+     "windows": 6,
+     "rssKiB": 341648,
+     "rssAnonKiB": 73492,
+     "badLines": 0,
+     "corrections": 17,
+     "errors": 0
+    },
+    {
+     "tSeconds": 270.3,
+     "windowsLive": 3,
+     "outstanding": 0,
+     "connections": 63,
+     "windows": 3,
+     "rssKiB": 300756,
+     "rssAnonKiB": 73224,
+     "badLines": 0,
+     "corrections": 17,
+     "errors": 0
+    },
+    {
+     "tSeconds": 300.2,
+     "windowsLive": 8,
+     "outstanding": 1,
+     "connections": 148,
+     "windows": 8,
+     "rssKiB": 296216,
+     "rssAnonKiB": 73464,
+     "badLines": 0,
+     "corrections": 19,
+     "errors": 0
+    },
+    {
+     "tSeconds": 330.3,
+     "windowsLive": 4,
+     "outstanding": 0,
+     "connections": 80,
+     "windows": 4,
+     "rssKiB": 300140,
+     "rssAnonKiB": 73816,
+     "badLines": 0,
+     "corrections": 25,
+     "errors": 0
+    },
+    {
+     "tSeconds": 360.1,
+     "windowsLive": 5,
+     "outstanding": 0,
+     "connections": 97,
+     "windows": 5,
+     "rssKiB": 305844,
+     "rssAnonKiB": 73644,
+     "badLines": 0,
+     "corrections": 25,
+     "errors": 0
+    },
+    {
+     "tSeconds": 390.4,
+     "windowsLive": 7,
+     "outstanding": 0,
+     "connections": 131,
+     "windows": 7,
+     "rssKiB": 323344,
+     "rssAnonKiB": 74308,
+     "badLines": 0,
+     "corrections": 27,
+     "errors": 0
+    },
+    {
+     "tSeconds": 420.2,
+     "windowsLive": 5,
+     "outstanding": 0,
+     "connections": 97,
+     "windows": 5,
+     "rssKiB": 321004,
+     "rssAnonKiB": 74516,
+     "badLines": 0,
+     "corrections": 29,
+     "errors": 0
+    },
+    {
+     "tSeconds": 450.1,
+     "windowsLive": 6,
+     "outstanding": 0,
+     "connections": 114,
+     "windows": 6,
+     "rssKiB": 318012,
+     "rssAnonKiB": 74840,
+     "badLines": 0,
+     "corrections": 29,
+     "errors": 0
+    },
+    {
+     "tSeconds": 480.0,
+     "windowsLive": 2,
+     "outstanding": 0,
+     "connections": 46,
+     "windows": 2,
+     "rssKiB": 293568,
+     "rssAnonKiB": 74916,
+     "badLines": 0,
+     "corrections": 30,
+     "errors": 0
+    },
+    {
+     "tSeconds": 510.1,
+     "windowsLive": 6,
+     "outstanding": 0,
+     "connections": 114,
+     "windows": 6,
+     "rssKiB": 333592,
+     "rssAnonKiB": 74684,
+     "badLines": 0,
+     "corrections": 32,
+     "errors": 0
+    },
+    {
+     "tSeconds": 540.1,
+     "windowsLive": 3,
+     "outstanding": 0,
+     "connections": 63,
+     "windows": 3,
+     "rssKiB": 293272,
+     "rssAnonKiB": 74300,
+     "badLines": 0,
+     "corrections": 36,
+     "errors": 0
+    },
+    {
+     "tSeconds": 570.1,
+     "windowsLive": 4,
+     "outstanding": 0,
+     "connections": 80,
+     "windows": 4,
+     "rssKiB": 293508,
+     "rssAnonKiB": 74364,
+     "badLines": 0,
+     "corrections": 38,
+     "errors": 0
+    },
+    {
+     "tSeconds": 600.1,
+     "windowsLive": 3,
+     "outstanding": 0,
+     "connections": 63,
+     "windows": 3,
+     "rssKiB": 313056,
+     "rssAnonKiB": 74916,
+     "badLines": 0,
+     "corrections": 41,
+     "errors": 0
+    },
+    {
+     "tSeconds": 630.1,
+     "windowsLive": 2,
+     "outstanding": 0,
+     "connections": 46,
+     "windows": 2,
+     "rssKiB": 301516,
+     "rssAnonKiB": 75412,
+     "badLines": 0,
+     "corrections": 42,
+     "errors": 0
+    },
+    {
+     "tSeconds": 660.0,
+     "windowsLive": 3,
+     "outstanding": 1,
+     "connections": 63,
+     "windows": 3,
+     "rssKiB": 296068,
+     "rssAnonKiB": 74664,
+     "badLines": 0,
+     "corrections": 43,
+     "errors": 0
+    },
+    {
+     "tSeconds": 690.2,
+     "windowsLive": 4,
+     "outstanding": 0,
+     "connections": 80,
+     "windows": 4,
+     "rssKiB": 302160,
+     "rssAnonKiB": 74820,
+     "badLines": 0,
+     "corrections": 45,
+     "errors": 0
+    },
+    {
+     "tSeconds": 720.1,
+     "windowsLive": 3,
+     "outstanding": 1,
+     "connections": 63,
+     "windows": 3,
+     "rssKiB": 293476,
+     "rssAnonKiB": 74872,
+     "badLines": 0,
+     "corrections": 45,
+     "errors": 0
+    },
+    {
+     "tSeconds": 750.1,
+     "windowsLive": 8,
+     "outstanding": 0,
+     "connections": 148,
+     "windows": 8,
+     "rssKiB": 356300,
+     "rssAnonKiB": 75820,
+     "badLines": 0,
+     "corrections": 45,
+     "errors": 0
+    },
+    {
+     "tSeconds": 780.1,
+     "windowsLive": 4,
+     "outstanding": 0,
+     "connections": 80,
+     "windows": 4,
+     "rssKiB": 314512,
+     "rssAnonKiB": 74880,
+     "badLines": 0,
+     "corrections": 46,
+     "errors": 0
+    },
+    {
+     "tSeconds": 810.0,
+     "windowsLive": 3,
+     "outstanding": 0,
+     "connections": 63,
+     "windows": 3,
+     "rssKiB": 285056,
+     "rssAnonKiB": 74776,
+     "badLines": 0,
+     "corrections": 46,
+     "errors": 0
+    },
+    {
+     "tSeconds": 840.2,
+     "windowsLive": 3,
+     "outstanding": 0,
+     "connections": 63,
+     "windows": 3,
+     "rssKiB": 297816,
+     "rssAnonKiB": 74544,
+     "badLines": 0,
+     "corrections": 50,
+     "errors": 0
+    },
+    {
+     "tSeconds": 870.1,
+     "windowsLive": 4,
+     "outstanding": 0,
+     "connections": 80,
+     "windows": 4,
+     "rssKiB": 321956,
+     "rssAnonKiB": 74596,
+     "badLines": 0,
+     "corrections": 54,
+     "errors": 0
+    },
+    {
+     "tSeconds": 900.3,
+     "windowsLive": 4,
+     "outstanding": 0,
+     "connections": 80,
+     "windows": 4,
+     "rssKiB": 303364,
+     "rssAnonKiB": 74400,
+     "badLines": 0,
+     "corrections": 55,
+     "errors": 0
+    },
+    {
+     "tSeconds": 930.1,
+     "windowsLive": 5,
+     "outstanding": 0,
+     "connections": 97,
+     "windows": 5,
+     "rssKiB": 293372,
+     "rssAnonKiB": 74672,
+     "badLines": 0,
+     "corrections": 58,
+     "errors": 0
+    },
+    {
+     "tSeconds": 960.2,
+     "windowsLive": 5,
+     "outstanding": 0,
+     "connections": 97,
+     "windows": 5,
+     "rssKiB": 317540,
+     "rssAnonKiB": 75032,
+     "badLines": 0,
+     "corrections": 59,
+     "errors": 0
+    },
+    {
+     "tSeconds": 990.1,
+     "windowsLive": 7,
+     "outstanding": 0,
+     "connections": 131,
+     "windows": 7,
+     "rssKiB": 296416,
+     "rssAnonKiB": 75116,
+     "badLines": 0,
+     "corrections": 60,
+     "errors": 0
+    },
+    {
+     "tSeconds": 1020.1,
+     "windowsLive": 3,
+     "outstanding": 0,
+     "connections": 63,
+     "windows": 3,
+     "rssKiB": 301440,
+     "rssAnonKiB": 74800,
+     "badLines": 0,
+     "corrections": 64,
+     "errors": 0
+    },
+    {
+     "tSeconds": 1050.2,
+     "windowsLive": 3,
+     "outstanding": 0,
+     "connections": 63,
+     "windows": 3,
+     "rssKiB": 287712,
+     "rssAnonKiB": 74676,
+     "badLines": 0,
+     "corrections": 70,
+     "errors": 0
+    },
+    {
+     "tSeconds": 1080.2,
+     "windowsLive": 8,
+     "outstanding": 0,
+     "connections": 148,
+     "windows": 8,
+     "rssKiB": 353624,
+     "rssAnonKiB": 75480,
+     "badLines": 0,
+     "corrections": 75,
+     "errors": 0
+    },
+    {
+     "tSeconds": 1110.0,
+     "windowsLive": 7,
+     "outstanding": 0,
+     "connections": 131,
+     "windows": 7,
+     "rssKiB": 360260,
+     "rssAnonKiB": 75804,
+     "badLines": 0,
+     "corrections": 76,
+     "errors": 0
+    },
+    {
+     "tSeconds": 1140.1,
+     "windowsLive": 3,
+     "outstanding": 0,
+     "connections": 63,
+     "windows": 3,
+     "rssKiB": 297100,
+     "rssAnonKiB": 75412,
+     "badLines": 0,
+     "corrections": 78,
+     "errors": 0
+    },
+    {
+     "tSeconds": 1170.3,
+     "windowsLive": 7,
+     "outstanding": 0,
+     "connections": 131,
+     "windows": 7,
+     "rssKiB": 322724,
+     "rssAnonKiB": 75576,
+     "badLines": 0,
+     "corrections": 78,
+     "errors": 0
+    },
+    {
+     "tSeconds": 1200.1,
+     "windowsLive": 8,
+     "outstanding": 0,
+     "connections": 148,
+     "windows": 8,
+     "rssKiB": 337140,
+     "rssAnonKiB": 75488,
+     "badLines": 0,
+     "corrections": 81,
+     "errors": 0
+    },
+    {
+     "tSeconds": 1201.3,
+     "windowsLive": 8,
+     "outstanding": 0,
+     "connections": 148,
+     "windows": 8,
+     "rssKiB": 337140,
+     "rssAnonKiB": 75488,
+     "badLines": 0,
+     "corrections": 81,
+     "errors": 0
+    }
+   ]
+  }
+ },
+ "churn-p15-control": {
+  "implementationCommit": "329f7d3f4da470ca0bdce707cb93dfcaadbf9fd2",
+  "implementationDirty": false,
+  "machineStart": {
+   "loadavg": [
+    "4.66",
+    "3.66",
+    "3.25"
+   ],
+   "busyProcessesPct": [
+    {
+     "comm": "python3",
+     "cpuPct": 98.9
+    },
+    {
+     "comm": "polkitd",
+     "cpuPct": 80.1
+    },
+    {
+     "comm": "tailscaled",
+     "cpuPct": 30.7
+    },
+    {
+     "comm": "gdm",
+     "cpuPct": 20.8
+    },
+    {
+     "comm": "systemd",
+     "cpuPct": 16.8
+    },
+    {
+     "comm": "WebExtensions",
+     "cpuPct": 16.8
+    },
+    {
+     "comm": "NetworkManager",
+     "cpuPct": 10.9
+    },
+    {
+     "comm": "dbus-broker",
+     "cpuPct": 4.0
+    }
+   ],
+   "nestedKwinRunning": 0
+  },
+  "summary": {
+   "probe": "P15-control",
+   "script": "probes/lifecycle/empty-package (empty Item)",
+   "seed": 7,
+   "minutesRequested": 20.0,
+   "churnSeconds": 1200.1,
+   "ops": 4255,
+   "opCounts": {
+    "open": 555,
+    "close": 550,
+    "minimize": 529,
+    "unminimize": 530,
+    "toggle-float": 506,
+    "swap": 546,
+    "ratio": 527,
+    "layout.next": 512
+   },
+   "skipped": "Plastile commands (toggle-float, swap, ratio, layout.next); the activation before them is kept",
+   "rssKiB": {
+    "afterLoad": 248920,
+    "afterChurn": 260572,
+    "churnDelta": 11652,
+    "trendAfter120sPerMinute": {
+     "warmupFrom": 2.0,
+     "points": 38,
+     "slopeKiBPerUnit": 211.551,
+     "spreadKiB": 8728
+    },
+    "anonTrendAfter120sPerMinute": {
+     "warmupFrom": 2.0,
+     "points": 38,
+     "slopeKiBPerUnit": 168.278,
+     "spreadKiB": 3536
+    }
+   },
+   "failures": [],
+   "pass": true,
+   "samplesEvery30s": [
+    {
+     "tSeconds": 0.0,
+     "windowsLive": 3,
+     "oracleWindows": 3,
+     "rssKiB": 249024,
+     "rssAnonKiB": 55964
+    },
+    {
+     "tSeconds": 30.2,
+     "windowsLive": 5,
+     "oracleWindows": 5,
+     "rssKiB": 253720,
+     "rssAnonKiB": 58136
+    },
+    {
+     "tSeconds": 60.2,
+     "windowsLive": 6,
+     "oracleWindows": 6,
+     "rssKiB": 254732,
+     "rssAnonKiB": 58676
+    },
+    {
+     "tSeconds": 90.2,
+     "windowsLive": 4,
+     "oracleWindows": 4,
+     "rssKiB": 253540,
+     "rssAnonKiB": 58900
+    },
+    {
+     "tSeconds": 120.1,
+     "windowsLive": 3,
+     "oracleWindows": 3,
+     "rssKiB": 251844,
+     "rssAnonKiB": 58620
+    },
+    {
+     "tSeconds": 150.2,
+     "windowsLive": 4,
+     "oracleWindows": 4,
+     "rssKiB": 253364,
+     "rssAnonKiB": 58724
+    },
+    {
+     "tSeconds": 180.2,
+     "windowsLive": 7,
+     "oracleWindows": 7,
+     "rssKiB": 256696,
+     "rssAnonKiB": 59224
+    },
+    {
+     "tSeconds": 210.2,
+     "windowsLive": 3,
+     "oracleWindows": 3,
+     "rssKiB": 253060,
+     "rssAnonKiB": 59364
+    },
+    {
+     "tSeconds": 240.1,
+     "windowsLive": 6,
+     "oracleWindows": 6,
+     "rssKiB": 255984,
+     "rssAnonKiB": 59456
+    },
+    {
+     "tSeconds": 270.2,
+     "windowsLive": 4,
+     "oracleWindows": 4,
+     "rssKiB": 254148,
+     "rssAnonKiB": 59508
+    },
+    {
+     "tSeconds": 300.1,
+     "windowsLive": 8,
+     "oracleWindows": 8,
+     "rssKiB": 258052,
+     "rssAnonKiB": 59636
+    },
+    {
+     "tSeconds": 330.1,
+     "windowsLive": 4,
+     "oracleWindows": 4,
+     "rssKiB": 254168,
+     "rssAnonKiB": 59528
+    },
+    {
+     "tSeconds": 360.1,
+     "windowsLive": 6,
+     "oracleWindows": 6,
+     "rssKiB": 256188,
+     "rssAnonKiB": 59660
+    },
+    {
+     "tSeconds": 390.1,
+     "windowsLive": 7,
+     "oracleWindows": 7,
+     "rssKiB": 257344,
+     "rssAnonKiB": 59872
+    },
+    {
+     "tSeconds": 420.1,
+     "windowsLive": 7,
+     "oracleWindows": 7,
+     "rssKiB": 257048,
+     "rssAnonKiB": 60048
+    },
+    {
+     "tSeconds": 450.2,
+     "windowsLive": 7,
+     "oracleWindows": 7,
+     "rssKiB": 257516,
+     "rssAnonKiB": 60044
+    },
+    {
+     "tSeconds": 480.0,
+     "windowsLive": 3,
+     "oracleWindows": 3,
+     "rssKiB": 253352,
+     "rssAnonKiB": 60128
+    },
+    {
+     "tSeconds": 510.2,
+     "windowsLive": 6,
+     "oracleWindows": 6,
+     "rssKiB": 256816,
+     "rssAnonKiB": 60288
+    },
+    {
+     "tSeconds": 540.3,
+     "windowsLive": 3,
+     "oracleWindows": 3,
+     "rssKiB": 253844,
+     "rssAnonKiB": 60148
+    },
+    {
+     "tSeconds": 570.1,
+     "windowsLive": 6,
+     "oracleWindows": 6,
+     "rssKiB": 256280,
+     "rssAnonKiB": 60224
+    },
+    {
+     "tSeconds": 600.1,
+     "windowsLive": 4,
+     "oracleWindows": 4,
+     "rssKiB": 255012,
+     "rssAnonKiB": 60372
+    },
+    {
+     "tSeconds": 630.1,
+     "windowsLive": 2,
+     "oracleWindows": 2,
+     "rssKiB": 253340,
+     "rssAnonKiB": 60588
+    },
+    {
+     "tSeconds": 660.2,
+     "windowsLive": 5,
+     "oracleWindows": 5,
+     "rssKiB": 255704,
+     "rssAnonKiB": 60592
+    },
+    {
+     "tSeconds": 690.2,
+     "windowsLive": 3,
+     "oracleWindows": 3,
+     "rssKiB": 254256,
+     "rssAnonKiB": 60560
+    },
+    {
+     "tSeconds": 720.3,
+     "windowsLive": 3,
+     "oracleWindows": 3,
+     "rssKiB": 253960,
+     "rssAnonKiB": 60736
+    },
+    {
+     "tSeconds": 750.0,
+     "windowsLive": 7,
+     "oracleWindows": 7,
+     "rssKiB": 258156,
+     "rssAnonKiB": 60684
+    },
+    {
+     "tSeconds": 780.0,
+     "windowsLive": 3,
+     "oracleWindows": 3,
+     "rssKiB": 254472,
+     "rssAnonKiB": 60776
+    },
+    {
+     "tSeconds": 810.2,
+     "windowsLive": 3,
+     "oracleWindows": 3,
+     "rssKiB": 254556,
+     "rssAnonKiB": 60860
+    },
+    {
+     "tSeconds": 840.2,
+     "windowsLive": 3,
+     "oracleWindows": 3,
+     "rssKiB": 254748,
+     "rssAnonKiB": 61052
+    },
+    {
+     "tSeconds": 870.2,
+     "windowsLive": 5,
+     "oracleWindows": 5,
+     "rssKiB": 256044,
+     "rssAnonKiB": 60932
+    },
+    {
+     "tSeconds": 900.2,
+     "windowsLive": 4,
+     "oracleWindows": 4,
+     "rssKiB": 255168,
+     "rssAnonKiB": 61000
+    },
+    {
+     "tSeconds": 930.3,
+     "windowsLive": 6,
+     "oracleWindows": 6,
+     "rssKiB": 257688,
+     "rssAnonKiB": 61160
+    },
+    {
+     "tSeconds": 960.0,
+     "windowsLive": 5,
+     "oracleWindows": 5,
+     "rssKiB": 257084,
+     "rssAnonKiB": 61500
+    },
+    {
+     "tSeconds": 990.1,
+     "windowsLive": 7,
+     "oracleWindows": 7,
+     "rssKiB": 258828,
+     "rssAnonKiB": 61356
+    },
+    {
+     "tSeconds": 1020.1,
+     "windowsLive": 3,
+     "oracleWindows": 3,
+     "rssKiB": 255088,
+     "rssAnonKiB": 61392
+    },
+    {
+     "tSeconds": 1050.2,
+     "windowsLive": 3,
+     "oracleWindows": 3,
+     "rssKiB": 255228,
+     "rssAnonKiB": 61532
+    },
+    {
+     "tSeconds": 1080.0,
+     "windowsLive": 8,
+     "oracleWindows": 8,
+     "rssKiB": 260288,
+     "rssAnonKiB": 61872
+    },
+    {
+     "tSeconds": 1110.1,
+     "windowsLive": 7,
+     "oracleWindows": 7,
+     "rssKiB": 259240,
+     "rssAnonKiB": 61768
+    },
+    {
+     "tSeconds": 1140.2,
+     "windowsLive": 2,
+     "oracleWindows": 2,
+     "rssKiB": 254556,
+     "rssAnonKiB": 61804
+    },
+    {
+     "tSeconds": 1170.1,
+     "windowsLive": 7,
+     "oracleWindows": 7,
+     "rssKiB": 259348,
+     "rssAnonKiB": 61876
+    },
+    {
+     "tSeconds": 1200.0,
+     "windowsLive": 8,
+     "oracleWindows": 8,
+     "rssKiB": 260572,
+     "rssAnonKiB": 62156
+    },
+    {
+     "tSeconds": 1201.1,
+     "windowsLive": 8,
+     "oracleWindows": 8,
+     "rssKiB": 260572,
+     "rssAnonKiB": 62156
+    }
+   ]
+  }
+ },
+ "supersededChurnUnits": {
+  "campaign": "campaign-320cf72",
+  "reason": "churn units of campaign-320cf72 (commit 320cf72) summed the counters of the threads alive at each snapshot, so the first P15 idle pair reported negative wakeups when a KWin thread ended, and they recorded no RssAnon; rerun at 329f7d3",
+  "units": {
+   "churn-p14": {
+    "implementationCommit": "320cf72bd7444f188e043b52d11bff70802f1321",
+    "implementationDirty": false,
+    "machineStart": {
+     "loadavg": [
+      "3.44",
+      "3.41",
+      "3.35"
+     ],
+     "busyProcessesPct": [
+      {
+       "comm": "polkitd",
+       "cpuPct": 80.0
+      },
+      {
+       "comm": "tailscaled",
+       "cpuPct": 31.6
+      },
+      {
+       "comm": "gdm",
+       "cpuPct": 20.7
+      },
+      {
+       "comm": "systemd",
+       "cpuPct": 16.8
+      },
+      {
+       "comm": "NetworkManager",
+       "cpuPct": 9.9
+      },
+      {
+       "comm": "ksystemstats",
+       "cpuPct": 3.9
+      },
+      {
+       "comm": "dbus-broker",
+       "cpuPct": 3.9
+      },
+      {
+       "comm": "ksystemstats",
+       "cpuPct": 3.0
+      }
+     ],
+     "nestedKwinRunning": 0
+    },
+    "summary": {
+     "probe": "P14",
+     "cycles": 100,
+     "fixtures": 4,
+     "delayedFixtureMs": 200,
+     "openCloseEachCycle": true,
+     "pendingAtUnload": "resize.grow / resize.shrink alternating, with one 200 ms-delayed client",
+     "cyclesWithOutstandingAtUnload": 100,
+     "maxOutstandingAtUnload": 4,
+     "connections": {
+      "baseline": 80,
+      "min": 80,
+      "max": 80,
+      "constant": true
+     },
+     "windows": {
+      "baseline": 4,
+      "constant": true
+     },
+     "shortcutNames": {
+      "first": 235,
+      "min": 235,
+      "max": 235
+     },
+     "rssKiB": {
+      "beforeCycles": 264872,
+      "afterCycles": 270812,
+      "delta": 5940,
+      "byCycle": [
+       266048,
+       269332,
+       267148,
+       267872,
+       267704,
+       269836,
+       267208,
+       270284,
+       270436,
+       270948
+      ],
+      "secondHalfDelta": 976,
+      "trendAfterCycle10": {
+       "warmupFrom": 10,
+       "points": 90,
+       "slopeKiBPerUnit": 31.26,
+       "spreadKiB": 4420
+      }
+     },
+     "scriptObjects": {
+      "min": 1,
+      "max": 1
+     },
+     "deadInstanceLines": 0,
+     "errorWarnExceptionLines": 0,
+     "errorWarnSamples": [],
+     "finalCounters": {
+      "solves": 3,
+      "flushes": 4,
+      "commands": 0,
+      "commandsQueued": 0,
+      "writes": 9,
+      "corrections": 1,
+      "skipOutstanding": 0,
+      "skipNoop": 5,
+      "skipDiverged": 0,
+      "observations": 8,
+      "observationsDuringApply": 0,
+      "settled": 7,
+      "stale": 1,
+      "superseded": 0,
+      "partial": 0,
+      "external": 0,
+      "learned": 0,
+      "accepted": 0,
+      "diverged": 0,
+      "deadlines": 0,
+      "overflow": 0,
+      "reclassified": 5,
+      "adopted": 5,
+      "removed": 1,
+      "staleEvents": 0,
+      "errors": 0,
+      "raises": 0,
+      "activations": 0,
+      "liveSolves": 0,
+      "restored": 0,
+      "restoreAmbiguous": 0,
+      "reparks": 0,
+      "invalidSlots": 0
+     },
+     "finalLayoutErrors": [],
+     "secondsTotal": 105.7,
+     "failures": [],
+     "pass": true
+    }
+   },
+   "churn-p14-control": {
+    "implementationCommit": "320cf72bd7444f188e043b52d11bff70802f1321",
+    "implementationDirty": false,
+    "machineStart": {
+     "loadavg": [
+      "2.70",
+      "3.22",
+      "3.32"
+     ],
+     "busyProcessesPct": [
+      {
+       "comm": "polkitd",
+       "cpuPct": 81.0
+      },
+      {
+       "comm": "tailscaled",
+       "cpuPct": 29.6
+      },
+      {
+       "comm": "gdm",
+       "cpuPct": 19.7
+      },
+      {
+       "comm": "systemd",
+       "cpuPct": 15.8
+      },
+      {
+       "comm": "NetworkManager",
+       "cpuPct": 9.9
+      },
+      {
+       "comm": "dbus-broker",
+       "cpuPct": 3.9
+      },
+      {
+       "comm": "claude",
+       "cpuPct": 3.9
+      },
+      {
+       "comm": "ksystemstats",
+       "cpuPct": 3.0
+      }
+     ],
+     "nestedKwinRunning": 0
+    },
+    "summary": {
+     "probe": "P14-control",
+     "script": "probes/lifecycle/empty-package (empty Item)",
+     "cycles": 100,
+     "fixtures": 4,
+     "openCloseEachCycle": true,
+     "shortcutNames": {
+      "min": 167,
+      "max": 167
+     },
+     "rssKiB": {
+      "beforeCycles": 251416,
+      "afterCycles": 256508,
+      "delta": 5092,
+      "byCycle": [
+       252664,
+       257032,
+       256632,
+       257068,
+       256780,
+       256288,
+       256616,
+       256456,
+       256600,
+       256168
+      ],
+      "secondHalfDelta": 220,
+      "trendAfterCycle10": {
+       "warmupFrom": 10,
+       "points": 90,
+       "slopeKiBPerUnit": -3.434,
+       "spreadKiB": 2372
+      }
+     },
+     "secondsTotal": 5.4
+    }
+   },
+   "churn-p15": {
+    "implementationCommit": "320cf72bd7444f188e043b52d11bff70802f1321",
+    "implementationDirty": false,
+    "machineStart": {
+     "loadavg": [
+      "2.98",
+      "2.87",
+      "2.94"
+     ],
+     "busyProcessesPct": [
+      {
+       "comm": "polkitd",
+       "cpuPct": 80.1
+      },
+      {
+       "comm": "tailscaled",
+       "cpuPct": 29.7
+      },
+      {
+       "comm": "gdm",
+       "cpuPct": 20.8
+      },
+      {
+       "comm": "systemd",
+       "cpuPct": 17.8
+      },
+      {
+       "comm": "claude",
+       "cpuPct": 10.9
+      },
+      {
+       "comm": "NetworkManager",
+       "cpuPct": 9.9
+      },
+      {
+       "comm": "dbus-broker",
+       "cpuPct": 4.0
+      },
+      {
+       "comm": "plasmashell",
+       "cpuPct": 3.0
+      }
+     ],
+     "nestedKwinRunning": 0
+    },
+    "summary": {
+     "probe": "P15",
+     "seed": 7,
+     "minutesRequested": 20.0,
+     "churnSeconds": 1200.1,
+     "ops": 4263,
+     "opCounts": {
+      "open": 557,
+      "close": 553,
+      "minimize": 531,
+      "unminimize": 530,
+      "toggle-float": 506,
+      "swap": 547,
+      "ratio": 527,
+      "layout.next": 512
+     },
+     "windowRange": [
+      2,
+      8
+     ],
+     "gapMsRange": [
+      100,
+      400
+     ],
+     "clientConfigureDelaysMs": "seeded choice of 0/0/0/120/300 per spawned window",
+     "finalCounters": {
+      "solves": 2950,
+      "flushes": 2293,
+      "commands": 2092,
+      "commandsQueued": 0,
+      "writes": 4284,
+      "corrections": 79,
+      "skipOutstanding": 102,
+      "skipNoop": 2914,
+      "skipDiverged": 0,
+      "observations": 3994,
+      "observationsDuringApply": 66,
+      "settled": 3529,
+      "stale": 49,
+      "superseded": 4,
+      "partial": 0,
+      "external": 0,
+      "learned": 0,
+      "accepted": 0,
+      "diverged": 0,
+      "deadlines": 11,
+      "overflow": 0,
+      "reclassified": 1066,
+      "adopted": 560,
+      "removed": 553,
+      "staleEvents": 0,
+      "errors": 0,
+      "raises": 780,
+      "activations": 0,
+      "liveSolves": 0,
+      "restored": 0,
+      "restoreAmbiguous": 72,
+      "reparks": 0,
+      "invalidSlots": 0
+     },
+     "finalOutstanding": 0,
+     "rssKiB": {
+      "afterLoad": 267384,
+      "afterChurn": 299048,
+      "afterIdle": 295452,
+      "churnDelta": 31664,
+      "trendAfter120sPerMinute": {
+       "warmupFrom": 2.0,
+       "points": 38,
+       "slopeKiBPerUnit": 614.296,
+       "spreadKiB": 96164
+      }
+     },
+     "connections": {
+      "min": 46,
+      "max": 148,
+      "perWindowAtEnd": 18.71
+     },
+     "errorWarnExceptionLines": 0,
+     "errorWarnSamples": [],
+     "idle": {
+      "method": "utime+stime of the nested kwin_wayland from /proc/<pid>/stat (USER_HZ=100, 10 ms resolution), and per thread /proc/<pid>/task/*/schedstat run time (ns) and voluntary context switches (wakeups); fixtures left mapped and idle; the harness touches KWin only at the window boundaries",
+      "caveat": "nested KWin on a desktop machine with its own background load (machine state recorded); CPU figures are indicative",
+      "machine": {
+       "t": "2026-10-18T13:40:11",
+       "loadavg": [
+        "2.64",
+        "2.66",
+        "2.77"
+       ],
+       "cpuGovernor": "powersave",
+       "energyPerformancePreference": "balance_performance",
+       "cpus": 12,
+       "busyProcessesPct": [
+        {
+         "comm": "polkitd",
+         "cpuPct": 80.2
+        },
+        {
+         "comm": "tailscaled",
+         "cpuPct": 29.7
+        },
+        {
+         "comm": "gdm",
+         "cpuPct": 20.8
+        },
+        {
+         "comm": "systemd",
+         "cpuPct": 17.8
+        },
+        {
+         "comm": "NetworkManager",
+         "cpuPct": 9.9
+        },
+        {
+         "comm": "ksystemstats",
+         "cpuPct": 4.0
+        },
+        {
+         "comm": "dbus-broker",
+         "cpuPct": 4.0
+        },
+        {
+         "comm": "plasmashell",
+         "cpuPct": 3.0
+        }
+       ],
+       "nestedKwinRunning": 1,
+       "liveKwinRunning": 1
+      },
+      "loadAverageAtEnd": [
+       "2.64",
+       "2.66",
+       "2.77"
+      ],
+      "resolutionMs": 10,
+      "zeroMeans": "fewer than one clock tick (10 ms) of KWin CPU in the window, i.e. < 10 ms per 60 s",
+      "pairs": [
+       {
+        "pair": 0,
+        "loaded": {
+         "state": "loaded",
+         "seconds": 60.01,
+         "cpuMs": 0,
+         "countersDelta": {},
+         "plastileLogLines": 0,
+         "rssKiB": 299028,
+         "threads": {
+          "seconds": 60.005,
+          "cpuMsTicks": -4990,
+          "cpuMsSchedstat": -5073.393,
+          "wakeupsVoluntary": -241868,
+          "involuntarySwitches": -4931,
+          "wakeupsPerSecond": -4030.79,
+          "threads": 22
+         },
+         "series5s": [
+          {
+           "wakeups": 0,
+           "runMs": 0.0
+          },
+          {
+           "wakeups": 0,
+           "runMs": 0.0
+          },
+          {
+           "wakeups": 0,
+           "runMs": 0.0
+          },
+          {
+           "wakeups": 0,
+           "runMs": 0.0
+          },
+          {
+           "wakeups": 0,
+           "runMs": 0.0
+          },
+          {
+           "wakeups": -241868,
+           "runMs": -5073.393
+          },
+          {
+           "wakeups": 0,
+           "runMs": 0.0
+          },
+          {
+           "wakeups": 0,
+           "runMs": 0.0
+          },
+          {
+           "wakeups": 0,
+           "runMs": 0.0
+          },
+          {
+           "wakeups": 0,
+           "runMs": 0.0
+          },
+          {
+           "wakeups": 0,
+           "runMs": 0.0
+          },
+          {
+           "wakeups": 0,
+           "runMs": 0.0
+          }
+         ],
+         "cpuMsPerMinute": 0.0
+        },
+        "unloaded": {
+         "state": "unloaded",
+         "seconds": 60.0,
+         "cpuMs": 0,
+         "rssKiB": 299092,
+         "threads": {
+          "seconds": 60.005,
+          "cpuMsTicks": 0,
+          "cpuMsSchedstat": 0.0,
+          "wakeupsVoluntary": 0,
+          "involuntarySwitches": 0,
+          "wakeupsPerSecond": 0.0,
+          "threads": 22
+         },
+         "series5s": [
+          {
+           "wakeups": 0,
+           "runMs": 0.0
+          },
+          {
+           "wakeups": 0,
+           "runMs": 0.0
+          },
+          {
+           "wakeups": 0,
+           "runMs": 0.0
+          },
+          {
+           "wakeups": 0,
+           "runMs": 0.0
+          },
+          {
+           "wakeups": 0,
+           "runMs": 0.0
+          },
+          {
+           "wakeups": 0,
+           "runMs": 0.0
+          },
+          {
+           "wakeups": 0,
+           "runMs": 0.0
+          },
+          {
+           "wakeups": 0,
+           "runMs": 0.0
+          },
+          {
+           "wakeups": 0,
+           "runMs": 0.0
+          },
+          {
+           "wakeups": 0,
+           "runMs": 0.0
+          },
+          {
+           "wakeups": 0,
+           "runMs": 0.0
+          },
+          {
+           "wakeups": 0,
+           "runMs": 0.0
+          }
+         ],
+         "cpuMsPerMinute": 0.0
+        },
+        "sensitivityBurst": {
+         "oneShotScripts": 30,
+         "seconds": 0.65,
+         "cpuMs": 70
+        },
+        "differenceMsPerMinute": 0.0,
+        "schedstatDifferenceMsPerMinute": -5072.97,
+        "wakeupDifferencePerSecond": -4030.79
+       },
+       {
+        "pair": 1,
+        "loaded": {
+         "state": "loaded",
+         "seconds": 60.0,
+         "cpuMs": 0,
+         "countersDelta": {},
+         "plastileLogLines": 0,
+         "rssKiB": 295660,
+         "threads": {
+          "seconds": 60.004,
+          "cpuMsTicks": 0,
+          "cpuMsSchedstat": -1.349,
+          "wakeupsVoluntary": -36,
+          "involuntarySwitches": -2,
+          "wakeupsPerSecond": -0.6,
+          "threads": 22
+         },
+         "series5s": [
+          {
+           "wakeups": 0,
+           "runMs": 0.0
+          },
+          {
+           "wakeups": 0,
+           "runMs": 0.0
+          },
+          {
+           "wakeups": 0,
+           "runMs": 0.0
+          },
+          {
+           "wakeups": 0,
+           "runMs": 0.0
+          },
+          {
+           "wakeups": 0,
+           "runMs": 0.0
+          },
+          {
+           "wakeups": -36,
+           "runMs": -1.349
+          },
+          {
+           "wakeups": 0,
+           "runMs": 0.0
+          },
+          {
+           "wakeups": 0,
+           "runMs": 0.0
+          },
+          {
+           "wakeups": 0,
+           "runMs": 0.0
+          },
+          {
+           "wakeups": 0,
+           "runMs": 0.0
+          },
+          {
+           "wakeups": 0,
+           "runMs": 0.0
+          },
+          {
+           "wakeups": 0,
+           "runMs": 0.0
+          }
+         ],
+         "cpuMsPerMinute": 0.0
+        },
+        "unloaded": {
+         "state": "unloaded",
+         "seconds": 60.01,
+         "cpuMs": 0,
+         "rssKiB": 295656,
+         "threads": {
+          "seconds": 60.005,
+          "cpuMsTicks": 0,
+          "cpuMsSchedstat": 0.0,
+          "wakeupsVoluntary": 0,
+          "involuntarySwitches": 0,
+          "wakeupsPerSecond": 0.0,
+          "threads": 22
+         },
+         "series5s": [
+          {
+           "wakeups": 0,
+           "runMs": 0.0
+          },
+          {
+           "wakeups": 0,
+           "runMs": 0.0
+          },
+          {
+           "wakeups": 0,
+           "runMs": 0.0
+          },
+          {
+           "wakeups": 0,
+           "runMs": 0.0
+          },
+          {
+           "wakeups": 0,
+           "runMs": 0.0
+          },
+          {
+           "wakeups": 0,
+           "runMs": 0.0
+          },
+          {
+           "wakeups": 0,
+           "runMs": 0.0
+          },
+          {
+           "wakeups": 0,
+           "runMs": 0.0
+          },
+          {
+           "wakeups": 0,
+           "runMs": 0.0
+          },
+          {
+           "wakeups": 0,
+           "runMs": 0.0
+          },
+          {
+           "wakeups": 0,
+           "runMs": 0.0
+          },
+          {
+           "wakeups": 0,
+           "runMs": 0.0
+          }
+         ],
+         "cpuMsPerMinute": 0.0
+        },
+        "sensitivityBurst": {
+         "oneShotScripts": 30,
+         "seconds": 0.61,
+         "cpuMs": 90
+        },
+        "differenceMsPerMinute": 0.0,
+        "schedstatDifferenceMsPerMinute": -1.349,
+        "wakeupDifferencePerSecond": -0.6
+       },
+       {
+        "pair": 2,
+        "loaded": {
+         "state": "loaded",
+         "seconds": 60.0,
+         "cpuMs": 0,
+         "countersDelta": {},
+         "plastileLogLines": 0,
+         "rssKiB": 295452,
+         "threads": {
+          "seconds": 60.004,
+          "cpuMsTicks": 0,
+          "cpuMsSchedstat": -1.282,
+          "wakeupsVoluntary": -34,
+          "involuntarySwitches": -1,
+          "wakeupsPerSecond": -0.57,
+          "threads": 22
+         },
+         "series5s": [
+          {
+           "wakeups": 0,
+           "runMs": 0.0
+          },
+          {
+           "wakeups": 0,
+           "runMs": 0.0
+          },
+          {
+           "wakeups": 0,
+           "runMs": 0.0
+          },
+          {
+           "wakeups": 0,
+           "runMs": 0.0
+          },
+          {
+           "wakeups": 0,
+           "runMs": 0.0
+          },
+          {
+           "wakeups": -34,
+           "runMs": -1.282
+          },
+          {
+           "wakeups": 0,
+           "runMs": 0.0
+          },
+          {
+           "wakeups": 0,
+           "runMs": 0.0
+          },
+          {
+           "wakeups": 0,
+           "runMs": 0.0
+          },
+          {
+           "wakeups": 0,
+           "runMs": 0.0
+          },
+          {
+           "wakeups": 0,
+           "runMs": 0.0
+          },
+          {
+           "wakeups": 0,
+           "runMs": 0.0
+          }
+         ],
+         "cpuMsPerMinute": 0.0
+        },
+        "unloaded": {
+         "state": "unloaded",
+         "seconds": 60.0,
+         "cpuMs": 0,
+         "rssKiB": 295452,
+         "threads": {
+          "seconds": 60.005,
+          "cpuMsTicks": 0,
+          "cpuMsSchedstat": 0.0,
+          "wakeupsVoluntary": 0,
+          "involuntarySwitches": 0,
+          "wakeupsPerSecond": 0.0,
+          "threads": 22
+         },
+         "series5s": [
+          {
+           "wakeups": 0,
+           "runMs": 0.0
+          },
+          {
+           "wakeups": 0,
+           "runMs": 0.0
+          },
+          {
+           "wakeups": 0,
+           "runMs": 0.0
+          },
+          {
+           "wakeups": 0,
+           "runMs": 0.0
+          },
+          {
+           "wakeups": 0,
+           "runMs": 0.0
+          },
+          {
+           "wakeups": 0,
+           "runMs": 0.0
+          },
+          {
+           "wakeups": 0,
+           "runMs": 0.0
+          },
+          {
+           "wakeups": 0,
+           "runMs": 0.0
+          },
+          {
+           "wakeups": 0,
+           "runMs": 0.0
+          },
+          {
+           "wakeups": 0,
+           "runMs": 0.0
+          },
+          {
+           "wakeups": 0,
+           "runMs": 0.0
+          },
+          {
+           "wakeups": 0,
+           "runMs": 0.0
+          }
+         ],
+         "cpuMsPerMinute": 0.0
+        },
+        "sensitivityBurst": {
+         "oneShotScripts": 30,
+         "seconds": 0.6,
+         "cpuMs": 70
+        },
+        "differenceMsPerMinute": 0.0,
+        "schedstatDifferenceMsPerMinute": -1.282,
+        "wakeupDifferencePerSecond": -0.57
+       }
+      ],
+      "counterDeltasZeroWhileLoaded": true,
+      "meanLoadedMsPerMinute": 0.0,
+      "meanUnloadedMsPerMinute": 0.0
+     },
+     "failures": [],
+     "pass": true,
+     "samplesEvery30s": [
+      {
+       "tSeconds": 0.0,
+       "windowsLive": 3,
+       "outstanding": 0,
+       "connections": 63,
+       "windows": 3,
+       "rssKiB": 267392,
+       "badLines": 0,
+       "corrections": 0,
+       "errors": 0
+      },
+      {
+       "tSeconds": 30.3,
+       "windowsLive": 5,
+       "outstanding": 0,
+       "connections": 97,
+       "windows": 5,
+       "rssKiB": 290496,
+       "badLines": 0,
+       "corrections": 3,
+       "errors": 0
+      },
+      {
+       "tSeconds": 60.2,
+       "windowsLive": 6,
+       "outstanding": 0,
+       "connections": 114,
+       "windows": 6,
+       "rssKiB": 292296,
+       "badLines": 0,
+       "corrections": 6,
+       "errors": 0
+      },
+      {
+       "tSeconds": 90.0,
+       "windowsLive": 4,
+       "outstanding": 0,
+       "connections": 80,
+       "windows": 4,
+       "rssKiB": 321852,
+       "badLines": 0,
+       "corrections": 7,
+       "errors": 0
+      },
+      {
+       "tSeconds": 120.2,
+       "windowsLive": 2,
+       "outstanding": 0,
+       "connections": 46,
+       "windows": 2,
+       "rssKiB": 270144,
+       "badLines": 0,
+       "corrections": 7,
+       "errors": 0
+      },
+      {
+       "tSeconds": 150.3,
+       "windowsLive": 3,
+       "outstanding": 0,
+       "connections": 63,
+       "windows": 3,
+       "rssKiB": 290868,
+       "badLines": 0,
+       "corrections": 9,
+       "errors": 0
+      },
+      {
+       "tSeconds": 180.2,
+       "windowsLive": 7,
+       "outstanding": 0,
+       "connections": 131,
+       "windows": 7,
+       "rssKiB": 300884,
+       "badLines": 0,
+       "corrections": 12,
+       "errors": 0
+      },
+      {
+       "tSeconds": 210.0,
+       "windowsLive": 5,
+       "outstanding": 0,
+       "connections": 97,
+       "windows": 5,
+       "rssKiB": 305196,
+       "badLines": 0,
+       "corrections": 14,
+       "errors": 0
+      },
+      {
+       "tSeconds": 240.1,
+       "windowsLive": 6,
+       "outstanding": 0,
+       "connections": 114,
+       "windows": 6,
+       "rssKiB": 334724,
+       "badLines": 0,
+       "corrections": 17,
+       "errors": 0
+      },
+      {
+       "tSeconds": 270.1,
+       "windowsLive": 3,
+       "outstanding": 0,
+       "connections": 63,
+       "windows": 3,
+       "rssKiB": 300236,
+       "badLines": 0,
+       "corrections": 17,
+       "errors": 0
+      },
+      {
+       "tSeconds": 300.3,
+       "windowsLive": 8,
+       "outstanding": 1,
+       "connections": 148,
+       "windows": 8,
+       "rssKiB": 295780,
+       "badLines": 0,
+       "corrections": 19,
+       "errors": 0
+      },
+      {
+       "tSeconds": 330.2,
+       "windowsLive": 5,
+       "outstanding": 0,
+       "connections": 97,
+       "windows": 5,
+       "rssKiB": 302404,
+       "badLines": 0,
+       "corrections": 25,
+       "errors": 0
+      },
+      {
+       "tSeconds": 360.2,
+       "windowsLive": 5,
+       "outstanding": 0,
+       "connections": 97,
+       "windows": 5,
+       "rssKiB": 305296,
+       "badLines": 0,
+       "corrections": 25,
+       "errors": 0
+      },
+      {
+       "tSeconds": 390.2,
+       "windowsLive": 7,
+       "outstanding": 0,
+       "connections": 131,
+       "windows": 7,
+       "rssKiB": 322924,
+       "badLines": 0,
+       "corrections": 27,
+       "errors": 0
+      },
+      {
+       "tSeconds": 420.4,
+       "windowsLive": 5,
+       "outstanding": 0,
+       "connections": 97,
+       "windows": 5,
+       "rssKiB": 320232,
+       "badLines": 0,
+       "corrections": 29,
+       "errors": 0
+      },
+      {
+       "tSeconds": 450.1,
+       "windowsLive": 6,
+       "outstanding": 0,
+       "connections": 114,
+       "windows": 6,
+       "rssKiB": 316956,
+       "badLines": 0,
+       "corrections": 29,
+       "errors": 0
+      },
+      {
+       "tSeconds": 480.1,
+       "windowsLive": 3,
+       "outstanding": 0,
+       "connections": 63,
+       "windows": 3,
+       "rssKiB": 298116,
+       "badLines": 0,
+       "corrections": 30,
+       "errors": 0
+      },
+      {
+       "tSeconds": 510.2,
+       "windowsLive": 5,
+       "outstanding": 0,
+       "connections": 97,
+       "windows": 5,
+       "rssKiB": 316380,
+       "badLines": 0,
+       "corrections": 32,
+       "errors": 0
+      },
+      {
+       "tSeconds": 540.1,
+       "windowsLive": 2,
+       "outstanding": 0,
+       "connections": 46,
+       "windows": 2,
+       "rssKiB": 288680,
+       "badLines": 0,
+       "corrections": 36,
+       "errors": 0
+      },
+      {
+       "tSeconds": 570.1,
+       "windowsLive": 4,
+       "outstanding": 0,
+       "connections": 80,
+       "windows": 4,
+       "rssKiB": 292448,
+       "badLines": 0,
+       "corrections": 38,
+       "errors": 0
+      },
+      {
+       "tSeconds": 600.3,
+       "windowsLive": 3,
+       "outstanding": 0,
+       "connections": 63,
+       "windows": 3,
+       "rssKiB": 312276,
+       "badLines": 0,
+       "corrections": 41,
+       "errors": 0
+      },
+      {
+       "tSeconds": 630.1,
+       "windowsLive": 2,
+       "outstanding": 0,
+       "connections": 46,
+       "windows": 2,
+       "rssKiB": 300656,
+       "badLines": 0,
+       "corrections": 42,
+       "errors": 0
+      },
+      {
+       "tSeconds": 660.3,
+       "windowsLive": 4,
+       "outstanding": 0,
+       "connections": 80,
+       "windows": 4,
+       "rssKiB": 299332,
+       "badLines": 0,
+       "corrections": 43,
+       "errors": 0
+      },
+      {
+       "tSeconds": 690.1,
+       "windowsLive": 4,
+       "outstanding": 0,
+       "connections": 80,
+       "windows": 4,
+       "rssKiB": 299732,
+       "badLines": 0,
+       "corrections": 45,
+       "errors": 0
+      },
+      {
+       "tSeconds": 720.1,
+       "windowsLive": 3,
+       "outstanding": 1,
+       "connections": 63,
+       "windows": 3,
+       "rssKiB": 292908,
+       "badLines": 0,
+       "corrections": 45,
+       "errors": 0
+      },
+      {
+       "tSeconds": 750.3,
+       "windowsLive": 7,
+       "outstanding": 0,
+       "connections": 131,
+       "windows": 7,
+       "rssKiB": 360764,
+       "badLines": 0,
+       "corrections": 45,
+       "errors": 0
+      },
+      {
+       "tSeconds": 780.1,
+       "windowsLive": 3,
+       "outstanding": 0,
+       "connections": 63,
+       "windows": 3,
+       "rssKiB": 306564,
+       "badLines": 0,
+       "corrections": 47,
+       "errors": 0
+      },
+      {
+       "tSeconds": 810.0,
+       "windowsLive": 3,
+       "outstanding": 0,
+       "connections": 63,
+       "windows": 3,
+       "rssKiB": 284488,
+       "badLines": 0,
+       "corrections": 47,
+       "errors": 0
+      },
+      {
+       "tSeconds": 840.3,
+       "windowsLive": 3,
+       "outstanding": 0,
+       "connections": 63,
+       "windows": 3,
+       "rssKiB": 297784,
+       "badLines": 0,
+       "corrections": 50,
+       "errors": 0
+      },
+      {
+       "tSeconds": 870.1,
+       "windowsLive": 3,
+       "outstanding": 0,
+       "connections": 63,
+       "windows": 3,
+       "rssKiB": 299008,
+       "badLines": 0,
+       "corrections": 53,
+       "errors": 0
+      },
+      {
+       "tSeconds": 900.1,
+       "windowsLive": 4,
+       "outstanding": 0,
+       "connections": 80,
+       "windows": 4,
+       "rssKiB": 304180,
+       "badLines": 0,
+       "corrections": 54,
+       "errors": 0
+      },
+      {
+       "tSeconds": 930.1,
+       "windowsLive": 5,
+       "outstanding": 0,
+       "connections": 97,
+       "windows": 5,
+       "rssKiB": 292724,
+       "badLines": 0,
+       "corrections": 57,
+       "errors": 0
+      },
+      {
+       "tSeconds": 960.1,
+       "windowsLive": 5,
+       "outstanding": 0,
+       "connections": 97,
+       "windows": 5,
+       "rssKiB": 302208,
+       "badLines": 0,
+       "corrections": 58,
+       "errors": 0
+      },
+      {
+       "tSeconds": 990.2,
+       "windowsLive": 4,
+       "outstanding": 0,
+       "connections": 80,
+       "windows": 4,
+       "rssKiB": 303768,
+       "badLines": 0,
+       "corrections": 59,
+       "errors": 0
+      },
+      {
+       "tSeconds": 1020.0,
+       "windowsLive": 3,
+       "outstanding": 0,
+       "connections": 63,
+       "windows": 3,
+       "rssKiB": 311056,
+       "badLines": 0,
+       "corrections": 63,
+       "errors": 0
+      },
+      {
+       "tSeconds": 1050.0,
+       "windowsLive": 3,
+       "outstanding": 0,
+       "connections": 63,
+       "windows": 3,
+       "rssKiB": 289780,
+       "badLines": 0,
+       "corrections": 70,
+       "errors": 0
+      },
+      {
+       "tSeconds": 1080.3,
+       "windowsLive": 8,
+       "outstanding": 0,
+       "connections": 148,
+       "windows": 8,
+       "rssKiB": 338952,
+       "badLines": 0,
+       "corrections": 73,
+       "errors": 0
+      },
+      {
+       "tSeconds": 1110.1,
+       "windowsLive": 7,
+       "outstanding": 0,
+       "connections": 131,
+       "windows": 7,
+       "rssKiB": 366308,
+       "badLines": 0,
+       "corrections": 74,
+       "errors": 0
+      },
+      {
+       "tSeconds": 1140.1,
+       "windowsLive": 3,
+       "outstanding": 0,
+       "connections": 63,
+       "windows": 3,
+       "rssKiB": 306244,
+       "badLines": 0,
+       "corrections": 76,
+       "errors": 0
+      },
+      {
+       "tSeconds": 1170.4,
+       "windowsLive": 8,
+       "outstanding": 1,
+       "connections": 148,
+       "windows": 8,
+       "rssKiB": 312072,
+       "badLines": 0,
+       "corrections": 77,
+       "errors": 0
+      },
+      {
+       "tSeconds": 1200.1,
+       "windowsLive": 7,
+       "outstanding": 0,
+       "connections": 131,
+       "windows": 7,
+       "rssKiB": 299048,
+       "badLines": 0,
+       "corrections": 79,
+       "errors": 0
+      },
+      {
+       "tSeconds": 1201.4,
+       "windowsLive": 7,
+       "outstanding": 0,
+       "connections": 131,
+       "windows": 7,
+       "rssKiB": 299048,
+       "badLines": 0,
+       "corrections": 79,
+       "errors": 0
+      }
+     ]
+    }
+   },
+   "churn-p15-control": {
+    "implementationCommit": "320cf72bd7444f188e043b52d11bff70802f1321",
+    "implementationDirty": false,
+    "machineStart": {
+     "loadavg": [
+      "3.02",
+      "2.99",
+      "3.14"
+     ],
+     "busyProcessesPct": [
+      {
+       "comm": "polkitd",
+       "cpuPct": 80.0
+      },
+      {
+       "comm": "tailscaled",
+       "cpuPct": 30.6
+      },
+      {
+       "comm": "gdm",
+       "cpuPct": 20.7
+      },
+      {
+       "comm": "systemd",
+       "cpuPct": 16.8
+      },
+      {
+       "comm": "NetworkManager",
+       "cpuPct": 10.9
+      },
+      {
+       "comm": "WebExtensions",
+       "cpuPct": 8.9
+      },
+      {
+       "comm": "dbus-broker",
+       "cpuPct": 4.0
+      },
+      {
+       "comm": "plasmashell",
+       "cpuPct": 3.0
+      }
+     ],
+     "nestedKwinRunning": 0
+    },
+    "summary": {
+     "probe": "P15-control",
+     "script": "probes/lifecycle/empty-package (empty Item)",
+     "seed": 7,
+     "minutesRequested": 20.0,
+     "churnSeconds": 1200.3,
+     "ops": 4254,
+     "opCounts": {
+      "open": 555,
+      "close": 550,
+      "minimize": 529,
+      "unminimize": 530,
+      "toggle-float": 506,
+      "swap": 546,
+      "ratio": 527,
+      "layout.next": 511
+     },
+     "skipped": "Plastile commands (toggle-float, swap, ratio, layout.next); the activation before them is kept",
+     "rssKiB": {
+      "afterLoad": 249132,
+      "afterChurn": 260632,
+      "churnDelta": 11500,
+      "trendAfter120sPerMinute": {
+       "warmupFrom": 2.0,
+       "points": 38,
+       "slopeKiBPerUnit": 188.426,
+       "spreadKiB": 7920
+      }
+     },
+     "failures": [],
+     "pass": true,
+     "samplesEvery30s": [
+      {
+       "tSeconds": 0.0,
+       "windowsLive": 3,
+       "oracleWindows": 3,
+       "rssKiB": 249264
+      },
+      {
+       "tSeconds": 30.2,
+       "windowsLive": 5,
+       "oracleWindows": 5,
+       "rssKiB": 253472
+      },
+      {
+       "tSeconds": 60.2,
+       "windowsLive": 6,
+       "oracleWindows": 6,
+       "rssKiB": 255008
+      },
+      {
+       "tSeconds": 90.3,
+       "windowsLive": 4,
+       "oracleWindows": 4,
+       "rssKiB": 253816
+      },
+      {
+       "tSeconds": 120.1,
+       "windowsLive": 3,
+       "oracleWindows": 3,
+       "rssKiB": 252712
+      },
+      {
+       "tSeconds": 150.2,
+       "windowsLive": 4,
+       "oracleWindows": 4,
+       "rssKiB": 253764
+      },
+      {
+       "tSeconds": 180.3,
+       "windowsLive": 7,
+       "oracleWindows": 7,
+       "rssKiB": 256980
+      },
+      {
+       "tSeconds": 210.3,
+       "windowsLive": 3,
+       "oracleWindows": 3,
+       "rssKiB": 253344
+      },
+      {
+       "tSeconds": 240.2,
+       "windowsLive": 6,
+       "oracleWindows": 6,
+       "rssKiB": 256268
+      },
+      {
+       "tSeconds": 270.3,
+       "windowsLive": 4,
+       "oracleWindows": 4,
+       "rssKiB": 254432
+      },
+      {
+       "tSeconds": 300.2,
+       "windowsLive": 8,
+       "oracleWindows": 8,
+       "rssKiB": 258292
+      },
+      {
+       "tSeconds": 330.1,
+       "windowsLive": 4,
+       "oracleWindows": 4,
+       "rssKiB": 254408
+      },
+      {
+       "tSeconds": 360.1,
+       "windowsLive": 6,
+       "oracleWindows": 6,
+       "rssKiB": 256428
+      },
+      {
+       "tSeconds": 390.2,
+       "windowsLive": 7,
+       "oracleWindows": 7,
+       "rssKiB": 257584
+      },
+      {
+       "tSeconds": 420.2,
+       "windowsLive": 7,
+       "oracleWindows": 7,
+       "rssKiB": 257296
+      },
+      {
+       "tSeconds": 450.1,
+       "windowsLive": 8,
+       "oracleWindows": 8,
+       "rssKiB": 258656
+      },
+      {
+       "tSeconds": 480.1,
+       "windowsLive": 3,
+       "oracleWindows": 3,
+       "rssKiB": 253604
+      },
+      {
+       "tSeconds": 510.4,
+       "windowsLive": 6,
+       "oracleWindows": 6,
+       "rssKiB": 257064
+      },
+      {
+       "tSeconds": 540.5,
+       "windowsLive": 3,
+       "oracleWindows": 3,
+       "rssKiB": 254096
+      },
+      {
+       "tSeconds": 570.0,
+       "windowsLive": 6,
+       "oracleWindows": 6,
+       "rssKiB": 256532
+      },
+      {
+       "tSeconds": 600.3,
+       "windowsLive": 4,
+       "oracleWindows": 4,
+       "rssKiB": 255264
+      },
+      {
+       "tSeconds": 630.1,
+       "windowsLive": 2,
+       "oracleWindows": 2,
+       "rssKiB": 253576
+      },
+      {
+       "tSeconds": 660.1,
+       "windowsLive": 4,
+       "oracleWindows": 4,
+       "rssKiB": 255008
+      },
+      {
+       "tSeconds": 690.3,
+       "windowsLive": 4,
+       "oracleWindows": 4,
+       "rssKiB": 255436
+      },
+      {
+       "tSeconds": 720.0,
+       "windowsLive": 3,
+       "oracleWindows": 3,
+       "rssKiB": 254652
+      },
+      {
+       "tSeconds": 750.2,
+       "windowsLive": 8,
+       "oracleWindows": 8,
+       "rssKiB": 259232
+      },
+      {
+       "tSeconds": 780.1,
+       "windowsLive": 5,
+       "oracleWindows": 5,
+       "rssKiB": 256488
+      },
+      {
+       "tSeconds": 810.2,
+       "windowsLive": 2,
+       "oracleWindows": 2,
+       "rssKiB": 253756
+      },
+      {
+       "tSeconds": 840.1,
+       "windowsLive": 4,
+       "oracleWindows": 4,
+       "rssKiB": 255380
+      },
+      {
+       "tSeconds": 870.3,
+       "windowsLive": 5,
+       "oracleWindows": 5,
+       "rssKiB": 256680
+      },
+      {
+       "tSeconds": 900.4,
+       "windowsLive": 4,
+       "oracleWindows": 4,
+       "rssKiB": 255332
+      },
+      {
+       "tSeconds": 930.3,
+       "windowsLive": 6,
+       "oracleWindows": 6,
+       "rssKiB": 257908
+      },
+      {
+       "tSeconds": 960.0,
+       "windowsLive": 6,
+       "oracleWindows": 6,
+       "rssKiB": 258096
+      },
+      {
+       "tSeconds": 990.3,
+       "windowsLive": 7,
+       "oracleWindows": 7,
+       "rssKiB": 258424
+      },
+      {
+       "tSeconds": 1020.2,
+       "windowsLive": 4,
+       "oracleWindows": 4,
+       "rssKiB": 255628
+      },
+      {
+       "tSeconds": 1050.1,
+       "windowsLive": 2,
+       "oracleWindows": 2,
+       "rssKiB": 254348
+      },
+      {
+       "tSeconds": 1080.2,
+       "windowsLive": 8,
+       "oracleWindows": 8,
+       "rssKiB": 260324
+      },
+      {
+       "tSeconds": 1110.1,
+       "windowsLive": 7,
+       "oracleWindows": 7,
+       "rssKiB": 258804
+      },
+      {
+       "tSeconds": 1140.2,
+       "windowsLive": 2,
+       "oracleWindows": 2,
+       "rssKiB": 254520
+      },
+      {
+       "tSeconds": 1170.4,
+       "windowsLive": 7,
+       "oracleWindows": 7,
+       "rssKiB": 259312
+      },
+      {
+       "tSeconds": 1200.3,
+       "windowsLive": 8,
+       "oracleWindows": 8,
+       "rssKiB": 260632
+      },
+      {
+       "tSeconds": 1201.3,
+       "windowsLive": 8,
+       "oracleWindows": 8,
+       "rssKiB": 260632
+      }
+     ]
+    }
+   }
+  }
+ }
+}

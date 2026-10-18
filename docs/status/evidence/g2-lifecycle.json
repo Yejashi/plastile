@@ -1,0 +1,852 @@
+{
+ "purpose": "G2 P05 bursts, P05 boundary, P07/P12/P13",
+ "P05": {
+  "perN": {
+   "32": [
+    {
+     "unit": "p05-n32-r0",
+     "solvesPerFlush": 1.0,
+     "create": {
+      "solves": 13,
+      "flushes": 13,
+      "writes": 245,
+      "skipOutstanding": 1,
+      "skipNoop": 11,
+      "observations": 245,
+      "settled": 84,
+      "superseded": 161,
+      "reclassified": 32,
+      "adopted": 32
+     },
+     "close": {
+      "solves": 9,
+      "flushes": 10,
+      "writes": 196,
+      "skipOutstanding": 3,
+      "skipNoop": 1,
+      "observations": 163,
+      "settled": 81,
+      "superseded": 82,
+      "removed": 32
+     },
+     "closeSolvesPerFlush": 0.9,
+     "feasibility": {
+      "minFrameHeight": 178,
+      "stackRows": 31,
+      "requiredHeight": 5774,
+      "areaHeight": 6086,
+      "feasible": true
+     },
+     "mappedSpanMs": 229.42593,
+     "lastMappedToLastClientCommitMs": 30.237861,
+     "lastMappedToOracleTiledBoundsMs": [
+      0.0,
+      50.601
+     ],
+     "configuresPerWindow": {
+      "n": 32,
+      "p50": 11,
+      "p95": 14,
+      "p99": 15,
+      "max": 16,
+      "min": 3
+     },
+     "finalTilingErrors": []
+    },
+    {
+     "unit": "p05-n32-r1",
+     "solvesPerFlush": 1.0,
+     "create": {
+      "solves": 13,
+      "flushes": 13,
+      "writes": 243,
+      "skipOutstanding": 2,
+      "skipNoop": 10,
+      "observations": 243,
+      "settled": 86,
+      "superseded": 157,
+      "reclassified": 32,
+      "adopted": 32
+     },
+     "close": {
+      "solves": 5,
+      "flushes": 6,
+      "writes": 116,
+      "observations": 43,
+      "superseded": 43,
+      "removed": 32
+     },
+     "closeSolvesPerFlush": 0.8333333333333334,
+     "feasibility": {
+      "minFrameHeight": 178,
+      "stackRows": 31,
+      "requiredHeight": 5774,
+      "areaHeight": 6086,
+      "feasible": true
+     },
+     "mappedSpanMs": 208.938876,
+     "lastMappedToLastClientCommitMs": 29.526676,
+     "lastMappedToOracleTiledBoundsMs": [
+      0.0,
+      54.28
+     ],
+     "configuresPerWindow": {
+      "n": 32,
+      "p50": 10,
+      "p95": 14,
+      "p99": 15,
+      "max": 16,
+      "min": 3
+     },
+     "finalTilingErrors": []
+    },
+    {
+     "unit": "p05-n32-r2",
+     "solvesPerFlush": 1.0,
+     "create": {
+      "solves": 12,
+      "flushes": 12,
+      "writes": 222,
+      "skipOutstanding": 2,
+      "skipNoop": 9,
+      "observations": 222,
+      "settled": 99,
+      "superseded": 123,
+      "reclassified": 32,
+      "adopted": 32
+     },
+     "close": {
+      "solves": 6,
+      "flushes": 7,
+      "writes": 123,
+      "skipNoop": 1,
+      "observations": 62,
+      "settled": 7,
+      "superseded": 55,
+      "removed": 32
+     },
+     "closeSolvesPerFlush": 0.8571428571428571,
+     "feasibility": {
+      "minFrameHeight": 178,
+      "stackRows": 31,
+      "requiredHeight": 5774,
+      "areaHeight": 6086,
+      "feasible": true
+     },
+     "mappedSpanMs": 205.900575,
+     "lastMappedToLastClientCommitMs": 10.237833,
+     "lastMappedToOracleTiledBoundsMs": [
+      0.0,
+      43.023
+     ],
+     "configuresPerWindow": {
+      "n": 32,
+      "p50": 10,
+      "p95": 13,
+      "p99": 13,
+      "max": 15,
+      "min": 3
+     },
+     "finalTilingErrors": []
+    },
+    {
+     "unit": "p05-n32-r3",
+     "solvesPerFlush": 1.0,
+     "create": {
+      "solves": 13,
+      "flushes": 13,
+      "writes": 248,
+      "skipOutstanding": 1,
+      "skipNoop": 11,
+      "observations": 248,
+      "settled": 81,
+      "superseded": 167,
+      "reclassified": 32,
+      "adopted": 32
+     },
+     "close": {
+      "solves": 5,
+      "flushes": 6,
+      "writes": 126,
+      "observations": 73,
+      "settled": 9,
+      "superseded": 64,
+      "removed": 32
+     },
+     "closeSolvesPerFlush": 0.8333333333333334,
+     "feasibility": {
+      "minFrameHeight": 178,
+      "stackRows": 31,
+      "requiredHeight": 5774,
+      "areaHeight": 6086,
+      "feasible": true
+     },
+     "mappedSpanMs": 228.795418,
+     "lastMappedToLastClientCommitMs": 17.391554,
+     "lastMappedToOracleTiledBoundsMs": [
+      0.0,
+      51.395
+     ],
+     "configuresPerWindow": {
+      "n": 32,
+      "p50": 10,
+      "p95": 14,
+      "p99": 15,
+      "max": 16,
+      "min": 3
+     },
+     "finalTilingErrors": []
+    },
+    {
+     "unit": "p05-n32-r4",
+     "solvesPerFlush": 1.0,
+     "create": {
+      "solves": 14,
+      "flushes": 14,
+      "writes": 265,
+      "skipOutstanding": 1,
+      "skipNoop": 12,
+      "observations": 265,
+      "settled": 83,
+      "superseded": 182,
+      "reclassified": 32,
+      "adopted": 32
+     },
+     "close": {
+      "solves": 7,
+      "flushes": 8,
+      "writes": 175,
+      "skipOutstanding": 1,
+      "skipNoop": 1,
+      "observations": 90,
+      "superseded": 77,
+      "partial": 13,
+      "removed": 32
+     },
+     "closeSolvesPerFlush": 0.875,
+     "feasibility": {
+      "minFrameHeight": 178,
+      "stackRows": 31,
+      "requiredHeight": 5774,
+      "areaHeight": 6086,
+      "feasible": true
+     },
+     "mappedSpanMs": 240.710542,
+     "lastMappedToLastClientCommitMs": 29.804903,
+     "lastMappedToOracleTiledBoundsMs": [
+      3.623,
+      67.597
+     ],
+     "configuresPerWindow": {
+      "n": 32,
+      "p50": 12,
+      "p95": 15,
+      "p99": 16,
+      "max": 17,
+      "min": 3
+     },
+     "finalTilingErrors": []
+    }
+   ],
+   "8": [
+    {
+     "unit": "p05-n8-r0",
+     "solvesPerFlush": 1.0,
+     "create": {
+      "solves": 2,
+      "flushes": 2,
+      "writes": 12,
+      "skipOutstanding": 1,
+      "observations": 12,
+      "settled": 8,
+      "superseded": 4,
+      "reclassified": 8,
+      "adopted": 8
+     },
+     "close": {
+      "solves": 6,
+      "flushes": 7,
+      "writes": 25,
+      "skipOutstanding": 1,
+      "skipNoop": 1,
+      "observations": 18,
+      "settled": 7,
+      "superseded": 11,
+      "removed": 8
+     },
+     "closeSolvesPerFlush": 0.8571428571428571,
+     "feasibility": {
+      "minFrameHeight": 178,
+      "stackRows": 7,
+      "requiredHeight": 1310,
+      "areaHeight": 1430,
+      "feasible": true
+     },
+     "mappedSpanMs": 0.814377,
+     "lastMappedToLastClientCommitMs": 25.971847,
+     "lastMappedToOracleTiledBoundsMs": [
+      13.112,
+      55.158
+     ],
+     "configuresPerWindow": {
+      "n": 8,
+      "p50": 3,
+      "p95": 4,
+      "p99": 4,
+      "max": 4,
+      "min": 3
+     },
+     "finalTilingErrors": []
+    },
+    {
+     "unit": "p05-n8-r1",
+     "solvesPerFlush": 1.0,
+     "create": {
+      "solves": 5,
+      "flushes": 5,
+      "writes": 22,
+      "skipOutstanding": 3,
+      "observations": 22,
+      "settled": 13,
+      "superseded": 9,
+      "reclassified": 8,
+      "adopted": 8
+     },
+     "close": {
+      "solves": 5,
+      "flushes": 6,
+      "writes": 16,
+      "skipOutstanding": 1,
+      "observations": 9,
+      "settled": 3,
+      "superseded": 6,
+      "removed": 8
+     },
+     "closeSolvesPerFlush": 0.8333333333333334,
+     "feasibility": {
+      "minFrameHeight": 178,
+      "stackRows": 7,
+      "requiredHeight": 1310,
+      "areaHeight": 1430,
+      "feasible": true
+     },
+     "mappedSpanMs": 33.879248,
+     "lastMappedToLastClientCommitMs": 7.098413,
+     "lastMappedToOracleTiledBoundsMs": [
+      0.0,
+      30.245
+     ],
+     "configuresPerWindow": {
+      "n": 8,
+      "p50": 5,
+      "p95": 6,
+      "p99": 6,
+      "max": 6,
+      "min": 3
+     },
+     "finalTilingErrors": []
+    },
+    {
+     "unit": "p05-n8-r2",
+     "solvesPerFlush": 1.0,
+     "create": {
+      "solves": 5,
+      "flushes": 5,
+      "writes": 22,
+      "skipOutstanding": 3,
+      "observations": 22,
+      "settled": 9,
+      "superseded": 13,
+      "reclassified": 8,
+      "adopted": 8
+     },
+     "close": {
+      "solves": 4,
+      "flushes": 5,
+      "writes": 14,
+      "observations": 4,
+      "settled": 1,
+      "superseded": 3,
+      "removed": 8
+     },
+     "closeSolvesPerFlush": 0.8,
+     "feasibility": {
+      "minFrameHeight": 178,
+      "stackRows": 7,
+      "requiredHeight": 1310,
+      "areaHeight": 1430,
+      "feasible": true
+     },
+     "mappedSpanMs": 27.879053,
+     "lastMappedToLastClientCommitMs": 9.236971,
+     "lastMappedToOracleTiledBoundsMs": [
+      0.0,
+      35.653
+     ],
+     "configuresPerWindow": {
+      "n": 8,
+      "p50": 5,
+      "p95": 6,
+      "p99": 6,
+      "max": 6,
+      "min": 3
+     },
+     "finalTilingErrors": []
+    },
+    {
+     "unit": "p05-n8-r3",
+     "solvesPerFlush": 1.0,
+     "create": {
+      "solves": 3,
+      "flushes": 3,
+      "writes": 13,
+      "skipOutstanding": 1,
+      "observations": 13,
+      "settled": 8,
+      "superseded": 5,
+      "reclassified": 8,
+      "adopted": 8
+     },
+     "close": {
+      "solves": 4,
+      "flushes": 5,
+      "writes": 14,
+      "observations": 4,
+      "settled": 1,
+      "superseded": 3,
+      "removed": 8
+     },
+     "closeSolvesPerFlush": 0.8,
+     "feasibility": {
+      "minFrameHeight": 178,
+      "stackRows": 7,
+      "requiredHeight": 1310,
+      "areaHeight": 1430,
+      "feasible": true
+     },
+     "mappedSpanMs": 9.382769,
+     "lastMappedToLastClientCommitMs": 28.717079,
+     "lastMappedToOracleTiledBoundsMs": [
+      6.476,
+      50.749
+     ],
+     "configuresPerWindow": {
+      "n": 8,
+      "p50": 4,
+      "p95": 4,
+      "p99": 4,
+      "max": 5,
+      "min": 3
+     },
+     "finalTilingErrors": []
+    },
+    {
+     "unit": "p05-n8-r4",
+     "solvesPerFlush": 1.0,
+     "create": {
+      "solves": 4,
+      "flushes": 4,
+      "writes": 20,
+      "skipOutstanding": 2,
+      "observations": 20,
+      "settled": 8,
+      "superseded": 12,
+      "reclassified": 8,
+      "adopted": 8
+     },
+     "close": {
+      "solves": 5,
+      "flushes": 6,
+      "writes": 16,
+      "skipOutstanding": 1,
+      "observations": 8,
+      "settled": 2,
+      "superseded": 6,
+      "removed": 8
+     },
+     "closeSolvesPerFlush": 0.8333333333333334,
+     "feasibility": {
+      "minFrameHeight": 178,
+      "stackRows": 7,
+      "requiredHeight": 1310,
+      "areaHeight": 1430,
+      "feasible": true
+     },
+     "mappedSpanMs": 19.336542,
+     "lastMappedToLastClientCommitMs": 11.82203,
+     "lastMappedToOracleTiledBoundsMs": [
+      0.0,
+      39.197
+     ],
+     "configuresPerWindow": {
+      "n": 8,
+      "p50": 5,
+      "p95": 5,
+      "p99": 5,
+      "max": 6,
+      "min": 3
+     },
+     "finalTilingErrors": []
+    }
+   ]
+  },
+  "checks": {
+   "P05 n=32: all 32 tiled without overlap (oracle)": {
+    "pass": 5,
+    "of": 5
+   },
+   "P05 n=32: close solves <= flushes": {
+    "pass": 5,
+    "of": 5
+   },
+   "P05 n=32: close solves bounded (<= n)": {
+    "pass": 5,
+    "of": 5
+   },
+   "P05 n=32: create solves <= flushes (one context: at most one solve per flush)": {
+    "pass": 5,
+    "of": 5
+   },
+   "P05 n=32: create solves bounded (<= n)": {
+    "pass": 5,
+    "of": 5
+   },
+   "P05 n=32: no overflow, no errors": {
+    "pass": 5,
+    "of": 5
+   },
+   "P05 n=32: windows gone, no errors": {
+    "pass": 5,
+    "of": 5
+   },
+   "P05 n=32: workload feasible: 31 stacked minimum frames fit the work area (measured)": {
+    "pass": 5,
+    "of": 5
+   },
+   "P05 n=8: all 8 tiled without overlap (oracle)": {
+    "pass": 5,
+    "of": 5
+   },
+   "P05 n=8: close solves <= flushes": {
+    "pass": 5,
+    "of": 5
+   },
+   "P05 n=8: close solves bounded (<= n)": {
+    "pass": 5,
+    "of": 5
+   },
+   "P05 n=8: create solves <= flushes (one context: at most one solve per flush)": {
+    "pass": 5,
+    "of": 5
+   },
+   "P05 n=8: create solves bounded (<= n)": {
+    "pass": 5,
+    "of": 5
+   },
+   "P05 n=8: no overflow, no errors": {
+    "pass": 5,
+    "of": 5
+   },
+   "P05 n=8: windows gone, no errors": {
+    "pass": 5,
+    "of": 5
+   },
+   "P05 n=8: workload feasible: 7 stacked minimum frames fit the work area (measured)": {
+    "pass": 5,
+    "of": 5
+   }
+  }
+ },
+ "P05-boundary-n32": {
+  "measured": {
+   "minFrameHeight": 178,
+   "stackRows": 31,
+   "requiredHeight": 5774,
+   "areaHeight": 8000,
+   "feasible": true
+  },
+  "checks": {
+   "feasible: all tiled, no overflow, no overlap (oracle)": true,
+   "infeasible by 1 px: exactly one window floated by overflow": true,
+   "infeasible: the floated window is the newest mapped (float-new)": true,
+   "infeasible: the other windows tile without overlap (oracle)": true
+  },
+  "pass": true,
+  "implementationCommit": "320cf72bd7444f188e043b52d11bff70802f1321",
+  "implementationDirty": false,
+  "feasible": {
+   "height": 5774,
+   "overflow": 0,
+   "tilingErrorsAll": [],
+   "counters": {
+    "solves": 15,
+    "flushes": 16,
+    "writes": 250,
+    "skipOutstanding": 2,
+    "skipNoop": 12,
+    "observations": 250,
+    "settled": 83,
+    "superseded": 167,
+    "reclassified": 32,
+    "adopted": 32
+   }
+  },
+  "infeasible": {
+   "height": 5773,
+   "overflow": 1,
+   "floated": [
+    {
+     "caption": "plastile-fixture 32",
+     "mode": "floating",
+     "exception": "does not fit (stack column of 31 needs 5758 px height, has 5757); overflow float-new",
+     "frame": {
+      "x": 760,
+      "y": 2722,
+      "width": 400,
+      "height": 328
+     }
+    }
+   ],
+   "newestMapped": "plastile-fixture 32",
+   "tilingErrorsAmongTiled": [],
+   "floatedConfigureSizes": {
+    "plastile-fixture 32": [
+     [
+      0,
+      0
+     ],
+     [
+      400,
+      300
+     ],
+     [
+      400,
+      300
+     ],
+     [
+      400,
+      300
+     ]
+    ]
+   }
+  }
+ },
+ "P07-P12-P13-teardown": {
+  "checks": {
+   "P07 n=2: initial 2 tiled": true,
+   "P07 n=2: 50 back-to-back swaps -> expected permutation (oracle)": true,
+   "P07 n=2: 50 perf records for the burst": true,
+   "P07 n=2: +50 paced swaps -> expected permutation (oracle)": true,
+   "P07 n=2: even count (50, 100) returns to the initial frames": true,
+   "P07 n=2: 100 commands counted, errors == 0": true,
+   "P07 n=2: no outstanding requests at the end": true,
+   "P07 n=4: initial 4 tiled": true,
+   "P07 n=4: 50 back-to-back swaps -> expected permutation (oracle)": true,
+   "P07 n=4: 50 perf records for the burst": true,
+   "P07 n=4: +50 paced swaps -> expected permutation (oracle)": true,
+   "P07 n=4: after 108 swaps (multiple of the period 12) back to the initial frames": true,
+   "P07 n=4: 100 commands counted, errors == 0": true,
+   "P07 n=4: no outstanding requests at the end": true,
+   "P12: 4 desktops": true,
+   "P12: 2 visible + 6 hidden windows": true,
+   "P12: adoption solved only the visible context (1 solve)": true,
+   "P12: visible pair tiled": true,
+   "P12: 20 ratio commands -> exactly 20 solves": true,
+   "P12: writes only to the visible pair (2 per command)": true,
+   "P12: zero geometry change on the 6 hidden windows (oracle)": true,
+   "P12: visible pair still tiled": true,
+   "P12: desktop switch -> exactly one solve (newly visible context)": true,
+   "P12: newly visible pair tiled without overlap (oracle)": true,
+   "P12: the other 6 windows unchanged by the switch (oracle)": true,
+   "P12: errors == 0": true,
+   "P13: 10 rules activated without rejection": true,
+   "P13: 10 rules: activation writes nothing (no window matches)": true,
+   "P13: 100 rules activated without rejection": true,
+   "P13: 100 rules: activation writes nothing (no window matches)": true,
+   "P13: 256 rules activated without rejection": true,
+   "P13: 256 rules: activation writes nothing (no window matches)": true,
+   "P13 control: rule 255 (glob, floating) matched (explain: r255, mode floating)": true,
+   "P13 control: floating window kept its own 400x300 client size (oracle)": true,
+   "P13 control: rule 1 (glob, tiled) window tiled with the other 8 (oracle, no overlap)": true,
+   "P13 control: floating window overlaps tiles (not placed in the layout)": true,
+   "P13 control: the original windows return to their frames after the controls close (oracle)": true,
+   "P13: 1000 rules rejected (cap 256), previous revision kept, nothing written": true,
+   "P13: tiled without overlap after all activations": true,
+   "P13: errors == 0": true,
+   "P13: ratio-command p50 with 256 rules within 1.5x of no rules (coarse, shared machine)": true,
+   "teardown: 3 load/unload cycles, one marker per reconfigure while loaded, none after unload": true
+  },
+  "exceptions": [],
+  "p07": {
+   "2": {
+    "burst": {
+     "n": 50,
+     "p50": 144180,
+     "p95": 435639,
+     "p99": 562879,
+     "max": 685339,
+     "min": 103490
+    },
+    "paced": {
+     "n": 50,
+     "p50": 209470,
+     "p95": 306420,
+     "p99": 346649,
+     "max": 725378,
+     "min": 164619
+    },
+    "commandsQueued": 0,
+    "counters": {
+     "solves": 100,
+     "flushes": 21,
+     "commands": 100,
+     "writes": 224,
+     "corrections": 24,
+     "observations": 196,
+     "settled": 172,
+     "stale": 24
+    }
+   },
+   "4": {
+    "burst": {
+     "n": 50,
+     "p50": 176490,
+     "p95": 263919,
+     "p99": 507619,
+     "max": 540879,
+     "min": 108060
+    },
+    "paced": {
+     "n": 50,
+     "p50": 238259,
+     "p95": 298840,
+     "p99": 713899,
+     "max": 809849,
+     "min": 185360
+    },
+    "commandsQueued": 0,
+    "counters": {
+     "solves": 100,
+     "flushes": 14,
+     "commands": 100,
+     "writes": 218,
+     "corrections": 18,
+     "skipOutstanding": 49,
+     "skipNoop": 147,
+     "observations": 214,
+     "observationsDuringApply": 14,
+     "settled": 194,
+     "stale": 14,
+     "superseded": 6
+    }
+   }
+  },
+  "p12": {
+   "commandDelta": {
+    "solves": 20,
+    "commands": 20,
+    "writes": 40,
+    "observations": 40,
+    "settled": 40
+   },
+   "switchDelta": {
+    "solves": 1,
+    "flushes": 1,
+    "writes": 2,
+    "observations": 2,
+    "settled": 2
+   },
+   "desktops": 4
+  },
+  "p13": {
+   "activation": {
+    "10": {
+     "jsonChars": 906,
+     "reconfigureToActivatedMs": 193.62123,
+     "reconfigureCallMs": 2.016976,
+     "reconfigureToConfigChangedMs": 192.126653,
+     "configChangedToActivatedMs": 1.675306,
+     "configChangedSignals": 1,
+     "rejected": false,
+     "warnings": 0,
+     "activationDelta": {
+      "flushes": 1,
+      "reclassified": 8
+     },
+     "line": "info configuration activated {\"revision\":2}"
+    },
+    "100": {
+     "jsonChars": 8961,
+     "reconfigureToActivatedMs": 200.246202,
+     "reconfigureCallMs": 1.813156,
+     "reconfigureToConfigChangedMs": 193.900479,
+     "configChangedToActivatedMs": 6.850658,
+     "configChangedSignals": 1,
+     "rejected": false,
+     "warnings": 0,
+     "activationDelta": {
+      "flushes": 1,
+      "reclassified": 8
+     },
+     "line": "info configuration activated {\"revision\":3}"
+    },
+    "256": {
+     "jsonChars": 23235,
+     "reconfigureToActivatedMs": 223.181499,
+     "reconfigureCallMs": 1.833537,
+     "reconfigureToConfigChangedMs": 212.108527,
+     "configChangedToActivatedMs": 11.736669,
+     "configChangedSignals": 1,
+     "rejected": false,
+     "warnings": 0,
+     "activationDelta": {
+      "flushes": 1,
+      "reclassified": 8
+     },
+     "line": "info configuration activated {\"revision\":4}"
+    },
+    "1000-over-cap": {
+     "rules": 1000,
+     "jsonChars": 91311,
+     "rejected": true,
+     "configChangedToRejectedMs": 4.438792,
+     "reconfigureToConfigChangedMs": 193.008821,
+     "delta": {}
+    },
+    "none-again": {
+     "jsonChars": 0,
+     "reconfigureToActivatedMs": 194.721139,
+     "reconfigureCallMs": 2.262426,
+     "reconfigureToConfigChangedMs": 192.300233,
+     "configChangedToActivatedMs": 2.652215,
+     "configChangedSignals": 1,
+     "rejected": false,
+     "warnings": 0,
+     "activationDelta": {
+      "flushes": 1,
+      "reclassified": 8
+     },
+     "line": "info configuration activated {\"revision\":6}"
+    }
+   },
+   "p50RatioRules256OverNone": 0.9925350146663373
+  },
+  "teardown": [
+   {
+    "markersLoaded": 1,
+    "markersAfterUnload": 0,
+    "scriptErrors": 0
+   },
+   {
+    "markersLoaded": 1,
+    "markersAfterUnload": 0,
+    "scriptErrors": 0
+   },
+   {
+    "markersLoaded": 1,
+    "markersAfterUnload": 0,
+    "scriptErrors": 0
+   }
+  ]
+ }
+}

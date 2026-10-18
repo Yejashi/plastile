@@ -236,16 +236,15 @@ def snapshot(kw: NestedKwin) -> dict:
 def versions() -> dict:
     kwin = subprocess.run(["kwin_wayland", "--version"], capture_output=True, text=True).stdout.strip()
     pk = [sysinfo.component_version(c) for c in ("kwin", "kactivitymanagerd", "qt6-declarative")]
-    head = (ROOT / ".git/HEAD").read_text().strip()
-    commit = head
-    if head.startswith("ref: "):
-        ref = ROOT / ".git" / head[5:]
-        commit = ref.read_text().strip() if ref.exists() else head
+    # git, not .git/HEAD: in a linked worktree .git is a file.
+    commit = subprocess.run(["git", "-C", str(ROOT), "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip()
+    dirty = bool(subprocess.run(["git", "-C", str(ROOT), "status", "--porcelain", "--", "src", "package", "probes", "tests/integration",
+                                 "fixtures", "tools"], capture_output=True, text=True).stdout.strip())
     meta = json.loads((ROOT / "package/metadata.json").read_text())
     bundle = ROOT / "package/contents/code/plastile.mjs"
     return {"kwin": kwin, "packages": [p for p in pk if p], "plastileVersion": meta["KPlugin"]["Version"],
-            "plastileCommit": commit, "plastileBundleSha256": hashlib.sha256(bundle.read_bytes()).hexdigest(),
-            "python": sys.version.split()[0]}
+            "plastileCommit": commit, "implementationDirty": dirty,
+            "plastileBundleSha256": hashlib.sha256(bundle.read_bytes()).hexdigest(), "python": sys.version.split()[0]}
 
 
 def workload(kw: NestedKwin, logs: dict[int, Path], tiler: str, count: int, spacings: list[float],
@@ -256,7 +255,8 @@ def workload(kw: NestedKwin, logs: dict[int, Path], tiler: str, count: int, spac
         for kind in ("swap", "resize"):
             name = f"{kind}@{int(spacing * 1000)}ms"
             wait_quiet(logs)
-            sends = drive(kw.invoke_shortcut, WORKLOADS[tiler][kind], count, spacing)
+            n_cmds = count(spacing) if callable(count) else count
+            sends = drive(kw.invoke_shortcut, WORKLOADS[tiler][kind], n_cmds, spacing)
             time.sleep(idle_s)
             ph = analyse(sends, read_events(logs), mono())
             ph["spacingMs"] = spacing * 1000
@@ -414,9 +414,13 @@ def main() -> int:
     ap.add_argument("--polonium-config", default="", help="k=v,k=v written to kwinrc [Script-polonium] (e.g. LogLevel=3)")
     ap.add_argument("--no-activities", action="store_true", help="do not start kactivitymanagerd (Polonium then cannot tile)")
     ap.add_argument("--evidence", type=Path, default=None, help="also write the redacted summary here")
+    ap.add_argument("--commands-at", default="", help="per-spacing command counts overriding --commands, e.g. 250=100")
+    ap.add_argument("--out", type=Path, default=None, help="artifact directory (default artifacts/baseline-upstream/<stamp>)")
     args = ap.parse_args()
     stamp = time.strftime("%Y%m%dT%H%M%S")
-    out = ROOT / "artifacts/baseline-upstream" / stamp
+    out = args.out or ROOT / "artifacts/baseline-upstream" / stamp
+    per_spacing = {float(k) / 1000: int(v) for k, v in (kv.split("=", 1) for kv in args.commands_at.split(",") if kv)}
+    commands = (lambda sp: per_spacing.get(sp, args.commands)) if per_spacing else args.commands
     out.mkdir(parents=True, exist_ok=True)
     spacings = [float(x) / 1000 for x in args.spacings_ms.split(",") if x]
     activities = not args.no_activities
@@ -427,7 +431,7 @@ def main() -> int:
         "versions": versions(),
         "polonium": {"researchPin": POLONIUM_PIN, "zipSha256": None},
         "environment": {"activitiesService": activities, "outputs": 1, "size": "1280x800", "decoration": "breeze SSD"},
-        "workload": {"windows": 3, "commandsPerPhase": args.commands, "spacingsMs": [s * 1000 for s in spacings],
+        "workload": {"windows": 3, "commandsPerPhase": args.commands, "commandsAt": args.commands_at or None, "spacingsMs": [s * 1000 for s in spacings],
                      "commands": WORKLOADS, "idleAfterPhaseS": args.idle_s},
         "metrics": {
             "sendToFirstConfigureNs": "invokeShortcut send (CLOCK_MONOTONIC) -> first fixture xdg configure t_ns "
@@ -447,9 +451,9 @@ def main() -> int:
         t0 = time.monotonic()
         try:
             if tiler == "polonium":
-                res = run_polonium(out / tiler, args.polonium_zip, args.commands, spacings, args.idle_s, cfg, activities)
+                res = run_polonium(out / tiler, args.polonium_zip, commands, spacings, args.idle_s, cfg, activities)
             else:
-                res = run_plastile(out / tiler, args.commands, spacings, args.idle_s, activities)
+                res = run_plastile(out / tiler, commands, spacings, args.idle_s, activities)
         except Exception as exc:  # report, do not hide
             res = {"tiler": tiler, "error": "".join(traceback.format_exception(exc))[-2000:]}
         res["seconds"] = round(time.monotonic() - t0, 1)

@@ -1,0 +1,2039 @@
+{
+ "purpose": "Independent review of the G2 P03 evidence (G2_REPORT \u00a715); nested KWin virtual backend, not physical",
+ "reviewTree": {
+  "implementationCommit": "88e9cd8b7a55acdaeec3d17ba41ae917b7838096",
+  "implementationDirty": false,
+  "dirtyPaths": []
+ },
+ "recompute": {
+  "cellsChecked": 50,
+  "mismatches": [],
+  "p99Rule": "p99 only from >= 5000 samples (PERFORMANCE \u00a76.5)",
+  "n32": {
+   "n32/focus/instrumented": {
+    "samples": 5000,
+    "warmup": 100,
+    "failures": 0,
+    "outer": {
+     "n": 5000,
+     "p50": 0.7626,
+     "p95": 1.0972,
+     "max": 2.1426,
+     "p99": 1.5787
+    }
+   },
+   "n32/focus/uninstrumented": {
+    "samples": 5000,
+    "warmup": 100,
+    "failures": 0,
+    "outer": {
+     "n": 5000,
+     "p50": 0.7425,
+     "p95": 1.0727,
+     "max": 2.0443,
+     "p99": 1.5361
+    },
+    "outerP95Ci95ByRun": [
+     0.9951,
+     1.1209
+    ],
+    "outerP99Ci95ByRun": [
+     1.4991,
+     1.5867
+    ]
+   },
+   "n32/master/instrumented": {
+    "samples": 5000,
+    "warmup": 100,
+    "failures": 0,
+    "outer": {
+     "n": 5000,
+     "p50": 0.8759,
+     "p95": 1.5897,
+     "max": 2.669,
+     "p99": 1.9335
+    },
+    "solve": {
+     "n": 5000,
+     "p50": 0.1799,
+     "p95": 0.2775,
+     "max": 1.3197,
+     "p99": 1.0643
+    }
+   },
+   "n32/master/uninstrumented": {
+    "samples": 5000,
+    "warmup": 100,
+    "failures": 0,
+    "outer": {
+     "n": 5000,
+     "p50": 0.8322,
+     "p95": 1.4766,
+     "max": 2.4292,
+     "p99": 1.8652
+    },
+    "outerP95Ci95ByRun": [
+     1.3552,
+     1.5052
+    ],
+    "outerP99Ci95ByRun": [
+     1.7983,
+     1.9213
+    ]
+   },
+   "n32/noop/instrumented": {
+    "samples": 1000,
+    "warmup": 100,
+    "failures": 0,
+    "outer": {
+     "n": 1000,
+     "p50": 0.5051,
+     "p95": 0.7517,
+     "max": 1.7987
+    },
+    "solve": {
+     "n": 500,
+     "p50": 0.2555,
+     "p95": 0.384,
+     "max": 1.3802
+    }
+   },
+   "n32/noop/uninstrumented": {
+    "samples": 1000,
+    "warmup": 100,
+    "failures": 0,
+    "outer": {
+     "n": 1000,
+     "p50": 0.4209,
+     "p95": 0.7317,
+     "max": 1.8732
+    }
+   },
+   "n32/ratio/instrumented": {
+    "samples": 5000,
+    "warmup": 100,
+    "failures": 0,
+    "outer": {
+     "n": 5000,
+     "p50": 0.9174,
+     "p95": 1.7239,
+     "max": 2.3798,
+     "p99": 1.9865
+    },
+    "solve": {
+     "n": 5000,
+     "p50": 0.1708,
+     "p95": 0.2684,
+     "max": 1.4006,
+     "p99": 1.0712
+    }
+   },
+   "n32/ratio/uninstrumented": {
+    "samples": 5000,
+    "warmup": 100,
+    "failures": 0,
+    "outer": {
+     "n": 5000,
+     "p50": 0.8683,
+     "p95": 1.5846,
+     "max": 2.5715,
+     "p99": 1.9035
+    },
+    "outerP95Ci95ByRun": [
+     1.5651,
+     1.607
+    ],
+    "outerP99Ci95ByRun": [
+     1.8704,
+     1.9311
+    ]
+   },
+   "n32/swap/instrumented": {
+    "samples": 5000,
+    "warmup": 100,
+    "failures": 0,
+    "outer": {
+     "n": 5000,
+     "p50": 0.7049,
+     "p95": 1.0993,
+     "max": 2.5531,
+     "p99": 1.7099
+    },
+    "solve": {
+     "n": 5000,
+     "p50": 0.1837,
+     "p95": 0.2809,
+     "max": 1.3302,
+     "p99": 1.0667
+    }
+   },
+   "n32/swap/uninstrumented": {
+    "samples": 5000,
+    "warmup": 100,
+    "failures": 0,
+    "outer": {
+     "n": 5000,
+     "p50": 0.6628,
+     "p95": 1.3609,
+     "max": 2.2344,
+     "p99": 1.6387
+    },
+    "outerP95Ci95ByRun": [
+     1.2781,
+     1.3942
+    ],
+    "outerP99Ci95ByRun": [
+     1.6236,
+     1.6878
+    ]
+   }
+  }
+ },
+ "slowSolves": {
+  "thresholdMs": 0.5,
+  "note": "solve spans above the threshold form a separate mode; in the GC-logged unit every one held a full QV4 collection (g2-p03.json gcAttribution)",
+  "cells": {
+   "frames/n32/master": {
+    "solves": 1000,
+    "slow": 23,
+    "slowShare": 0.023
+   },
+   "frames/n32/noop": {
+    "solves": 100,
+    "slow": 3,
+    "slowShare": 0.03
+   },
+   "frames/n32/ratio": {
+    "solves": 1000,
+    "slow": 35,
+    "slowShare": 0.035
+   },
+   "frames/n32/swap": {
+    "solves": 1000,
+    "slow": 39,
+    "slowShare": 0.039
+   },
+   "gc/n32/master": {
+    "solves": 1000,
+    "slow": 7,
+    "slowShare": 0.007
+   },
+   "gc/n32/noop": {
+    "solves": 100,
+    "slow": 1,
+    "slowShare": 0.01
+   },
+   "gc/n32/ratio": {
+    "solves": 1000,
+    "slow": 7,
+    "slowShare": 0.007
+   },
+   "gc/n32/swap": {
+    "solves": 1000,
+    "slow": 15,
+    "slowShare": 0.015
+   },
+   "measured/n2/master": {
+    "solves": 5000,
+    "slow": 17,
+    "slowShare": 0.0034
+   },
+   "measured/n2/noop": {
+    "solves": 500,
+    "slow": 4,
+    "slowShare": 0.008
+   },
+   "measured/n2/ratio": {
+    "solves": 5000,
+    "slow": 21,
+    "slowShare": 0.0042
+   },
+   "measured/n2/swap": {
+    "solves": 5000,
+    "slow": 21,
+    "slowShare": 0.0042
+   },
+   "measured/n4/master": {
+    "solves": 5000,
+    "slow": 29,
+    "slowShare": 0.0058
+   },
+   "measured/n4/noop": {
+    "solves": 500,
+    "slow": 7,
+    "slowShare": 0.014
+   },
+   "measured/n4/ratio": {
+    "solves": 5000,
+    "slow": 34,
+    "slowShare": 0.0068
+   },
+   "measured/n4/swap": {
+    "solves": 5000,
+    "slow": 27,
+    "slowShare": 0.0054
+   },
+   "measured/n8/master": {
+    "solves": 5000,
+    "slow": 45,
+    "slowShare": 0.009
+   },
+   "measured/n8/noop": {
+    "solves": 500,
+    "slow": 7,
+    "slowShare": 0.014
+   },
+   "measured/n8/ratio": {
+    "solves": 5000,
+    "slow": 44,
+    "slowShare": 0.0088
+   },
+   "measured/n8/swap": {
+    "solves": 5000,
+    "slow": 45,
+    "slowShare": 0.009
+   },
+   "measured/n16/master": {
+    "solves": 5000,
+    "slow": 85,
+    "slowShare": 0.017
+   },
+   "measured/n16/noop": {
+    "solves": 500,
+    "slow": 9,
+    "slowShare": 0.018
+   },
+   "measured/n16/ratio": {
+    "solves": 5000,
+    "slow": 107,
+    "slowShare": 0.0214
+   },
+   "measured/n16/swap": {
+    "solves": 5000,
+    "slow": 85,
+    "slowShare": 0.017
+   },
+   "measured/n32/master": {
+    "solves": 5000,
+    "slow": 122,
+    "slowShare": 0.0244
+   },
+   "measured/n32/noop": {
+    "solves": 500,
+    "slow": 15,
+    "slowShare": 0.03
+   },
+   "measured/n32/ratio": {
+    "solves": 5000,
+    "slow": 168,
+    "slowShare": 0.0336
+   },
+   "measured/n32/swap": {
+    "solves": 5000,
+    "slow": 106,
+    "slowShare": 0.0212
+   }
+  },
+  "slowModeByUnitKind": {
+   "frames/n32": {
+    "n": 100,
+    "p50": 1.0298,
+    "p95": 1.2102,
+    "max": 1.3042
+   },
+   "gc/n32": {
+    "n": 30,
+    "p50": 1.4613,
+    "p95": 1.9239,
+    "max": 2.0078
+   },
+   "measured/n2": {
+    "n": 63,
+    "p50": 0.7152,
+    "p95": 0.8201,
+    "max": 0.9738
+   },
+   "measured/n4": {
+    "n": 97,
+    "p50": 0.7442,
+    "p95": 0.8511,
+    "max": 1.5186
+   },
+   "measured/n8": {
+    "n": 141,
+    "p50": 0.7894,
+    "p95": 0.9169,
+    "max": 1.098
+   },
+   "measured/n16": {
+    "n": 286,
+    "p50": 0.8604,
+    "p95": 1.0591,
+    "max": 1.2142
+   },
+   "measured/n32": {
+    "n": 411,
+    "p50": 1.0468,
+    "p95": 1.222,
+    "max": 1.4006
+   }
+  }
+ },
+ "sendToHandlerVsPendingPresent": {
+  "n": 32,
+  "metric": "send -> handler (ms) of a command, by whether the previous command's virtual presentation (fixture wp_presentation, same clock) came before this send",
+  "groups": {
+   "after-focus/previousPresentPending": {
+    "n": 6414,
+    "p50": 0.5452,
+    "p95": 1.8472,
+    "max": 11.1769,
+    "p99": 3.7222,
+    "over2ms": 288
+   },
+   "after-focus/previousPresented": {
+    "n": 3516,
+    "p50": 0.5542,
+    "p95": 1.544,
+    "max": 3.2269,
+    "over2ms": 53
+   },
+   "after-master/previousPresentPending": {
+    "n": 7034,
+    "p50": 0.6255,
+    "p95": 8.6342,
+    "max": 30.6879,
+    "p99": 10.9528,
+    "over2ms": 2264
+   },
+   "after-master/previousPresented": {
+    "n": 2767,
+    "p50": 0.565,
+    "p95": 0.6607,
+    "max": 2.7045,
+    "over2ms": 1
+   },
+   "after-ratio/previousPresentPending": {
+    "n": 7007,
+    "p50": 0.6389,
+    "p95": 8.9699,
+    "max": 31.9786,
+    "p99": 10.9139,
+    "over2ms": 2374
+   },
+   "after-ratio/previousPresented": {
+    "n": 2825,
+    "p50": 0.5642,
+    "p95": 0.6595,
+    "max": 1.0392,
+    "over2ms": 0
+   },
+   "after-swap/previousPresentPending": {
+    "n": 1344,
+    "p50": 0.5621,
+    "p95": 6.8285,
+    "max": 11.75,
+    "over2ms": 246
+   },
+   "after-swap/previousPresented": {
+    "n": 516,
+    "p50": 0.5416,
+    "p95": 0.6386,
+    "max": 0.8953,
+    "over2ms": 0
+   }
+  },
+  "skippedNoPresentation": 10577
+ },
+ "instrumentationEffect": {
+  "perCell": {
+   "n2/ratio": {
+    "p50DiffMs": 0.0379,
+    "p50Ci": [
+     0.0324,
+     0.0437
+    ],
+    "p95DiffMs": 0.0558,
+    "p95Ci": [
+     0.0507,
+     0.0595
+    ]
+   },
+   "n2/swap": {
+    "p50DiffMs": 0.0405,
+    "p50Ci": [
+     0.0334,
+     0.0479
+    ],
+    "p95DiffMs": 0.0593,
+    "p95Ci": [
+     0.0487,
+     0.0656
+    ]
+   },
+   "n2/master": {
+    "p50DiffMs": 0.0399,
+    "p50Ci": [
+     0.0327,
+     0.0479
+    ],
+    "p95DiffMs": 0.0496,
+    "p95Ci": [
+     0.0418,
+     0.0565
+    ]
+   },
+   "n2/focus": {
+    "p50DiffMs": -1.0965,
+    "p50Ci": [
+     -1.3206,
+     1.2565
+    ],
+    "p95DiffMs": 0.0137,
+    "p95Ci": [
+     0.0009,
+     0.0274
+    ]
+   },
+   "n2/noop": {
+    "p50DiffMs": 0.0288,
+    "p50Ci": [
+     -0.0151,
+     0.093
+    ],
+    "p95DiffMs": 0.0364,
+    "p95Ci": [
+     0.0247,
+     0.0485
+    ]
+   },
+   "n4/ratio": {
+    "p50DiffMs": 0.0407,
+    "p50Ci": [
+     0.0338,
+     0.0481
+    ],
+    "p95DiffMs": 0.0533,
+    "p95Ci": [
+     0.042,
+     0.0644
+    ]
+   },
+   "n4/swap": {
+    "p50DiffMs": 0.0435,
+    "p50Ci": [
+     0.0395,
+     0.0482
+    ],
+    "p95DiffMs": 0.0582,
+    "p95Ci": [
+     0.048,
+     0.0695
+    ]
+   },
+   "n4/master": {
+    "p50DiffMs": 0.04,
+    "p50Ci": [
+     0.0311,
+     0.0473
+    ],
+    "p95DiffMs": 0.0594,
+    "p95Ci": [
+     0.0472,
+     0.0698
+    ]
+   },
+   "n4/focus": {
+    "p50DiffMs": 0.0444,
+    "p50Ci": [
+     0.0247,
+     0.0645
+    ],
+    "p95DiffMs": 0.0601,
+    "p95Ci": [
+     0.0208,
+     0.0843
+    ]
+   },
+   "n4/noop": {
+    "p50DiffMs": 0.031,
+    "p50Ci": [
+     0.0186,
+     0.0403
+    ],
+    "p95DiffMs": 0.0426,
+    "p95Ci": [
+     0.0343,
+     0.0556
+    ]
+   },
+   "n8/ratio": {
+    "p50DiffMs": 0.0386,
+    "p50Ci": [
+     0.0327,
+     0.0452
+    ],
+    "p95DiffMs": 0.0706,
+    "p95Ci": [
+     0.0417,
+     0.1044
+    ]
+   },
+   "n8/swap": {
+    "p50DiffMs": 0.0377,
+    "p50Ci": [
+     0.0307,
+     0.0443
+    ],
+    "p95DiffMs": 0.062,
+    "p95Ci": [
+     0.0354,
+     0.0818
+    ]
+   },
+   "n8/master": {
+    "p50DiffMs": 0.0411,
+    "p50Ci": [
+     0.033,
+     0.0495
+    ],
+    "p95DiffMs": 0.0934,
+    "p95Ci": [
+     0.0549,
+     0.1349
+    ]
+   },
+   "n8/focus": {
+    "p50DiffMs": 0.0407,
+    "p50Ci": [
+     -0.0013,
+     0.0867
+    ],
+    "p95DiffMs": 0.067,
+    "p95Ci": [
+     0.0142,
+     0.1227
+    ]
+   },
+   "n8/noop": {
+    "p50DiffMs": 0.0918,
+    "p50Ci": [
+     0.082,
+     0.1476
+    ],
+    "p95DiffMs": 0.0634,
+    "p95Ci": [
+     0.0351,
+     0.0856
+    ]
+   },
+   "n16/ratio": {
+    "p50DiffMs": 0.0397,
+    "p50Ci": [
+     0.0354,
+     0.0454
+    ],
+    "p95DiffMs": 0.2082,
+    "p95Ci": [
+     0.0979,
+     0.3886
+    ]
+   },
+   "n16/swap": {
+    "p50DiffMs": 0.0461,
+    "p50Ci": [
+     0.0404,
+     0.0512
+    ],
+    "p95DiffMs": 0.0876,
+    "p95Ci": [
+     0.0659,
+     0.1108
+    ]
+   },
+   "n16/master": {
+    "p50DiffMs": 0.0363,
+    "p50Ci": [
+     0.029,
+     0.0433
+    ],
+    "p95DiffMs": 0.0696,
+    "p95Ci": [
+     0.0317,
+     0.0947
+    ]
+   },
+   "n16/focus": {
+    "p50DiffMs": -0.0038,
+    "p50Ci": [
+     -0.0472,
+     0.0391
+    ],
+    "p95DiffMs": 0.0324,
+    "p95Ci": [
+     -0.0238,
+     0.0776
+    ]
+   },
+   "n16/noop": {
+    "p50DiffMs": 0.2446,
+    "p50Ci": [
+     0.2337,
+     0.2633
+    ],
+    "p95DiffMs": 0.0611,
+    "p95Ci": [
+     0.038,
+     0.09
+    ]
+   },
+   "n32/ratio": {
+    "p50DiffMs": 0.049,
+    "p50Ci": [
+     0.0401,
+     0.0557
+    ],
+    "p95DiffMs": 0.1394,
+    "p95Ci": [
+     0.1026,
+     0.1777
+    ]
+   },
+   "n32/swap": {
+    "p50DiffMs": 0.0421,
+    "p50Ci": [
+     0.0359,
+     0.0495
+    ],
+    "p95DiffMs": -0.2616,
+    "p95Ci": [
+     -0.3333,
+     0.067
+    ]
+   },
+   "n32/master": {
+    "p50DiffMs": 0.0436,
+    "p50Ci": [
+     0.0382,
+     0.0479
+    ],
+    "p95DiffMs": 0.1132,
+    "p95Ci": [
+     0.0483,
+     0.2243
+    ]
+   },
+   "n32/focus": {
+    "p50DiffMs": 0.0202,
+    "p50Ci": [
+     -0.0716,
+     0.0891
+    ],
+    "p95DiffMs": 0.0246,
+    "p95Ci": [
+     -0.0715,
+     0.1162
+    ]
+   },
+   "n32/noop": {
+    "p50DiffMs": 0.0842,
+    "p50Ci": [
+     0.0505,
+     0.1059
+    ],
+    "p95DiffMs": 0.02,
+    "p95Ci": [
+     -0.0104,
+     0.055
+    ]
+   }
+  },
+  "solvingCommandsP50DiffRangeMs": [
+   0.0363,
+   0.049
+  ],
+  "solvingCommandsP95DiffRangeMs": [
+   -0.2616,
+   0.2082
+  ]
+ },
+ "reruns": {
+  "machine": {
+   "t": "2026-10-18T17:08:00",
+   "loadavg": [
+    "2.58",
+    "3.16",
+    "3.31"
+   ],
+   "cpuGovernor": "powersave",
+   "energyPerformancePreference": "balance_performance",
+   "cpus": 12,
+   "busyProcessesPct": [
+    {
+     "comm": "polkitd",
+     "cpuPct": 79.1
+    },
+    {
+     "comm": "tailscaled",
+     "cpuPct": 28.7
+    },
+    {
+     "comm": "gdm",
+     "cpuPct": 21.8
+    },
+    {
+     "comm": "systemd",
+     "cpuPct": 16.8
+    },
+    {
+     "comm": "NetworkManager",
+     "cpuPct": 10.9
+    },
+    {
+     "comm": "dbus-broker",
+     "cpuPct": 4.9
+    },
+    {
+     "comm": "plasmashell",
+     "cpuPct": 3.0
+    },
+    {
+     "comm": "ksystemstats",
+     "cpuPct": 3.0
+    }
+   ],
+   "nestedKwinRunning": 0,
+   "liveKwinRunning": 1
+  },
+  "units": {
+   "repro-n32-uninstrumented-r0": {
+    "implementationCommit": "96a6857b4acf316e16e7d7f6e802c6f5c7d811c9",
+    "implementationDirty": false,
+    "n": 32,
+    "mode": "uninstrumented",
+    "run": 0,
+    "unitSeed": 20261018032000,
+    "inactiveDesktops": 3,
+    "pass": true,
+    "load1mAtStart": "3.80",
+    "busyAtStart": [
+     "polkitd:80.2",
+     "tailscaled:30.7",
+     "gdm:20.8",
+     "systemd:16.8",
+     "NetworkManager:10.9",
+     "dbus-broker:5.9",
+     "plasmashell:3.0",
+     "ksystemstats:3.0"
+    ],
+    "workloads": {
+     "focus": {
+      "outer": {
+       "n": 1000,
+       "p50": 0.703,
+       "p95": 0.9576,
+       "max": 1.8687
+      },
+      "campaignPerRunOuterP50": [
+       0.6908,
+       0.7467,
+       0.8832,
+       0.8237,
+       0.6996
+      ],
+      "campaignPerRunOuterP95": [
+       0.8648,
+       1.1012,
+       1.1437,
+       1.0779,
+       0.9934
+      ]
+     },
+     "master": {
+      "outer": {
+       "n": 1000,
+       "p50": 0.8362,
+       "p95": 1.5069,
+       "max": 2.1543
+      },
+      "campaignPerRunOuterP50": [
+       0.8323,
+       0.8309,
+       0.8377,
+       0.8261,
+       0.832
+      ],
+      "campaignPerRunOuterP95": [
+       1.2731,
+       1.5318,
+       1.4802,
+       1.4187,
+       1.4894
+      ]
+     },
+     "noop": {
+      "outer": {
+       "n": 200,
+       "p50": 0.0786,
+       "p95": 0.7412,
+       "max": 1.469
+      },
+      "campaignPerRunOuterP50": [
+       0.4579,
+       0.0806,
+       0.4067,
+       0.0717,
+       0.4743
+      ],
+      "campaignPerRunOuterP95": [
+       0.7332,
+       0.7055,
+       0.696,
+       0.691,
+       0.745
+      ]
+     },
+     "ratio": {
+      "outer": {
+       "n": 1000,
+       "p50": 0.8662,
+       "p95": 1.598,
+       "max": 2.4269
+      },
+      "campaignPerRunOuterP50": [
+       0.8646,
+       0.8646,
+       0.8683,
+       0.8789,
+       0.8683
+      ],
+      "campaignPerRunOuterP95": [
+       1.5854,
+       1.6118,
+       1.5806,
+       1.5489,
+       1.6002
+      ]
+     },
+     "swap": {
+      "outer": {
+       "n": 1000,
+       "p50": 0.6686,
+       "p95": 1.2912,
+       "max": 1.9638
+      },
+      "campaignPerRunOuterP50": [
+       0.6581,
+       0.6591,
+       0.6648,
+       0.6629,
+       0.6645
+      ],
+      "campaignPerRunOuterP95": [
+       1.3031,
+       1.0323,
+       1.3942,
+       1.3932,
+       1.3851
+      ]
+     }
+    }
+   },
+   "repro-n32-instrumented-r0": {
+    "implementationCommit": "96a6857b4acf316e16e7d7f6e802c6f5c7d811c9",
+    "implementationDirty": false,
+    "n": 32,
+    "mode": "instrumented",
+    "run": 0,
+    "unitSeed": 20261018032001,
+    "inactiveDesktops": 3,
+    "pass": true,
+    "load1mAtStart": "4.77",
+    "busyAtStart": [
+     "polkitd:80.2",
+     "tailscaled:30.7",
+     "gdm:21.8",
+     "Isolated Web Co:20.8",
+     "claude:17.8",
+     "systemd:16.8",
+     "NetworkManager:10.9",
+     "plasmashell:4.0"
+    ],
+    "workloads": {
+     "focus": {
+      "outer": {
+       "n": 1000,
+       "p50": 0.7722,
+       "p95": 1.0258,
+       "max": 2.2182
+      },
+      "inner": {
+       "n": 1000,
+       "p50": 0.7264,
+       "p95": 0.9741,
+       "max": 2.1502
+      },
+      "campaignPerRunOuterP50": [
+       0.7388,
+       0.7698,
+       0.7334,
+       0.7587,
+       0.8861
+      ],
+      "campaignPerRunOuterP95": [
+       1.005,
+       1.1214,
+       0.9451,
+       1.0855,
+       1.1443
+      ]
+     },
+     "master": {
+      "outer": {
+       "n": 1000,
+       "p50": 0.8841,
+       "p95": 1.4882,
+       "max": 2.2665
+      },
+      "solve": {
+       "n": 1000,
+       "p50": 0.1812,
+       "p95": 0.2625,
+       "max": 1.2494
+      },
+      "inner": {
+       "n": 1000,
+       "p50": 0.8335,
+       "p95": 1.2187,
+       "max": 2.2037
+      },
+      "solveSlowShare": 0.019,
+      "campaignPerRunOuterP50": [
+       0.8801,
+       0.8711,
+       0.8782,
+       0.8749,
+       0.872
+      ],
+      "campaignPerRunOuterP95": [
+       1.5749,
+       1.5241,
+       1.5226,
+       1.6587,
+       1.5529
+      ]
+     },
+     "noop": {
+      "outer": {
+       "n": 200,
+       "p50": 0.1422,
+       "p95": 0.7556,
+       "max": 1.765
+      },
+      "solve": {
+       "n": 100,
+       "p50": 0.2562,
+       "p95": 0.3672,
+       "max": 1.2773
+      },
+      "inner": {
+       "n": 200,
+       "p50": 0.0694,
+       "p95": 0.6889,
+       "max": 1.722
+      },
+      "solveSlowShare": 0.05,
+      "campaignPerRunOuterP50": [
+       0.5028,
+       0.0985,
+       0.5131,
+       0.5036,
+       0.4984
+      ],
+      "campaignPerRunOuterP95": [
+       0.7315,
+       0.7511,
+       0.7525,
+       0.7127,
+       0.7751
+      ]
+     },
+     "ratio": {
+      "outer": {
+       "n": 1000,
+       "p50": 0.9271,
+       "p95": 1.7238,
+       "max": 2.3201
+      },
+      "solve": {
+       "n": 1000,
+       "p50": 0.1736,
+       "p95": 0.2822,
+       "max": 1.2687
+      },
+      "inner": {
+       "n": 1000,
+       "p50": 0.8758,
+       "p95": 1.6773,
+       "max": 2.2618
+      },
+      "solveSlowShare": 0.038,
+      "campaignPerRunOuterP50": [
+       0.9204,
+       0.9157,
+       0.9043,
+       0.9145,
+       0.927
+      ],
+      "campaignPerRunOuterP95": [
+       1.7631,
+       1.7109,
+       1.6759,
+       1.7096,
+       1.7484
+      ]
+     },
+     "swap": {
+      "outer": {
+       "n": 1000,
+       "p50": 0.72,
+       "p95": 1.4684,
+       "max": 2.0522
+      },
+      "solve": {
+       "n": 1000,
+       "p50": 0.1883,
+       "p95": 0.2958,
+       "max": 1.3821
+      },
+      "inner": {
+       "n": 1000,
+       "p50": 0.6717,
+       "p95": 1.3198,
+       "max": 1.9856
+      },
+      "solveSlowShare": 0.033,
+      "campaignPerRunOuterP50": [
+       0.7155,
+       0.7127,
+       0.6989,
+       0.7067,
+       0.6967
+      ],
+      "campaignPerRunOuterP95": [
+       1.0901,
+       1.0289,
+       1.0377,
+       1.4553,
+       1.0628
+      ]
+     }
+    }
+   },
+   "inact3-n32-instrumented-r1": {
+    "implementationCommit": "96a6857b4acf316e16e7d7f6e802c6f5c7d811c9",
+    "implementationDirty": false,
+    "n": 32,
+    "mode": "instrumented",
+    "run": 1,
+    "unitSeed": 20261018032011,
+    "inactiveDesktops": 3,
+    "pass": true,
+    "load1mAtStart": "4.34",
+    "busyAtStart": [
+     "polkitd:82.0",
+     "tailscaled:29.7",
+     "gdm:20.8",
+     "systemd:17.8",
+     "NetworkManager:9.9",
+     "claude:5.9",
+     "ksystemstats:4.0",
+     "dbus-broker:4.0"
+    ],
+    "workloads": {
+     "focus": {
+      "outer": {
+       "n": 1000,
+       "p50": 0.7249,
+       "p95": 0.9932,
+       "max": 1.9903
+      },
+      "inner": {
+       "n": 1000,
+       "p50": 0.6805,
+       "p95": 0.9431,
+       "max": 1.7824
+      },
+      "campaignPerRunOuterP50": [
+       0.7388,
+       0.7698,
+       0.7334,
+       0.7587,
+       0.8861
+      ],
+      "campaignPerRunOuterP95": [
+       1.005,
+       1.1214,
+       0.9451,
+       1.0855,
+       1.1443
+      ]
+     },
+     "master": {
+      "outer": {
+       "n": 1000,
+       "p50": 0.8743,
+       "p95": 1.4962,
+       "max": 2.2317
+      },
+      "solve": {
+       "n": 1000,
+       "p50": 0.1795,
+       "p95": 0.2707,
+       "max": 1.3064
+      },
+      "inner": {
+       "n": 1000,
+       "p50": 0.8231,
+       "p95": 1.3439,
+       "max": 2.1777
+      },
+      "solveSlowShare": 0.021,
+      "campaignPerRunOuterP50": [
+       0.8801,
+       0.8711,
+       0.8782,
+       0.8749,
+       0.872
+      ],
+      "campaignPerRunOuterP95": [
+       1.5749,
+       1.5241,
+       1.5226,
+       1.6587,
+       1.5529
+      ]
+     },
+     "noop": {
+      "outer": {
+       "n": 200,
+       "p50": 0.5308,
+       "p95": 0.7183,
+       "max": 1.6089
+      },
+      "solve": {
+       "n": 100,
+       "p50": 0.2521,
+       "p95": 0.3354,
+       "max": 1.2556
+      },
+      "inner": {
+       "n": 200,
+       "p50": 0.4948,
+       "p95": 0.6728,
+       "max": 1.5673
+      },
+      "solveSlowShare": 0.03,
+      "campaignPerRunOuterP50": [
+       0.5028,
+       0.0985,
+       0.5131,
+       0.5036,
+       0.4984
+      ],
+      "campaignPerRunOuterP95": [
+       0.7315,
+       0.7511,
+       0.7525,
+       0.7127,
+       0.7751
+      ]
+     },
+     "ratio": {
+      "outer": {
+       "n": 1000,
+       "p50": 0.9023,
+       "p95": 1.6388,
+       "max": 2.6326
+      },
+      "solve": {
+       "n": 1000,
+       "p50": 0.1697,
+       "p95": 0.2994,
+       "max": 1.4047
+      },
+      "inner": {
+       "n": 1000,
+       "p50": 0.8533,
+       "p95": 1.5559,
+       "max": 2.5041
+      },
+      "solveSlowShare": 0.043,
+      "campaignPerRunOuterP50": [
+       0.9204,
+       0.9157,
+       0.9043,
+       0.9145,
+       0.927
+      ],
+      "campaignPerRunOuterP95": [
+       1.7631,
+       1.7109,
+       1.6759,
+       1.7096,
+       1.7484
+      ]
+     },
+     "swap": {
+      "outer": {
+       "n": 1000,
+       "p50": 0.7026,
+       "p95": 1.4797,
+       "max": 1.8684
+      },
+      "solve": {
+       "n": 1000,
+       "p50": 0.1839,
+       "p95": 0.2901,
+       "max": 1.2774
+      },
+      "inner": {
+       "n": 1000,
+       "p50": 0.6566,
+       "p95": 1.3936,
+       "max": 1.8015
+      },
+      "solveSlowShare": 0.028,
+      "campaignPerRunOuterP50": [
+       0.7155,
+       0.7127,
+       0.6989,
+       0.7067,
+       0.6967
+      ],
+      "campaignPerRunOuterP95": [
+       1.0901,
+       1.0289,
+       1.0377,
+       1.4553,
+       1.0628
+      ]
+     }
+    }
+   },
+   "inact0-n32-instrumented-r0": {
+    "implementationCommit": "96a6857b4acf316e16e7d7f6e802c6f5c7d811c9",
+    "implementationDirty": false,
+    "n": 32,
+    "mode": "instrumented",
+    "run": 0,
+    "unitSeed": 20261018032001,
+    "inactiveDesktops": 0,
+    "pass": true,
+    "load1mAtStart": "3.97",
+    "busyAtStart": [
+     "polkitd:79.0",
+     "tailscaled:30.6",
+     "gdm:21.7",
+     "systemd:17.8",
+     "NetworkManager:10.9",
+     "Isolated Web Co:5.9",
+     "dbus-broker:4.9",
+     "plasmashell:3.0"
+    ],
+    "workloads": {
+     "focus": {
+      "outer": {
+       "n": 1000,
+       "p50": 0.7219,
+       "p95": 0.9023,
+       "max": 1.6994
+      },
+      "inner": {
+       "n": 1000,
+       "p50": 0.6794,
+       "p95": 0.842,
+       "max": 1.6591
+      }
+     },
+     "master": {
+      "outer": {
+       "n": 1000,
+       "p50": 0.8737,
+       "p95": 1.3992,
+       "max": 1.9156
+      },
+      "solve": {
+       "n": 1000,
+       "p50": 0.1815,
+       "p95": 0.2739,
+       "max": 1.1109
+      },
+      "inner": {
+       "n": 1000,
+       "p50": 0.8251,
+       "p95": 1.3346,
+       "max": 1.8675
+      },
+      "solveSlowShare": 0.022
+     },
+     "noop": {
+      "outer": {
+       "n": 200,
+       "p50": 0.1124,
+       "p95": 0.7705,
+       "max": 1.5696
+      },
+      "solve": {
+       "n": 100,
+       "p50": 0.2563,
+       "p95": 0.3748,
+       "max": 1.1793
+      },
+      "inner": {
+       "n": 200,
+       "p50": 0.0567,
+       "p95": 0.7061,
+       "max": 1.5215
+      },
+      "solveSlowShare": 0.04
+     },
+     "ratio": {
+      "outer": {
+       "n": 1000,
+       "p50": 0.9154,
+       "p95": 1.7043,
+       "max": 2.1896
+      },
+      "solve": {
+       "n": 1000,
+       "p50": 0.1721,
+       "p95": 0.3142,
+       "max": 1.2486
+      },
+      "inner": {
+       "n": 1000,
+       "p50": 0.8654,
+       "p95": 1.6475,
+       "max": 2.1335
+      },
+      "solveSlowShare": 0.049
+     },
+     "swap": {
+      "outer": {
+       "n": 1000,
+       "p50": 0.7191,
+       "p95": 1.4107,
+       "max": 2.2038
+      },
+      "solve": {
+       "n": 1000,
+       "p50": 0.1897,
+       "p95": 0.2862,
+       "max": 1.4537
+      },
+      "inner": {
+       "n": 1000,
+       "p50": 0.6734,
+       "p95": 1.3338,
+       "max": 2.1428
+      },
+      "solveSlowShare": 0.032
+     }
+    }
+   },
+   "inact0-n32-instrumented-r1": {
+    "implementationCommit": "96a6857b4acf316e16e7d7f6e802c6f5c7d811c9",
+    "implementationDirty": false,
+    "n": 32,
+    "mode": "instrumented",
+    "run": 1,
+    "unitSeed": 20261018032011,
+    "inactiveDesktops": 0,
+    "pass": true,
+    "load1mAtStart": "3.52",
+    "busyAtStart": [
+     "polkitd:80.0",
+     "tailscaled:30.6",
+     "gdm:19.8",
+     "systemd:17.8",
+     "NetworkManager:10.9",
+     "dbus-broker:4.9",
+     "ksystemstats:4.0",
+     "kded6:4.0"
+    ],
+    "workloads": {
+     "focus": {
+      "outer": {
+       "n": 1000,
+       "p50": 0.7252,
+       "p95": 1.0337,
+       "max": 1.8208
+      },
+      "inner": {
+       "n": 1000,
+       "p50": 0.6827,
+       "p95": 0.9851,
+       "max": 1.7799
+      }
+     },
+     "master": {
+      "outer": {
+       "n": 1000,
+       "p50": 0.857,
+       "p95": 1.3957,
+       "max": 2.3674
+      },
+      "solve": {
+       "n": 1000,
+       "p50": 0.1786,
+       "p95": 0.26,
+       "max": 1.2435
+      },
+      "inner": {
+       "n": 1000,
+       "p50": 0.8066,
+       "p95": 1.3311,
+       "max": 2.3053
+      },
+      "solveSlowShare": 0.012
+     },
+     "noop": {
+      "outer": {
+       "n": 200,
+       "p50": 0.1334,
+       "p95": 0.7313,
+       "max": 1.4325
+      },
+      "solve": {
+       "n": 100,
+       "p50": 0.2515,
+       "p95": 0.3476,
+       "max": 0.4148
+      },
+      "inner": {
+       "n": 200,
+       "p50": 0.0669,
+       "p95": 0.6834,
+       "max": 1.3893
+      },
+      "solveSlowShare": 0.0
+     },
+     "ratio": {
+      "outer": {
+       "n": 1000,
+       "p50": 0.8957,
+       "p95": 1.5273,
+       "max": 2.6505
+      },
+      "solve": {
+       "n": 1000,
+       "p50": 0.1686,
+       "p95": 0.2532,
+       "max": 1.4632
+      },
+      "inner": {
+       "n": 1000,
+       "p50": 0.8445,
+       "p95": 1.4797,
+       "max": 2.5859
+      },
+      "solveSlowShare": 0.011
+     },
+     "swap": {
+      "outer": {
+       "n": 1000,
+       "p50": 0.7001,
+       "p95": 0.9716,
+       "max": 1.8626
+      },
+      "solve": {
+       "n": 1000,
+       "p50": 0.1834,
+       "p95": 0.2732,
+       "max": 1.1456
+      },
+      "inner": {
+       "n": 1000,
+       "p50": 0.654,
+       "p95": 0.9173,
+       "max": 1.8136
+      },
+      "solveSlowShare": 0.007
+     }
+    }
+   }
+  },
+  "rawSamples": {
+   "path": "g2-review-reruns.csv.xz",
+   "rows": 21500,
+   "columns": [
+    "unit",
+    "runId",
+    "implementationCommit",
+    "workload",
+    "cmd",
+    "block",
+    "k",
+    "warmup",
+    "outerNs",
+    "innerNs",
+    "solveNs",
+    "applyNs",
+    "activateNs",
+    "solves",
+    "geometryWrites",
+    "expectedWrites",
+    "configureCount",
+    "sendToDispatchNs",
+    "requestToFirstConfigureNs",
+    "requestToLastCommitNs",
+    "requestToVirtualPresentNs",
+    "success",
+    "failureReason"
+   ],
+   "times": "ns; request* relative to the last request"
+  }
+ },
+ "abB60e618Workload": {
+  "note": "b60e618's probes/perf/run.py workload (300 ratio, then 300 swap, then 300 focus; no inactive desktops; seed 1; output height (n-1)*186+32) run alternately on the b60e618 tree (its own measurement root, harness and fixture; bundle 134 KB) and on this tree at 96a6857 (current measurement root with the persistence store; bundle 314 KB), 3 runs each, 17:00-17:05 on 2026-10-18, instrumented (both trees print per-command perf lines). The b60e618 summaries record no commit: that tree was an extracted snapshot, not a checkout. 300 samples per workload: p99 is not used.",
+  "old": {
+   "old-20261018T170013": {
+    "implementationCommit": null,
+    "counts": {
+     "2": {
+      "ratio": {
+       "dispatchToReturnP50Ms": 0.2095,
+       "dispatchToReturnP95Ms": 0.3365,
+       "solveP50Ms": 0.0418,
+       "solveP95Ms": 0.0648,
+       "samples": 300
+      },
+      "swap": {
+       "dispatchToReturnP50Ms": 0.1889,
+       "dispatchToReturnP95Ms": 0.2515,
+       "solveP50Ms": 0.0454,
+       "solveP95Ms": 0.0673,
+       "samples": 300
+      },
+      "focus": {
+       "dispatchToReturnP50Ms": 0.161,
+       "dispatchToReturnP95Ms": 1.769,
+       "solveP50Ms": null,
+       "solveP95Ms": null,
+       "samples": 300
+      }
+     },
+     "32": {
+      "ratio": {
+       "dispatchToReturnP50Ms": 0.7674,
+       "dispatchToReturnP95Ms": 1.3421,
+       "solveP50Ms": 0.1575,
+       "solveP95Ms": 0.2465,
+       "samples": 300
+      },
+      "swap": {
+       "dispatchToReturnP50Ms": 0.5377,
+       "dispatchToReturnP95Ms": 0.8115,
+       "solveP50Ms": 0.1646,
+       "solveP95Ms": 0.2484,
+       "samples": 300
+      },
+      "focus": {
+       "dispatchToReturnP50Ms": 0.6419,
+       "dispatchToReturnP95Ms": 0.7483,
+       "solveP50Ms": null,
+       "solveP95Ms": null,
+       "samples": 300
+      }
+     }
+    }
+   },
+   "old-20261018T170146": {
+    "implementationCommit": null,
+    "counts": {
+     "2": {
+      "ratio": {
+       "dispatchToReturnP50Ms": 0.2158,
+       "dispatchToReturnP95Ms": 0.3451,
+       "solveP50Ms": 0.0412,
+       "solveP95Ms": 0.07,
+       "samples": 300
+      },
+      "swap": {
+       "dispatchToReturnP50Ms": 0.192,
+       "dispatchToReturnP95Ms": 0.2575,
+       "solveP50Ms": 0.0454,
+       "solveP95Ms": 0.0675,
+       "samples": 300
+      },
+      "focus": {
+       "dispatchToReturnP50Ms": 0.1613,
+       "dispatchToReturnP95Ms": 1.8049,
+       "solveP50Ms": null,
+       "solveP95Ms": null,
+       "samples": 300
+      }
+     },
+     "32": {
+      "ratio": {
+       "dispatchToReturnP50Ms": 0.7586,
+       "dispatchToReturnP95Ms": 1.3515,
+       "solveP50Ms": 0.1572,
+       "solveP95Ms": 0.253,
+       "samples": 300
+      },
+      "swap": {
+       "dispatchToReturnP50Ms": 0.5561,
+       "dispatchToReturnP95Ms": 0.8815,
+       "solveP50Ms": 0.165,
+       "solveP95Ms": 0.2605,
+       "samples": 300
+      },
+      "focus": {
+       "dispatchToReturnP50Ms": 0.9617,
+       "dispatchToReturnP95Ms": 1.1406,
+       "solveP50Ms": null,
+       "solveP95Ms": null,
+       "samples": 300
+      }
+     }
+    }
+   },
+   "old-20261018T170318": {
+    "implementationCommit": null,
+    "counts": {
+     "2": {
+      "ratio": {
+       "dispatchToReturnP50Ms": 0.2175,
+       "dispatchToReturnP95Ms": 0.2938,
+       "solveP50Ms": 0.0406,
+       "solveP95Ms": 0.065,
+       "samples": 300
+      },
+      "swap": {
+       "dispatchToReturnP50Ms": 0.1934,
+       "dispatchToReturnP95Ms": 0.2651,
+       "solveP50Ms": 0.0455,
+       "solveP95Ms": 0.0694,
+       "samples": 300
+      },
+      "focus": {
+       "dispatchToReturnP50Ms": 0.169,
+       "dispatchToReturnP95Ms": 1.7709,
+       "solveP50Ms": null,
+       "solveP95Ms": null,
+       "samples": 300
+      }
+     },
+     "32": {
+      "ratio": {
+       "dispatchToReturnP50Ms": 0.77,
+       "dispatchToReturnP95Ms": 1.3396,
+       "solveP50Ms": 0.159,
+       "solveP95Ms": 0.2393,
+       "samples": 300
+      },
+      "swap": {
+       "dispatchToReturnP50Ms": 0.574,
+       "dispatchToReturnP95Ms": 0.817,
+       "solveP50Ms": 0.1726,
+       "solveP95Ms": 0.255,
+       "samples": 300
+      },
+      "focus": {
+       "dispatchToReturnP50Ms": 1.0392,
+       "dispatchToReturnP95Ms": 1.2544,
+       "solveP50Ms": null,
+       "solveP95Ms": null,
+       "samples": 300
+      }
+     }
+    }
+   }
+  },
+  "new": {
+   "new-20261018T170100": {
+    "implementationCommit": "96a6857b4acf316e16e7d7f6e802c6f5c7d811c9",
+    "counts": {
+     "2": {
+      "ratio": {
+       "dispatchToReturnP50Ms": 0.2267,
+       "dispatchToReturnP95Ms": 0.3628,
+       "solveP50Ms": 0.0424,
+       "solveP95Ms": 0.0717,
+       "samples": 300
+      },
+      "swap": {
+       "dispatchToReturnP50Ms": 0.2083,
+       "dispatchToReturnP95Ms": 0.2777,
+       "solveP50Ms": 0.0474,
+       "solveP95Ms": 0.0696,
+       "samples": 300
+      },
+      "focus": {
+       "dispatchToReturnP50Ms": 0.1642,
+       "dispatchToReturnP95Ms": 1.7585,
+       "solveP50Ms": null,
+       "solveP95Ms": null,
+       "samples": 300
+      }
+     },
+     "32": {
+      "ratio": {
+       "dispatchToReturnP50Ms": 0.8586,
+       "dispatchToReturnP95Ms": 1.6574,
+       "solveP50Ms": 0.1694,
+       "solveP95Ms": 0.3104,
+       "samples": 300
+      },
+      "swap": {
+       "dispatchToReturnP50Ms": 0.6397,
+       "dispatchToReturnP95Ms": 1.4271,
+       "solveP50Ms": 0.1866,
+       "solveP95Ms": 0.3024,
+       "samples": 300
+      },
+      "focus": {
+       "dispatchToReturnP50Ms": 0.9671,
+       "dispatchToReturnP95Ms": 1.2338,
+       "solveP50Ms": null,
+       "solveP95Ms": null,
+       "samples": 300
+      }
+     }
+    }
+   },
+   "new-20261018T170232": {
+    "implementationCommit": "96a6857b4acf316e16e7d7f6e802c6f5c7d811c9",
+    "counts": {
+     "2": {
+      "ratio": {
+       "dispatchToReturnP50Ms": 0.2401,
+       "dispatchToReturnP95Ms": 0.348,
+       "solveP50Ms": 0.0444,
+       "solveP95Ms": 0.0722,
+       "samples": 300
+      },
+      "swap": {
+       "dispatchToReturnP50Ms": 0.2168,
+       "dispatchToReturnP95Ms": 0.3016,
+       "solveP50Ms": 0.0486,
+       "solveP95Ms": 0.0749,
+       "samples": 300
+      },
+      "focus": {
+       "dispatchToReturnP50Ms": 0.1742,
+       "dispatchToReturnP95Ms": 1.8009,
+       "solveP50Ms": null,
+       "solveP95Ms": null,
+       "samples": 300
+      }
+     },
+     "32": {
+      "ratio": {
+       "dispatchToReturnP50Ms": 0.8483,
+       "dispatchToReturnP95Ms": 1.6467,
+       "solveP50Ms": 0.171,
+       "solveP95Ms": 0.2859,
+       "samples": 300
+      },
+      "swap": {
+       "dispatchToReturnP50Ms": 0.6237,
+       "dispatchToReturnP95Ms": 1.4427,
+       "solveP50Ms": 0.183,
+       "solveP95Ms": 0.2678,
+       "samples": 300
+      },
+      "focus": {
+       "dispatchToReturnP50Ms": 0.6661,
+       "dispatchToReturnP95Ms": 0.8348,
+       "solveP50Ms": null,
+       "solveP95Ms": null,
+       "samples": 300
+      }
+     }
+    }
+   },
+   "new-20261018T170405": {
+    "implementationCommit": "96a6857b4acf316e16e7d7f6e802c6f5c7d811c9",
+    "counts": {
+     "2": {
+      "ratio": {
+       "dispatchToReturnP50Ms": 0.2314,
+       "dispatchToReturnP95Ms": 0.3361,
+       "solveP50Ms": 0.0425,
+       "solveP95Ms": 0.0688,
+       "samples": 300
+      },
+      "swap": {
+       "dispatchToReturnP50Ms": 0.215,
+       "dispatchToReturnP95Ms": 0.2796,
+       "solveP50Ms": 0.0487,
+       "solveP95Ms": 0.0721,
+       "samples": 300
+      },
+      "focus": {
+       "dispatchToReturnP50Ms": 0.1683,
+       "dispatchToReturnP95Ms": 1.8138,
+       "solveP50Ms": null,
+       "solveP95Ms": null,
+       "samples": 300
+      }
+     },
+     "32": {
+      "ratio": {
+       "dispatchToReturnP50Ms": 0.8561,
+       "dispatchToReturnP95Ms": 1.7488,
+       "solveP50Ms": 0.1681,
+       "solveP95Ms": 0.3007,
+       "samples": 300
+      },
+      "swap": {
+       "dispatchToReturnP50Ms": 0.6524,
+       "dispatchToReturnP95Ms": 1.4101,
+       "solveP50Ms": 0.1859,
+       "solveP95Ms": 0.3145,
+       "samples": 300
+      },
+      "focus": {
+       "dispatchToReturnP50Ms": 0.9495,
+       "dispatchToReturnP95Ms": 1.1346,
+       "solveP50Ms": null,
+       "solveP95Ms": null,
+       "samples": 300
+      }
+     }
+    }
+   }
+  }
+ },
+ "p04Rerun": {
+  "provenance": "node probes/perf/pure.ts --samples 5000 at 96a6857 (src and probes/perf/pure.ts identical to 329f7d3); no changes in the tracked paths at the time",
+  "label": "Node V8 with a mock host; not QV4, not KWin",
+  "node": "v26.11.1",
+  "samples": 5000,
+  "cells": {
+   "n32/ratio": {
+    "executeP50Ms": {
+     "committed": 0.0214,
+     "rerun": 0.0213
+    },
+    "executeP95Ms": {
+     "committed": 0.0678,
+     "rerun": 0.0624
+    }
+   },
+   "n32/swap": {
+    "executeP50Ms": {
+     "committed": 0.0133,
+     "rerun": 0.0134
+    },
+    "executeP95Ms": {
+     "committed": 0.0255,
+     "rerun": 0.0272
+    }
+   },
+   "n32/layout": {
+    "executeP50Ms": {
+     "committed": 0.0185,
+     "rerun": 0.0181
+    },
+    "executeP95Ms": {
+     "committed": 0.036,
+     "rerun": 0.0345
+    }
+   },
+   "n32/focus": {
+    "executeP50Ms": {
+     "committed": 0.0027,
+     "rerun": 0.0027
+    },
+    "executeP95Ms": {
+     "committed": 0.0055,
+     "rerun": 0.0056
+    }
+   },
+   "n100/ratio": {
+    "executeP50Ms": {
+     "committed": 0.0614,
+     "rerun": 0.0587
+    },
+    "executeP95Ms": {
+     "committed": 0.0995,
+     "rerun": 0.0872
+    }
+   },
+   "n100/swap": {
+    "executeP50Ms": {
+     "committed": 0.035,
+     "rerun": 0.0338
+    },
+    "executeP95Ms": {
+     "committed": 0.0567,
+     "rerun": 0.0587
+    }
+   },
+   "n100/layout": {
+    "executeP50Ms": {
+     "committed": 0.0633,
+     "rerun": 0.0654
+    },
+    "executeP95Ms": {
+     "committed": 0.0954,
+     "rerun": 0.1029
+    }
+   },
+   "n100/focus": {
+    "executeP50Ms": {
+     "committed": 0.0064,
+     "rerun": 0.0066
+    },
+    "executeP95Ms": {
+     "committed": 0.0116,
+     "rerun": 0.0131
+    }
+   },
+   "n250/ratio": {
+    "executeP50Ms": {
+     "committed": 0.1492,
+     "rerun": 0.1507
+    },
+    "executeP95Ms": {
+     "committed": 0.2126,
+     "rerun": 0.2311
+    }
+   },
+   "n250/swap": {
+    "executeP50Ms": {
+     "committed": 0.084,
+     "rerun": 0.0795
+    },
+    "executeP95Ms": {
+     "committed": 0.1315,
+     "rerun": 0.1145
+    }
+   },
+   "n250/layout": {
+    "executeP50Ms": {
+     "committed": 0.1852,
+     "rerun": 0.185
+    },
+    "executeP95Ms": {
+     "committed": 0.2667,
+     "rerun": 0.2663
+    }
+   },
+   "n250/focus": {
+    "executeP50Ms": {
+     "committed": 0.0143,
+     "rerun": 0.0134
+    },
+    "executeP95Ms": {
+     "committed": 0.0266,
+     "rerun": 0.0185
+    }
+   }
+  }
+ }
+}

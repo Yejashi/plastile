@@ -2,7 +2,7 @@
 
 ## 1. Evidence status
 
-No runtime performance experiment was executed during the planning research. Every numerical budget in this document is a **proposed engineering acceptance target**, not a claim about Plastile or an upstream project. M0/M1 must calibrate the reference machine and measurement resolution. Record an explicit revision if targets change; do not relax them silently after a failure.
+No runtime performance experiment was executed during the planning research. Every numerical budget in this document is a **proposed engineering acceptance target**, not a claim about Plastile or an upstream project. M0/M1 must calibrate the reference machine and measurement resolution. Record an explicit revision if targets change; do not relax them silently after a failure. Nested measurements against these budgets (the G2 gate, nested only) are in the [G2 report](../status/G2_REPORT.md); the budgets themselves are unchanged.
 
 The objective is low, stable input-to-visible-response latency while preserving correctness. Report engine time, scheduling delay, request/observation latency, frame pacing, and resource use separately. A fast solver cannot compensate for a fixed settle delay or repeated client resize requests.
 
