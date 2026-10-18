@@ -1,0 +1,70 @@
+{
+ "experiment": "WorkerScript file writes from a KWin declarative script",
+ "layer": "nested KWin virtual backend (not physical)",
+ "measuredAt": "2026-10-18T08:54:48",
+ "kwin": "kwin 6.7.5",
+ "events": [
+  {
+   "phase": "main",
+   "xhr": "function",
+   "offlineStoragePath": "n/a"
+  },
+  {
+   "phase": "posted",
+   "worker": "mjs",
+   "sendMs": 1
+  },
+  {
+   "phase": "posted",
+   "worker": "js",
+   "sendMs": 1
+  },
+  {
+   "worker": "mjs",
+   "phase": "caps",
+   "xhr": "function",
+   "qt": "object",
+   "localStorage": "undefined"
+  },
+  {
+   "worker": "mjs",
+   "phase": "xhr-put",
+   "ok": false,
+   "error": "Error: Invalid state"
+  },
+  {
+   "worker": "js",
+   "phase": "caps",
+   "xhr": "function",
+   "sql": "undefined",
+   "openDb": "undefined"
+  },
+  {
+   "worker": "js",
+   "phase": "sql",
+   "ok": false,
+   "error": "TypeError: Cannot read property 'LocalStorage' of undefined"
+  },
+  {
+   "worker": "js",
+   "phase": "xhr-put",
+   "ok": false,
+   "error": "Error: Invalid state"
+  },
+  {
+   "worker": "js",
+   "phase": "busy-done",
+   "startedAt": 1792328079042,
+   "ms": 1500
+  },
+  {
+   "phase": "main",
+   "worstTickGapMs": 6,
+   "ticks": 1199
+  }
+ ],
+ "errors": [
+  "qml PLT worker {\"worker\":\"js\",\"phase\":\"sql\",\"ok\":false,\"error\":\"TypeError: Cannot read property 'LocalStorage' of undefined\"}"
+ ],
+ "filesWritten": []
+}

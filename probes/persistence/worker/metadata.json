@@ -1,0 +1,6 @@
+{
+  "KPackageStructure": "KWin/Script",
+  "KPlugin": { "Id": "plastileworkerprobe", "Name": "Plastile WorkerScript probe", "Version": "0" },
+  "X-Plasma-API": "declarativescript",
+  "X-Plasma-MainScript": "ui/main.qml"
+}
