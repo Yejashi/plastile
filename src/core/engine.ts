@@ -1377,6 +1377,8 @@ export class Engine {
     if (r.mode !== "tiled") { this.restoreBorder(r); return; }
     const cur = this.host.noBorder(r.id, r.gen);
     if (cur === null || cur === noBorder) return;
+    // Changed by the user since Plastile applied it: yield, as restoreBorder does (Q10).
+    if (r.border && cur !== r.border.applied) return;
     if (!r.border) r.border = { original: cur, applied: noBorder };
     if (this.host.setNoBorder(r.id, r.gen, noBorder)) r.border.applied = noBorder;
   }

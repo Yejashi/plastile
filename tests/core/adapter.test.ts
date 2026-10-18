@@ -342,6 +342,25 @@ test("fullscreen (KWin reports not resizable, drops the decoration) keeps the wi
   rt.shutdown();
 });
 
+test("a user's border change under a border rule survives the constraint refresh it causes (Q10)", () => {
+  const cfg = { configJson: JSON.stringify({ schemaVersion: 1, rules: [{ id: "nb", match: { appId: { glob: "app*" } }, actions: { border: "none" } }] }) };
+  const { ws, qt, wins, rt } = setup(1, 3, cfg);
+  const w2 = wins[1];
+  assert.ok(wins.every((w) => w.noBorder === true), "the rule removed every border");
+  w2.minSize = { width: 150, height: 150 }; // a minimum makes the margin part of the constraints
+  w2.maximizeableChanged.emit(true);
+  qt.drain();
+  w2.noBorder = false; // the user restores the border: decoration signals, then a margin refresh
+  qt.drain();
+  ws.activeWindow = wins[0];
+  rt.dispatch("plastile.resize.grow");
+  qt.drain();
+  assert.equal(w2.noBorder, false, "Plastile yields to the user's change");
+  assertTiles(wins, FULL);
+  rt.shutdown();
+  assert.equal(w2.noBorder, false, "unload does not clobber it either");
+});
+
 test("a client answering a request with another size gets its constraints re-read once (no deadline needed)", () => {
   const { ws, qt, wins, rt } = setup(1, 2);
   const [w1, w2] = wins;
