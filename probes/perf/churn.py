@@ -8,7 +8,8 @@ Plastile's counters are used only for work-amount and consistency checks.
 
 Modes:
   p14      100 reload cycles with 4 fixtures (one delaying configures by 200 ms), a
-           pending resize.grow before each unload and one open/close per cycle.
+           pending resize.grow or resize.shrink (alternating) before each unload and one
+           open/close per cycle.
            Per cycle: counters.connections, windows, KWin RSS, kglobalaccel names.
   control  the same cycles with the empty declarative script
            (probes/lifecycle/empty-package) and the same open/close churn; it
@@ -136,7 +137,10 @@ def run_p14(out: Path, cycles: int) -> dict:
         for i in range(cycles):
             off = s.kw.mark()
             s.act("plastile-fixture 1", "workspace.activeWindow = w")
-            s.cmd("resize.grow")               # pending work: fixture 4 answers configures 200 ms late
+            # Pending work: fixture 4 answers configures 200 ms late. The ratio is saved across reloads (T27),
+            # so the commands alternate: 100 grows in a row reach the ratio limit after a few cycles, and a
+            # clamped grow is a no-op that leaves nothing pending (measured: 7 of 100 cycles had work pending).
+            s.cmd("resize.grow" if i % 2 == 0 else "resize.shrink")
             # Evidence that work is really pending at unload (one counters round trip, well under 200 ms
             # on an idle machine; recorded per cycle, not assumed).
             pend = s.counters()["outstanding"]
@@ -179,7 +183,7 @@ def run_p14(out: Path, cycles: int) -> dict:
     half = len(rss) // 2
     summary = {
         "probe": "P14", "cycles": cycles, "fixtures": 4, "delayedFixtureMs": 200, "openCloseEachCycle": True,
-        "pendingAtUnload": "resize.grow with one 200 ms-delayed client",
+        "pendingAtUnload": "resize.grow / resize.shrink alternating, with one 200 ms-delayed client",
         "cyclesWithOutstandingAtUnload": sum(1 for r in recs if r["outstandingAtUnload"] > 0),
         "maxOutstandingAtUnload": max((r["outstandingAtUnload"] for r in recs), default=0),
         "connections": {"baseline": base["connections"], "min": min(r["connections"] for r in recs),
