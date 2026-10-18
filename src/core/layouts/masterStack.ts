@@ -152,13 +152,13 @@ export const masterStack: Layout<MasterStackState> = {
         const next = clampRatio(state.ratio + cmd.delta);
         if (next === state.ratio) return { state, changed: false, reason: "ratio at limit" };
         const nextState = { ratio: next, masterCount: state.masterCount, weights: state.weights };
-        if (input.ids.length > state.masterCount && state.masterCount > 0) {
-          // Feasibility: if minima pin the boundary, the step would change nothing visible.
-          const before = attempt(state, input.ids, input);
-          const after = attempt(nextState, input.ids, input);
-          if (before.failure === null && after.failure === null && sameSlots(before.slots, after.slots)) {
-            return { state, changed: false, reason: "ratio clamped by minimum sizes" };
-          }
+        // Feasibility without solving: column minima bound the achievable ratio. If both
+        // the current and the next ratio clamp to the same boundary, nothing would move.
+        const range = feasibleRatio(state, input);
+        if (range !== null) {
+          const now = Math.min(range.hi, Math.max(range.lo, state.ratio));
+          const then = Math.min(range.hi, Math.max(range.lo, next));
+          if (Math.abs(then - now) * range.usable < 0.5) return { state, changed: false, reason: "ratio clamped by minimum sizes" };
         }
         return { state: nextState, changed: true };
       }
@@ -179,13 +179,19 @@ export const masterStack: Layout<MasterStackState> = {
   },
 };
 
-function sameSlots(a: Map<WindowId, Rect>, b: Map<WindowId, Rect>): boolean {
-  if (a.size !== b.size) return false;
-  for (const [id, r] of a) {
-    const s = b.get(id);
-    if (!s || s.x !== r.x || s.y !== r.y || s.width !== r.width || s.height !== r.height) return false;
+/** Achievable master ratio interval from column minimum widths; null without two columns. */
+function feasibleRatio(state: MasterStackState, input: SolveInput): { lo: number; hi: number; usable: number } | null {
+  const ids = input.ids;
+  const m = Math.max(0, Math.min(state.masterCount, ids.length));
+  if (m === 0 || m >= ids.length) return null;
+  const usable = outerArea(input, ids.length).width - input.settings.gaps.inner;
+  if (usable <= 0) return null;
+  let minMaster = 1, minStack = 1;
+  for (let i = 0; i < ids.length; ++i) {
+    const w = Math.max(1, minOf(input.constraints, ids[i]).width);
+    if (i < m) minMaster = Math.max(minMaster, w); else minStack = Math.max(minStack, w);
   }
-  return true;
+  return { lo: minMaster / usable, hi: 1 - minStack / usable, usable };
 }
 
 /** Convert an accepted boundary movement (pixels) into ratio/weight changes. */

@@ -21,6 +21,9 @@ export interface RuntimeEnv {
   setDeadline(ms: number): void;
   clearDeadline(): void;
   print(line: string): void;
+  /** Measurement builds only (probes/perf): CLOCK_MONOTONIC ns and per-command timing logs. */
+  readonly clockNs?: () => number;
+  readonly perf?: boolean;
 }
 
 type Level = "error" | "warn" | "info" | "debug";
@@ -101,6 +104,7 @@ export function createRuntime(env: RuntimeEnv): Runtime {
       return { mode: r.actions.mode, border: r.actions.border, insert: r.actions.insert, ruleIds: r.ruleIds };
     },
     titleRules: snap.usesTitleRules,
+    clockNs: env.clockNs,
     traceCapacity: snap.traceCapacity,
     traceEnabled: snap.diagnostics !== "off",
   });
@@ -144,7 +148,16 @@ export function createRuntime(env: RuntimeEnv): Runtime {
       return null;
     }
     if (id === "plastile.runtime.reload-config") { onConfig(); return null; }
+    const clock = env.perf ? env.clockNs : undefined;
+    const t0 = clock ? clock() : 0;
+    engine.lastTiming = null;
+    engine.lastActivateNs = null;
     const r = engine.execute(id);
+    if (clock) {
+      // Dispatch-to-last-request: execute() returns after every frame request was issued.
+      env.print("plastile perf " + safeJson({ id, status: r.status, dispatchToReturnNs: clock() - t0, entryNs: t0,
+        timing: engine.lastTiming, activateNs: engine.lastActivateNs, writes: r.requested }));
+    }
     log("debug", "command", r);
     return r;
   };

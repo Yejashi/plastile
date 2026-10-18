@@ -54,6 +54,16 @@ export interface EngineOptions {
   readinessMs?: number;
   traceCapacity?: number;
   traceEnabled?: boolean;
+  /** Optional high-resolution clock (ns) for measurement builds; never required. */
+  clockNs?: () => number;
+}
+
+/** Timing of the most recent solve+apply (only when a clockNs is supplied). */
+export interface SolveTiming {
+  readonly windows: number;
+  readonly solveNs: number;
+  readonly applyNs: number;
+  readonly writes: number;
 }
 
 interface Rec {
@@ -116,6 +126,10 @@ export class Engine {
   private deadlineAt = Infinity;
   private seq = 0;
   private insertSeq = 0;
+  /** Last solve timing; null unless EngineOptions.clockNs is set. */
+  lastTiming: SolveTiming | null = null;
+  /** Duration of the last host activation call (KWin's own focus work), when measured. */
+  lastActivateNs: number | null = null;
   private revision = 0;
   private alive = true;
   private suspended = false;
@@ -624,11 +638,15 @@ export class Engine {
       this.trace.record(this.svc.now(), "area-invalid", c.id);
       return;
     }
+    const clock = this.opts.clockNs;
+    const t0 = clock ? clock() : 0;
     const kind = this.layoutKind(c);
     const lay = LAYOUTS[kind];
     const input = this.solveInput(c, area);
     const state = this.layoutState(c, kind);
     const res = lay.solve(state, input);
+    const t1 = clock ? clock() : 0;
+    const writes0 = this.counters.writes;
     this.counters.solves++;
     this.trace.record(this.svc.now(), "solve", c.id, { kind, n: input.ids.length, notes: res.notes.length });
     for (const id of res.overflow) {
@@ -654,6 +672,8 @@ export class Engine {
     } finally {
       this.applying--;
     }
+    if (clock) this.lastTiming = { windows: input.ids.length, solveNs: t1 - t0, applyNs: clock() - t1,
+                                   writes: this.counters.writes - writes0 };
   }
 
   private applyTarget(r: Rec, target: Rect): void {
@@ -1011,7 +1031,10 @@ export class Engine {
   }
 
   private activate(r: Rec): void {
+    const clock = this.opts.clockNs;
+    const t0 = clock ? clock() : 0;
     if (this.host.activate(r.id, r.gen)) this.counters.activations++;
+    if (clock) this.lastActivateNs = clock() - t0;
   }
 
   private focusCommand(c: Ctx, r: Rec | null, action: string): { status: CommandStatus; reason?: string; targets: string[] } {
