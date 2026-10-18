@@ -735,6 +735,35 @@ test("C12: in monocle a focus change selects and raises once, with no deferred s
   assert.deepEqual(h.raises.slice(raises), ["b"], "no extra raise");
 });
 
+test("C08: an exception while solving one context does not drop the other dirty contexts", () => {
+  const h = new MockHost();
+  h.outs.push({ id: "O2", name: "O2", geometry: rect(1280, 0, 1280, 800), scale: 1 });
+  h.visible.set("O2", "D1");
+  const e = h.start();
+  const onO2 = { membership: { output: "O2", desktops: ["D1"], onAllDesktops: false, activities: [] } };
+  h.open("a");
+  h.open("b", onO2);
+  h.drain();
+  const orig = h.workArea.bind(h);
+  let failures = 1;
+  h.workArea = (o, d) => { if (o === "O1" && failures > 0) { failures--; throw new Error("boom"); } return orig(o, d); };
+  h.open("a2");
+  h.open("b2", onO2);
+  h.drain();
+  assert.ok(e.counters.errors >= 1);
+  assertTiling(tiledFrames(h, ["b", "b2"]), rect(1280, 0, 1280, 800));
+  assert.ok(h.windows.get("b2")!.frame.x > 1280 + 600, "the healthy context was placed");
+  assertTiling(tiledFrames(h, ["a", "a2"]), AREA);
+  assert.ok(h.windows.get("a2")!.frame.x > 600, "the failed context was retried once");
+  // A context that keeps failing is retried a bounded number of times, then left alone.
+  failures = Infinity;
+  const flushes = e.counters.flushes;
+  h.open("a3");
+  h.drain();
+  assert.ok(e.counters.flushes - flushes <= 3, `bounded retries (${e.counters.flushes - flushes} flushes)`);
+  h.workArea = orig;
+});
+
 function onActivities(activities: string[]) {
   return { membership: { output: "O1", desktops: ["D1"], onAllDesktops: false, activities } };
 }

@@ -115,6 +115,8 @@ interface Ctx {
   applied: number;
   plan: Map<WindowId, Rect>;
   settings: ContextSettings | null;
+  /** Consecutive failed solves (bounded retry). */
+  failures: number;
 }
 
 export class Engine {
@@ -557,7 +559,7 @@ export class Engine {
     let c = this.contexts.get(id);
     if (!c) {
       c = { key, id, members: [], layoutOverride: null, states: {}, focus: [], revision: 0, applied: -1,
-            plan: new Map(), settings: null };
+            plan: new Map(), settings: null, failures: 0 };
       this.contexts.set(id, c);
     }
     return c;
@@ -672,7 +674,7 @@ export class Engine {
         this.endedInteractions.clear();
         for (const [id, kind] of ended) {
           const r = this.recs.get(id);
-          if (r && r.states.interactive === "none") this.interactionEnded(r, kind);
+          if (r && r.states.interactive === "none") this.contained("interaction end", () => this.interactionEnded(r, kind));
         }
       }
       this.runCorrections();
@@ -682,7 +684,7 @@ export class Engine {
         const c = this.contexts.get(id);
         if (!c) continue;
         if (!this.isVisible(c.key)) { if (c.members.length) c.revision++; continue; }
-        this.solveAndApply(c);
+        this.solveContained(c);
       }
     } catch (e) {
       this.counters.errors++;
@@ -701,8 +703,31 @@ export class Engine {
       if (!r || !this.ownsGeometry(r) || !r.ledger.desired) continue;
       if (rectNear(r.frame, r.ledger.desired, r.ledger.tol) || rectNear(r.frame, r.ledger.accepted, r.ledger.tol)) continue;
       if (!L.canCorrect(r.ledger)) continue;
-      this.write(r, r.ledger.desired, "correction");
+      this.contained("correction", () => this.write(r, r.ledger.desired!, "correction"));
     }
+  }
+
+  /** Run one unit of flush work; an exception is logged and stays inside that unit. */
+  private contained(what: string, fn: () => void): boolean {
+    try {
+      fn();
+      return true;
+    } catch (e) {
+      this.counters.errors++;
+      this.svc.log("error", what + " failed", String(e));
+      return false;
+    }
+  }
+
+  /**
+   * Solve one context without letting its failure abandon the others in the same
+   * flush (ARCHITECTURE §7, §13). A failed context is retried once in the next flush,
+   * which recovers a transient error; one that keeps failing waits for its next event.
+   */
+  private solveContained(c: Ctx): void {
+    if (this.contained("solve " + c.id, () => this.solveAndApply(c))) { c.failures = 0; return; }
+    if (++c.failures <= 1) this.markDirty(c.key);
+    else this.trace.record(this.svc.now(), "quarantine", c.id, { failures: c.failures });
   }
 
   private isVisible(key: ContextKey): boolean {
