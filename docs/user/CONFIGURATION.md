@@ -90,7 +90,7 @@ An override changes settings for the contexts it matches:
   - **`outputName`:** the connector name as KWin reports it (`DP-1`, `HDMI-A-1`). The nested test outputs are called `Virtual-0`, `Virtual-1`.
   - **`desktopName`:** the name shown in the pager.
   - **`desktopId`:** KWin's desktop UUID.
-  - **`activityId`:** the activity UUID. With only one activity, the context uses the literal value `default`.
+  - **`activityId`:** the activity UUID, also when only one activity exists. Without the activity service (kactivitymanagerd not running), the context uses the literal value `default`; contexts move to the real activity when the service starts.
 - **`set`** (required) is a settings patch. An empty `set` is a warning.
 
 The **override engine** (matching, priority order, field merging) is unit-tested in Node. Settings from flat keys were measured live in nested KWin. A per-desktop or per-output override has **not** been exercised end to end in nested KWin. Activities are **untested**.
