@@ -12,8 +12,8 @@ agent; this file is the short status.
 
 | Layer | Environment | Last result |
 |---|---|---|
-| Unit/replay | Node 26 (`node --test tests/core/*.test.ts`), mock host and fake KWin, replay fixtures recorded from nested KWin (`tests/fixtures/replay/`) | 409/409 (`342d82c`) |
-| Nested, virtual backend | Reference host: Arch Linux, KWin 6.7.5, Qt 6.12.0, KF 6.30.0 ([ENVIRONMENT](ENVIRONMENT.md)) | `67772ee`: 990/990 checks, 99/99 scenarios, 1 expected SKIP ([evidence](evidence/integration-host-67772ee.json)) |
+| Unit/replay | Node 26 (`node --test tests/core/*.test.ts`), mock host and fake KWin, replay fixtures recorded from nested KWin (`tests/fixtures/replay/`) | 429/429 (`52314ed`) |
+| Nested, virtual backend | Reference host: Arch Linux, KWin 6.7.5, Qt 6.12.0, KF 6.30.0 ([ENVIRONMENT](ENVIRONMENT.md)) | `52314ed`: 1759/1759 checks, 126/126 scenarios, 1 expected SKIP ([evidence](evidence/integration-host-52314ed.json)) |
 | Nested, virtual backend (CI) | Ubuntu 26.10 sandbox: KWin 6.7.5, Qt 6.11.2, KF 6.29.0, QPainter compositing | `a434b29`: 811/811 checks, 88/88 scenarios, 3 SKIPs (run 39114760401; the job failed only on the new plasmashell SKIP, now expected) |
 | Nested, virtual backend (CI, provisional) | Nix: KWin 6.8.0, Qt 6.11.2, KF 6.30.0, llvmpipe | `a434b29`: 779/782 checks, 85/87 scenarios: `reload-Q09` (below) and `create-remove-C04` case B (KWin 6.8 reported a window destroyed in its mapping flush; the check now applies case C's contract when KWin does) |
 | Nested, windowed on the real GPU | Reference host: nested KWin 6.7.5's outputs are windows on the live compositor (`PLASTILE_NESTED_HOST_DISPLAY`), OpenGL on the real GPU, 144 Hz host output; private bus, config and XDG dirs | Latency kit at full protocol (30,000 taps): every Plastile workload `pass` against its matched baseline; 19/19 chords delivered; real apps, real `plasmashell` panels, GL tile editor pass ([runbook §1](../validation/PHYSICAL_RUNBOOK.md#1-what-was-validated-where)). Labelled `nested-windowed-gpu`, never physical |
@@ -39,11 +39,11 @@ Verdicts from a card-by-card audit against each acceptance text (2026-10-18), up
 
 | State | Tasks |
 |---|---|
-| Complete (nested evidence) | T00–T03, T05, T08, T10, T13–T16, T18, T22–T25, T28 (no live preview: ADR-019), T29, T30 |
+| Complete (nested evidence) | T00–T03, T05, T08, T10, T13–T16, T18, T19, T22–T25, T27 (helper, ADR-020), T28 (no live preview: ADR-019), T29, T30 |
 | Complete (unit/replay evidence) | T09, T11, T12, T17, T21 |
 | Closed as deferred | T31 (ADR-018) |
 | Superseded by G1 | T06, T07 (native spike; ADR-003) |
-| Partial | T04 (raw upstream samples not committed; below 5000 samples), T19 (a float the user moves while Plastile is disabled jumps back to its saved rectangle on re-enable), T20 (no G2 report), T26 and T32 (no release-to-release upgrade yet: the old side is a past commit relabelled), T27 (saves block the compositor thread; moving them to a helper, see below), T33 (6.8 job red), T34 (no G2 protocol run; 6.8 RSS), T35 (no G3 checklist; licence), T36/T37 (experimental, ADR-014) |
+| Partial | T04 (raw upstream samples not committed; below 5000 samples), T20 (no G2 report), T26 and T32 (no release-to-release upgrade yet: the old side is a past commit relabelled), T33 (6.8 job red), T34 (no G2 protocol run; 6.8 RSS), T35 (no G3 checklist; licence), T36/T37 (experimental, ADR-014) |
 
 Recent nested evidence (KWin 6.7.5, each with mutation checks): dialogs follow their parent through minimize,
 desktop moves and close, matching KWin without Plastile (`scenarios_transients.py`); unload and reload in
@@ -61,10 +61,14 @@ re-enabling the script runs the *old* code again, because KWin keeps every decla
 engine's component cache. Only a KWin restart (a re-login) starts the new version. Defaults that changed between
 versions stay bound to their old keys for existing users.
 
-**Persistence (T27) is being reworked:** saves currently run `QSettings::sync()` on KWin's compositor thread
-(2–8 ms, up to 20 ms, 31.9 s with a held lock; ADR-013). A `WorkerScript` cannot write files inside KWin
-([probe](evidence/persistence-worker-probe.json)), so saves move to a small D-Bus-activated helper called
-asynchronously; without the helper, preferences stay in memory (owner decision, 2026-10-18).
+**Persistence (T27) no longer touches KWin's compositor thread** (ADR-020, owner decision 2026-10-18).
+Saves and the load go over asynchronous D-Bus to `plastile-state` (`helper/`, D-Bus-activated, installed by
+`tools/install.sh install-helper`); without it, preferences stay in memory with one diagnostic. On KWin's thread
+a typical save now costs 0.22 ms p50 (max 0.69 ms) instead of 2–8 ms, and a stopped helper leaves KWin's round
+trips at baseline (max 0.76 ms, against a 31.9 s stall with a held lock before)
+([evidence](evidence/persistence-helper-cost.json)). The first solve waits for the saved state for at most
+250 ms (released 0–2 ms after load with the helper running, 6–11 ms when it is activated). A saved float names
+the window it came from (schema 2), so a window the user moved while Plastile was disabled keeps its place.
 
 ## Outstanding failures
 
