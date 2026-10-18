@@ -15,6 +15,7 @@ import { describeConflicts, ShortcutAudit, type Bus, type ShortcutReport } from 
 import { describeWindow, type InspectorView } from "./inspect.ts";
 import { zoneOverlayView, type ZoneOverlayHost } from "./zoneOverlay.ts";
 import { Persister, type StateStore } from "./persistence.ts";
+import { ReplayRecorder, type RecordOptions } from "./replay.ts";
 
 export const VERSION = "0.1.0";
 export { COMMANDS };
@@ -41,6 +42,9 @@ export interface RuntimeEnv {
   // ---- persistence (T27) ----
   /** Saved session preferences (package/contents/ui/Persistence.qml); absent: nothing is loaded or saved. */
   readonly state?: StateStore;
+  // ---- replay recording (T10) ----
+  /** Recording builds only (tools/replay/record.qml): record the engine's normalized event stream and print it at unload. */
+  readonly record?: RecordOptions;
 }
 
 export interface InspectorHost {
@@ -117,10 +121,14 @@ export function createRuntime(env: RuntimeEnv): Runtime {
   };
 
   const adapter = new KwinAdapter(env.workspace, env.qt);
-  const options = (snap: ConfigSnapshot): EngineOptions => ({ ...engineOptions(snap, adapter), clockNs: env.clockNs });
+  // Recording builds stand a recorder between the engine and its ports; otherwise the engine talks to them directly.
+  const rec = env.record ? new ReplayRecorder(svc, env.record) : null;
+  if (rec) rec.config = JSON.parse(lastInput!);
+  const names = rec ? rec.names(adapter) : adapter;
+  const options = (snap: ConfigSnapshot): EngineOptions => ({ ...engineOptions(snap, names), clockNs: env.clockNs });
 
-  const engine = new Engine(adapter, svc, options(snapshot!));
-  const initial = adapter.attach(engine, snapshot!.usesTitleRules);
+  const engine = new Engine(rec ? rec.host(adapter) : adapter, rec ? rec.services(svc) : svc, options(snapshot!));
+  const initial = adapter.attach(rec ? rec.sink(engine) : engine, snapshot!.usesTitleRules);
   // ---- persistence (T27, ADR-013): loaded before the first solve; saved as maintenance work ----
   const persister = new Persister(env.state, engine, {
     now: svc.now, log, stamp: () => new Date().toISOString(), clockNs: env.perf ? env.clockNs : undefined,
@@ -128,7 +136,8 @@ export function createRuntime(env: RuntimeEnv): Runtime {
   persister.load();
   engine.onPersistChange = () => persister.markDirty();
   // ---- end T27 ----
-  engine.start(initial);
+  if (rec) rec.start(initial, () => engine.start(initial));
+  else engine.start(initial);
   log("info", `started ${VERSION}`, { windows: initial.length, configRevision: snapshot!.revision });
 
   // KWin emits configChanged after every reconfigure (its own, the reload command's, other
@@ -143,7 +152,9 @@ export function createRuntime(env: RuntimeEnv): Runtime {
       adapter.setWatchTitles(snapshot!.usesTitleRules);
       // Only what changed is re-evaluated (T26): a gap-only change reclassifies nothing.
       const d = diffConfig(prev, snapshot!);
-      engine.configure({ ...options(snapshot!), changes: { rules: d.rules, settings: d.settings } });
+      const activate = () => engine.configure({ ...options(snapshot!), changes: { rules: d.rules, settings: d.settings } });
+      if (rec) rec.configure(JSON.parse(lastInput!), activate);
+      else activate();
       log("info", "configuration activated", { revision: snapshot!.revision });
     }
   };
@@ -153,7 +164,9 @@ export function createRuntime(env: RuntimeEnv): Runtime {
   // re-resolves the active configuration (settings and classification), as an activation
   // does. Without such matchers a rename changes nothing and costs nothing.
   adapter.onDesktopNamesChanged = () => {
-    if (engine.isAlive() && snapshot && snapshot.usesDesktopNames) engine.configure(options(snapshot));
+    if (!engine.isAlive() || !snapshot || !snapshot.usesDesktopNames) return;
+    if (rec) rec.configure(null, () => engine.configure(options(snapshot!)));
+    else engine.configure(options(snapshot));
   };
 
   // ---- configuration reload, shortcut report, inspector (T26, T28, D9) ----
@@ -244,7 +257,9 @@ export function createRuntime(env: RuntimeEnv): Runtime {
       return null;
     }
     if (id === "plastile.runtime.reconcile") {
-      engine.reconcile(adapter.liveSnapshots());
+      const live = adapter.liveSnapshots();
+      if (rec) rec.reconcile(live, () => engine.reconcile(live));
+      else engine.reconcile(live);
       return null;
     }
     if (id === "plastile.runtime.reload-config") { reloadConfig(); return null; }
@@ -253,7 +268,7 @@ export function createRuntime(env: RuntimeEnv): Runtime {
     const t0 = clock ? clock() : 0;
     engine.lastTiming = null;
     engine.lastActivateNs = null;
-    const r = engine.execute(id);
+    const r = rec ? rec.command(id, () => engine.execute(id)) : engine.execute(id);
     if (clock) {
       // Dispatch-to-last-request: execute() returns after every frame request was issued.
       env.print("plastile perf " + safeJson({ id, status: r.status, dispatchToReturnNs: clock() - t0, entryNs: t0,
@@ -281,7 +296,8 @@ export function createRuntime(env: RuntimeEnv): Runtime {
       // The last save reads the engine's preferences, so it precedes the engine's stop (T27).
       persister.shutdown();
       // Invalidate first (engine stops deferred work and restores owned state), then disconnect.
-      engine.stop();
+      if (rec) env.print("plastile replay " + rec.finish(engine, () => engine.stop()));
+      else engine.stop();
       pendingDeadline = null;
       env.clearDeadline();
       for (const c of optionConns) { try { c.signal.disconnect(c.fn); } catch (_e) { /* gone */ } }

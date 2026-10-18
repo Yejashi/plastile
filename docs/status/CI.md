@@ -164,6 +164,7 @@ facing tiles (>= the configured gap; one device pixel of tolerance at fractional
 | `workarea-panel-add-remove-O07`, `workarea-panel-before-load-O07`, `workarea-two-panels-O07`, `workarea-panel-one-output-O07` | O07 (layer-shell panels; auto-hide and floating panels need plasmashell) |
 | `xwayland-tile-close-G10`, `xwayland-min-G10`, `xwayland-inc-G10`, `xwayland-fixed-G10`, `xwayland-dialog-G10`, `xwayland-aspect-G10` | G10 |
 | `realapps-<app>` | matrix section 4 "representative real applications" sweep (nested half) |
+| `replay-capture-T10` | T10 replay fixtures: records the engine's normalized event stream (tools/replay/record.qml) for five shapes (open/close burst, removal while a request is outstanding, ratio A->B->A with a 300 ms client, output disable/enable, quick-tile yield) and replays the fresh recordings with `tests/core/replay.test.ts`; SKIP where `node` is not on PATH |
 
 `realapps-*` scenarios are registered only for applications installed on the host (`shutil.which`): a
 missing application is neither a SKIP nor a FAIL, it is simply absent from `--list`. Version lookups go
