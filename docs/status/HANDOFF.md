@@ -27,7 +27,8 @@ Plasma session yet.**
 - `package/contents/ui/main.qml` is the entry point; there are also `Inspector.qml`, `Persistence.qml` and the
   KCM `config.ui`.
 - Decisions: [DECISIONS.md](../design/DECISIONS.md) ADR-001 to ADR-017. The recent ones:
-  - ADR-013: persistence via QtCore Settings, with a cost addendum.
+  - ADR-013: persistence via QtCore Settings, with a cost addendum; its storage path is superseded by ADR-020
+    (the `plastile-state` helper over asynchronous D-Bus).
   - ADR-014: scrolling and zones are experimental and opt-in.
   - ADR-015: D-Bus reload and the shortcut report.
   - ADR-016: the inspector is Plastile's own UI.

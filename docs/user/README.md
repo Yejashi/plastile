@@ -179,7 +179,7 @@ Window order, BSP split structure, quick-tile and maximize states, and per-windo
 
 **Where:** `~/.local/state/plastile/state-0.json` and `state-1.json` (or under `$XDG_STATE_HOME`), readable only by you. The two files hold alternate saves, and each save replaces its file atomically, so an interrupted save leaves the previous one usable. A damaged file or a file from a newer Plastile is ignored with one `plastile warn saved state rejected` line in the log. A newer Plastile's file is left untouched.
 
-**When saved:** about 2 seconds after your last change, and when the script stops cleanly; never while a command runs. Unchanged state is not rewritten. In nested sessions handing a save to the helper took about 0.2 ms of KWin's time for a typical state and about 1.2 ms for the largest one (64 screen/desktop entries and 64 floated applications), and a stopped or slow helper did not slow KWin or its commands.
+**When saved:** about 2 seconds after your last change, and when the script stops cleanly, also when KWin itself exits (measured in nested sessions; not yet at a physical logout); never while a command runs. Unchanged state is not rewritten. In nested sessions handing a save to the helper took about 0.2 ms of KWin's time for a typical state and about 1.2 ms for the largest one (64 screen/desktop entries and 64 floated applications), and a stopped or slow helper did not slow KWin or its commands.
 
 **When restored:** Plastile starts tiling with its defaults at once and applies the saved preferences when the helper answers, a few milliseconds later, so the layout can change once right after start-up. A change you make before that answer arrives wins over the saved one.
 

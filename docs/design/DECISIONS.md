@@ -482,7 +482,10 @@ Nested scenarios (each passed twice, KWin 6.7.5):
 - `persist-helper-stopped-Q05`: the helper is stopped with SIGSTOP while a save comes due. KWin's main-thread
   D-Bus round trip stays at its baseline (p50 0.16 and 0.25 ms stopped against 0.17 and 0.21 ms before the stop in the two runs, max under 0.5 ms, n=30 each), three resize commands appear in the oracle in 15–21 ms, one
   `Write` waits in flight and nothing else is sent, no file changes, and both saves land after SIGCONT. After a
-  SIGKILL the next save activates a new helper.
+  SIGKILL the next save activates a new helper. Added in review: the round trip is also sampled every 10 ms for
+  2.6 s across the moment the save to the stopped helper is issued (max 0.76 ms, n=255), and a positive control, a
+  one-shot script that keeps KWin's main thread busy for 400 ms, shows as a 400 ms round trip, so the probe does
+  detect a stall of KWin's thread and the quiet result is not circular.
 - `persist-helper-delayed-Q05` (every request delayed 4 s): tiling starts on defaults; the saved ratio applies to
   the untouched output when the reply arrives, about 4 s later, while the output the user changed keeps the user's
   ratio; the delayed writes land in order with the latest preferences.
@@ -490,6 +493,13 @@ Nested scenarios (each passed twice, KWin 6.7.5):
   `Component.onDestruction` is delivered (`DBusCall::call()` sends with `asyncCall` before the object is destroyed;
   observed source).
 - `persist-no-helper-Q05`: without the activation file Plastile tiles, logs one diagnostic and writes nothing.
+- `persist-helper-contract-T27` (added in review; the helper alone on a private bus, no KWin): slot and size
+  refusals (1 MiB counted in UTF-8 bytes), atomic replacement (new inode, an open reader keeps the old text),
+  modes repaired to 0700/0600, damaged, oversized and unreadable slots, one instance per bus, 200 pipelined writes
+  answered in order, idle exit and re-activation with 40 calls straddling the exit, and exit with the bus. It found
+  that `QSaveFile` refuses to replace a slot its owner cannot write, so a read-only slot (restored from a backup,
+  say) failed every save into it, and Plastile, which writes into the slot after the committed one, never got past
+  it. The helper now makes such a slot 0600 before replacing it.
 - Probe command phase: 123 commands, no state-file event inside a command handler or within 1.5 s after one, one
   save per burst.
 
@@ -505,9 +515,13 @@ Nested scenarios (each passed twice, KWin 6.7.5):
   floats one configure later.
 - Changes made before the load reply are lost if the script unloads before it arrives.
 - State files of earlier development builds (`state-N.ini`) are not read; no release used them.
-- Unverified: whether the final `Write` at KWin's own exit (logout) reaches the helper (only script unload was
-  measured); D-Bus activation on a physical session bus (dbus-broker under systemd); the CI jobs that build the
-  helper; any physical-session timing.
+- KWin's own exit was measured in nested sessions only (`persist-kwin-exit-T27`, added in review): with a change
+  still inside the debounce, SIGTERM to `kwin_wayland` ran Plastile's teardown 7 ms later and the final `Write`
+  reached the helper after KWin had exited, 6 of 6 times, three of them with the helper exited for idleness so that
+  the `Write` activated a new one. The private bus stayed up there; at a real logout the session bus and the
+  service manager may already be stopping, so that case stays unverified.
+- Unverified: D-Bus activation and the final `Write` at logout on a physical session bus (dbus-broker under
+  systemd); the CI jobs that build the helper; any physical-session timing.
 
 **Revisit if** the start-up re-solve is visible as a hitch on a physical session, the load callback grows past a
 frame for real snapshots, or KWin gains a supported asynchronous file write for scripts.
