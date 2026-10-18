@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Plastile settings (kwinrc [Script-plastile]). Entry names are the runtime's flat
+     keys (src/config/schema.ts FLAT_KEYS); Enum entries are stored by choice name.
+     Values are validated by the runtime before activation; invalid input keeps the
+     previous configuration. -->
+<kcfg xmlns="http://www.kde.org/standards/kcfg/1.0"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.kde.org/standards/kcfg/1.0 http://www.kde.org/standards/kcfg/1.0/kcfg.xsd">
+  <kcfgfile name=""/>
+  <group name="">
+    <entry name="layout" type="Enum">
+      <label>Default layout</label>
+      <choices>
+        <choice name="master-stack"/>
+        <choice name="bsp"/>
+        <choice name="monocle"/>
+        <choice name="floating"/>
+      </choices>
+      <default>master-stack</default>
+    </entry>
+    <entry name="gapInner" type="Int">
+      <label>Gap between windows (px)</label>
+      <default>8</default>
+      <min>0</min>
+      <max>200</max>
+    </entry>
+    <entry name="gapOuter" type="Int">
+      <label>Gap at screen edges (px)</label>
+      <default>8</default>
+      <min>0</min>
+      <max>200</max>
+    </entry>
+    <entry name="singleWindowGaps" type="Bool">
+      <label>Keep outer gaps around a single window</label>
+      <default>true</default>
+    </entry>
+    <entry name="masterRatio" type="Double">
+      <label>Master area width</label>
+      <default>0.55</default>
+      <min>0.05</min>
+      <max>0.95</max>
+    </entry>
+    <entry name="masterCount" type="Int">
+      <label>Windows in the master area</label>
+      <default>1</default>
+      <min>0</min>
+      <max>8</max>
+    </entry>
+    <entry name="masterInsert" type="Enum">
+      <label>Where new windows go (master/stack)</label>
+      <choices>
+        <choice name="after-focus"/>
+        <choice name="end"/>
+        <choice name="master"/>
+      </choices>
+      <default>after-focus</default>
+    </entry>
+    <entry name="bspInsert" type="Enum">
+      <label>Which tile a new window splits (BSP)</label>
+      <choices>
+        <choice name="focused"/>
+        <choice name="last"/>
+      </choices>
+      <default>focused</default>
+    </entry>
+    <entry name="bspAxis" type="Enum">
+      <label>Split direction (BSP)</label>
+      <choices>
+        <choice name="alternate"/>
+        <choice name="longest"/>
+        <choice name="horizontal"/>
+        <choice name="vertical"/>
+      </choices>
+      <default>alternate</default>
+    </entry>
+    <entry name="ratioStep" type="Double">
+      <label>Grow/shrink step</label>
+      <default>0.05</default>
+      <min>0.01</min>
+      <max>0.5</max>
+    </entry>
+    <entry name="diagnostics" type="Enum">
+      <label>Log level</label>
+      <choices>
+        <choice name="off"/>
+        <choice name="warn"/>
+        <choice name="info"/>
+        <choice name="debug"/>
+      </choices>
+      <default>warn</default>
+    </entry>
+    <entry name="traceCapacity" type="Int">
+      <label>Diagnostic trace capacity (events)</label>
+      <default>2048</default>
+      <min>64</min>
+      <max>65536</max>
+    </entry>
+    <entry name="configJson" type="String">
+      <label>Advanced: overrides and window rules (JSON)</label>
+      <default></default>
+    </entry>
+  </group>
+</kcfg>

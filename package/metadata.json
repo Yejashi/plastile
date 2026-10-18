@@ -16,5 +16,8 @@
         "Website": "https://github.com/Yejashi/plastile"
     },
     "X-Plasma-API": "declarativescript",
-    "X-Plasma-MainScript": "ui/main.qml"
+    "X-Plasma-MainScript": "ui/main.qml",
+    "X-KDE-ConfigModule": "kwin/effects/configs/kcm_kwin4_genericscripted",
+    "X-KDE-PluginKeyword": "plastile",
+    "X-Plasma-API-Minimum-Version": "6.7"
 }

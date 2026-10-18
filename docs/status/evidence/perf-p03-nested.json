@@ -1,0 +1,664 @@
+{
+ "implementationCommit": "b60e6185c9f5f6d5b1ad21136f1882c546089439",
+ "implementationDirty": false,
+ "layer": "nested KWin 6.7.5 virtual backend",
+ "clock": "CLOCK_MONOTONIC via measurement module",
+ "samplesPerWorkload": 300,
+ "counts": {
+  "2": {
+   "workloads": {
+    "ratio": {
+     "samples": 300,
+     "accepted": 300,
+     "dispatchToReturnNs": {
+      "n": 300,
+      "p50": 165780,
+      "p95": 248190,
+      "p99": 594750,
+      "max": 654530,
+      "min": 128870
+     },
+     "solveNs": {
+      "n": 300,
+      "p50": 35440,
+      "p95": 55040,
+      "p99": 417530,
+      "max": 492180,
+      "min": 29100
+     },
+     "applyNs": {
+      "n": 300,
+      "p50": 50060,
+      "p95": 66710,
+      "p99": 87050,
+      "max": 214450,
+      "min": 39870
+     },
+     "writesPerCommand": {
+      "n": 300,
+      "p50": 2,
+      "p95": 2,
+      "p99": 2,
+      "max": 2,
+      "min": 2
+     },
+     "solvesPerCommand": 1.0,
+     "dbusSendToEntryNs": {
+      "n": 300,
+      "p50": 446479,
+      "p95": 535810,
+      "p99": 715870,
+      "max": 1375539,
+      "min": 395850
+     },
+     "kwinActivateNs": null
+    },
+    "swap": {
+     "samples": 300,
+     "accepted": 300,
+     "dispatchToReturnNs": {
+      "n": 300,
+      "p50": 143240,
+      "p95": 213720,
+      "p99": 652700,
+      "max": 713960,
+      "min": 111440
+     },
+     "solveNs": {
+      "n": 300,
+      "p50": 37359,
+      "p95": 50010,
+      "p99": 532490,
+      "max": 573300,
+      "min": 30600
+     },
+     "applyNs": {
+      "n": 300,
+      "p50": 46570,
+      "p95": 63620,
+      "p99": 72870,
+      "max": 79530,
+      "min": 36570
+     },
+     "writesPerCommand": {
+      "n": 300,
+      "p50": 2,
+      "p95": 2,
+      "p99": 2,
+      "max": 2,
+      "min": 2
+     },
+     "solvesPerCommand": 1.0,
+     "dbusSendToEntryNs": {
+      "n": 300,
+      "p50": 439010,
+      "p95": 541840,
+      "p99": 662270,
+      "max": 1519010,
+      "min": 390540
+     },
+     "kwinActivateNs": null
+    },
+    "focus": {
+     "samples": 300,
+     "accepted": 300,
+     "dispatchToReturnNs": {
+      "n": 300,
+      "p50": 120790,
+      "p95": 1497070,
+      "p99": 1600819,
+      "max": 1656819,
+      "min": 82260
+     },
+     "solveNs": null,
+     "applyNs": null,
+     "writesPerCommand": null,
+     "solvesPerCommand": 0.0,
+     "dbusSendToEntryNs": {
+      "n": 300,
+      "p50": 456040,
+      "p95": 1209460,
+      "p99": 2193998,
+      "max": 2532829,
+      "min": 394240
+     },
+     "kwinActivateNs": {
+      "n": 300,
+      "p50": 81850,
+      "p95": 1460269,
+      "p99": 1557110,
+      "max": 1600669,
+      "min": 55990
+     }
+    }
+   },
+   "corrections": 0,
+   "errors": 0,
+   "outstandingAtEnd": 0
+  },
+  "4": {
+   "workloads": {
+    "ratio": {
+     "samples": 300,
+     "accepted": 300,
+     "dispatchToReturnNs": {
+      "n": 300,
+      "p50": 198270,
+      "p95": 297890,
+      "p99": 735890,
+      "max": 896240,
+      "min": 155070
+     },
+     "solveNs": {
+      "n": 300,
+      "p50": 43210,
+      "p95": 67140,
+      "p99": 400250,
+      "max": 575310,
+      "min": 34400
+     },
+     "applyNs": {
+      "n": 300,
+      "p50": 71429,
+      "p95": 98160,
+      "p99": 115800,
+      "max": 583300,
+      "min": 57770
+     },
+     "writesPerCommand": {
+      "n": 300,
+      "p50": 4,
+      "p95": 4,
+      "p99": 4,
+      "max": 4,
+      "min": 4
+     },
+     "solvesPerCommand": 1.0,
+     "dbusSendToEntryNs": {
+      "n": 300,
+      "p50": 457210,
+      "p95": 584000,
+      "p99": 1552050,
+      "max": 2248079,
+      "min": 397750
+     },
+     "kwinActivateNs": null
+    },
+    "swap": {
+     "samples": 300,
+     "accepted": 300,
+     "dispatchToReturnNs": {
+      "n": 300,
+      "p50": 162190,
+      "p95": 234570,
+      "p99": 675600,
+      "max": 730930,
+      "min": 127350
+     },
+     "solveNs": {
+      "n": 300,
+      "p50": 44640,
+      "p95": 58570,
+      "p99": 73170,
+      "max": 577340,
+      "min": 35890
+     },
+     "applyNs": {
+      "n": 300,
+      "p50": 56930,
+      "p95": 78810,
+      "p99": 101990,
+      "max": 599340,
+      "min": 46480
+     },
+     "writesPerCommand": {
+      "n": 300,
+      "p50": 2,
+      "p95": 2,
+      "p99": 2,
+      "max": 2,
+      "min": 2
+     },
+     "solvesPerCommand": 1.0,
+     "dbusSendToEntryNs": {
+      "n": 300,
+      "p50": 451730,
+      "p95": 548150,
+      "p99": 1015550,
+      "max": 1775399,
+      "min": 393059
+     },
+     "kwinActivateNs": null
+    },
+    "focus": {
+     "samples": 300,
+     "accepted": 300,
+     "dispatchToReturnNs": {
+      "n": 300,
+      "p50": 765380,
+      "p95": 934120,
+      "p99": 1118029,
+      "max": 1973239,
+      "min": 97900
+     },
+     "solveNs": null,
+     "applyNs": null,
+     "writesPerCommand": null,
+     "solvesPerCommand": 0.0,
+     "dbusSendToEntryNs": {
+      "n": 300,
+      "p50": 466149,
+      "p95": 1358729,
+      "p99": 2117549,
+      "max": 2819370,
+      "min": 389670
+     },
+     "kwinActivateNs": {
+      "n": 300,
+      "p50": 728679,
+      "p95": 873060,
+      "p99": 1036989,
+      "max": 1839739,
+      "min": 68570
+     }
+    }
+   },
+   "corrections": 0,
+   "errors": 0,
+   "outstandingAtEnd": 0
+  },
+  "8": {
+   "workloads": {
+    "ratio": {
+     "samples": 300,
+     "accepted": 300,
+     "dispatchToReturnNs": {
+      "n": 300,
+      "p50": 277650,
+      "p95": 432560,
+      "p99": 822329,
+      "max": 902800,
+      "min": 216650
+     },
+     "solveNs": {
+      "n": 300,
+      "p50": 60410,
+      "p95": 88360,
+      "p99": 542669,
+      "max": 596930,
+      "min": 47290
+     },
+     "applyNs": {
+      "n": 300,
+      "p50": 119100,
+      "p95": 157940,
+      "p99": 561629,
+      "max": 685400,
+      "min": 91410
+     },
+     "writesPerCommand": {
+      "n": 300,
+      "p50": 8,
+      "p95": 8,
+      "p99": 8,
+      "max": 8,
+      "min": 8
+     },
+     "solvesPerCommand": 1.0,
+     "dbusSendToEntryNs": {
+      "n": 300,
+      "p50": 475150,
+      "p95": 656839,
+      "p99": 2034710,
+      "max": 3116509,
+      "min": 389960
+     },
+     "kwinActivateNs": null
+    },
+    "swap": {
+     "samples": 300,
+     "accepted": 300,
+     "dispatchToReturnNs": {
+      "n": 300,
+      "p50": 187450,
+      "p95": 264330,
+      "p99": 701920,
+      "max": 737510,
+      "min": 152010
+     },
+     "solveNs": {
+      "n": 300,
+      "p50": 56440,
+      "p95": 69540,
+      "p99": 84750,
+      "max": 595900,
+      "min": 46430
+     },
+     "applyNs": {
+      "n": 300,
+      "p50": 71430,
+      "p95": 93000,
+      "p99": 104060,
+      "max": 108640,
+      "min": 56930
+     },
+     "writesPerCommand": {
+      "n": 300,
+      "p50": 2,
+      "p95": 2,
+      "p99": 2,
+      "max": 2,
+      "min": 2
+     },
+     "solvesPerCommand": 1.0,
+     "dbusSendToEntryNs": {
+      "n": 300,
+      "p50": 429670,
+      "p95": 601710,
+      "p99": 952139,
+      "max": 1758689,
+      "min": 382730
+     },
+     "kwinActivateNs": null
+    },
+    "focus": {
+     "samples": 300,
+     "accepted": 300,
+     "dispatchToReturnNs": {
+      "n": 300,
+      "p50": 857370,
+      "p95": 1029309,
+      "p99": 1223799,
+      "max": 1545169,
+      "min": 127999
+     },
+     "solveNs": null,
+     "applyNs": null,
+     "writesPerCommand": null,
+     "solvesPerCommand": 0.0,
+     "dbusSendToEntryNs": {
+      "n": 300,
+      "p50": 454790,
+      "p95": 1259110,
+      "p99": 2200219,
+      "max": 2791519,
+      "min": 364090
+     },
+     "kwinActivateNs": {
+      "n": 300,
+      "p50": 811570,
+      "p95": 968250,
+      "p99": 1138799,
+      "max": 1442459,
+      "min": 87419
+     }
+    }
+   },
+   "corrections": 0,
+   "errors": 0,
+   "outstandingAtEnd": 0
+  },
+  "16": {
+   "workloads": {
+    "ratio": {
+     "samples": 300,
+     "accepted": 300,
+     "dispatchToReturnNs": {
+      "n": 300,
+      "p50": 418160,
+      "p95": 947620,
+      "p99": 1032999,
+      "max": 1123530,
+      "min": 321100
+     },
+     "solveNs": {
+      "n": 300,
+      "p50": 92090,
+      "p95": 135370,
+      "p99": 674900,
+      "max": 711390,
+      "min": 70409
+     },
+     "applyNs": {
+      "n": 300,
+      "p50": 204170,
+      "p95": 285520,
+      "p99": 727589,
+      "max": 763549,
+      "min": 155930
+     },
+     "writesPerCommand": {
+      "n": 300,
+      "p50": 16,
+      "p95": 16,
+      "p99": 16,
+      "max": 16,
+      "min": 16
+     },
+     "solvesPerCommand": 1.0,
+     "dbusSendToEntryNs": {
+      "n": 300,
+      "p50": 491769,
+      "p95": 2127069,
+      "p99": 4051258,
+      "max": 4998057,
+      "min": 410400
+     },
+     "kwinActivateNs": null
+    },
+    "swap": {
+     "samples": 300,
+     "accepted": 300,
+     "dispatchToReturnNs": {
+      "n": 300,
+      "p50": 291090,
+      "p95": 453869,
+      "p99": 811789,
+      "max": 845799,
+      "min": 205800
+     },
+     "solveNs": {
+      "n": 300,
+      "p50": 89160,
+      "p95": 123600,
+      "p99": 174240,
+      "max": 647519,
+      "min": 70310
+     },
+     "applyNs": {
+      "n": 300,
+      "p50": 118260,
+      "p95": 194770,
+      "p99": 637080,
+      "max": 676869,
+      "min": 86010
+     },
+     "writesPerCommand": {
+      "n": 300,
+      "p50": 2,
+      "p95": 2,
+      "p99": 2,
+      "max": 2,
+      "min": 2
+     },
+     "solvesPerCommand": 1.0,
+     "dbusSendToEntryNs": {
+      "n": 300,
+      "p50": 482289,
+      "p95": 642360,
+      "p99": 1529589,
+      "max": 2851839,
+      "min": 388110
+     },
+     "kwinActivateNs": null
+    },
+    "focus": {
+     "samples": 300,
+     "accepted": 300,
+     "dispatchToReturnNs": {
+      "n": 300,
+      "p50": 995159,
+      "p95": 1282160,
+      "p99": 1470830,
+      "max": 1867029,
+      "min": 119640
+     },
+     "solveNs": null,
+     "applyNs": null,
+     "writesPerCommand": null,
+     "solvesPerCommand": 0.0,
+     "dbusSendToEntryNs": {
+      "n": 300,
+      "p50": 563890,
+      "p95": 1461359,
+      "p99": 2461629,
+      "max": 2963249,
+      "min": 412300
+     },
+     "kwinActivateNs": {
+      "n": 300,
+      "p50": 918940,
+      "p95": 1161380,
+      "p99": 1367820,
+      "max": 1496799,
+      "min": 79050
+     }
+    }
+   },
+   "corrections": 0,
+   "errors": 0,
+   "outstandingAtEnd": 0
+  },
+  "32": {
+   "workloads": {
+    "ratio": {
+     "samples": 300,
+     "accepted": 300,
+     "dispatchToReturnNs": {
+      "n": 300,
+      "p50": 678080,
+      "p95": 1243039,
+      "p99": 1391339,
+      "max": 1587739,
+      "min": 504310
+     },
+     "solveNs": {
+      "n": 300,
+      "p50": 151370,
+      "p95": 207690,
+      "p99": 793570,
+      "max": 894679,
+      "min": 111200
+     },
+     "applyNs": {
+      "n": 300,
+      "p50": 348770,
+      "p95": 449790,
+      "p99": 606100,
+      "max": 647359,
+      "min": 269530
+     },
+     "writesPerCommand": {
+      "n": 300,
+      "p50": 32,
+      "p95": 32,
+      "p99": 32,
+      "max": 32,
+      "min": 32
+     },
+     "solvesPerCommand": 1.0,
+     "dbusSendToEntryNs": {
+      "n": 300,
+      "p50": 525400,
+      "p95": 6510747,
+      "p99": 9289536,
+      "max": 10111116,
+      "min": 400590
+     },
+     "kwinActivateNs": null
+    },
+    "swap": {
+     "samples": 300,
+     "accepted": 300,
+     "dispatchToReturnNs": {
+      "n": 300,
+      "p50": 508330,
+      "p95": 773110,
+      "p99": 1203979,
+      "max": 1333519,
+      "min": 376960
+     },
+     "solveNs": {
+      "n": 300,
+      "p50": 158930,
+      "p95": 193930,
+      "p99": 819230,
+      "max": 872720,
+      "min": 129100
+     },
+     "applyNs": {
+      "n": 300,
+      "p50": 230409,
+      "p95": 341360,
+      "p99": 784620,
+      "max": 847069,
+      "min": 149510
+     },
+     "writesPerCommand": {
+      "n": 300,
+      "p50": 2,
+      "p95": 2,
+      "p99": 2,
+      "max": 2,
+      "min": 2
+     },
+     "solvesPerCommand": 1.0,
+     "dbusSendToEntryNs": {
+      "n": 300,
+      "p50": 488220,
+      "p95": 720520,
+      "p99": 4631768,
+      "max": 5841777,
+      "min": 391280
+     },
+     "kwinActivateNs": null
+    },
+    "focus": {
+     "samples": 300,
+     "accepted": 300,
+     "dispatchToReturnNs": {
+      "n": 300,
+      "p50": 606140,
+      "p95": 876220,
+      "p99": 1187900,
+      "max": 1489090,
+      "min": 221170
+     },
+     "solveNs": null,
+     "applyNs": null,
+     "writesPerCommand": null,
+     "solvesPerCommand": 0.0,
+     "dbusSendToEntryNs": {
+      "n": 300,
+      "p50": 527740,
+      "p95": 1260419,
+      "p99": 2143088,
+      "max": 4284799,
+      "min": 396950
+     },
+     "kwinActivateNs": {
+      "n": 300,
+      "p50": 518639,
+      "p95": 757169,
+      "p99": 1125050,
+      "max": 1388290,
+      "min": 141260
+     }
+    }
+   },
+   "corrections": 0,
+   "errors": 0,
+   "outstandingAtEnd": 0
+  }
+ }
+}

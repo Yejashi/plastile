@@ -1,0 +1,298 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>PlastileConfigForm</class>
+ <widget class="QWidget" name="PlastileConfigForm">
+  <layout class="QVBoxLayout" name="mainLayout">
+   <item>
+    <widget class="QGroupBox" name="layoutGroup">
+     <property name="title">
+      <string>Layout</string>
+     </property>
+     <layout class="QFormLayout" name="layoutForm">
+      <item row="0" column="0">
+       <widget class="QLabel" name="layoutLabel">
+        <property name="text">
+         <string>Default layout:</string>
+        </property>
+        <property name="buddy">
+         <cstring>kcfg_layout</cstring>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QComboBox" name="kcfg_layout">
+        <property name="toolTip">
+         <string>Layout for every screen and desktop. Change it per screen with the layout shortcuts.</string>
+        </property>
+        <item><property name="text"><string>Master and stack</string></property></item>
+        <item><property name="text"><string>Binary split (BSP)</string></property></item>
+        <item><property name="text"><string>Monocle (one window at a time)</string></property></item>
+        <item><property name="text"><string>Floating (no tiling)</string></property></item>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="gapInnerLabel">
+        <property name="text">
+         <string>Gap between windows:</string>
+        </property>
+        <property name="buddy">
+         <cstring>kcfg_gapInner</cstring>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QSpinBox" name="kcfg_gapInner">
+        <property name="suffix">
+         <string> px</string>
+        </property>
+        <property name="maximum">
+         <number>200</number>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="gapOuterLabel">
+        <property name="text">
+         <string>Gap at screen edges:</string>
+        </property>
+        <property name="buddy">
+         <cstring>kcfg_gapOuter</cstring>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QSpinBox" name="kcfg_gapOuter">
+        <property name="suffix">
+         <string> px</string>
+        </property>
+        <property name="maximum">
+         <number>200</number>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="1">
+       <widget class="QCheckBox" name="kcfg_singleWindowGaps">
+        <property name="text">
+         <string>Keep screen-edge gaps around a single window</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="0">
+       <widget class="QLabel" name="ratioStepLabel">
+        <property name="text">
+         <string>Grow/shrink step:</string>
+        </property>
+        <property name="buddy">
+         <cstring>kcfg_ratioStep</cstring>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="1">
+       <widget class="QDoubleSpinBox" name="kcfg_ratioStep">
+        <property name="decimals">
+         <number>2</number>
+        </property>
+        <property name="minimum">
+         <double>0.010000000000000</double>
+        </property>
+        <property name="maximum">
+         <double>0.500000000000000</double>
+        </property>
+        <property name="singleStep">
+         <double>0.010000000000000</double>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QGroupBox" name="masterGroup">
+     <property name="title">
+      <string>Master and stack</string>
+     </property>
+     <layout class="QFormLayout" name="masterForm">
+      <item row="0" column="0">
+       <widget class="QLabel" name="masterRatioLabel">
+        <property name="text">
+         <string>Master area width:</string>
+        </property>
+        <property name="buddy">
+         <cstring>kcfg_masterRatio</cstring>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QDoubleSpinBox" name="kcfg_masterRatio">
+        <property name="decimals">
+         <number>2</number>
+        </property>
+        <property name="minimum">
+         <double>0.050000000000000</double>
+        </property>
+        <property name="maximum">
+         <double>0.950000000000000</double>
+        </property>
+        <property name="singleStep">
+         <double>0.050000000000000</double>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="masterCountLabel">
+        <property name="text">
+         <string>Windows in the master area:</string>
+        </property>
+        <property name="buddy">
+         <cstring>kcfg_masterCount</cstring>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QSpinBox" name="kcfg_masterCount">
+        <property name="maximum">
+         <number>8</number>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="masterInsertLabel">
+        <property name="text">
+         <string>New windows go:</string>
+        </property>
+        <property name="buddy">
+         <cstring>kcfg_masterInsert</cstring>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QComboBox" name="kcfg_masterInsert">
+        <item><property name="text"><string>After the focused window</string></property></item>
+        <item><property name="text"><string>At the end of the stack</string></property></item>
+        <item><property name="text"><string>Into the master area</string></property></item>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QGroupBox" name="bspGroup">
+     <property name="title">
+      <string>Binary split (BSP)</string>
+     </property>
+     <layout class="QFormLayout" name="bspForm">
+      <item row="0" column="0">
+       <widget class="QLabel" name="bspInsertLabel">
+        <property name="text">
+         <string>A new window splits:</string>
+        </property>
+        <property name="buddy">
+         <cstring>kcfg_bspInsert</cstring>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QComboBox" name="kcfg_bspInsert">
+        <item><property name="text"><string>The focused tile</string></property></item>
+        <item><property name="text"><string>The last tile</string></property></item>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="bspAxisLabel">
+        <property name="text">
+         <string>Split direction:</string>
+        </property>
+        <property name="buddy">
+         <cstring>kcfg_bspAxis</cstring>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QComboBox" name="kcfg_bspAxis">
+        <item><property name="text"><string>Alternate side by side and stacked</string></property></item>
+        <item><property name="text"><string>Along the longer side of the tile</string></property></item>
+        <item><property name="text"><string>Always side by side</string></property></item>
+        <item><property name="text"><string>Always stacked</string></property></item>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QGroupBox" name="advancedGroup">
+     <property name="title">
+      <string>Advanced</string>
+     </property>
+     <layout class="QFormLayout" name="advancedForm">
+      <item row="0" column="0">
+       <widget class="QLabel" name="diagnosticsLabel">
+        <property name="text">
+         <string>Log level:</string>
+        </property>
+        <property name="buddy">
+         <cstring>kcfg_diagnostics</cstring>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QComboBox" name="kcfg_diagnostics">
+        <item><property name="text"><string>Off</string></property></item>
+        <item><property name="text"><string>Warnings</string></property></item>
+        <item><property name="text"><string>Information</string></property></item>
+        <item><property name="text"><string>Debug</string></property></item>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="traceCapacityLabel">
+        <property name="text">
+         <string>Diagnostic trace size:</string>
+        </property>
+        <property name="buddy">
+         <cstring>kcfg_traceCapacity</cstring>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QSpinBox" name="kcfg_traceCapacity">
+        <property name="suffix">
+         <string> events</string>
+        </property>
+        <property name="minimum">
+         <number>64</number>
+        </property>
+        <property name="maximum">
+         <number>65536</number>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0" colspan="2">
+       <widget class="QLabel" name="configJsonLabel">
+        <property name="text">
+         <string>Per-screen overrides and window rules (JSON, see the documentation). Invalid input is rejected and the previous settings stay active.</string>
+        </property>
+        <property name="wordWrap">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="0" colspan="2">
+       <widget class="QPlainTextEdit" name="kcfg_configJson">
+        <property name="kcfg_property" stdset="0">
+         <cstring>plainText</cstring>
+        </property>
+        <property name="kcfg_propertyNotify" stdset="0">
+         <cstring>textChanged</cstring>
+        </property>
+        <property name="placeholderText">
+         <string>{"schemaVersion": 1, "rules": [{"id": "float-calc", "match": {"appId": "org.kde.kcalc"}, "actions": {"mode": "floating"}}]}</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
