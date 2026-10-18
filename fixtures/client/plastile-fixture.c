@@ -226,6 +226,11 @@ static struct {
 	bool clamp;
 	int64_t parent_after_ms;
 	int64_t exit_after_ms;
+	bool exit_on_map; /* first buffer commit and window destruction share one flush */
+	int64_t exit_after_map_ms; /* -1: off; exit N ms after the main window mapped */
+	bool have_late_min;
+	int32_t late_min_w, late_min_h;
+	int64_t late_min_delay_ms;
 	enum deco_req deco_req;
 	enum panel_edge panel_edge; /* PANEL_NONE: ordinary xdg_toplevel client */
 	int32_t panel_size;
@@ -257,7 +262,7 @@ static struct {
 
 	uint32_t seq; /* global commit sequence, 1-based */
 
-	int exit_tfd, parent_tfd, sig_fd;
+	int exit_tfd, parent_tfd, late_min_tfd, sig_fd;
 	bool stdin_open;
 	char stdin_buf[4096];
 	size_t stdin_len;
@@ -619,7 +624,11 @@ static void commit_buffer(struct window *w, int32_t width, int32_t height, int64
 	}
 	b->busy = true;
 	wl_surface_commit(w->surface);
-	wl_display_flush(g.display);
+	/* --exit-on-map: the mapping commit is not flushed here; teardown flushes it together
+	 * with the window's destruction, so the compositor handles both in one dispatch. */
+	bool hold = g.exit_on_map && !w->mapped && !w->is_child && !w->is_panel;
+	if (!hold)
+		wl_display_flush(g.display);
 	w->cur_w = width;
 	w->cur_h = height;
 
@@ -633,6 +642,8 @@ static void commit_buffer(struct window *w, int32_t width, int32_t height, int64
 	else
 		lnull("serial");
 	lstr("reason", reason);
+	if (hold)
+		lbool("flush_deferred", true);
 	lend();
 
 	if (!w->mapped) {
@@ -1199,8 +1210,41 @@ static void on_mapped(struct window *w)
 	lint("width", w->cur_w);
 	lint("height", w->cur_h);
 	lend();
+	if (g.exit_on_map) {
+		/* Stop before anything else is flushed; teardown destroys the window and
+		 * sends the held mapping commit and the destruction requests together. */
+		g.running = false;
+		g.exit_reason = "exit-on-map";
+		return;
+	}
+	if (g.exit_after_map_ms >= 0)
+		arm_timer_abs(g.exit_tfd, now_ns() + (uint64_t)g.exit_after_map_ms * 1000000ull);
 	if (g.parent_after_ms >= 0)
 		arm_timer_abs(g.parent_tfd, now_ns() + (uint64_t)g.parent_after_ms * 1000000ull);
+	if (g.have_late_min)
+		arm_timer_abs(g.late_min_tfd, now_ns() + (uint64_t)g.late_min_delay_ms * 1000000ull);
+}
+
+/* --late-min-size: raise xdg_toplevel.min_size after mapping (bufferless commit), like a
+ * client that computes its real minimum only once its content exists. */
+static void apply_late_min(void)
+{
+	if (!g.main_win.toplevel)
+		return;
+	g.have_min = true;
+	g.min_w = g.late_min_w;
+	g.min_h = g.late_min_h;
+	xdg_toplevel_set_min_size(g.main_win.toplevel, g.min_w, g.min_h);
+	wl_surface_commit(g.main_win.surface);
+	wl_display_flush(g.display);
+	lstart("size_hints");
+	lstr("win", "main");
+	lstr("reason", "late-min-size");
+	lprintf(",\"min\":[%d,%d],\"max\":[%d,%d]", g.min_w, g.min_h, g.have_max ? g.max_w : 0,
+		g.have_max ? g.max_h : 0);
+	lint("current_width", g.main_win.cur_w);
+	lint("current_height", g.main_win.cur_h);
+	lend();
 }
 
 /* ------------------------------------------------------------------------ */
@@ -1477,6 +1521,11 @@ static void usage(FILE *f)
 		"  --ignore-size            ack configures but keep current size\n"
 		"  --parent-after-ms N      spawn transient child N ms after mapping\n"
 		"  --exit-after-ms N        exit after N ms\n"
+		"  --exit-on-map            send the first buffer commit and the window's destruction\n"
+		"                           in one flush, then exit (window removed right after mapping)\n"
+		"  --exit-after-map-ms N    exit N ms after the main window mapped (the mapping commit is\n"
+		"                           flushed first; 0 = destroy right after it)\n"
+		"  --late-min-size W,H,MS   MS ms after mapping, set xdg min size WxH (bufferless commit)\n"
 		"  --ssd | --csd            negotiate xdg-decoration mode\n"
 		"  --panel EDGE:SIZE        be a wlr-layer-shell panel instead of an xdg_toplevel:\n"
 		"                           layer top, scope dock, anchored to EDGE (top|bottom|left|right)\n"
@@ -1517,6 +1566,22 @@ static bool parse_wxh(const char *s, int32_t *w, int32_t *h)
 	return true;
 }
 
+/* "W,H,MS": all non-negative, W and H at most 16384. */
+static bool parse_late_min(const char *s)
+{
+	int a, b;
+	long long ms;
+	char extra;
+	if (sscanf(s, "%d,%d,%lld%c", &a, &b, &ms, &extra) != 3 || a < 0 || b < 0 || a > 16384 ||
+	    b > 16384 || ms < 0)
+		return false;
+	g.have_late_min = true;
+	g.late_min_w = a;
+	g.late_min_h = b;
+	g.late_min_delay_ms = ms;
+	return true;
+}
+
 static bool parse_i64(const char *s, int64_t *out)
 {
 	char *end;
@@ -1532,7 +1597,8 @@ static int parse_args(int argc, char **argv)
 {
 	enum {
 		O_APPID = 256, O_TITLE, O_ID, O_SIZE, O_MIN, O_MAX, O_DELAY, O_DMODE, O_IGNORE,
-		O_FIXED, O_PARENT, O_EXIT, O_SSD, O_CSD, O_CLAMP, O_PANEL, O_OUTPUT, O_HELP
+		O_FIXED, O_PARENT, O_EXIT, O_SSD, O_CSD, O_CLAMP, O_PANEL, O_OUTPUT, O_HELP, O_EXITMAP,
+		O_LATEMIN, O_EXITAFTERMAP
 	};
 	static const struct option opts[] = {
 		{"app-id", required_argument, NULL, O_APPID},
@@ -1548,6 +1614,9 @@ static int parse_args(int argc, char **argv)
 		{"clamp", no_argument, NULL, O_CLAMP},
 		{"parent-after-ms", required_argument, NULL, O_PARENT},
 		{"exit-after-ms", required_argument, NULL, O_EXIT},
+		{"exit-on-map", no_argument, NULL, O_EXITMAP},
+		{"exit-after-map-ms", required_argument, NULL, O_EXITAFTERMAP},
+		{"late-min-size", required_argument, NULL, O_LATEMIN},
 		{"ssd", no_argument, NULL, O_SSD},
 		{"csd", no_argument, NULL, O_CSD},
 		{"panel", required_argument, NULL, O_PANEL},
@@ -1561,6 +1630,7 @@ static int parse_args(int argc, char **argv)
 	g.init_h = 300;
 	g.parent_after_ms = -1;
 	g.exit_after_ms = -1;
+	g.exit_after_map_ms = -1;
 	bool fixed = false;
 	int c;
 	while ((c = getopt_long(argc, argv, "h", opts, NULL)) != -1) {
@@ -1598,6 +1668,13 @@ static int parse_args(int argc, char **argv)
 		case O_EXIT:
 			if (!parse_i64(optarg, &g.exit_after_ms) || g.exit_after_ms < 0) goto bad;
 			break;
+		case O_EXITMAP: g.exit_on_map = true; break;
+		case O_EXITAFTERMAP:
+			if (!parse_i64(optarg, &g.exit_after_map_ms) || g.exit_after_map_ms < 0) goto bad;
+			break;
+		case O_LATEMIN:
+			if (!parse_late_min(optarg)) goto bad;
+			break;
 		case O_SSD: g.deco_req = DECO_SSD; break;
 		case O_CSD: g.deco_req = DECO_CSD; break;
 		case O_PANEL:
@@ -1613,6 +1690,10 @@ static int parse_args(int argc, char **argv)
 		goto bad;
 	if (g.panel_output && g.panel_edge == PANEL_NONE)
 		goto bad; /* --output only means something for a panel */
+	if (g.panel_edge != PANEL_NONE && (g.exit_on_map || g.have_late_min || g.exit_after_map_ms >= 0))
+		goto bad; /* toplevel-only options */
+	if ((g.exit_on_map ? 1 : 0) + (g.exit_after_map_ms >= 0 ? 1 : 0) + (g.exit_after_ms >= 0 ? 1 : 0) > 1)
+		goto bad; /* one exit point at a time (the timed ones share a timer) */
 	if (fixed) {
 		g.have_min = g.have_max = true;
 		g.min_w = g.max_w = g.init_w;
@@ -1651,6 +1732,12 @@ static void log_start(int argc, char **argv)
 	lstr("delay_mode", g.delay_mode == DELAY_LATEST ? "latest" : "each");
 	lbool("ignore_size", g.ignore_size);
 	lbool("clamp", g.clamp);
+	if (g.exit_on_map)
+		lbool("exit_on_map", true);
+	if (g.exit_after_map_ms >= 0)
+		lint("exit_after_map_ms", g.exit_after_map_ms);
+	if (g.have_late_min)
+		lprintf(",\"late_min_size\":[%d,%d,%lld]", g.late_min_w, g.late_min_h, (long long)g.late_min_delay_ms);
 	lstr("decoration_request", g.deco_req == DECO_SSD ? "server_side"
 				   : g.deco_req == DECO_CSD ? "client_side"
 							    : NULL);
@@ -1726,6 +1813,8 @@ static void run_loop(void)
 		fds[n++] = (struct pollfd){.fd = g.exit_tfd, .events = POLLIN};
 		int i_parent = n;
 		fds[n++] = (struct pollfd){.fd = g.parent_tfd, .events = POLLIN};
+		int i_late = n;
+		fds[n++] = (struct pollfd){.fd = g.late_min_tfd, .events = POLLIN};
 		int i_mcfg = n;
 		fds[n++] = (struct pollfd){.fd = g.main_win.cfg_tfd, .events = POLLIN};
 		int i_ccfg = -1;
@@ -1779,11 +1868,15 @@ static void run_loop(void)
 		if (fds[i_exit].revents & POLLIN) {
 			drain_timer(g.exit_tfd);
 			g.running = false;
-			g.exit_reason = "exit-after";
+			g.exit_reason = g.exit_after_map_ms >= 0 ? "exit-after-map" : "exit-after";
 		}
 		if (g.running && (fds[i_parent].revents & POLLIN)) {
 			drain_timer(g.parent_tfd);
 			spawn_child();
+		}
+		if (g.running && (fds[i_late].revents & POLLIN)) {
+			drain_timer(g.late_min_tfd);
+			apply_late_min();
 		}
 		if (g.running && (fds[i_mcfg].revents & POLLIN))
 			cfg_timer_fired(&g.main_win);
@@ -1812,8 +1905,9 @@ int main(int argc, char **argv)
 	g.sig_fd = signalfd(-1, &mask, SFD_NONBLOCK | SFD_CLOEXEC);
 	g.exit_tfd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK | TFD_CLOEXEC);
 	g.parent_tfd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK | TFD_CLOEXEC);
+	g.late_min_tfd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK | TFD_CLOEXEC);
 	g.main_win.cfg_tfd = g.child_win.cfg_tfd = -1;
-	if (g.sig_fd < 0 || g.exit_tfd < 0 || g.parent_tfd < 0) {
+	if (g.sig_fd < 0 || g.exit_tfd < 0 || g.parent_tfd < 0 || g.late_min_tfd < 0) {
 		log_error("fd setup failed: %s", strerror(errno));
 		return 1;
 	}
@@ -1862,6 +1956,7 @@ int main(int argc, char **argv)
 	/* Teardown: everything we created, in reverse order. */
 	disarm_timer(g.exit_tfd);
 	disarm_timer(g.parent_tfd);
+	disarm_timer(g.late_min_tfd);
 	if (g.child_exists)
 		window_destroy(&g.child_win);
 	if (g.main_win.surface || g.main_win.cfg_tfd >= 0)
@@ -1894,6 +1989,7 @@ int main(int argc, char **argv)
 	wl_display_disconnect(g.display);
 	close(g.exit_tfd);
 	close(g.parent_tfd);
+	close(g.late_min_tfd);
 	close(g.sig_fd);
 
 	lstart("exit");
