@@ -106,7 +106,8 @@ export class KwinAdapter implements HostPort {
   private ws: KWorkspace;
   private qt: KQt;
   private entries = new Map<string, Entry>();
-  private gens = new Map<string, number>();
+  /** Adapter-wide generation counter: unique across re-registration without a per-id table. */
+  private lastGen = 0;
   private globals: Conn[] = [];
   private outputConns: Conn[] = [];
   private engine: Engine | null = null;
@@ -272,8 +273,7 @@ export class KwinAdapter implements HostPort {
     if (!w || w.deleted) return null;
     const id = this.idOf(w);
     if (this.entries.has(id)) return this.snapshot(this.entries.get(id)!);
-    const gen = (this.gens.get(id) ?? 0) + 1;
-    this.gens.set(id, gen);
+    const gen = ++this.lastGen;
     const e: Entry = { w, id, gen, conns: [], meta: metaOf(w) };
     this.entries.set(id, e);
     if (e.meta.kind === "dock") {

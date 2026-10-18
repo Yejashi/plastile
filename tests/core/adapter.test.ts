@@ -4,6 +4,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createRuntime } from "../../src/runtime/main.ts";
+import { KwinAdapter } from "../../src/adapters/kwin/adapter.ts";
 import { desktop, fakeEnv, FakeQt, FakeWorkspace, output, type FakeWindow, type R } from "./fakeKwin.ts";
 
 const GAP = 8;
@@ -125,4 +126,54 @@ test("O07: a panel's own frame change without an area change writes nothing", ()
   qt.drain();
   assert.equal(ws.writes.length, before);
   rt.shutdown();
+});
+
+// ---------------------------------------------------------------- generations
+
+test("the adapter retains no per-window state after windows are removed", () => {
+  const ws = new FakeWorkspace([output("O1", { x: 0, y: 0, width: 1280, height: 800 })], [desktop("D1")]);
+  const qt = new FakeQt();
+  const f = fakeEnv(ws, qt);
+  const rt = createRuntime(f.env);
+  for (let i = 0; i < 1000; ++i) {
+    const t = ws.window({ tooltip: true, normalWindow: false });
+    ws.add(t);
+    ws.remove(t);
+  }
+  const n = ws.window({ caption: "n" });
+  ws.add(n);
+  ws.remove(n);
+  qt.drain();
+  rt.shutdown();
+  // Probe the adapter directly: a fresh one, 1000 windows through it, then every container empty.
+  const a = new KwinAdapter(ws as never, qt as never);
+  const engine = new Proxy({}, { get: () => () => {} });
+  a.attach(engine as never, false);
+  for (let i = 0; i < 1000; ++i) {
+    const t = ws.window({ tooltip: true, normalWindow: false });
+    ws.add(t);
+    ws.remove(t);
+  }
+  assert.equal(a.windowCount(), 0);
+  for (const [k, v] of Object.entries(a)) {
+    if (v instanceof Map || v instanceof Set) assert.ok(v.size <= ws.screens.length, `adapter.${k} retains ${v.size} entries`);
+  }
+  a.detach();
+});
+
+test("window generations stay unique when an id is registered again", () => {
+  const ws = new FakeWorkspace([output("O1", { x: 0, y: 0, width: 1280, height: 800 })], [desktop("D1")]);
+  const qt = new FakeQt();
+  const a = new KwinAdapter(ws as never, qt as never);
+  const seen: number[] = [];
+  const engine = new Proxy({}, { get: (_t, k) => (k === "windowAdded" ? (s: { gen: number }) => seen.push(s.gen) : () => {}) });
+  a.attach(engine as never, false);
+  const w = ws.window({ caption: "x" });
+  ws.add(w);
+  ws.remove(w);
+  w.deleted = false;
+  ws.add(w); // same internalId (not expected from KWin, but must not reuse a generation)
+  assert.equal(seen.length, 2);
+  assert.ok(seen[1] > seen[0], `generations ${seen}`);
+  a.detach();
 });
