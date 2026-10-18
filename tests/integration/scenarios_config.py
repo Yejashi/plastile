@@ -1,4 +1,4 @@
-"""Configuration scenarios (T25, T26, D9; TEST_MATRIX Q02, Q04, Q08).
+"""Configuration scenarios (T25, T26, T28, D9; TEST_MATRIX Q02, Q04, Q08).
 
 Geometry comes from the independent oracle (one-shot KWin scripts reading frameGeometry).
 Plastile's log is read only for what it reports about itself (explanations, the shortcut
@@ -13,11 +13,13 @@ import subprocess
 import time
 from pathlib import Path
 
-from harness import Input, Session, evidence_file, near, tiling_errors
-from scenarios import Checks, scenario
+from harness import Input, Session, delta, evidence_file, near, tiling_errors
+from scenarios import Checks, Skipped, scenario
 from scenarios_classify import brief, explain, rejected
 
 GAP = 8
+INSPECTOR = "Plastile inspector"  # adapter.ts OWN_UI_TITLE
+KEY_ESC = 1
 
 # Single-line JSON without backslashes: written verbatim into kwinrc, so no KConfig escaping applies.
 CONTEXT_RULES = json.dumps({"schemaVersion": 1, "rules": [
@@ -228,6 +230,7 @@ def shortcuts_conflict(out: Path, c: Checks):
         c("T26: explain output carries the conflict (key, command, other action)",
           len(sc) == 1 and sc[0].get("key") == "Meta+Shift+H" and sc[0].get("command") == "plastile.focus.left"
           and [o.get("action") for o in sc[0].get("others", [])] == ["Window Maximize"], sc)
+        s.cmd("inspect.explain-window")  # close the inspector the explain opened
         held = shortcut_entry(s, "Window Maximize")
         mine = shortcut_entry(s, "plastile.focus.left")
         ev["registry"] = {"Window Maximize": held, "plastile.focus.left": mine}
@@ -260,3 +263,110 @@ def shortcuts_conflict(out: Path, c: Checks):
         ev["control"] = ctrl.split("plastile ", 1)[-1] if ctrl else None
         c("control: without the user binding the check reports no conflicts", bool(ctrl), ev["control"])
     evidence_file("shortcuts-conflict-Q08.json").write_text(json.dumps(ev, indent=1) + "\n")
+
+
+# ------------------------------------------------------------------ T28
+def own_windows(s: Session) -> list[dict]:
+    out = s.js(f"emit(workspace.windowList().filter(w => w.caption === {json.dumps(INSPECTOR)}).map(w => ("
+               "{id: String(w.internalId), popup: w.popupWindow, appId: w.resourceClass, pid: w.pid,"
+               " frame: {x: w.frameGeometry.x, y: w.frameGeometry.y, width: w.frameGeometry.width,"
+               " height: w.frameGeometry.height}})));")
+    return json.loads(out[0])
+
+
+def trace_modes(s: Session, wid: str) -> list[dict]:
+    off = s.kw.mark()
+    s.cmd("inspect.dump-trace")
+    line = s.kw.wait_log(r"plastile trace ", 5, off)[-1]
+    return [r.get("data") for r in json.loads(line.split("plastile trace ", 1)[1])
+            if r.get("kind") == "mode" and r.get("id") == wid]
+
+
+@scenario("inspector-T28")
+def inspector(out: Path, c: Checks):
+    """The explain view opens only on its command, is excluded from tiling, closes on Escape/command/unload."""
+    with Session(out) as s:
+        s.spawn(1); s.spawn(2)
+        s.load()
+        s.settle()
+        s.act("plastile-fixture 1", "workspace.activeWindow = w")
+        for cmd in ("focus.next", "resize.grow", "resize.shrink", "focus.previous"):
+            s.cmd(cmd)
+        s.settle()
+        c("keyboard-only use: no inspector window exists",
+          own_windows(s) == [] and s.counters().get("inspectorOpen") is False, own_windows(s))
+
+        s.act("plastile-fixture 1", "workspace.activeWindow = w")
+        f0 = s.frames()
+        c0 = s.counters()
+        s.cmd("inspect.explain-window")
+        try:
+            s.wait_for(lambda: own_windows(s) != [], 5, "inspector window")
+        except Exception:  # noqa: BLE001
+            pass
+        time.sleep(0.4)
+        wins = own_windows(s)
+        c1 = s.settle()
+        c("explain opens one inspector window (oracle: KWin's window list)",
+          len(wins) == 1 and c1.get("inspectorOpen") is True, wins)
+        if wins:
+            modes = trace_modes(s, wins[0]["id"])
+            c("the inspector is classified as Plastile's own UI and excluded",
+              bool(modes) and all(m.get("mode") == "excluded" and m.get("source") == "builtin" for m in modes), modes)
+        d = delta(c0, c1)
+        c("opening the inspector solved nothing and wrote no geometry (counters)",
+          d.get("solves", 0) == 0 and d.get("writes", 0) == 0, d)
+        f1 = s.frames()
+        c("tiles unchanged while the inspector is open (oracle)",
+          all(near(f0[k]["frame"], f1[k]["frame"], 0.5) for k in f0), {k: f1[k]["frame"] for k in f1})
+        ui = s.log_lines(r"Inspector\.qml|main\.qml.*(rror|arning)")
+        c("no QML warnings from the inspector", not ui, ui[:3])
+
+        escape_note = ""
+        try:
+            inp = Input(s)
+        except Exception as exc:  # noqa: BLE001
+            inp = None
+            escape_note = f"libei unavailable: {exc}"
+        if inp is not None:
+            try:
+                inp.do(f"key {KEY_ESC} down", f"key {KEY_ESC} up")
+                time.sleep(0.5)
+                c("Escape closes and destroys the inspector (oracle)",
+                  own_windows(s) == [] and s.counters().get("inspectorOpen") is False, own_windows(s))
+                # A global shortcut pressed while the popup holds the keyboard still reaches Plastile
+                # (focus next: Meta+Shift+N); the activation it causes closes the inspector.
+                s.act("plastile-fixture 1", "workspace.activeWindow = w")
+                s.cmd("inspect.explain-window")
+                s.wait_for(lambda: own_windows(s) != [], 5, "inspector window")
+                inp.do("key 125 down", "key 42 down", "key 49 down", "key 49 up", "key 42 up", "key 125 up")
+                time.sleep(0.5)
+                active = [k for k, v in s.frames().items() if v["active"]]
+                c("a real Plastile key press works while the inspector is open, and the activation closes it (oracle)",
+                  active == ["plastile-fixture 2"] and own_windows(s) == [], {"active": active, "inspector": own_windows(s)})
+                # A click outside the inspector closes it (KWin's popup filter).
+                s.cmd("inspect.explain-window")
+                s.wait_for(lambda: own_windows(s) != [], 5, "inspector window")
+                inp.do("move 40 760", "press left", "release left")
+                time.sleep(0.5)
+                c("a click elsewhere closes the inspector (oracle)", own_windows(s) == [], own_windows(s))
+            finally:
+                inp.close()
+
+        s.cmd("inspect.explain-window")
+        time.sleep(0.5)
+        opened = len(own_windows(s)) == 1
+        s.cmd("inspect.explain-window")
+        time.sleep(0.5)
+        c("the command toggles: a second explain closes it (oracle)", opened and own_windows(s) == [], opened)
+
+        s.cmd("inspect.explain-window")
+        time.sleep(0.5)
+        reopened = len(own_windows(s)) == 1
+        s.unload()
+        time.sleep(0.4)
+        c("unload removes an open inspector (oracle)", reopened and own_windows(s) == [], reopened)
+        warn = s.log_lines(r"plastile (error|warn)|TypeError|ReferenceError|Inspector\.qml")
+        c("no errors, warnings or JS exceptions", not warn, warn[:3])
+        if inp is None:
+            raise Skipped(f"Escape check not run: {escape_note}")

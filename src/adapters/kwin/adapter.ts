@@ -64,6 +64,19 @@ export function kindOf(w: KWindow): WindowKind {
   return "other";
 }
 
+/** Caption of Plastile's own inspector window (package/contents/ui/Inspector.qml, runtime/inspect.ts). */
+export const OWN_UI_TITLE = "Plastile inspector";
+
+/**
+ * Plastile's own UI: a QML window the script creates is a KWin internal window, which
+ * reports no application id and no client process (pid -1, measured in nested KWin 6.7.5).
+ * Together with the fixed caption that identifies the inspector; a client window with the
+ * same caption still has an application id or a process.
+ */
+export function isOwnUi(w: KWindow): boolean {
+  return w.caption === OWN_UI_TITLE && !w.resourceClass && !w.desktopFileName && !(w.pid > 0);
+}
+
 export function metaOf(w: KWindow): WindowMeta {
   return {
     appId: String(w.resourceClass || w.desktopFileName || ""),
@@ -80,7 +93,7 @@ export function metaOf(w: KWindow): WindowMeta {
     moveable: !!w.moveable,
     skipTaskbar: !!w.skipTaskbar,
     pid: w.pid,
-    own: false,
+    own: isOwnUi(w),
   };
 }
 

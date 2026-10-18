@@ -26,7 +26,7 @@ Item {
         }
     }
 
-    // ---- D-Bus calls (T26 shortcut report, D9 reload) ----
+    // ---- D-Bus calls and the inspector (T26 shortcut report, T28 explain view, D9 reload) ----
     // One DBusCall (org.kde.kwin 3.0, asynchronous) per request, destroyed with its reply;
     // calls still pending at unload are destroyed with this root, so no reply outlives it.
     Component {
@@ -43,7 +43,26 @@ Item {
                                              method: call.method, done: done, fail: fail });
         c.call();
     }
-    // ---- end T26/D9 ----
+    // No inspector object exists until "Explain active window" opens it; closing destroys it.
+    Loader {
+        id: inspector
+        active: false
+        onLoaded: item.show()
+    }
+    Connections {
+        target: inspector.item
+        ignoreUnknownSignals: true
+        function onDismissed() { Qt.callLater(root.closeInspector); }
+    }
+    function openInspector(view) {
+        inspector.active = true;
+        inspector.setSource("Inspector.qml", { view: view });
+    }
+    function closeInspector() {
+        inspector.source = "";
+        inspector.active = false;
+    }
+    // ---- end T26/T28/D9 ----
 
     Component.onCompleted: {
         runtime = Bundle.createRuntime({
@@ -55,11 +74,17 @@ Item {
             clearDeadline: function () { deadline.stop(); },
             print: function (line) { console.info(line); },
             dbus: root.dbus,
+            inspector: {
+                open: root.openInspector,
+                close: root.closeInspector,
+                isOpen: function () { return inspector.item !== null; },
+            },
         });
     }
 
     Component.onDestruction: {
         deadline.stop();
+        closeInspector();
         if (runtime) runtime.shutdown();
         runtime = null;
     }

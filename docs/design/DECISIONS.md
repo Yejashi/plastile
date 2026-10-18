@@ -209,3 +209,28 @@ re-reads all of KWin's settings, as any KDE settings page's Apply does, and Scri
 skips the loaded script (measured: one engine, one activation for 20 rapid requests). The shortcut report is a
 snapshot (load and reload), limited to single-chord keys and to components KGlobalAccel knows. Replies are
 QV4 array-like sequences, not Arrays (measured), so parsing accepts array-likes.
+
+## ADR-016: The explain view is a lazily loaded popup marked as Plastile's own UI
+
+**Status:** accepted (2026-10-18); task T28.
+
+**Context.** BEHAVIOR §1 excludes Plastile's own UI from tiling, but the adapter had no way to recognise it
+(`meta.own` was always false). A QML window created by a declarative script is a KWin internal window: no
+application id, `pid` -1, on all desktops (measured, nested KWin 6.7.5). KWin delivers no keyboard input to an
+ordinary internal window; a `Qt.Popup` internal window takes a popup grab instead, receives keys while open,
+and is closed by KWin on a click elsewhere or when a window is activated (observed source:
+`popup_input_filter.cpp`, `internalwindow.cpp`). Setting `visible` did not map such a window in a script;
+`show()` did (measured).
+
+**Decision.** *Explain active window* activates a `Loader` that creates `Inspector.qml`, a frameless `Qt.Popup`
+window displaying a view computed once by pure code (`src/runtime/inspect.ts`): plain behaviour statements,
+internal ids only under *Show details*. Escape, KWin's popup cancellation, the same command, or unload
+destroys it. The adapter treats a window as Plastile's own when its caption is the inspector's fixed title
+and it has neither an application id nor a client process; classification excludes own UI before
+anything else.
+
+**Consequences.** Nothing exists for keyboard-only use, and an open inspector holds no connections, timers
+or geometry writes. While it is open it takes the keyboard like a menu; global shortcuts still run first
+(measured). A client window could only be mistaken for it by having that exact caption with no application
+id and no process, which ordinary Wayland and X11 clients do not have. Further own windows (a zones overlay)
+must reuse the marker or extend `isOwnUi`.

@@ -1,14 +1,16 @@
-// Runtime services around the engine: configuration reload (D9) and the shortcut conflict
-// report (T26). Driven through the fake KWin surface
-// (fakeKwin.ts) with a recorded fake D-Bus; oracles are the fake windows' frames and the
-// recorded bus requests.
+// Runtime services around the engine: configuration reload (D9), the shortcut conflict
+// report (T26) and the explain view (T28). Driven through the fake KWin surface
+// (fakeKwin.ts) with a recorded fake D-Bus; oracles are the fake windows' frames, the
+// recorded bus requests and the inspector host's calls.
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createRuntime, COMMANDS } from "../../src/runtime/main.ts";
+import { describeWindow, INSPECTOR_TITLE, type InspectorView } from "../../src/runtime/inspect.ts";
 import {
   findConflicts, keyCode, keyText, parseComponents, parseInfos, ShortcutAudit, type BusCall, type ShortcutReport,
 } from "../../src/runtime/shortcuts.ts";
+import { isOwnUi, metaOf } from "../../src/adapters/kwin/adapter.ts";
 import { desktop, fakeEnv, FakeQt, FakeWorkspace, output, type FakeWindow } from "./fakeKwin.ts";
 
 interface Pending { call: BusCall; done: (r: unknown[]) => void; fail: () => void }
@@ -49,9 +51,13 @@ function setup(cfg: Record<string, unknown> = {}, withBus = true) {
   }
   const f = fakeEnv(ws, qt, cfg);
   const bus = new FakeBus();
+  const opened: InspectorView[] = [];
+  let open = false;
+  const inspector = { open: (v: InspectorView) => { opened.push(v); open = true; }, close: () => { open = false; }, isOpen: () => open };
   if (withBus) f.env.dbus = bus.fn;
+  f.env.inspector = inspector;
   const rt = createRuntime(f.env);
-  return { ws, qt, wins, f, bus, rt };
+  return { ws, qt, wins, f, bus, rt, opened, inspector };
 }
 
 // ----------------------------------------------------------------------- keys
@@ -192,4 +198,70 @@ test("T26: the shortcut check starts on a later turn, logs one warning, and is s
   const counters = JSON.parse(f.lines.find((l) => l.startsWith("plastile counters "))!.slice("plastile counters ".length));
   assert.deepEqual(counters.shortcuts, { state: "done", conflicts: 1 });
   rt.shutdown();
+});
+
+test("T28: explain opens the inspector, a second explain closes it, shutdown closes it and drops late replies", () => {
+  const { f, qt, bus, rt, ws, wins, opened, inspector } = setup({ diagnostics: "info" });
+  qt.drain();
+  for (const c of ["plastile.focus.left", "plastile.resize.grow", "plastile.layout.next"]) rt.dispatch(c);
+  assert.equal(opened.length, 0, "keyboard commands never create the inspector");
+  ws.activeWindow = wins[1];
+  rt.dispatch("plastile.inspect.explain-window");
+  assert.equal(opened.length, 1);
+  assert.ok(inspector.isOpen());
+  assert.equal(opened[0].windowTitle, INSPECTOR_TITLE);
+  assert.equal(opened[0].heading, "app2");
+  rt.dispatch("plastile.inspect.explain-window");
+  assert.ok(!inspector.isOpen(), "the same command closes it");
+  rt.dispatch("plastile.inspect.explain-window");
+  assert.ok(inspector.isOpen());
+  rt.shutdown();
+  assert.ok(!inspector.isOpen(), "unload closes the inspector");
+  const lines = f.lines.length;
+  while (bus.pending.length) bus.reply([seq(["/component/kwin"])]);
+  assert.equal(f.lines.length, lines, "a reply after shutdown does nothing");
+});
+
+test("T28: own-UI detection needs the caption and no client identity", () => {
+  const ws = new FakeWorkspace([output("O1", { x: 0, y: 0, width: 1280, height: 800 })], [desktop("D1")]);
+  const internal = ws.window({ caption: INSPECTOR_TITLE, resourceClass: "", desktopFileName: "", pid: -1, popupWindow: true });
+  assert.ok(isOwnUi(internal));
+  assert.equal(metaOf(internal).own, true);
+  assert.equal(isOwnUi(ws.window({ caption: INSPECTOR_TITLE, resourceClass: "evil", pid: 42 })), false);
+  assert.equal(isOwnUi(ws.window({ caption: INSPECTOR_TITLE, resourceClass: "", desktopFileName: "", pid: 42 })), false);
+  assert.equal(isOwnUi(ws.window({ caption: "other", resourceClass: "", desktopFileName: "", pid: -1 })), false);
+});
+
+// ------------------------------------------------------------------ explain view
+
+const EXPLAIN = {
+  id: "{1234-abcd}", appId: "org.kde.kate", kind: "normal", mode: "floating", userMode: null,
+  decision: { mode: "tiled", source: "default", reason: "normal resizable window", ruleIds: [] },
+  rules: { ids: ["kate-min"], actions: { minSize: "900x0" }, reasons: { minSize: "rule kate-min" } },
+  context: { output: "DP-1", desktop: "5c2a-uuid", activity: "act-uuid" }, layout: "master-stack",
+  suspensions: ["minimized"], constraints: { minFrame: { width: 900, height: 200 }, maxFrame: { width: Infinity, height: Infinity }, fixed: false },
+  learnedMin: { width: 549, height: 242 }, learnedMax: null,
+  ledger: { status: "idle", outstanding: false, desired: null, corrections: 0 }, slot: null,
+  exception: "overflow: kate: min width 900 > 600", nativeTile: false, nativeYield: false,
+};
+
+test("T28: the view speaks behaviour; internal ids appear only in details", () => {
+  const v = describeWindow(EXPLAIN, { desktopNameOf: (id) => (id === "5c2a-uuid" ? "Writing" : ""), shortcuts: null, area: null });
+  const rows = Object.fromEntries(v.rows.map((r) => [r.label, r.text]));
+  assert.match(rows.Placement, /^Floating/);
+  assert.match(rows.Rules, /Matching: kate-min\. Applied: minimum size at least 900x0 \(from kate-min\)/);
+  assert.equal(rows.Where, "Output DP-1, desktop “Writing”.");
+  assert.match(rows.Paused, /minimized/);
+  assert.match(rows.Size, /at least 900×200.*no less than 549×242/);
+  assert.match(rows.Problem, /Not enough room/);
+  const text = JSON.stringify(v.rows);
+  for (const id of ["{1234-abcd}", "5c2a-uuid", "act-uuid"]) assert.ok(!text.includes(id), `rows mention ${id}`);
+  const details = JSON.stringify(v.details);
+  for (const id of ["{1234-abcd}", "5c2a-uuid", "act-uuid", "overflow: kate"]) assert.ok(details.includes(id), `details lack ${id}`);
+  const none = describeWindow(null, { desktopNameOf: () => "", shortcuts: null, area: null });
+  assert.match(none.rows[0].text, /No active window/);
+  const conflicts = describeWindow(null, { desktopNameOf: () => "", area: null, shortcuts: { state: "done", components: 1, actions: 1,
+    conflicts: [{ key: "Meta+Shift+H", command: "plastile.focus.left", commandText: "Plastile: Focus left",
+                  others: [{ component: "KWin", action: "Window Maximize", text: "Maximize Window" }] }] } });
+  assert.match(conflicts.rows[1].text, /Meta\+Shift\+H runs “Focus left” and also “Maximize Window” \(KWin\)/);
 });

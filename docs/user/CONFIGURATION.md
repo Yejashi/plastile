@@ -275,8 +275,12 @@ It also records the reason text and, when a rule decided the mode, the ids of th
 
 ### Seeing why a window was classified
 
-**Plastile: Explain active window (log)** (unbound; [bind it](SHORTCUTS.md#rebinding) or invoke it from a terminal) logs the explanation of the focused window as one line, with the fields below. This needs `diagnostics` at `info` or `debug`.
+**Plastile: Explain active window (log)** (unbound; [bind it](SHORTCUTS.md#rebinding) or invoke it from a terminal) does two things with the window focused:
 
+- **It opens the inspector,** a small window in the middle of the screen that states in plain words how Plastile treats the window and why: tiled, floating or not managed; what decided it (window type, a built-in exception, your rule, its size limits, being on several desktops); which rules matched and what they changed; where it is; whether KWin owns it right now (minimized, full screen, maximized, being dragged); its size limits, including sizes learned from the application; whether it reached its tile; and why Plastile gave up on it, if it did. Shortcut conflicts found at startup are listed too. *Show details* adds the internal values (window id, desktop and activity ids, planned and requested rectangles).
+  - Escape, a click anywhere else, activating another window, or running the command again closes it. While it is open it takes the keyboard, like a menu; global shortcuts still work (measured with a Plastile focus key, which also closed it by activating another window).
+  - It exists only between the command and its closing, and is removed when Plastile unloads. It is Plastile's own window, so it is never tiled, and opening it moves no window (measured in nested KWin, scenario `inspector-T28`, QPainter rendering).
+- **It logs the explanation** as one line, with the fields below. This needs `diagnostics` at `info` or `debug`.
 
 To read the log line:
 

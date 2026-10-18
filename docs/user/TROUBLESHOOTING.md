@@ -1,6 +1,6 @@
 # Troubleshooting Plastile
 
-Plastile has no diagnostics GUI. Everything goes through shortcuts that write to KWin's log, plus the ordinary KWin Scripts page. Unless noted otherwise, the behaviour below was exercised in nested KWin 6.7.5 sessions, not in a live desktop.
+Plastile's diagnostics are shortcuts that write to KWin's log, one inspector window (*Explain active window*), and the ordinary KWin Scripts page. Unless noted otherwise, the behaviour below was exercised in nested KWin 6.7.5 sessions, not in a live desktop.
 
 ## Reading the log
 
@@ -60,12 +60,13 @@ qdbus6 org.kde.kglobalaccel /component/kwin org.kde.kglobalaccel.Component.invok
 | `contexts` | One entry per screen, desktop and activity: layout, member count, model revision and applied revision. |
 | `configRevision` | Increases with every configuration attempt that differs from the previous input. |
 | `shortcuts` | The startup shortcut check: `state` (`pending`, `done` or `unavailable`) and the number of `conflicts` ([details](SHORTCUTS.md#conflict-report)). |
+| `inspectorOpen` | Whether the *Explain active window* inspector is open. |
 
 A healthy idle session shows no change between two dumps taken a few seconds apart. Measured: 3 s of idle produced no flushes, deadlines or writes.
 
 ### Explain active window
 
-**Explain active window** prints the classification and placement record of the focused window. The fields are described in [CONFIGURATION](CONFIGURATION.md#seeing-why-a-window-was-classified). It requires `diagnostics` at `info` or `debug`.
+**Explain active window** opens the inspector for the focused window: how Plastile treats it and why, in plain words, with internal values under *Show details*. Escape, a click elsewhere, activating another window, or the command again closes it. It also prints the classification and placement record to the log, which requires `diagnostics` at `info` or `debug`. Both are described in [CONFIGURATION](CONFIGURATION.md#seeing-why-a-window-was-classified).
 
 ### Log trace
 
@@ -126,7 +127,7 @@ Check KWin's Window Rules and disable other tiling scripts. Then compare two cou
 
 - **Script not running:** shortcuts work only while the script is enabled. Check KWin Scripts and look for `plastile info started` in the log.
 - **Old defaults:** earlier versions bound *Suspend/resume* to `Meta+Shift+S` (taken by Spectacle) and *Grow*/*Shrink* to `Meta+Shift+=` / `Meta+Shift+-`, which never arrive as registered on a US keymap. The defaults are now `Meta+Ctrl+S`, `Meta+Ctrl+=` and `Meta+Ctrl+-` (measured to reach Plastile; [details](SHORTCUTS.md#default-bindings-measured-with-real-key-presses)). A binding you set yourself is kept by KGlobalAccel.
-- **Your own bindings:** a key you had already bound to something else goes to that other action (measured for a KWin action bound to `Meta+Shift+H`). Look for `plastile warn shortcut conflicts:` in the log; it names the key and the other action ([conflict report](SHORTCUTS.md#conflict-report)). Pick another key for one of them.
+- **Your own bindings:** a key you had already bound to something else goes to that other action (measured for a KWin action bound to `Meta+Shift+H`). Look for `plastile warn shortcut conflicts:` in the log, or open *Explain active window*: both name the key and the other action ([conflict report](SHORTCUTS.md#conflict-report)). Pick another key for one of them.
 - **Script disabled:** KGlobalAccel still accepts the shortcut and nothing runs (measured). That is expected.
 - **Suspended:** layout commands are rejected with `tiling suspended` (visible at `debug`).
 
@@ -145,6 +146,7 @@ Check KWin's Window Rules and disable other tiling scripts. Then compare two cou
 | One `ratioStep` in the dialog | The dialog's grow/shrink step drives both master/stack and BSP. Use the JSON document for different steps. | By design |
 | Rules cannot move windows | Rules match the screen, desktop and activity a window is on, but cannot send it elsewhere, set a layout or choose another overflow policy; these actions are rejected with the alternative named ([CONFIGURATION](CONFIGURATION.md#rules)). Overrides cannot change rules. | By design for now |
 | Rule `insert` action | `border`, `mode`, `minSize` and the context matchers are covered by nested scenarios; `insert` only by validation. | Partly untested |
+| The inspector takes the keyboard while open | It is a popup window, like a menu: keys go to it until it closes (Escape, a click elsewhere, another window activated). Global shortcuts still work: a Plastile focus key pressed while it was open moved the focus and closed it. | Measured (nested, libei); KWin popup behaviour |
 | Shortcut conflict report is a snapshot | It runs at load and on *Reload configuration*, not when you rebind a key in System Settings. | By design |
 | Three or more outputs | Two virtual outputs were tested, not more. | Untested |
 | Package discovery after install | A package installed while KWin was running was found by `Scripting.start` only after about 20 s (one nested run). Retry, or log out and in, if Plastile does not appear. | Measured (n=1) |

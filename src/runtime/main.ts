@@ -11,6 +11,7 @@ import {
 import { KwinAdapter } from "../adapters/kwin/adapter.ts";
 import type { KKWin, KOptions, KQt, KSignal, KWorkspace } from "../adapters/kwin/kwinTypes.ts";
 import { describeConflicts, ShortcutAudit, type Bus, type ShortcutReport } from "./shortcuts.ts";
+import { describeWindow, type InspectorView } from "./inspect.ts";
 
 export const VERSION = "0.1.0";
 export { COMMANDS };
@@ -27,9 +28,17 @@ export interface RuntimeEnv {
   /** Measurement builds only (probes/perf): CLOCK_MONOTONIC ns and per-command timing logs. */
   readonly clockNs?: () => number;
   readonly perf?: boolean;
-  // ---- configuration reload and shortcut report (T26, D9) ----
+  // ---- configuration reload, shortcut report, inspector (T26, T28, D9) ----
   /** Asynchronous session-bus call (KWin's DBusCall, one object per call); absent: features that need it are off. */
   readonly dbus?: Bus;
+  /** The lazily created inspector window (package/contents/ui/Inspector.qml); absent: explain only logs. */
+  readonly inspector?: InspectorHost;
+}
+
+export interface InspectorHost {
+  open(view: InspectorView): void;
+  close(): void;
+  isOpen(): boolean;
 }
 
 type Level = "error" | "warn" | "info" | "debug";
@@ -128,7 +137,7 @@ export function createRuntime(env: RuntimeEnv): Runtime {
     if (engine.isAlive() && snapshot && snapshot.usesDesktopNames) engine.configure(options(snapshot));
   };
 
-  // ---- configuration reload and shortcut report (T26, D9) ----
+  // ---- configuration reload, shortcut report, inspector (T26, T28, D9) ----
   const bus = env.dbus;
   // Shortcut report: read-only, once per load (and per reload request), on a later event-loop
   // turn than the start, one D-Bus request in flight at a time; never on the command path.
@@ -159,13 +168,24 @@ export function createRuntime(env: RuntimeEnv): Runtime {
     });
     env.qt.callLater(startAudit);
   };
+  const activeArea = (): InspectorView["area"] => {
+    const o = adapter.activeOutput();
+    const d = o === null ? null : adapter.visibleDesktop(o);
+    return o === null || d === null ? null : adapter.workArea(o, d);
+  };
   const explainWindow = (): void => {
     const a = adapter.activeWindow();
     const x = a ? engine.explain(a) : null;
     const conflicts = shortcuts && shortcuts.conflicts.length > 0 ? shortcuts.conflicts : null;
     log("info", "explain", x ? (conflicts ? { ...x, shortcutConflicts: conflicts } : x) : { error: "no active window" });
+    // The inspector window exists only from this command until it closes (Escape, a click
+    // elsewhere, another window activated, this command again, or unload).
+    const ins = env.inspector;
+    if (!ins) return;
+    if (ins.isOpen()) ins.close();
+    else ins.open(describeWindow(x, { desktopNameOf: (id) => adapter.desktopNameOf(id), shortcuts, area: activeArea() }));
   };
-  // ---- end T26/D9 ----
+  // ---- end T26/T28/D9 ----
 
   const dispatch = (id: string): CommandResult | null => {
     if (!engine.isAlive()) return null;
@@ -174,7 +194,8 @@ export function createRuntime(env: RuntimeEnv): Runtime {
       env.print("plastile counters " + safeJson({ counters: engine.counters, outstanding: engine.outstandingCount(),
         connections: adapter.connectionCount(), windows: adapter.windowCount(), contexts: engine.contextSummary(),
         configRevision: snapshot?.revision ?? null,
-        shortcuts: shortcuts ? { state: shortcuts.state, conflicts: shortcuts.conflicts.length } : null }));
+        shortcuts: shortcuts ? { state: shortcuts.state, conflicts: shortcuts.conflicts.length } : null,
+        inspectorOpen: env.inspector ? env.inspector.isOpen() : null }));
       return null;
     }
     if (id === "plastile.inspect.dump-trace") {
@@ -210,8 +231,9 @@ export function createRuntime(env: RuntimeEnv): Runtime {
       if (fn) fn();
     },
     shutdown: () => {
-      // Pending D-Bus replies go first: none may reach a stopped engine.
+      // Own UI and pending D-Bus replies go first: neither may reach a stopped engine.
       if (audit) audit.cancel();
+      if (env.inspector) env.inspector.close();
       // Invalidate first (engine stops deferred work and restores owned state), then disconnect.
       engine.stop();
       pendingDeadline = null;
