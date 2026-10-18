@@ -17,7 +17,9 @@ Modes:
            toggle-float/swap/ratio/layout.next, 2..8 windows, 100..400 ms apart),
            sampled every 30 s; then the C14 idle pairs (60 s loaded, 60 s unloaded,
            twice) with KWin CPU time from /proc/<pid>/stat.
-  all      p14, control, p15 in sequence.
+  p15control  the p15 operation sequence (same seed and timing) with the empty script:
+           a no-tiler RSS baseline for the churn session.
+  all      p14, control, p15, p15control in sequence.
 
 Raw results: artifacts/perf/<stamp>-churn/. With --evidence, redacted summaries go to
 docs/status/evidence/churn-p14.json (p14 + control) and churn-p15.json (p15 + idle).
@@ -224,16 +226,22 @@ def run_control(out: Path, cycles: int) -> dict:
 OPS = ("open", "close", "minimize", "unminimize", "toggle-float", "swap", "ratio", "layout.next")
 
 
-def run_p15(out: Path, minutes: float, seed: int, idle_seconds: float, idle_pairs: int) -> dict:
+def run_p15(out: Path, minutes: float, seed: int, idle_seconds: float, idle_pairs: int, control: bool = False) -> dict:
+    """P15 churn. With control=True: the same seeded operation sequence and timing with the
+    empty declarative script instead of Plastile (Plastile commands are skipped, the window
+    activation that precedes them is kept), for a no-tiler RSS baseline. Windows are then
+    not resized, so client buffers stay at 400x300: the control bounds KWin's own growth
+    under churn, it is not a byte-for-byte equivalent."""
     rng = random.Random(seed)
-    jl = open(out / "p15-samples.jsonl", "w")
-    ops_log = open(out / "p15-ops.jsonl", "w")
+    tag = "p15control" if control else "p15"
+    jl = open(out / f"{tag}-samples.jsonl", "w")
+    ops_log = open(out / f"{tag}-ops.jsonl", "w")
     samples: list[dict] = []
     op_counts = {o: 0 for o in OPS}
     failures: list[str] = []
     next_id = 1
     # Eight stacked windows need a tall output (KWin's 150x150 client minimum, see burst-C09).
-    with Session(out, width=1280, height=1600) as s:
+    with Session(out / tag if control else out, width=1280, height=1600, **({"qml": EMPTY_QML} if control else {})) as s:
         live: list[int] = []
 
         def spawn_one() -> None:
@@ -246,12 +254,22 @@ def run_p15(out: Path, minutes: float, seed: int, idle_seconds: float, idle_pair
 
         for _ in range(3):
             spawn_one()
-        s.load(); s.settle()
+        if control:
+            s.kw.load_declarative(EMPTY_QML, EMPTY_PLUGIN)
+            time.sleep(0.5)
+        else:
+            s.load(); s.settle()
         t0 = time.monotonic()
         rss0 = s.kw.kwin_rss_kib()
         off0 = s.kw.mark()
 
         def sample(label: str) -> dict:
+            if control:
+                rec = {"tSeconds": round(time.monotonic() - t0, 1), "label": label, "windowsLive": len(live),
+                       "oracleWindows": len(s.frames_list()), "rssKiB": s.kw.kwin_rss_kib()}
+                samples.append(rec)
+                jl.write(json.dumps(rec) + "\n"); jl.flush()
+                return rec
             c = s.counters()
             rec = {"tSeconds": round(time.monotonic() - t0, 1), "label": label, "windowsLive": len(live),
                    "counters": c["counters"], "outstanding": c["outstanding"], "connections": c["connections"],
@@ -282,13 +300,21 @@ def run_p15(out: Path, minutes: float, seed: int, idle_seconds: float, idle_pair
                 elif op == "unminimize":
                     s.act(cap, "w.minimized = false")
                 elif op == "toggle-float":
-                    s.act(cap, "workspace.activeWindow = w"); s.cmd("window.toggle-float")
+                    s.act(cap, "workspace.activeWindow = w")
+                    if not control:
+                        s.cmd("window.toggle-float")
                 elif op == "swap":
-                    s.act(cap, "workspace.activeWindow = w"); s.cmd("swap.next")
+                    s.act(cap, "workspace.activeWindow = w")
+                    if not control:
+                        s.cmd("swap.next")
                 elif op == "ratio":
-                    s.act(cap, "workspace.activeWindow = w"); s.cmd(rng.choice(("resize.grow", "resize.shrink")))
+                    s.act(cap, "workspace.activeWindow = w")
+                    which = rng.choice(("resize.grow", "resize.shrink"))  # consumed in both runs: same sequence
+                    if not control:
+                        s.cmd(which)
                 elif op == "layout.next":
-                    s.cmd("layout.next")
+                    if not control:
+                        s.cmd("layout.next")
             except Exception as exc:  # the oracle/actor failed, not necessarily Plastile
                 failures.append(f"op {n_ops} {op}: {type(exc).__name__}: {str(exc)[:200]}")
                 if len(failures) > 20:
@@ -304,6 +330,18 @@ def run_p15(out: Path, minutes: float, seed: int, idle_seconds: float, idle_pair
         churn_seconds = time.monotonic() - t0
         # Let the clients answer and the ledger drain, then judge.
         time.sleep(1.0)
+        if control:
+            final = sample("end")
+            s.kw.unload(EMPTY_PLUGIN)
+            summary = {"probe": "P15-control", "script": "probes/lifecycle/empty-package (empty Item)", "seed": seed,
+                       "minutesRequested": minutes, "churnSeconds": round(churn_seconds, 1), "ops": n_ops, "opCounts": op_counts,
+                       "skipped": "Plastile commands (toggle-float, swap, ratio, layout.next); the activation before them is kept",
+                       "samplesEvery30s": samples,
+                       "rssKiB": {"afterLoad": rss0, "afterChurn": final["rssKiB"], "churnDelta": final["rssKiB"] - rss0},
+                       "failures": failures, "pass": not failures}
+            jl.close()
+            write_json(out / f"{tag}-summary.json", summary)
+            return summary
         end = s.settle(timeout=10.0)
         final = sample("end")
         bad = s.log_lines(BAD, off0)
@@ -400,7 +438,7 @@ def run_idle(s: Session, seconds: float, pairs: int, failures: list[str]) -> dic
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("mode", choices=("p14", "control", "p15", "all"))
+    ap.add_argument("mode", choices=("p14", "control", "p15", "p15control", "all"))
     ap.add_argument("--cycles", type=int, default=100)
     ap.add_argument("--minutes", type=float, default=10.0)
     ap.add_argument("--seed", type=int, default=7)
@@ -442,6 +480,13 @@ def main() -> int:
         if args.mode == "all" or args.evidence:
             write_json(ROOT / "docs/status/evidence/churn-p15.json",
                        meta | {"purpose": "T34/P15 + C14: seeded random churn then idle CPU pairs, nested KWin", "p15": p15})
+    if args.mode in ("p15control", "all"):
+        p15c = run_p15(out, args.minutes, args.seed, 0, 0, control=True)
+        print("P15-CONTROL", json.dumps(p15c["rssKiB"]))
+        if args.mode == "all" or args.evidence:
+            ev = ROOT / "docs/status/evidence/churn-p15.json"
+            prev = json.loads(ev.read_text()) if ev.exists() else {}
+            write_json(ev, prev | {"control": p15c})
     print(f"artifacts: {out}")
     return 0 if ok else 1
 

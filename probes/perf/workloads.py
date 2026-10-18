@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import random
 import re
 import subprocess
@@ -39,7 +40,17 @@ from harness import PLUGIN, Session, delta, near, overlaps, tiling_errors  # noq
 
 PERF = re.compile(r"plastile perf (\{.*\})$")
 LOG_TS = re.compile(r"^\s*(\d+\.\d+) ")
-MEASURE = ROOT / "build/measure/qml"
+# The measurement module must be built against the KWin under test's Qt: build/measure for
+# the Ubuntu sandbox (KWin 6.7.5); tools/sandbox/nix/measure.nix for KWin 6.8, selected with
+# PLASTILE_MEASURE_QML (run.sh passes PLASTILE_* through).
+MEASURE = Path(os.environ.get("PLASTILE_MEASURE_QML") or ROOT / "build/measure/qml")
+
+
+def measure_env() -> dict:
+    """QML_IMPORT_PATH for the nested KWin: the measurement module first, then whatever the
+    environment already provides (the Nix environment's QML modules live there)."""
+    paths = [str(MEASURE)] + [p for p in os.environ.get("QML_IMPORT_PATH", "").split(":") if p]
+    return {"QML_IMPORT_PATH": ":".join(paths)}
 GAP = 8  # default gaps; the oracle checks margins >= GAP
 
 
@@ -112,7 +123,7 @@ def stack_feasibility(s: Session, n: int, area: dict, gap: int = GAP) -> dict:
 
 
 def session(out: Path, n: int, config: dict | None = None, qml: Path | None = None) -> Session:
-    return Session(out, width=1920, height=stack_output_height(n), extra_env={"QML_IMPORT_PATH": str(MEASURE)},
+    return Session(out, width=1920, height=stack_output_height(n), extra_env=measure_env(),
                    qml=qml or HERE / "main.qml", config=config)
 
 
