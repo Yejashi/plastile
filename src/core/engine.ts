@@ -291,15 +291,16 @@ export class Engine {
     if (!r) return;
     const prevInteractive = r.states.interactive;
     r.states = st;
+    const prevSet = r.suspensions;
     const next = suspensionsOf(st);
-    const changed = !sameSet(next, r.suspensions);
+    const changed = !sameSet(next, prevSet);
     r.suspensions = next;
     if (changed) {
       this.trace.record(this.svc.now(), "suspensions", id, [...next]);
       if (next.size > 0) L.cancel(r.ledger); // KWin or the user owns the frame now; never fight it
       const onlyInteractive = (x: Set<Suspension>) => x.size === 0 || (x.size === 1 && x.has("interactive"));
-      const prevSet = suspensionsOf({ ...st, interactive: prevInteractive });
       // Starting a drag changes no slot; its end is interpreted once by interactionEnded.
+      // Any KWin-owned state appearing or clearing changes participation: one solve.
       if (!(onlyInteractive(prevSet) && onlyInteractive(next)) && r.ctx && r.mode === "tiled") this.markDirty(r.ctx);
       this.ensureFlush();
     }

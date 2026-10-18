@@ -493,3 +493,19 @@ test("I03: a user resize of the master edge becomes the new ratio", () => {
   assert.ok(Math.abs(a1.width - (a0.width + 100)) <= 1, `master width ${a1.width}`);
   assert.equal(b1.x, a1.x + a1.width + 8, "peer follows the divider");
 });
+
+test("L09/L10/L11: clearing the last suspension re-solves once and peers give the space back", () => {
+  for (const state of ["minimized", "maximized", "fullscreen", "hidden"] as const) {
+    const { h, e } = setup(["a", "b"]);
+    const slots = tiledFrames(h, ["a", "b"]);
+    h.setStates("b", { [state]: true });
+    h.drain();
+    assert.ok(rectNear(h.windows.get("a")!.frame, rect(8, 8, 1264, 784)), `${state}: peer took the area`);
+    const solves = e.counters.solves;
+    h.setStates("b", { [state]: false });
+    h.drain();
+    assert.equal(e.counters.solves, solves + 1, `${state}: one solve when the suspension clears`);
+    assert.ok(rectNear(h.windows.get("a")!.frame, slots.get("a")!), `${state}: peer back in its slot`);
+    assertTiling(tiledFrames(h, ["a", "b"]), AREA);
+  }
+});
