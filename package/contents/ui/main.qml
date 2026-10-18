@@ -1,6 +1,7 @@
 // Plastile declarative root. Owns: one ShortcutHandler per command id, the single
-// deadline Timer (only running while geometry requests are outstanding), and the
-// runtime instance. All policy lives in the bundled TypeScript core.
+// deadline Timer (only running while geometry requests are outstanding), the state
+// persistence item (Persistence.qml), and the runtime instance. All policy lives in
+// the bundled TypeScript core.
 import QtQuick
 import QtQml
 import org.kde.kwin
@@ -98,6 +99,10 @@ Item {
     }
     // ---- end zones overlay ----
 
+    // ---- persistence (T27, ADR-013): state slots and their one-shot maintenance timer ----
+    Persistence { id: persistence }
+    // ---- end T27 ----
+
     Component.onCompleted: {
         runtime = Bundle.createRuntime({
             workspace: Workspace,
@@ -119,6 +124,7 @@ Item {
                 destroy: root.destroyZones,
                 state: function () { return !zoneOverlay.active ? "absent" : root.zonesWanted ? "shown" : "hidden"; },
             },
+            state: persistence,
         });
     }
 

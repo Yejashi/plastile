@@ -14,6 +14,7 @@ import type { KKWin, KOptions, KQt, KSignal, KWorkspace } from "../adapters/kwin
 import { describeConflicts, ShortcutAudit, type Bus, type ShortcutReport } from "./shortcuts.ts";
 import { describeWindow, type InspectorView } from "./inspect.ts";
 import { zoneOverlayView, type ZoneOverlayHost } from "./zoneOverlay.ts";
+import { Persister, type StateStore } from "./persistence.ts";
 
 export const VERSION = "0.1.0";
 export { COMMANDS };
@@ -37,6 +38,9 @@ export interface RuntimeEnv {
   readonly inspector?: InspectorHost;
   /** The lazily created zones overlay (package/contents/ui/ZoneOverlay.qml, experimental); absent: zone.show only logs. */
   readonly zones?: ZoneOverlayHost;
+  // ---- persistence (T27) ----
+  /** Saved session preferences (package/contents/ui/Persistence.qml); absent: nothing is loaded or saved. */
+  readonly state?: StateStore;
 }
 
 export interface InspectorHost {
@@ -117,6 +121,13 @@ export function createRuntime(env: RuntimeEnv): Runtime {
 
   const engine = new Engine(adapter, svc, options(snapshot!));
   const initial = adapter.attach(engine, snapshot!.usesTitleRules);
+  // ---- persistence (T27, ADR-013): loaded before the first solve; saved as maintenance work ----
+  const persister = new Persister(env.state, engine, {
+    now: svc.now, log, stamp: () => new Date().toISOString(), clockNs: env.perf ? env.clockNs : undefined,
+  });
+  persister.load();
+  engine.onPersistChange = () => persister.markDirty();
+  // ---- end T27 ----
   engine.start(initial);
   log("info", `started ${VERSION}`, { windows: initial.length, configRevision: snapshot!.revision });
 
@@ -223,7 +234,8 @@ export function createRuntime(env: RuntimeEnv): Runtime {
         connections: adapter.connectionCount(), windows: adapter.windowCount(), contexts: engine.contextSummary(),
         configRevision: snapshot?.revision ?? null,
         shortcuts: shortcuts ? { state: shortcuts.state, conflicts: shortcuts.conflicts.length } : null,
-        inspectorOpen: env.inspector ? env.inspector.isOpen() : null, zoneOverlay: env.zones ? env.zones.state() : null }));
+        inspectorOpen: env.inspector ? env.inspector.isOpen() : null, zoneOverlay: env.zones ? env.zones.state() : null,
+        persistence: persister.summary() }));
       return null;
     }
     if (id === "plastile.inspect.dump-trace") {
@@ -265,6 +277,8 @@ export function createRuntime(env: RuntimeEnv): Runtime {
       if (audit) audit.cancel();
       if (env.inspector) env.inspector.close();
       if (env.zones) env.zones.destroy();
+      // The last save reads the engine's preferences, so it precedes the engine's stop (T27).
+      persister.shutdown();
       // Invalidate first (engine stops deferred work and restores owned state), then disconnect.
       engine.stop();
       pendingDeadline = null;

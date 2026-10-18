@@ -63,8 +63,10 @@ let
     shim=''${PLASTILE_UDMABUF_SHIM:-auto}
     if [ "$shim" = auto ]; then
       shim=1
-      [ ! -e /dev/udmabuf ] || shim=0
-      for node in /dev/dri/renderD*; do [ ! -e "$node" ] || shim=0; done
+      # A node that exists but this user cannot open (e.g. /dev/udmabuf root:kvm 0660 on
+      # hosted CI runners) is as good as absent: KWin then finds no device and exits.
+      { [ -r /dev/udmabuf ] && [ -w /dev/udmabuf ]; } && shim=0
+      for node in /dev/dri/renderD*; do { [ -r "$node" ] && [ -w "$node" ]; } && shim=0; done
     fi
     if [ "$shim" = 1 ]; then
       export LD_PRELOAD=${udmabufShim}/lib/libplastile-udmabuf-shim.so''${LD_PRELOAD:+:$LD_PRELOAD}

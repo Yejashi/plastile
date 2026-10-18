@@ -321,6 +321,14 @@ jobs:
           tools/sandbox/nix/run.sh -- kwin_wayland --version
           tools/sandbox/nix/run.sh -- python3 tests/integration/run.py --markdown artifacts/integration-kwin68-summary.md
 
+      - name: Diagnostics on failure (device nodes, first KWin log)
+        if: failure()
+        run: |
+          ls -l /dev/dri /dev/udmabuf 2>&1 || true
+          id
+          f=$(find artifacts/integration -name kwin.log | head -1)
+          [ -n "$f" ] && head -60 "$f" || echo "no kwin.log"
+
       - name: Job summary
         if: always()
         run: |

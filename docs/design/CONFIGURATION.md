@@ -141,6 +141,13 @@ Session restore maps applications conservatively using app identity and bounded 
 
 Schema migrations are pure transforms with fixtures. Keep the previous valid file/snapshot until activation succeeds. An unknown future schema is rejected rather than silently downgraded. Public command and rule IDs remain stable across minor changes; deprecations need compatibility aliases and a removal plan.
 
+**As implemented (T27, [ADR-013](DECISIONS.md#adr-013-persist-session-preferences-through-qtcore-settings)).** Configuration stays in `kwinrc` and is not part of the persisted state. The state file holds two things:
+
+- **Context preferences:** an explicit layout, and a master ratio and count set by command or divider drag. They are keyed by the full context key (output identity key, desktop id, activity). A context whose output is absent keeps its entry until that output returns. There is no fallback to another output for context preferences: another output keeps its own.
+- **Float rectangles:** the rectangle of a window the user floated, keyed by `appId`, `resourceName` and `role`, with the output identity key and that output's work area. The output association is a preference with fallback. On another output, or after the output is gone, the rectangle is placed proportionally inside the current output's work area and clamped (D6).
+
+Matching is conservative: a saved float applies only when exactly one live window has that identity. Anything invalid rejects the whole snapshot. With two slots, the previous valid snapshot stays on disk while a new one is written. A newer schema on disk is left untouched, and nothing is saved that session.
+
 ## 9. Extension path
 
 Initial custom layouts are declarative normalized zone lists or bounded split trees, validated before use. Arbitrary executable plugins are deferred. If later required, model the extension as `bounded input -> validated layout output`, with no live window handles, no arbitrary compositor mutations, resource limits, and a deterministic fallback. PlasmaZones' Luau separation is useful source material, but selecting a scripting language is not itself a complete isolation design.

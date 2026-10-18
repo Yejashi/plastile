@@ -69,7 +69,7 @@ What was measured (nested KWin 6.7.5, kpackagetool6 2.0, package installed into 
 
 1. Open **System Settings > Window Management > KWin Scripts**.
 2. Tick **Plastile** and click **Apply**. The page writes `[Plugins] plastileEnabled=true` and calls `org.kde.kwin.Scripting.start` (observed source: kwin v6.7.5 `src/kcms/scripts/module.cpp`). KWin loads the script, which adopts the windows already open and registers its shortcuts.
-3. To stop it, untick and Apply. Unloading disconnects every signal, stops Plastile's single timer, restores borders it changed and leaves windows where they are. This was measured over 300 load/unload cycles in the probes and 20 reloads with pending work in the integration suite.
+3. To stop it, untick and Apply. Unloading disconnects every signal, stops Plastile's single timer, restores borders it changed and leaves windows where they are. Plastile's own teardown was measured in nested KWin sessions over 100 disable/enable cycles with pending work (`reload-Q09`: KWin's exported script objects, the shortcut list, idle CPU and RSS stay flat) and 20 unloads with unsaved layout changes (`persist-reload-cycles-Q09`: each saves exactly once). The earlier 300-cycle lifecycle probe measured KWin's script loader before Plastile existed and says nothing about Plastile itself. Not yet checked on a physical session.
 
 The script is **not enabled by default** (`EnabledByDefault: false`).
 
@@ -154,5 +154,6 @@ The `configJson` key holds the JSON document as a single KConfig string. The set
 1. Untick Plastile in KWin Scripts and Apply. This releases windows, borders and connections.
 2. Run `kpackagetool6 --type KWin/Script --remove plastile`.
 3. Optionally, delete the `[Script-plastile]` group and the `plastileEnabled` line from `~/.config/kwinrc`, and the `plastile.*` entries from `~/.config/kglobalshortcutsrc` (they are under the `[kwin]` group).
+4. Optionally, delete `~/.local/state/plastile/`, which holds saved layout preferences ([details](README.md#saved-layout-preferences)).
 
 Windows keep the geometry they had at unload. Nothing is restored to a pre-Plastile arrangement, because no such arrangement is stored.
