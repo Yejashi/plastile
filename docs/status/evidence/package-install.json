@@ -1,0 +1,607 @@
+{
+ "layer": "nested KWin virtual backend (not physical); package installed into the session's private XDG_DATA_HOME",
+ "kwin": "kwin 6.7.5",
+ "kpackagetool6": "kpackagetool6 2.0",
+ "installAutoload": {
+  "zip": {
+   "version": "0.1.0",
+   "sha256": "9d6f35942037c75f2996423de5714067ab49a2b32c7ce046e267e67f532c45b7",
+   "bytes": 36995,
+   "entries": [
+    "contents/code/plastile.mjs",
+    "contents/config/main.xml",
+    "contents/ui/config.ui",
+    "contents/ui/main.qml",
+    "metadata.json"
+   ],
+   "reproducible": true,
+   "mtimePolicy": "1980-01-01 00:00:00 unless SOURCE_DATE_EPOCH",
+   "name": "plastile-0.1.0.kwinscript"
+  },
+  "steps": {
+   "install": {
+    "argv": [
+     "tools/install.sh",
+     "install",
+     "<repo>/artifacts/integration/20261017T211432/package-install-autoload-T32/dist/plastile-0.1.0.kwinscript"
+    ],
+    "rc": 0,
+    "stdout": "Successfully installed <session>/data/kwin/scripts/plastile/\n\nInstalled to: <session>/data/kwin/scripts/plastile\nNothing was enabled, reloaded or restarted. KWin discovers packages when it (re)scans\nkwin/scripts; a package installed while KWin is running may not be visible until the\nscript list is refreshed (log out and in). To enable Plastile, either:\n\n  System Settings > Window Management > KWin Scripts > tick \"Plastile\" > Apply\n\nor, from a terminal in the same session:\n\n  kwriteconfig6 --file kwinrc --group Plugins --key plastileEnabled true\n  qdbus6 org.kde.KWin /Scripting org.kde.kwin.Scripting.start\n\nTo disable later, set the same key to false and run the same Scripting.start command.\nThis script prints these commands; it does not execute them.\n",
+    "stderr": "",
+    "kwinrcUnchanged": true,
+    "installedDir": true,
+    "bundlePresent": true
+   },
+   "autoload": {
+    "observed": true,
+    "isScriptLoaded": true
+   },
+   "tiling": {
+    "area": {
+     "x": 0,
+     "y": 0,
+     "width": 1280,
+     "height": 800
+    },
+    "frames": [
+     {
+      "x": 8,
+      "y": 8,
+      "width": 691,
+      "height": 784
+     },
+     {
+      "x": 707,
+      "y": 8,
+      "width": 565,
+      "height": 784
+     }
+    ],
+    "errors": [],
+    "counters": {
+     "solves": 2,
+     "flushes": 3,
+     "commands": 0,
+     "commandsQueued": 0,
+     "writes": 3,
+     "corrections": 0,
+     "skipOutstanding": 0,
+     "skipNoop": 0,
+     "skipDiverged": 0,
+     "observations": 3,
+     "observationsDuringApply": 0,
+     "settled": 3,
+     "stale": 0,
+     "partial": 0,
+     "external": 0,
+     "learned": 0,
+     "diverged": 0,
+     "deadlines": 0,
+     "overflow": 0,
+     "adopted": 2,
+     "removed": 0,
+     "staleEvents": 0,
+     "errors": 0,
+     "raises": 0,
+     "activations": 0
+    }
+   },
+   "show": {
+    "argv": [
+     "kpackagetool6",
+     "--type",
+     "KWin/Script",
+     "--show",
+     "plastile"
+    ],
+    "rc": 0,
+    "stdout": "Showing info for package: plastile\n  Name       : Plastile\n  Description: Fast, predictable automatic tiling (master/stack, BSP, monocle) that preserves KWin\n  Plugin     : plastile\n  Author     : Plastile contributors\n  Path       : <session>/data/kwin/scripts/plastile/\n",
+    "stderr": ""
+   },
+   "list": {
+    "argv": [
+     "kpackagetool6",
+     "--type",
+     "KWin/Script",
+     "--list"
+    ],
+    "rc": 0,
+    "stdout": "Listing KPackageType: KWin/Script in <session>/data/kwin/scripts/\nplastile\n",
+    "stderr": ""
+   },
+   "status": {
+    "argv": [
+     "tools/install.sh",
+     "status"
+    ],
+    "rc": 0,
+    "stdout": "data home : <session>/data\ntarget    : <session>/data/kwin/scripts/plastile\ninstalled : yes\nbundle    : present (135621 bytes)\nversion   : 0.1.0\nenabled   : true (kwinrc [Plugins] plastileEnabled)\nkpackagetool6 --type KWin/Script --show plastile:\n  Showing info for package: plastile\n    Name       : Plastile\n    Description: Fast, predictable automatic tiling (master/stack, BSP, monocle) that preserves KWin\n    Plugin     : plastile\n    Author     : Plastile contributors\n    Path       : <session>/data/kwin/scripts/plastile/\n",
+    "stderr": "",
+    "kwinrcUnchanged": true
+   },
+   "disable": {
+    "stopped": true,
+    "isScriptLoaded": false
+   },
+   "upgrade": {
+    "argv": [
+     "tools/install.sh",
+     "upgrade",
+     "<repo>/artifacts/integration/20261017T211432/package-install-autoload-T32/dist/plastile-0.1.0.kwinscript"
+    ],
+    "rc": 0,
+    "stdout": "Upgrading package from file: <repo>/artifacts/integration/20261017T211432/package-install-autoload-T32/dist/plastile-0.1.0.kwinscript\nSuccessfully upgraded <session>/data/kwin/scripts/plastile/\n\nUpgraded: <session>/data/kwin/scripts/plastile\nA running KWin keeps executing the previously loaded script until it is disabled and\nre-enabled (System Settings > Window Management > KWin Scripts, or kwriteconfig6 +\nScripting.start as printed by 'install'). This script does not do that for you.\n",
+    "stderr": "",
+    "kwinrcUnchanged": true
+   },
+   "reenable": {
+    "frames": [
+     {
+      "x": 8,
+      "y": 8,
+      "width": 691,
+      "height": 784
+     },
+     {
+      "x": 707,
+      "y": 8,
+      "width": 565,
+      "height": 784
+     }
+    ],
+    "errors": []
+   },
+   "remove": {
+    "argv": [
+     "tools/install.sh",
+     "remove"
+    ],
+    "rc": 0,
+    "stdout": "Successfully uninstalled <session>/data/kwin/scripts/plastile/\n\nRemoved: <session>/data/kwin/scripts/plastile\nThe kwinrc [Plugins] plastileEnabled key and the [Script-plastile] settings group were left\nuntouched (this script never writes kwinrc). A running KWin keeps the loaded script\nuntil the session ends or the script is disabled.\n",
+    "stderr": "",
+    "kwinrcUnchanged": true
+   },
+   "listAfterRemove": {
+    "argv": [
+     "kpackagetool6",
+     "--type",
+     "KWin/Script",
+     "--list"
+    ],
+    "rc": 0,
+    "stdout": "Listing KPackageType: KWin/Script in <session>/data/kwin/scripts/\n",
+    "stderr": ""
+   },
+   "removeTwice": {
+    "argv": [
+     "tools/install.sh",
+     "remove"
+    ],
+    "rc": 2,
+    "stdout": "",
+    "stderr": "install.sh: <session>/data/kwin/scripts/plastile is not installed\n",
+    "kwinrcUnchanged": true
+   },
+   "refusalAndDefaultSource": {
+    "installDir": {
+     "argv": [
+      "tools/install.sh",
+      "install",
+      "<repo>/artifacts/integration/20261017T211432/package-install-autoload-T32/package-without-bundle"
+     ],
+     "rc": 1,
+     "stdout": "",
+     "stderr": "install.sh: <repo>/artifacts/integration/20261017T211432/package-install-autoload-T32/package-without-bundle/contents/code/plastile.mjs is missing: run npm run build\n",
+     "kwinrcUnchanged": true
+    },
+    "upgradeDir": {
+     "argv": [
+      "tools/install.sh",
+      "upgrade",
+      "<repo>/artifacts/integration/20261017T211432/package-install-autoload-T32/package-without-bundle"
+     ],
+     "rc": 1,
+     "stdout": "",
+     "stderr": "install.sh: <repo>/artifacts/integration/20261017T211432/package-install-autoload-T32/package-without-bundle/contents/code/plastile.mjs is missing: run npm run build\n",
+     "kwinrcUnchanged": true
+    },
+    "installZip": {
+     "argv": [
+      "tools/install.sh",
+      "install",
+      "<repo>/artifacts/integration/20261017T211432/package-install-autoload-T32/package-without-bundle.kwinscript"
+     ],
+     "rc": 1,
+     "stdout": "",
+     "stderr": "install.sh: <repo>/artifacts/integration/20261017T211432/package-install-autoload-T32/package-without-bundle.kwinscript lacks contents/code/plastile.mjs: run npm run build, then tools/release.py\n",
+     "kwinrcUnchanged": true
+    },
+    "installDefaultSource": {
+     "argv": [
+      "tools/install.sh",
+      "install"
+     ],
+     "rc": 0,
+     "stdout": "Successfully installed <session>/data/kwin/scripts/plastile/\n\nInstalled to: <session>/data/kwin/scripts/plastile\nNothing was enabled, reloaded or restarted. KWin discovers packages when it (re)scans\nkwin/scripts; a package installed while KWin is running may not be visible until the\nscript list is refreshed (log out and in). To enable Plastile, either:\n\n  System Settings > Window Management > KWin Scripts > tick \"Plastile\" > Apply\n\nor, from a terminal in the same session:\n\n  kwriteconfig6 --file kwinrc --group Plugins --key plastileEnabled true\n  qdbus6 org.kde.KWin /Scripting org.kde.kwin.Scripting.start\n\nTo disable later, set the same key to false and run the same Scripting.start command.\nThis script prints these commands; it does not execute them.\n",
+     "stderr": "",
+     "kwinrcUnchanged": true
+    },
+    "installTwice": {
+     "argv": [
+      "tools/install.sh",
+      "install"
+     ],
+     "rc": 4,
+     "stdout": "",
+     "stderr": "install.sh: <session>/data/kwin/scripts/plastile already exists; use 'upgrade' to replace it\n",
+     "kwinrcUnchanged": true
+    },
+    "removeDefaultSource": {
+     "argv": [
+      "tools/install.sh",
+      "remove"
+     ],
+     "rc": 0,
+     "stdout": "Successfully uninstalled <session>/data/kwin/scripts/plastile/\n\nRemoved: <session>/data/kwin/scripts/plastile\nThe kwinrc [Plugins] plastileEnabled key and the [Script-plastile] settings group were left\nuntouched (this script never writes kwinrc). A running KWin keeps the loaded script\nuntil the session ends or the script is disabled.\n",
+     "stderr": "",
+     "kwinrcUnchanged": true
+    }
+   }
+  },
+  "kwinLogErrors": [],
+  "checks": {
+   "release: two builds yield identical bytes": {
+    "pass": true,
+    "detail": {
+     "sha256": "9d6f35942037c75f2996423de5714067ab49a2b32c7ce046e267e67f532c45b7",
+     "bytes": 36995
+    }
+   },
+   "release: required entries present and sorted": {
+    "pass": true,
+    "detail": [
+     "contents/code/plastile.mjs",
+     "contents/config/main.xml",
+     "contents/ui/config.ui",
+     "contents/ui/main.qml",
+     "metadata.json"
+    ]
+   },
+   "release: CLI --check passes and matches the library hash": {
+    "pass": true,
+    "detail": {
+     "rc": 0,
+     "stderr": "",
+     "cliSha256": "9d6f35942037c75f2996423de5714067ab49a2b32c7ce046e267e67f532c45b7"
+    }
+   },
+   "install.sh install into nested XDG_DATA_HOME: rc 0, directory and bundle present": {
+    "pass": true,
+    "detail": {
+     "argv": [
+      "tools/install.sh",
+      "install",
+      "<repo>/artifacts/integration/20261017T211432/package-install-autoload-T32/dist/plastile-0.1.0.kwinscript"
+     ],
+     "rc": 0,
+     "stdout": "Successfully installed <session>/data/kwin/scripts/plastile/\n\nInstalled to: <session>/data/kwin/scripts/plastile\nNothing was enabled, reloaded or restarted. KWin discovers packages when it (re)scans\nkwin/scripts; a package installed while KWin is running may not be visible until the\nscript list is refreshed (log out and in). To enable Plastile, either:\n\n  System Settings > Window Management > KWin Scripts > tick \"Plastile\" > Apply\n\nor, from a terminal in the same session:\n\n  kwriteconfig6 --file kwinrc --group Plugins --key plastileEnabled true\n  qdbus6 org.kde.KWin /Scripting org.kde.kwin.Scripting.start\n\nTo disable later, set the same key to false and run the same Scripting.start command.\nThis script prints these commands; it does not execute them.\n",
+     "stderr": "",
+     "kwinrcUnchanged": true,
+     "installedDir": true,
+     "bundlePresent": true
+    }
+   },
+   "install.sh prints enable instructions, does not execute them": {
+    "pass": true,
+    "detail": null
+   },
+   "install.sh left kwinrc untouched (hash before == after, taken before KWin started)": {
+    "pass": true,
+    "detail": null
+   },
+   "autoload: 'plastile info started' observed after KWin start without manual load": {
+    "pass": true,
+    "detail": [
+     " 40298.683 qml plastile info started 0.1.0 {\"windows\":0,\"configRevision\":1}"
+    ]
+   },
+   "autoload: Scripting.isScriptLoaded(plastile) is true": {
+    "pass": true,
+    "detail": null
+   },
+   "tiling: 2 fixtures tiled by the autoloaded package (oracle, no overlap, gaps>=8)": {
+    "pass": true,
+    "detail": [
+     {
+      "x": 8,
+      "y": 8,
+      "width": 691,
+      "height": 784
+     },
+     {
+      "x": 707,
+      "y": 8,
+      "width": 565,
+      "height": 784
+     }
+    ]
+   },
+   "tiling: counters show work (solves>=1, writes>=1, errors=0)": {
+    "pass": true,
+    "detail": {
+     "solves": 2,
+     "flushes": 3,
+     "commands": 0,
+     "commandsQueued": 0,
+     "writes": 3,
+     "corrections": 0,
+     "skipOutstanding": 0,
+     "skipNoop": 0,
+     "skipDiverged": 0,
+     "observations": 3,
+     "observationsDuringApply": 0,
+     "settled": 3,
+     "stale": 0,
+     "partial": 0,
+     "external": 0,
+     "learned": 0,
+     "diverged": 0,
+     "deadlines": 0,
+     "overflow": 0,
+     "adopted": 2,
+     "removed": 0,
+     "staleEvents": 0,
+     "errors": 0,
+     "raises": 0,
+     "activations": 0
+    }
+   },
+   "kpackagetool6 --show plastile lists the package": {
+    "pass": true,
+    "detail": "Showing info for package: plastile\n  Name       : Plastile\n  Description: Fast, predictable automatic tiling (master/stack, BSP, monocle) that preserves KWin\n  Plugin     : plastile\n  Author     : Plastile contributors\n  Path       : <session>/data/kwin/scripts/plastile/\n"
+   },
+   "kpackagetool6 --list names plastile under the nested data home": {
+    "pass": true,
+    "detail": "Listing KPackageType: KWin/Script in <session>/data/kwin/scripts/\nplastile\n"
+   },
+   "install.sh status reports installed, version and enabled=true": {
+    "pass": true,
+    "detail": "data home : <session>/data\ntarget    : <session>/data/kwin/scripts/plastile\ninstalled : yes\nbundle    : present (135621 bytes)\nversion   : 0.1.0\nenabled   : true (kwinrc [Plugins] plastileEnabled)\nkpackagetool6 --type KWin/Script --show plastile:\n  Showing info for package: plastile\n    Name       : Plastile\n    Description: Fast, predictable automatic tiling (master/stack, BSP, monocle) that preserves KWin\n    Plugin     : plastile\n    Author     : Plastile contributors\n    Path       : <session>/data/kwin/scripts/plastile/\n"
+   },
+   "disable: kwinrc plastileEnabled=false + Scripting.start -> 'plastile info stopped'": {
+    "pass": true,
+    "detail": [
+     " 40299.059 qml plastile info stopped"
+    ]
+   },
+   "disable: isScriptLoaded false afterwards": {
+    "pass": true,
+    "detail": null
+   },
+   "disable: no Plastile shortcut handlers keep firing (inspect.counters after unload emits nothing)": {
+    "pass": true,
+    "detail": null
+   },
+   "upgrade: install.sh upgrade with the same zip rc 0, files intact": {
+    "pass": true,
+    "detail": {
+     "argv": [
+      "tools/install.sh",
+      "upgrade",
+      "<repo>/artifacts/integration/20261017T211432/package-install-autoload-T32/dist/plastile-0.1.0.kwinscript"
+     ],
+     "rc": 0,
+     "stdout": "Upgrading package from file: <repo>/artifacts/integration/20261017T211432/package-install-autoload-T32/dist/plastile-0.1.0.kwinscript\nSuccessfully upgraded <session>/data/kwin/scripts/plastile/\n\nUpgraded: <session>/data/kwin/scripts/plastile\nA running KWin keeps executing the previously loaded script until it is disabled and\nre-enabled (System Settings > Window Management > KWin Scripts, or kwriteconfig6 +\nScripting.start as printed by 'install'). This script does not do that for you.\n",
+     "stderr": "",
+     "kwinrcUnchanged": true
+    }
+   },
+   "re-enable after upgrade: 'plastile info started' again": {
+    "pass": true,
+    "detail": [
+     " 40299.399 qml plastile info started 0.1.0 {\"windows\":2,\"configRevision\":1}"
+    ]
+   },
+   "re-enable: 2 fixtures still tiled (oracle)": {
+    "pass": true,
+    "detail": []
+   },
+   "remove: install.sh remove rc 0 and the package directory is gone": {
+    "pass": true,
+    "detail": {
+     "rc": 0,
+     "exists": false
+    }
+   },
+   "remove twice: second remove fails cleanly (rc 2) without touching anything": {
+    "pass": true,
+    "detail": "install.sh: <session>/data/kwin/scripts/plastile is not installed\n"
+   },
+   "kpackagetool6 --list is empty after remove": {
+    "pass": true,
+    "detail": "Listing KPackageType: KWin/Script in <session>/data/kwin/scripts/\n"
+   },
+   "refuse installDir without contents/code/plastile.mjs: rc 1, says 'run npm run build', nothing installed": {
+    "pass": true,
+    "detail": {
+     "rc": 1,
+     "stderr": "install.sh: <repo>/artifacts/integration/20261017T211432/package-install-autoload-T32/package-without-bundle/contents/code/plastile.mjs is missing: run npm run build\n"
+    }
+   },
+   "refuse upgradeDir without contents/code/plastile.mjs: rc 1, says 'run npm run build', nothing installed": {
+    "pass": true,
+    "detail": {
+     "rc": 1,
+     "stderr": "install.sh: <repo>/artifacts/integration/20261017T211432/package-install-autoload-T32/package-without-bundle/contents/code/plastile.mjs is missing: run npm run build\n"
+    }
+   },
+   "refuse installZip without contents/code/plastile.mjs: rc 1, says 'run npm run build', nothing installed": {
+    "pass": true,
+    "detail": {
+     "rc": 1,
+     "stderr": "install.sh: <repo>/artifacts/integration/20261017T211432/package-install-autoload-T32/package-without-bundle.kwinscript lacks contents/code/plastile.mjs: run npm run build, then tools/release.py\n"
+    }
+   },
+   "install with default source (package/) succeeds; second install refuses (rc 4); remove cleans up": {
+    "pass": true,
+    "detail": {
+     "install": 0,
+     "installTwice": 4,
+     "remove": 0
+    }
+   },
+   "install.sh never wrote kwinrc (status/upgrade/remove hashed before and after each call)": {
+    "pass": true,
+    "detail": null
+   },
+   "kwinrc still carries the test's keys": {
+    "pass": true,
+    "detail": null
+   }
+  }
+ },
+ "postStartDiscovery": {
+  "zip": "9d6f35942037c75f2996423de5714067ab49a2b32c7ce046e267e67f532c45b7",
+  "attempts": [
+   {
+    "startCalledAtPlusSeconds": 0.0,
+    "loaded": false
+   },
+   {
+    "startCalledAtPlusSeconds": 4.1,
+    "loaded": false
+   },
+   {
+    "startCalledAtPlusSeconds": 8.3,
+    "loaded": false
+   },
+   {
+    "startCalledAtPlusSeconds": 12.4,
+    "loaded": false
+   },
+   {
+    "startCalledAtPlusSeconds": 16.5,
+    "loaded": false
+   }
+  ],
+  "install": {
+   "argv": [
+    "tools/install.sh",
+    "install",
+    "<repo>/artifacts/integration/20261017T211432/package-post-start-discovery-T32/dist/plastile-0.1.0.kwinscript"
+   ],
+   "rc": 0,
+   "stdout": "Successfully installed <session>/data/kwin/scripts/plastile/\n\nInstalled to: <session>/data/kwin/scripts/plastile\nNothing was enabled, reloaded or restarted. KWin discovers packages when it (re)scans\nkwin/scripts; a package installed while KWin is running may not be visible until the\nscript list is refreshed (log out and in). To enable Plastile, either:\n\n  System Settings > Window Management > KWin Scripts > tick \"Plastile\" > Apply\n\nor, from a terminal in the same session:\n\n  kwriteconfig6 --file kwinrc --group Plugins --key plastileEnabled true\n  qdbus6 org.kde.KWin /Scripting org.kde.kwin.Scripting.start\n\nTo disable later, set the same key to false and run the same Scripting.start command.\nThis script prints these commands; it does not execute them.\n",
+   "stderr": "",
+   "kwinrcUnchanged": true
+  },
+  "discoveredAfterSeconds": 20.6,
+  "isScriptLoaded": true,
+  "firstStartAfterInstallLoadedIt": false,
+  "attemptsBeforeSuccess": 5,
+  "frames": [
+   {
+    "x": 8,
+    "y": 8,
+    "width": 691,
+    "height": 784
+   },
+   {
+    "x": 707,
+    "y": 8,
+    "width": 565,
+    "height": 784
+   }
+  ],
+  "checks": {
+   "release: two builds yield identical bytes": {
+    "pass": true,
+    "detail": {
+     "sha256": "9d6f35942037c75f2996423de5714067ab49a2b32c7ce046e267e67f532c45b7",
+     "bytes": 36995
+    }
+   },
+   "release: required entries present and sorted": {
+    "pass": true,
+    "detail": [
+     "contents/code/plastile.mjs",
+     "contents/config/main.xml",
+     "contents/ui/config.ui",
+     "contents/ui/main.qml",
+     "metadata.json"
+    ]
+   },
+   "release: CLI --check passes and matches the library hash": {
+    "pass": true,
+    "detail": {
+     "rc": 0,
+     "stderr": "",
+     "cliSha256": "9d6f35942037c75f2996423de5714067ab49a2b32c7ce046e267e67f532c45b7"
+    }
+   },
+   "pre-install: Plastile is not loaded (nothing to load)": {
+    "pass": true,
+    "detail": null
+   },
+   "post-start install into the nested data home succeeds": {
+    "pass": true,
+    "detail": {
+     "argv": [
+      "tools/install.sh",
+      "install",
+      "<repo>/artifacts/integration/20261017T211432/package-post-start-discovery-T32/dist/plastile-0.1.0.kwinscript"
+     ],
+     "rc": 0,
+     "stdout": "Successfully installed <session>/data/kwin/scripts/plastile/\n\nInstalled to: <session>/data/kwin/scripts/plastile\nNothing was enabled, reloaded or restarted. KWin discovers packages when it (re)scans\nkwin/scripts; a package installed while KWin is running may not be visible until the\nscript list is refreshed (log out and in). To enable Plastile, either:\n\n  System Settings > Window Management > KWin Scripts > tick \"Plastile\" > Apply\n\nor, from a terminal in the same session:\n\n  kwriteconfig6 --file kwinrc --group Plugins --key plastileEnabled true\n  qdbus6 org.kde.KWin /Scripting org.kde.kwin.Scripting.start\n\nTo disable later, set the same key to false and run the same Scripting.start command.\nThis script prints these commands; it does not execute them.\n",
+     "stderr": "",
+     "kwinrcUnchanged": true
+    }
+   },
+   "post-start discovery: Scripting.start eventually loads a package installed after KWin started (<=75 s)": {
+    "pass": true,
+    "detail": {
+     "discoveredAfterSeconds": 20.6,
+     "attempts": [
+      {
+       "startCalledAtPlusSeconds": 0.0,
+       "loaded": false
+      },
+      {
+       "startCalledAtPlusSeconds": 4.1,
+       "loaded": false
+      },
+      {
+       "startCalledAtPlusSeconds": 8.3,
+       "loaded": false
+      },
+      {
+       "startCalledAtPlusSeconds": 12.4,
+       "loaded": false
+      },
+      {
+       "startCalledAtPlusSeconds": 16.5,
+       "loaded": false
+      }
+     ]
+    }
+   },
+   "post-start discovery: the late-loaded package tiles 2 fixtures (oracle)": {
+    "pass": true,
+    "detail": []
+   },
+   "post-start: remove rc 0 and directory gone": {
+    "pass": true,
+    "detail": {
+     "argv": [
+      "tools/install.sh",
+      "remove"
+     ],
+     "rc": 0,
+     "stdout": "Successfully uninstalled <session>/data/kwin/scripts/plastile/\n\nRemoved: <session>/data/kwin/scripts/plastile\nThe kwinrc [Plugins] plastileEnabled key and the [Script-plastile] settings group were left\nuntouched (this script never writes kwinrc). A running KWin keeps the loaded script\nuntil the session ends or the script is disabled.\n",
+     "stderr": "",
+     "kwinrcUnchanged": true
+    }
+   }
+  }
+ }
+}

@@ -1,0 +1,429 @@
+{
+ "layer": "nested KWin virtual backend (not physical)",
+ "kwin": "kwin 6.7.5",
+ "implementationCommit": "819a91c16fd44b9910ab2bba8051bf33aae55e76",
+ "implementationDirty": true,
+ "harness": "tests/integration/scenarios_contexts.py; listener probes/contexts/listen.js; kactivitymanagerd 6.7.5 on the nested private bus",
+ "runs": 2,
+ "perRun": [
+  {
+   "per-output-desktops-O08": {
+    "pass": true,
+    "checks": {
+     "setup: per-output desktops enabled and two desktops": true,
+     "setup: fixtures 1,2 on Virtual-0 and 3,4,5 on Virtual-1": true,
+     "setup: fixtures 2 and 5 are on desktop Two": true,
+     "O08: Virtual-0 visible context (Desktop 1) tiled inside Virtual-0": true,
+     "O08: Virtual-1 visible context (Desktop 1) tiled inside Virtual-1": true,
+     "O08: windows on non-visible contexts receive no writes after leaving": true,
+     "O08: per-output switch changes only Virtual-1": true,
+     "O08: switching Virtual-1 re-solves exactly one context": true,
+     "O08: shown context tiled inside Virtual-1": true,
+     "O08: Virtual-0 windows untouched by the Virtual-1 switch": true,
+     "O08: only the shown window was written": true,
+     "O08: switching back to an applied context leaves its windows in place": true,
+     "O08: switching Virtual-0 re-solves exactly one context": true,
+     "O08: Virtual-0 desktop Two tiled inside Virtual-0": true,
+     "O08: Virtual-1 untouched by the Virtual-0 switch": true,
+     "O08: no Plastile errors or JS exceptions": true
+    }
+   },
+   "activities-E08": {
+    "pass": true,
+    "checks": {
+     "setup: two activities, current is a UUID": true,
+     "E08: windows on the current activity tile": true,
+     "E08: all-activities window reads back as an empty activities list": true,
+     "E08: all-activities window floats (ADR-009)": true,
+     "E08: remaining two re-tile": true,
+     "E08: windows moved to a hidden activity receive no writes": true,
+     "E08: activity A re-tiled as two after 4 and 5 left": true,
+     "E08: switching activity re-solves once": true,
+     "E08: the other activity's windows are placed": true,
+     "E08: activity A windows and the all-activities window untouched": true,
+     "E08: switching back restores activity A layout": true,
+     "E08: switching back writes nothing (A was applied)": true,
+     "E08: activity B windows untouched while hidden": true,
+     "E08: all-activities window never written": true,
+     "E08: no Plastile errors or JS exceptions": true
+    }
+   },
+   "activities-late-service-E08": {
+    "pass": false,
+    "checks": {
+     "late: still tiled after the service starts (one activity)": true,
+     "late: no tiled context keyed to a non-existent activity after a second activity appears": false,
+     "late: windows Plastile tiles on A do not overlap (oracle)": false,
+     "late: windows Plastile tiles on B do not overlap (oracle)": false,
+     "late: back on A, tiled windows do not overlap (oracle)": false,
+     "late: no Plastile errors or JS exceptions": true
+    }
+   },
+   "activities-add-second-E08": {
+    "pass": false,
+    "checks": {
+     "add-second: no tiled context keyed to a non-existent activity": false,
+     "add-second: a new window on A tiles with the existing three (oracle)": false,
+     "add-second: a window opened on B tiles alone": true,
+     "add-second: back on A, layout restored": true,
+     "add-second: after removing B, a new window tiles with the four on A (oracle)": false,
+     "add-second: no Plastile errors or JS exceptions": true
+    }
+   }
+  },
+  {
+   "per-output-desktops-O08": {
+    "pass": true,
+    "checks": {
+     "setup: per-output desktops enabled and two desktops": true,
+     "setup: fixtures 1,2 on Virtual-0 and 3,4,5 on Virtual-1": true,
+     "setup: fixtures 2 and 5 are on desktop Two": true,
+     "O08: Virtual-0 visible context (Desktop 1) tiled inside Virtual-0": true,
+     "O08: Virtual-1 visible context (Desktop 1) tiled inside Virtual-1": true,
+     "O08: windows on non-visible contexts receive no writes after leaving": true,
+     "O08: per-output switch changes only Virtual-1": true,
+     "O08: switching Virtual-1 re-solves exactly one context": true,
+     "O08: shown context tiled inside Virtual-1": true,
+     "O08: Virtual-0 windows untouched by the Virtual-1 switch": true,
+     "O08: only the shown window was written": true,
+     "O08: switching back to an applied context leaves its windows in place": true,
+     "O08: switching Virtual-0 re-solves exactly one context": true,
+     "O08: Virtual-0 desktop Two tiled inside Virtual-0": true,
+     "O08: Virtual-1 untouched by the Virtual-0 switch": true,
+     "O08: no Plastile errors or JS exceptions": true
+    }
+   },
+   "activities-E08": {
+    "pass": true,
+    "checks": {
+     "setup: two activities, current is a UUID": true,
+     "E08: windows on the current activity tile": true,
+     "E08: all-activities window reads back as an empty activities list": true,
+     "E08: all-activities window floats (ADR-009)": true,
+     "E08: remaining two re-tile": true,
+     "E08: windows moved to a hidden activity receive no writes": true,
+     "E08: activity A re-tiled as two after 4 and 5 left": true,
+     "E08: switching activity re-solves once": true,
+     "E08: the other activity's windows are placed": true,
+     "E08: activity A windows and the all-activities window untouched": true,
+     "E08: switching back restores activity A layout": true,
+     "E08: switching back writes nothing (A was applied)": true,
+     "E08: activity B windows untouched while hidden": true,
+     "E08: all-activities window never written": true,
+     "E08: no Plastile errors or JS exceptions": true
+    }
+   },
+   "activities-late-service-E08": {
+    "pass": false,
+    "checks": {
+     "late: still tiled after the service starts (one activity)": true,
+     "late: no tiled context keyed to a non-existent activity after a second activity appears": false,
+     "late: windows Plastile tiles on A do not overlap (oracle)": false,
+     "late: windows Plastile tiles on B do not overlap (oracle)": false,
+     "late: back on A, tiled windows do not overlap (oracle)": false,
+     "late: no Plastile errors or JS exceptions": true
+    }
+   },
+   "activities-add-second-E08": {
+    "pass": false,
+    "checks": {
+     "add-second: no tiled context keyed to a non-existent activity": false,
+     "add-second: a new window on A tiles with the existing three (oracle)": false,
+     "add-second: a window opened on B tiles alone": true,
+     "add-second: back on A, layout restored": true,
+     "add-second: after removing B, a new window tiles with the four on A (oracle)": false,
+     "add-second: no Plastile errors or JS exceptions": true
+    }
+   }
+  }
+ ],
+ "lastRun": {
+  "per-output-desktops-O08": {
+   "facts": {
+    "optionPerOutputVirtualDesktops": true,
+    "currentDesktopForScreenInitial": {
+     "Virtual-0": "Desktop 1",
+     "Virtual-1": "Desktop 1"
+    },
+    "currentDesktopForScreenAfterV1Switch": {
+     "Virtual-0": "Desktop 1",
+     "Virtual-1": "Two"
+    },
+    "workspaceCurrentDesktopAfterV1Switch": [
+     "Two",
+     "Virtual-1"
+    ],
+    "currentDesktopChangedOnV1Switch": [
+     [
+      {
+       "id": "<uuid-1>",
+       "name": "Desktop 1",
+       "x11DesktopNumber": 1,
+       "type": "KWin::VirtualDesktop"
+      },
+      {
+       "id": "<uuid-2>",
+       "name": "Two",
+       "x11DesktopNumber": 2,
+       "type": "KWin::VirtualDesktop"
+      },
+      {
+       "name": "Virtual-1",
+       "type": "KWin::LogicalOutput"
+      }
+     ]
+    ],
+    "solvesSwitchingBackToAppliedContext": 0,
+    "currentDesktopChangedOnV0Switch": [
+     [
+      {
+       "id": "<uuid-1>",
+       "name": "Desktop 1",
+       "x11DesktopNumber": 1,
+       "type": "KWin::VirtualDesktop"
+      },
+      {
+       "id": "<uuid-2>",
+       "name": "Two",
+       "x11DesktopNumber": 2,
+       "type": "KWin::VirtualDesktop"
+      },
+      {
+       "name": "Virtual-0",
+       "type": "KWin::LogicalOutput"
+      }
+     ]
+    ],
+    "workspaceCurrentDesktopAfterV0Switch": [
+     "Desktop 1",
+     "Virtual-1"
+    ]
+   },
+   "failing": {},
+   "error": null
+  },
+  "activities-E08": {
+   "facts": {
+    "withoutService": {
+     "activities": [
+      "<nil-uuid>"
+     ],
+     "current": ""
+    },
+    "withService": {
+     "activities": [
+      "<uuid-3>"
+     ],
+     "current": "<uuid-3>"
+    },
+    "signalsOnAddActivity": {
+     "activityAdded": [
+      [
+       "<uuid-4>"
+      ]
+     ],
+     "activitiesChanged": [
+      [
+       "<uuid-4>"
+      ]
+     ],
+     "currentActivityChanged": []
+    },
+    "newWindowActivities": {
+     "activities": [
+      "<uuid-3>"
+     ],
+     "onAllActivities": "undefined"
+    },
+    "allActivitiesRepresentation": {
+     "activities": [],
+     "onAllActivities": "undefined"
+    },
+    "windowActivitiesChangedOnAll": [
+     {
+      "caption": "plastile-fixture 3",
+      "argc": 0,
+      "activities": []
+     }
+    ],
+    "allActivitiesDecision": {
+     "mode": "floating",
+     "source": "membership",
+     "reason": "on several activities",
+     "ruleIds": []
+    },
+    "currentActivityChangedArgs": [
+     [
+      "<uuid-4>"
+     ]
+    ],
+    "currentDesktopChangedOnActivitySwitch": 0,
+    "solvesSwitchToB": 1,
+    "solvesSwitchBackToA": 0
+   },
+   "failing": {},
+   "error": null
+  },
+  "activities-late-service-E08": {
+   "facts": {
+    "windowActivitiesWithoutService": {
+     "activities": [],
+     "onAllActivities": "undefined"
+    },
+    "windowActivitiesAfterServiceStart": {
+     "activities": [],
+     "onAllActivities": "undefined"
+    },
+    "signalsOnServiceStart": {
+     "activitiesChanged": [],
+     "activityAdded": [],
+     "currentActivityChanged": [
+      [
+       "<uuid-5>"
+      ]
+     ]
+    },
+    "windowActivitiesChangedOnServiceStart": 0,
+    "adoptedWindowAfterSecondActivity": {
+     "context": {
+      "output": "Virtual-0",
+      "desktop": "<uuid-6>",
+      "activity": "default"
+     },
+     "mode": "tiled",
+     "decision": {
+      "mode": "tiled",
+      "source": "default",
+      "reason": "normal resizable window",
+      "ruleIds": []
+     }
+    },
+    "orphanedContextsAfterSecondActivity": [
+     {
+      "activity": "default",
+      "members": 3,
+      "revision": 4,
+      "applied": 3
+     }
+    ],
+    "modesOnA": {
+     "1": "tiled",
+     "2": "tiled",
+     "3": "tiled",
+     "4": "tiled"
+    },
+    "modesOnB": {
+     "1": "tiled",
+     "2": "tiled",
+     "3": "tiled",
+     "5": "tiled"
+    }
+   },
+   "failing": {
+    "late: no tiled context keyed to a non-existent activity after a second activity appears": [
+     {
+      "activity": "default",
+      "members": 3,
+      "revision": 4,
+      "applied": 3
+     }
+    ],
+    "late: windows Plastile tiles on A do not overlap (oracle)": {
+     "errors": [
+      "plastile-fixture 1 overlaps plastile-fixture 4",
+      "plastile-fixture 2 overlaps plastile-fixture 4",
+      "plastile-fixture 3 overlaps plastile-fixture 4"
+     ],
+     "modes": {
+      "1": "tiled",
+      "2": "tiled",
+      "3": "tiled",
+      "4": "tiled"
+     }
+    },
+    "late: windows Plastile tiles on B do not overlap (oracle)": {
+     "errors": [
+      "plastile-fixture 1 overlaps plastile-fixture 5",
+      "plastile-fixture 2 overlaps plastile-fixture 5",
+      "plastile-fixture 3 overlaps plastile-fixture 5"
+     ],
+     "modes": {
+      "1": "tiled",
+      "2": "tiled",
+      "3": "tiled",
+      "5": "tiled"
+     }
+    },
+    "late: back on A, tiled windows do not overlap (oracle)": {
+     "errors": [
+      "plastile-fixture 1 overlaps plastile-fixture 4",
+      "plastile-fixture 2 overlaps plastile-fixture 4",
+      "plastile-fixture 3 overlaps plastile-fixture 4"
+     ],
+     "modes": {
+      "1": "tiled",
+      "2": "tiled",
+      "3": "tiled",
+      "4": "tiled"
+     }
+    }
+   },
+   "error": null
+  },
+  "activities-add-second-E08": {
+   "facts": {
+    "windowActivitiesWithOneActivity": {
+     "activities": [
+      "<uuid-7>"
+     ],
+     "onAllActivities": "undefined"
+    },
+    "contextWithOneActivity": {
+     "output": "Virtual-0",
+     "desktop": "<uuid-8>",
+     "activity": "default"
+    },
+    "contextAfterSecondActivity": {
+     "output": "Virtual-0",
+     "desktop": "<uuid-8>",
+     "activity": "default"
+    },
+    "signalsOnRemoveActivity": {
+     "activityRemoved": [
+      [
+       "<uuid-9>"
+      ]
+     ],
+     "activitiesChanged": [
+      [
+       "<uuid-9>"
+      ]
+     ],
+     "currentActivityChanged": []
+    }
+   },
+   "failing": {
+    "add-second: no tiled context keyed to a non-existent activity": [
+     {
+      "activity": "default",
+      "members": 3,
+      "revision": 4,
+      "applied": 3
+     }
+    ],
+    "add-second: a new window on A tiles with the existing three (oracle)": [
+     "plastile-fixture 1 overlaps plastile-fixture 4",
+     "plastile-fixture 2 overlaps plastile-fixture 4",
+     "plastile-fixture 3 overlaps plastile-fixture 4"
+    ],
+    "add-second: after removing B, a new window tiles with the four on A (oracle)": [
+     "plastile-fixture 1 overlaps plastile-fixture 4",
+     "plastile-fixture 2 overlaps plastile-fixture 4",
+     "plastile-fixture 3 overlaps plastile-fixture 4",
+     "plastile-fixture 4 overlaps plastile-fixture 6"
+    ]
+   },
+   "error": null
+  }
+ }
+}

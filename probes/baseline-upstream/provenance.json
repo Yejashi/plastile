@@ -1,0 +1,26 @@
+{
+ "researchPin": "227967ed448205d42b5e63e4cc4b868d72606467 (docs/research/SOURCE_INDEX.md P04, commit date 2026-09-08)",
+ "isResearchPin": true,
+ "packageUsed": {
+  "url": "https://github.com/zeroxoneafour/polonium/releases/download/nightly/polonium.kwinscript",
+  "release": "tag 'nightly' ('Development build', target master, published 2026-09-08T19:54:25Z)",
+  "sha256": "b7c188635c753fbc67f4f154dab7203d15845c323a0af037e19325c09656fa15",
+  "metadataVersion": "1.2.2", "metadataId": "polonium", "api": "declarativescript, minimum 6.0"
+ },
+ "pinSource": {
+  "url": "https://github.com/zeroxoneafour/polonium/archive/227967ed448205d42b5e63e4cc4b868d72606467.tar.gz",
+  "sha256": "d33462f89db41e86cfcba280e50c110af15db1662480819e9ed2f25d78822cc6",
+  "tarPaxCommentCommit": "227967ed448205d42b5e63e4cc4b868d72606467"
+ },
+ "verification": {
+  "method": "MEASURED: every file of the nightly package compared with the pin source; main.mjs rebuilt from the pin with npm ci --ignore-scripts (lockfile) + the Makefile's esbuild command in a separate directory",
+  "identicalToPinSource": ["contents/ui/main.qml", "contents/ui/shortcuts.qml", "contents/ui/settings.qml", "contents/ui/dbus.qml", "contents/ui/config.ui", "contents/config/main.xml", "contents/code/main.js"],
+  "metadataJson": "equals res/metadata.json with the Makefile's %NAME%=polonium %VERSION%=1.2.2 substitution",
+  "mainMjsRebuildSha256": "08245872e62ff26668a2fbfce5e29c6811ee43a2e20a3b321e6908299a941d91",
+  "mainMjsNightlySha256": "08245872e62ff26668a2fbfce5e29c6811ee43a2e20a3b321e6908299a941d91",
+  "buildTools": {"node": "v26.11.1", "npm": "12.2.0", "esbuild": "0.28.1 (from lockfile)"}
+ },
+ "latestTaggedRelease": "v1.2.1 (2026-07-25); not used: no tagged release exists for the pin's 1.2.2",
+ "installation": "kpackagetool6 -t KWin/Script -i <zip> with env = NestedKwin.env() (private XDG_DATA_HOME), before KWin starts; enabled by kwinrc [Plugins] poloniumEnabled=true. Nothing installed into the user's home.",
+ "license": "MIT (upstream license.txt); no upstream code copied into this repository"
+}

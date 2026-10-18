@@ -10,6 +10,11 @@ Item {
     id: root
     property var runtime: null
 
+    // Measurement markers (probes/perf/workloads.py P13): CLOCK_MONOTONIC when KWin
+    // emits Options.configChanged (connected before the runtime, so it runs first)
+    // and when the runtime reports the activation. Disconnected in teardown.
+    function markConfigChanged() { console.info("plastile-measure configChanged " + MonotonicClock.nowNs()); }
+
     Timer {
         id: deadline
         repeat: false
@@ -27,6 +32,7 @@ Item {
     }
 
     Component.onCompleted: {
+        Options.configChanged.connect(root.markConfigChanged);
         runtime = Bundle.createRuntime({
             workspace: Workspace,
             kwin: KWin,
@@ -34,7 +40,11 @@ Item {
             options: Options,
             setDeadline: function (ms) { deadline.interval = ms; deadline.restart(); },
             clearDeadline: function () { deadline.stop(); },
-            print: function (line) { console.info(line); },
+            print: function (line) {
+                console.info(line);
+                if (/^plastile (info|error) configuration (activated|rejected)/.test(line))
+                    console.info("plastile-measure configuration " + MonotonicClock.nowNs());
+            },
             clockNs: function () { return MonotonicClock.nowNs(); },
             perf: true,
         });
@@ -44,5 +54,6 @@ Item {
         deadline.stop();
         if (runtime) runtime.shutdown();
         runtime = null;
+        Options.configChanged.disconnect(root.markConfigChanged);
     }
 }

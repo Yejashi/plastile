@@ -1,0 +1,53 @@
+{
+ "implementationCommit": "819a91c16fd44b9910ab2bba8051bf33aae55e76",
+ "kwin": "kwin 6.7.5",
+ "layer": "nested KWin virtual backend (not physical); machine shared with other agents",
+ "loadAvg1mStartEnd": [
+  7.63,
+  7.5
+ ],
+ "clock": "CLOCK_MONOTONIC via the measurement module inside QV4; fixture t_ns and Python monotonic_ns are the same clock; KWin log timestamps (%{time boot}) are ms-resolution and calibrated in logClockMinusMonotonicMs",
+ "dispatchToReturnNs": "command handler entry -> return after the last frame request was issued (not presentation)",
+ "seed": 1,
+ "samples": 200,
+ "checks": {
+  "teardown: 3 load/unload cycles, one marker per reconfigure while loaded, none after unload": {
+   "pass": true,
+   "detail": [
+    {
+     "markersLoaded": 1,
+     "markersAfterUnload": 0,
+     "scriptErrors": 0
+    },
+    {
+     "markersLoaded": 1,
+     "markersAfterUnload": 0,
+     "scriptErrors": 0
+    },
+    {
+     "markersLoaded": 1,
+     "markersAfterUnload": 0,
+     "scriptErrors": 0
+    }
+   ]
+  }
+ },
+ "exceptions": [],
+ "teardown": [
+  {
+   "markersLoaded": 1,
+   "markersAfterUnload": 0,
+   "scriptErrors": 0
+  },
+  {
+   "markersLoaded": 1,
+   "markersAfterUnload": 0,
+   "scriptErrors": 0
+  },
+  {
+   "markersLoaded": 1,
+   "markersAfterUnload": 0,
+   "scriptErrors": 0
+  }
+ ]
+}

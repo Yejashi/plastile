@@ -11,7 +11,11 @@
     "typecheck": "tsc -p tsconfig.json",
     "test": "node --test --test-reporter=spec tests/core/*.test.ts",
     "build": "node tools/build.mjs",
-    "check": "npm run typecheck && npm test && npm run build"
+    "check": "npm run typecheck && npm test && npm run build",
+    "check:docs": "python3 tools/check_docs.py",
+    "integration": "python3 tests/integration/run.py",
+    "integration:list": "python3 tests/integration/run.py --list",
+    "release:check": "python3 tools/release.py --check --out dist"
   },
   "devDependencies": {
     "@types/node": "26.6.5",

@@ -1,8 +1,9 @@
 # plastile-fixture
 
 A small, controllable raw-libwayland xdg-shell client for measuring how KWin
-configures, accepts, and presents window geometry (backlog task T03). It is a
-test fixture only. It is not part of any Plastile runtime and proves nothing
+configures, accepts, and presents window geometry (backlog task T03). With
+`--panel` it is instead a wlr-layer-shell panel that reserves an exclusive zone
+(work-area scenarios, O07). It is a test fixture only. It is not part of any Plastile runtime and proves nothing
 about tiling-engine performance by itself.
 
 Run it only inside a disposable nested KWin (`kwin_wayland --virtual ...`) with
@@ -21,6 +22,20 @@ make clean
 Protocol code (xdg-shell, presentation-time, xdg-decoration-unstable-v1) is
 generated into `build/` from the installed `wayland-protocols`.
 
+`wlr-layer-shell-unstable-v1` is not part of `wayland-protocols` and no
+system-wide copy was installed on the development machine, so
+`protocols/wlr-layer-shell-unstable-v1.xml` is a **vendored, unmodified copy**
+of the upstream wlr-protocols XML (interface version 5, Copyright © 2017 Drew
+DeVault, MIT-style permission notice retained in the file's `<copyright>`
+element; upstream: https://gitlab.freedesktop.org/wlroots/wlr-protocols,
+`unstable/wlr-layer-shell-unstable-v1.xml`; local sha256
+`87e0b9c837aecd6977f76f3c47d73088b7159871f5d979dc1840f6cadb5e2ed8`, taken
+byte-identical from the copy bundled in the `wayland-protocols-wlr` 0.3.12
+crate). Only generated client glue is linked; no upstream C code is reused.
+
+The final link writes `build/plastile-fixture.tmp` and renames it, so test
+sessions that are running the old binary keep working during a rebuild.
+
 ## CLI
 
 | Flag | Meaning |
@@ -38,6 +53,8 @@ generated into `build/` from the installed `wayland-protocols`.
 | `--parent-after-ms N` | N ms after the main window maps, create a transient child (300x200, same app id, title `<title> child`, `set_parent(main)`). |
 | `--exit-after-ms N` | Exit cleanly after N ms. |
 | `--ssd` / `--csd` | Request server-/client-side decoration through xdg-decoration. By default, no decoration mode is negotiated and the manager is not bound. |
+| `--panel EDGE:SIZE` | Instead of an xdg_toplevel, create a `zwlr_layer_surface_v1` (layer `top`, namespace `dock`) anchored to EDGE (`top`, `bottom`, `left`, `right`) plus both perpendicular edges, `exclusive_zone` SIZE, keyboard interactivity none, requested size SIZE on the anchored axis and 0 (compositor fills) on the other. The window is logged as `win:"panel"`. Every configure is acked and answered with a buffer of exactly the configured size. `zwlr_layer_shell_v1` and `wl_output` (v4, for names) are bound only in this mode. Size flags, decoration, delay and child options do not apply. |
+| `--output NAME` | Panel mode only: anchor the panel to the `wl_output` whose `name` event is NAME (for example `Virtual-1`). Without it the compositor chooses the output. An unknown name logs an `error` and exits with code 1. |
 
 The delay, ignore-size, and decoration settings also apply to the child. A
 configure size of 0 on an axis uses the current size on that axis.
@@ -47,6 +64,7 @@ configure size of 0 on an axis uses the current size on that axis.
 `resize W H` (an app-initiated resize: commit a W×H buffer with no configure) ·
 `min W H` / `max W H` (set the hint and make a bufferless commit; 0 = unset) ·
 `child` · `close-child` · `title STR` · `quit`.
+In panel mode only `quit` is accepted; other commands log an `error`.
 Each command is logged as a `command` event. Unknown commands or bad arguments
 log an `error` event. EOF on stdin logs `stdin_eof` and stops reading stdin.
 The client keeps running after EOF. Use `</dev/null` with `--exit-after-ms`, or
@@ -75,17 +93,17 @@ black or white. The strip needs 256×32 px and is clipped on smaller buffers.
 
 Every record has `t_ns`, which is `CLOCK_MONOTONIC` in nanoseconds taken when
 the record is written, and `ev`. Window-scoped records carry `win`
-(`"main"`/`"child"`).
+(`"main"`/`"child"`, or `"panel"` in panel mode).
 
 | `ev` | Fields |
 |---|---|
 | `start` | `pid`, `args`, `app_id`, `id`, `title`, `size`, `min`/`max` (if set), `configure_delay_ms`, `delay_mode`, `ignore_size`, `clamp`, `decoration_request`, `log_clock` |
-| `bound` | `globals.{wl_compositor,wl_shm,xdg_wm_base,wp_presentation,zxdg_decoration_manager_v1}.{advertised,bound}` (null = absent/not bound) |
+| `bound` | `globals.{wl_compositor,wl_shm,xdg_wm_base,wp_presentation,zxdg_decoration_manager_v1,zwlr_layer_shell_v1,wl_output}.{advertised,bound}` (null = absent/not bound) |
 | `presentation_clock` | `clk_id`, `name`, `same_as_log_clock` |
-| `initial_commit` | The bufferless initial commit: `title`, `width`, `height` (intended size) |
+| `initial_commit` | The bufferless initial commit: `title`, `width`, `height` (intended size). Panel mode: `shell:"layer"`, `layer`, `scope`, `edge`, `exclusive_zone`, `width`/`height` (requested; 0 = compositor fills), `output` (requested name or null), `outputs` (all bound output names) |
 | `wm_capabilities` | `caps` |
 | `decoration` | `mode` (from `zxdg_toplevel_decoration_v1.configure`) |
-| `configure` | `serial` (xdg_surface), `width`, `height`, `states` (`maximized`, `fullscreen`, `resizing`, `activated`, `tiled_*`, `suspended`, `constrained_*`, `unknown_N`), `bounds` (if sent), `decoration` (if negotiated), `n` (per-window count). Logged when `xdg_surface.configure` arrives, combined with the preceding toplevel data. |
+| `configure` | Panel mode: `zwlr_layer_surface_v1.configure` with `serial`, `width`, `height`, `states:[]`, `shell:"layer"`, `n`. Otherwise: `serial` (xdg_surface), `width`, `height`, `states` (`maximized`, `fullscreen`, `resizing`, `activated`, `tiled_*`, `suspended`, `constrained_*`, `unknown_N`), `bounds` (if sent), `decoration` (if negotiated), `n` (per-window count). Logged when `xdg_surface.configure` arrives, combined with the preceding toplevel data. |
 | `superseded` | `serial` replaced by `by_serial` (latest mode), or `why:"queue_full"` (each mode, 64 deep) |
 | `ack` | `serial`, `delay_ns` (ack time − configure arrival) |
 | `commit` | `seq`, `width`, `height`, `serial` (acked in this commit, or null), `reason`: `initial` \| `configure` \| `app-resize` \| `ignore-size`. Logged right after `wl_surface_commit` + `wl_display_flush`. |
@@ -94,7 +112,7 @@ the record is written, and `ev`. Window-scoped records carry `win`
 | `presented` | `seq`, `present_ns` (= `tv_sec`·1e9 + `tv_nsec`, presentation clock), `tv_sec`, `tv_nsec`, `refresh_ns`, `seq_hi`, `seq_lo`, `flags_raw`, `flags` |
 | `discarded` | `seq` |
 | `size_hints`, `title_set`, `command`, `stdin_eof`, `signal`, `global_removed` | as named |
-| `close_requested` | `xdg_toplevel.close` received. The main window exits cleanly. The child is destroyed (`child_destroyed`). |
+| `close_requested` | `xdg_toplevel.close` (or, in panel mode, `zwlr_layer_surface_v1.closed`, with `shell:"layer"`) received. The main window exits cleanly. The child is destroyed (`child_destroyed`). |
 | `error` | `msg` |
 | `exit` | `reason` (`close`, `quit`, `exit-after`, `signal`, `display-error`, …), `code`, `commits` |
 
@@ -105,7 +123,13 @@ feedback are requested for every buffer commit.
 
 - Buffer scale is always 1. The client ignores fractional-scale,
   viewporter, preferred-buffer-scale, and output enter/leave (`wl_compositor`
-  is bound at v4 and no `wl_output` is bound). The fixture is not a fractional-scaling oracle yet.
+  is bound at v4; `wl_output` is bound only in panel mode, for its name). The fixture is not a fractional-scaling oracle yet.
+- KWin 6.7.5 (nested, measured) reports the panel as `dock: true`,
+  `windowType: 2` (Dock), `managed: true`, empty `caption`, and
+  `resourceClass`/`resourceName` `plastile-fixture` (a layer surface has no app
+  id; KWin derives the class from the client process). Harness oracles that
+  select windows by `resourceClass` therefore also see the panel; filter on
+  a non-empty caption or `dock`.
 - No input handling, no interactive move/resize requests, and no client-side
   decorations are drawn, even with `--csd`.
 - Every configure is answered with a newly rendered buffer, including

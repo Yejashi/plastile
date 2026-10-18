@@ -1,0 +1,831 @@
+{
+ "what": "G10 XWayland fixture scenarios (tests/integration/scenarios_xwayland.py)",
+ "kwin": "kwin 6.7.5",
+ "xwayland": "xorg-xwayland 24.1.14-1",
+ "client": "fixtures/xclient/build/plastile-xclient (xcb)",
+ "scenarios": {
+  "xwayland-tile-close-G10": {
+   "layer": "nested KWin virtual backend + nested Xwayland (not physical)",
+   "measuredAt": "2026-10-17T21:18:52",
+   "run": "20261017T211432",
+   "checks": {
+    "open: X client tiles with 2 Wayland fixtures, no overlap, gaps>=8": true,
+    "open: explain says tiled": true,
+    "open: one solve, writes<=3, no corrections": true,
+    "X client's last ConfigureNotify matches the oracle client size": true,
+    "open: no oscillation (1 distinct frame per window over 1.5 s)": true,
+    "client resize request: bounded work (writes<=3, corrections<=2)": true,
+    "client resize request: final frames stable": true,
+    "close: 2 fixtures retile without overlap": true,
+    "close: fixtures return to their 2-window slots": true,
+    "close: one solve, no errors": true,
+    "mixed-case WM_CLASS is visible to the script (recorded)": true
+   },
+   "xDisplayDiscovery": "lock file owned by nested KWin pid (Xwayland started lazily on first X client)",
+   "xFacts": {
+    "resourceClass": "plastile-xclient",
+    "resourceName": "plastile-xclient",
+    "windowType": 0,
+    "windowRole": "",
+    "desktopFileName": "",
+    "normalWindow": true,
+    "dialog": false,
+    "transient": false,
+    "modal": false,
+    "specialWindow": false,
+    "resizeable": true,
+    "minSize": {
+     "width": 0,
+     "height": 0
+    },
+    "maxSize": {
+     "width": 2147483647,
+     "height": 2147483647
+    },
+    "noBorder": false
+   },
+   "decorationMargins": {
+    "left": 0,
+    "top": 28,
+    "right": 0,
+    "bottom": 0
+   },
+   "explain": {
+    "kind": "normal",
+    "mode": "tiled",
+    "userMode": null,
+    "decision": {
+     "mode": "tiled",
+     "source": "default",
+     "reason": "normal resizable window",
+     "ruleIds": []
+    },
+    "layout": "master-stack",
+    "suspensions": [],
+    "constraints": {
+     "minFrame": {
+      "width": 0,
+      "height": 0
+     },
+     "maxFrame": {
+      "width": "Infinity",
+      "height": "Infinity"
+     },
+     "fixed": false
+    },
+    "learnedMin": null,
+    "learnedMax": null,
+    "ledger": {
+     "status": "settled",
+     "outstanding": false,
+     "desired": {
+      "x": 707,
+      "y": 404,
+      "width": 565,
+      "height": 388
+     },
+     "corrections": 0
+    },
+    "slot": {
+     "x": 707,
+     "y": 404,
+     "width": 565,
+     "height": 388
+    },
+    "exception": null
+   },
+   "openDelta": {
+    "solves": 1,
+    "flushes": 1,
+    "writes": 2,
+    "skipNoop": 1,
+    "observations": 2,
+    "observationsDuringApply": 1,
+    "settled": 2,
+    "adopted": 1
+   },
+   "resizeRequest": {
+    "requestedClient": {
+     "width": 300,
+     "height": 200
+    },
+    "frameBefore": {
+     "x": 707,
+     "y": 404,
+     "width": 565,
+     "height": 388
+    },
+    "frameAfter": {
+     "x": 707,
+     "y": 404,
+     "width": 565,
+     "height": 388
+    },
+    "clientAfter": {
+     "x": 707,
+     "y": 432,
+     "width": 565,
+     "height": 360
+    },
+    "returnedToSlot": true,
+    "delta": {
+     "flushes": 1,
+     "writes": 1,
+     "corrections": 1,
+     "observations": 2,
+     "observationsDuringApply": 1,
+     "settled": 1,
+     "external": 1
+    },
+    "xConfigure": {
+     "w": 565,
+     "h": 360,
+     "synthetic": false,
+     "n": 7
+    }
+   },
+   "closeDelta": {
+    "solves": 1,
+    "flushes": 1,
+    "writes": 1,
+    "skipNoop": 1,
+    "observations": 1,
+    "settled": 1,
+    "removed": 1
+   },
+   "mixedCaseWmClass": {
+    "set": "instance=class=Plastile-XClient-Case",
+    "resourceClass": "Plastile-XClient-Case",
+    "resourceName": "Plastile-XClient-Case"
+   }
+  },
+  "xwayland-min-G10": {
+   "layer": "nested KWin virtual backend + nested Xwayland (not physical)",
+   "measuredAt": "2026-10-17T21:18:58",
+   "run": "20261017T211432",
+   "checks": {
+    "KWin exposes WM_NORMAL_HINTS min size as window.minSize (client space)": true,
+    "writes bounded (<=10)": true,
+    "no oscillation over 2 s": true,
+    "Wayland fixtures still tiled without overlap": true,
+    "floating X window keeps at least its minimum size": true,
+    "engine knows the minimum (constraints.minFrame >= 900x700 + margins)": true
+   },
+   "hints": {
+    "size": "900x700",
+    "min": "900x700"
+   },
+   "xFacts": {
+    "resourceClass": "plastile-xclient",
+    "resourceName": "plastile-xclient",
+    "windowType": 0,
+    "windowRole": "",
+    "desktopFileName": "",
+    "normalWindow": true,
+    "dialog": false,
+    "transient": false,
+    "modal": false,
+    "specialWindow": false,
+    "resizeable": true,
+    "minSize": {
+     "width": 900,
+     "height": 700
+    },
+    "maxSize": {
+     "width": 2147483647,
+     "height": 2147483647
+    },
+    "noBorder": false
+   },
+   "explain": {
+    "kind": "normal",
+    "mode": "floating",
+    "userMode": null,
+    "decision": {
+     "mode": "tiled",
+     "source": "default",
+     "reason": "normal resizable window",
+     "ruleIds": []
+    },
+    "layout": "master-stack",
+    "suspensions": [],
+    "constraints": {
+     "minFrame": {
+      "width": 900,
+      "height": 728
+     },
+     "maxFrame": {
+      "width": "Infinity",
+      "height": "Infinity"
+     },
+     "fixed": false
+    },
+    "learnedMin": null,
+    "learnedMax": null,
+    "ledger": {
+     "status": "idle",
+     "outstanding": false,
+     "desired": null,
+     "corrections": 0
+    },
+    "slot": null,
+    "exception": "overflow: <id>: does not fit (stack column of 2 needs 914 px height, has 784); overflow float-new"
+   },
+   "delta": {
+    "solves": 2,
+    "flushes": 2,
+    "skipNoop": 4,
+    "overflow": 1,
+    "adopted": 1
+   },
+   "stableDistinctFrames": {
+    "plastile-fixture 1": 1,
+    "plastile-fixture 2": 1,
+    "xc min": 1
+   },
+   "final": {
+    "frame": {
+     "x": 190,
+     "y": 36,
+     "width": 900,
+     "height": 728
+    },
+    "client": {
+     "x": 190,
+     "y": 64,
+     "width": 900,
+     "height": 700
+    }
+   },
+   "minHonoured": true,
+   "directScriptWriteBelowMin": {
+    "requestedFrame": {
+     "x": 10,
+     "y": 10,
+     "width": 333,
+     "height": 277
+    },
+    "frame": {
+     "x": 10,
+     "y": 10,
+     "width": 333,
+     "height": 277
+    },
+    "client": {
+     "x": 10,
+     "y": 38,
+     "width": 333,
+     "height": 249
+    },
+    "xConfigure": {
+     "w": 333,
+     "h": 249,
+     "synthetic": false,
+     "n": 4
+    },
+    "kwinClamped": false
+   }
+  },
+  "xwayland-inc-G10": {
+   "layer": "nested KWin virtual backend + nested Xwayland (not physical)",
+   "measuredAt": "2026-10-17T21:19:03",
+   "run": "20261017T211432",
+   "checks": {
+    "final frame stable over 2 s": true,
+    "corrections <= 2": true,
+    "writes bounded (<=10)": true,
+    "no overlap with the Wayland fixtures": true
+   },
+   "hints": {
+    "size": "400x300",
+    "inc": "10x20",
+    "base": "0x0"
+   },
+   "xFacts": {
+    "resourceClass": "plastile-xclient",
+    "resourceName": "plastile-xclient",
+    "windowType": 0,
+    "windowRole": "",
+    "desktopFileName": "",
+    "normalWindow": true,
+    "dialog": false,
+    "transient": false,
+    "modal": false,
+    "specialWindow": false,
+    "resizeable": true,
+    "minSize": {
+     "width": 0,
+     "height": 0
+    },
+    "maxSize": {
+     "width": 2147483647,
+     "height": 2147483647
+    },
+    "noBorder": false
+   },
+   "incrementsScriptVisible": false,
+   "explain": {
+    "kind": "normal",
+    "mode": "tiled",
+    "userMode": null,
+    "decision": {
+     "mode": "tiled",
+     "source": "default",
+     "reason": "normal resizable window",
+     "ruleIds": []
+    },
+    "layout": "master-stack",
+    "suspensions": [],
+    "constraints": {
+     "minFrame": {
+      "width": 0,
+      "height": 0
+     },
+     "maxFrame": {
+      "width": "Infinity",
+      "height": "Infinity"
+     },
+     "fixed": false
+    },
+    "learnedMin": null,
+    "learnedMax": null,
+    "ledger": {
+     "status": "settled",
+     "outstanding": false,
+     "desired": {
+      "x": 707,
+      "y": 404,
+      "width": 565,
+      "height": 388
+     },
+     "corrections": 0
+    },
+    "slot": {
+     "x": 707,
+     "y": 404,
+     "width": 565,
+     "height": 388
+    },
+    "exception": null
+   },
+   "delta": {
+    "solves": 1,
+    "flushes": 1,
+    "writes": 2,
+    "skipNoop": 1,
+    "observations": 2,
+    "observationsDuringApply": 1,
+    "settled": 2,
+    "adopted": 1
+   },
+   "stableDistinctFrames": {
+    "plastile-fixture 1": 1,
+    "plastile-fixture 2": 1,
+    "xc inc": 1
+   },
+   "slot": {
+    "x": 707,
+    "y": 404,
+    "width": 565,
+    "height": 388
+   },
+   "final": {
+    "frame": {
+     "x": 707,
+     "y": 404,
+     "width": 565,
+     "height": 388
+    },
+    "client": {
+     "x": 707,
+     "y": 432,
+     "width": 565,
+     "height": 360
+    }
+   },
+   "xConfigure": {
+    "w": 565,
+    "h": 360,
+    "synthetic": false,
+    "n": 4
+   },
+   "committedClientSnappedToIncrements": false,
+   "directScriptWrite": {
+    "requestedFrame": {
+     "x": 10,
+     "y": 10,
+     "width": 333,
+     "height": 277
+    },
+    "frame": {
+     "x": 10,
+     "y": 10,
+     "width": 333,
+     "height": 277
+    },
+    "client": {
+     "x": 10,
+     "y": 38,
+     "width": 333,
+     "height": 249
+    },
+    "xConfigure": {
+     "w": 333,
+     "h": 249,
+     "synthetic": false,
+     "n": 5
+    },
+    "clientSnapped": false
+   }
+  },
+  "xwayland-fixed-G10": {
+   "layer": "nested KWin virtual backend + nested Xwayland (not physical)",
+   "measuredAt": "2026-10-17T21:19:06",
+   "run": "20261017T211432",
+   "checks": {
+    "fixed-size X client floats (explain mode floating)": true,
+    "decision source is the size constraint": true,
+    "its own 400x300 client size is kept": true,
+    "fixtures stay tiled without overlap": true,
+    "no writes to the fixed window (writes<=2 overall)": true
+   },
+   "hints": {
+    "size": "400x300",
+    "min": "400x300",
+    "max": "400x300"
+   },
+   "xFacts": {
+    "resourceClass": "plastile-xclient",
+    "resourceName": "plastile-xclient",
+    "windowType": 0,
+    "windowRole": "",
+    "desktopFileName": "",
+    "normalWindow": true,
+    "dialog": false,
+    "transient": false,
+    "modal": false,
+    "specialWindow": false,
+    "resizeable": false,
+    "minSize": {
+     "width": 400,
+     "height": 300
+    },
+    "maxSize": {
+     "width": 400,
+     "height": 300
+    },
+    "noBorder": false
+   },
+   "explain": {
+    "kind": "normal",
+    "mode": "floating",
+    "userMode": null,
+    "decision": {
+     "mode": "floating",
+     "source": "constraint",
+     "reason": "fixed size",
+     "ruleIds": []
+    },
+    "layout": "master-stack",
+    "suspensions": [],
+    "constraints": {
+     "minFrame": {
+      "width": 400,
+      "height": 328
+     },
+     "maxFrame": {
+      "width": 400,
+      "height": 328
+     },
+     "fixed": true
+    },
+    "learnedMin": null,
+    "learnedMax": null,
+    "ledger": {
+     "status": "idle",
+     "outstanding": false,
+     "desired": null,
+     "corrections": 0
+    },
+    "slot": null,
+    "exception": null
+   },
+   "delta": {
+    "flushes": 1,
+    "adopted": 1
+   },
+   "final": {
+    "frame": {
+     "x": 440,
+     "y": 236,
+     "width": 400,
+     "height": 328
+    },
+    "client": {
+     "x": 440,
+     "y": 264,
+     "width": 400,
+     "height": 300
+    }
+   }
+  },
+  "xwayland-dialog-G10": {
+   "layer": "nested KWin virtual backend + nested Xwayland (not physical)",
+   "measuredAt": "2026-10-17T21:19:10",
+   "run": "20261017T211432",
+   "checks": {
+    "main X window tiles": true,
+    "transient dialog floats": true,
+    "main + fixtures: no overlap": true,
+    "dialog keeps its own 300x200 client size": true,
+    "script sees WM_TRANSIENT_FOR and the dialog type": true,
+    "dialog stays visible after retiles (not minimized/hidden, on the work area)": true,
+    "dialog is stacked above its parent": true,
+    "dialog frame not moved by Plastile": true,
+    "no model errors": true
+   },
+   "xFactsMain": {
+    "resourceClass": "plastile-xclient",
+    "resourceName": "plastile-xclient",
+    "windowType": 0,
+    "windowRole": "",
+    "desktopFileName": "",
+    "normalWindow": true,
+    "dialog": false,
+    "transient": false,
+    "modal": false,
+    "specialWindow": false,
+    "resizeable": true,
+    "minSize": {
+     "width": 0,
+     "height": 0
+    },
+    "maxSize": {
+     "width": 2147483647,
+     "height": 2147483647
+    },
+    "noBorder": false
+   },
+   "xFactsDialog": {
+    "resourceClass": "plastile-xclient",
+    "resourceName": "plastile-xclient",
+    "windowType": 5,
+    "windowRole": "",
+    "desktopFileName": "",
+    "normalWindow": false,
+    "dialog": true,
+    "transient": true,
+    "modal": false,
+    "specialWindow": false,
+    "resizeable": true,
+    "minSize": {
+     "width": 0,
+     "height": 0
+    },
+    "maxSize": {
+     "width": 2147483647,
+     "height": 2147483647
+    },
+    "noBorder": false
+   },
+   "explainMain": {
+    "kind": "normal",
+    "mode": "tiled",
+    "userMode": null,
+    "decision": {
+     "mode": "tiled",
+     "source": "default",
+     "reason": "normal resizable window",
+     "ruleIds": []
+    },
+    "layout": "master-stack",
+    "suspensions": [],
+    "constraints": {
+     "minFrame": {
+      "width": 0,
+      "height": 0
+     },
+     "maxFrame": {
+      "width": "Infinity",
+      "height": "Infinity"
+     },
+     "fixed": false
+    },
+    "learnedMin": null,
+    "learnedMax": null,
+    "ledger": {
+     "status": "settled",
+     "outstanding": false,
+     "desired": {
+      "x": 707,
+      "y": 404,
+      "width": 565,
+      "height": 388
+     },
+     "corrections": 0
+    },
+    "slot": {
+     "x": 707,
+     "y": 404,
+     "width": 565,
+     "height": 388
+    },
+    "exception": null
+   },
+   "explainDialog": {
+    "kind": "dialog",
+    "mode": "floating",
+    "userMode": null,
+    "decision": {
+     "mode": "floating",
+     "source": "type",
+     "reason": "dialog",
+     "ruleIds": []
+    },
+    "layout": "master-stack",
+    "suspensions": [],
+    "constraints": {
+     "minFrame": {
+      "width": 0,
+      "height": 0
+     },
+     "maxFrame": {
+      "width": "Infinity",
+      "height": "Infinity"
+     },
+     "fixed": false
+    },
+    "learnedMin": null,
+    "learnedMax": null,
+    "ledger": {
+     "status": "idle",
+     "outstanding": false,
+     "desired": null,
+     "corrections": 0
+    },
+    "slot": null,
+    "exception": null
+   },
+   "dialogVisible": true,
+   "stack": {
+    "dialog": 3,
+    "main": 2
+   },
+   "delta": {
+    "solves": 3,
+    "flushes": 1,
+    "commands": 2,
+    "writes": 8,
+    "skipNoop": 1,
+    "observations": 8,
+    "observationsDuringApply": 3,
+    "settled": 8,
+    "adopted": 2
+   }
+  },
+  "xwayland-aspect-G10": {
+   "layer": "nested KWin virtual backend + nested Xwayland (not physical)",
+   "measuredAt": "2026-10-17T21:19:15",
+   "run": "20261017T211432",
+   "checks": {
+    "no oscillation over 2 s": true,
+    "writes bounded (<=10), corrections<=2": true,
+    "no overlap among tiled windows": true
+   },
+   "hints": {
+    "size": "400x300",
+    "aspect": "4:3 (min=max)"
+   },
+   "xFacts": {
+    "resourceClass": "plastile-xclient",
+    "resourceName": "plastile-xclient",
+    "windowType": 0,
+    "windowRole": "",
+    "desktopFileName": "",
+    "normalWindow": true,
+    "dialog": false,
+    "transient": false,
+    "modal": false,
+    "specialWindow": false,
+    "resizeable": true,
+    "minSize": {
+     "width": 0,
+     "height": 0
+    },
+    "maxSize": {
+     "width": 2147483647,
+     "height": 2147483647
+    },
+    "noBorder": false
+   },
+   "aspectScriptVisible": false,
+   "explain": {
+    "kind": "normal",
+    "mode": "tiled",
+    "userMode": null,
+    "decision": {
+     "mode": "tiled",
+     "source": "default",
+     "reason": "normal resizable window",
+     "ruleIds": []
+    },
+    "layout": "master-stack",
+    "suspensions": [],
+    "constraints": {
+     "minFrame": {
+      "width": 0,
+      "height": 0
+     },
+     "maxFrame": {
+      "width": "Infinity",
+      "height": "Infinity"
+     },
+     "fixed": false
+    },
+    "learnedMin": null,
+    "learnedMax": null,
+    "ledger": {
+     "status": "settled",
+     "outstanding": false,
+     "desired": {
+      "x": 707,
+      "y": 404,
+      "width": 565,
+      "height": 388
+     },
+     "corrections": 0
+    },
+    "slot": {
+     "x": 707,
+     "y": 404,
+     "width": 565,
+     "height": 388
+    },
+    "exception": null
+   },
+   "delta": {
+    "solves": 1,
+    "flushes": 1,
+    "writes": 2,
+    "skipNoop": 1,
+    "observations": 2,
+    "observationsDuringApply": 1,
+    "settled": 2,
+    "adopted": 1
+   },
+   "stableDistinctFrames": {
+    "plastile-fixture 1": 1,
+    "plastile-fixture 2": 1,
+    "xc aspect": 1
+   },
+   "final": {
+    "frame": {
+     "x": 707,
+     "y": 404,
+     "width": 565,
+     "height": 388
+    },
+    "client": {
+     "x": 707,
+     "y": 432,
+     "width": 565,
+     "height": 360
+    },
+    "clientAspect": 1.5694
+   },
+   "xConfigure": {
+    "w": 600,
+    "h": 249,
+    "synthetic": false,
+    "n": 5
+   },
+   "directScriptWrite": {
+    "requestedFrame": {
+     "x": 10,
+     "y": 10,
+     "width": 600,
+     "height": 277
+    },
+    "frame": {
+     "x": 10,
+     "y": 10,
+     "width": 600,
+     "height": 277
+    },
+    "client": {
+     "x": 10,
+     "y": 38,
+     "width": 600,
+     "height": 249
+    },
+    "xConfigure": {
+     "w": 600,
+     "h": 249,
+     "synthetic": false,
+     "n": 5
+    },
+    "clientAspect": 2.4096
+   }
+  }
+ }
+}

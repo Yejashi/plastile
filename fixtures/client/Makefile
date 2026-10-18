@@ -9,14 +9,17 @@ WL_PROTOCOLS := $(shell $(PKG_CONFIG) --variable=pkgdatadir wayland-protocols)
 CC ?= cc
 CFLAGS ?= -O2
 CFLAGS += -std=c11 -Wall -Wextra -Werror
-CPPFLAGS += -Ibuild $(shell $(PKG_CONFIG) --cflags wayland-client)
+BUILD := build
+CPPFLAGS += -I$(BUILD) $(shell $(PKG_CONFIG) --cflags wayland-client)
 LDLIBS += $(shell $(PKG_CONFIG) --libs wayland-client)
 
-BUILD := build
+# wlr-layer-shell is not part of wayland-protocols; a verbatim copy of the
+# upstream XML (with its license header) is vendored in protocols/.
 PROTOCOLS := \
 	xdg-shell:$(WL_PROTOCOLS)/stable/xdg-shell/xdg-shell.xml \
 	presentation-time:$(WL_PROTOCOLS)/stable/presentation-time/presentation-time.xml \
-	xdg-decoration-unstable-v1:$(WL_PROTOCOLS)/unstable/xdg-decoration/xdg-decoration-unstable-v1.xml
+	xdg-decoration-unstable-v1:$(WL_PROTOCOLS)/unstable/xdg-decoration/xdg-decoration-unstable-v1.xml \
+	wlr-layer-shell-unstable-v1:protocols/wlr-layer-shell-unstable-v1.xml
 
 proto_name = $(word 1,$(subst :, ,$(1)))
 proto_xml = $(word 2,$(subst :, ,$(1)))
@@ -44,8 +47,11 @@ $(BUILD)/%.o: $(BUILD)/%.c $(PROTO_HEADERS)
 $(BUILD)/plastile-fixture.o: plastile-fixture.c $(PROTO_HEADERS) | $(BUILD)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
+# Link to a temporary name and rename: concurrent test sessions keep a working
+# binary (old inode) while a rebuild is in progress.
 $(BUILD)/plastile-fixture: $(OBJS)
-	$(CC) $(LDFLAGS) $^ $(LDLIBS) -o $@
+	$(CC) $(LDFLAGS) $^ $(LDLIBS) -o $@.tmp
+	mv -f $@.tmp $@
 
 clean:
 	rm -rf $(BUILD)

@@ -1,0 +1,2347 @@
+{
+ "task": "T04 upstream automatic-tiler baseline (Polonium vs Plastile)",
+ "layer": "nested KWin virtual backend (not physical); kglobalaccel D-Bus command API, not input",
+ "labels": "latency/churn/fights/geometry are MEASURED in nested KWin (virtual backend) from independent sources (harness send clock, fixture xdg configure logs, one-shot KWin oracle scripts). Attribution of Polonium swap latency to its RebuildDelay timer is MEASURED by the control run and matches OBSERVED SOURCE (src/controller/config.ts RebuildDelay default 10; controller eventTimer). No physical-session, presentation or input-to-photon claim is made.",
+ "versions": {
+  "kwin": "kwin 6.7.5",
+  "packages": [
+   "kwin 6.7.5-3",
+   "kactivitymanagerd 6.7.5-1",
+   "qt6-declarative 6.12.0-1"
+  ],
+  "plastileVersion": "0.1.0",
+  "plastileCommit": "819a91c16fd44b9910ab2bba8051bf33aae55e76",
+  "plastileBundleSha256": "c8f9a35e6283f19fc9d3af91c99674a6abd6874a6c371ae082b1f0948418c7b7",
+  "python": "3.14.8"
+ },
+ "environment": {
+  "activitiesService": true,
+  "outputs": 1,
+  "size": "1280x800",
+  "decoration": "breeze SSD"
+ },
+ "workload": {
+  "windows": 3,
+  "commandsPerPhase": 100,
+  "spacingsMs": [
+   25.0,
+   250.0
+  ],
+  "commands": {
+   "polonium": {
+    "swap": [
+     "PoloniumPlaceRight",
+     "PoloniumPlaceLeft"
+    ],
+    "resize": [
+     "PoloniumResizeRight",
+     "PoloniumResizeLeft"
+    ]
+   },
+   "plastile": {
+    "swap": [
+     "plastile.swap.right",
+     "plastile.swap.left"
+    ],
+    "resize": [
+     "plastile.resize.grow",
+     "plastile.resize.shrink"
+    ]
+   }
+  },
+  "idleAfterPhaseS": 3.0
+ },
+ "metrics": {
+  "sendToFirstConfigureNs": "invokeShortcut send (CLOCK_MONOTONIC) -> first fixture xdg configure t_ns (CLOCK_MONOTONIC) within [t_send, t_next_send); later replies are censored into the next command at short spacing",
+  "sendToFirstSizeConfigureNs": "same, first configure whose size differs from that fixture's previous one",
+  "configuresPerCommand": "fixture configure records in [t_send, t_next_send) over all 3 fixtures",
+  "idleConfiguresAfter1s": "configures >= 1 s after the last command of a phase (geometry fights)",
+  "oracleErrors": "tests/integration/harness.tiling_errors on one-shot KWin script frames (no overlap, inside area)"
+ },
+ "provenance": {
+  "researchPin": "227967ed448205d42b5e63e4cc4b868d72606467 (docs/research/SOURCE_INDEX.md P04, commit date 2026-09-08)",
+  "isResearchPin": true,
+  "packageUsed": {
+   "url": "https://github.com/zeroxoneafour/polonium/releases/download/nightly/polonium.kwinscript",
+   "release": "tag 'nightly' ('Development build', target master, published 2026-09-08T19:54:25Z)",
+   "sha256": "b7c188635c753fbc67f4f154dab7203d15845c323a0af037e19325c09656fa15",
+   "metadataVersion": "1.2.2",
+   "metadataId": "polonium",
+   "api": "declarativescript, minimum 6.0"
+  },
+  "pinSource": {
+   "url": "https://github.com/zeroxoneafour/polonium/archive/227967ed448205d42b5e63e4cc4b868d72606467.tar.gz",
+   "sha256": "d33462f89db41e86cfcba280e50c110af15db1662480819e9ed2f25d78822cc6",
+   "tarPaxCommentCommit": "227967ed448205d42b5e63e4cc4b868d72606467"
+  },
+  "verification": {
+   "method": "MEASURED: every file of the nightly package compared with the pin source; main.mjs rebuilt from the pin with npm ci --ignore-scripts (lockfile) + the Makefile's esbuild command in a separate directory",
+   "identicalToPinSource": [
+    "contents/ui/main.qml",
+    "contents/ui/shortcuts.qml",
+    "contents/ui/settings.qml",
+    "contents/ui/dbus.qml",
+    "contents/ui/config.ui",
+    "contents/config/main.xml",
+    "contents/code/main.js"
+   ],
+   "metadataJson": "equals res/metadata.json with the Makefile's %NAME%=polonium %VERSION%=1.2.2 substitution",
+   "mainMjsRebuildSha256": "08245872e62ff26668a2fbfce5e29c6811ee43a2e20a3b321e6908299a941d91",
+   "mainMjsNightlySha256": "08245872e62ff26668a2fbfce5e29c6811ee43a2e20a3b321e6908299a941d91",
+   "buildTools": {
+    "node": "v26.11.1",
+    "npm": "12.2.0",
+    "esbuild": "0.28.1 (from lockfile)"
+   }
+  },
+  "latestTaggedRelease": "v1.2.1 (2026-07-25); not used: no tagged release exists for the pin's 1.2.2",
+  "installation": "kpackagetool6 -t KWin/Script -i <zip> with env = NestedKwin.env() (private XDG_DATA_HOME), before KWin starts; enabled by kwinrc [Plugins] poloniumEnabled=true. Nothing installed into the user's home.",
+  "license": "MIT (upstream license.txt); no upstream code copied into this repository"
+ },
+ "primaryRuns": [
+  "20261017T211242",
+  "20261017T211502",
+  "20261017T211721"
+ ],
+ "pooled": {
+  "polonium": {
+   "swap@25ms": {
+    "repetitions": 3,
+    "commands": 300,
+    "commandsWithoutConfigure": 0,
+    "sendToFirstConfigureMs": {
+     "n": 300,
+     "min": 11.252,
+     "p50": 12.241,
+     "p95": 13.442,
+     "p99": 13.849,
+     "max": 14.807
+    },
+    "sendToFirstSizeConfigureMs": {
+     "n": 300,
+     "min": 11.253,
+     "p50": 12.244,
+     "p95": 13.443,
+     "p99": 13.849,
+     "max": 14.812
+    },
+    "configuresPerCommand": {
+     "n": 300,
+     "min": 3,
+     "p50": 3,
+     "p95": 3,
+     "p99": 3,
+     "max": 3
+    },
+    "fixturesTouchedPerCommand": {
+     "n": 300,
+     "min": 3,
+     "p50": 3,
+     "p95": 3,
+     "p99": 3,
+     "max": 3
+    },
+    "idleConfiguresAfter1sTotal": 0,
+    "oracleErrorsTotal": 0
+   },
+   "resize@25ms": {
+    "repetitions": 3,
+    "commands": 300,
+    "commandsWithoutConfigure": 0,
+    "sendToFirstConfigureMs": {
+     "n": 300,
+     "min": 0.524,
+     "p50": 0.694,
+     "p95": 0.898,
+     "p99": 1.675,
+     "max": 2.764
+    },
+    "sendToFirstSizeConfigureMs": {
+     "n": 300,
+     "min": 0.524,
+     "p50": 0.694,
+     "p95": 0.898,
+     "p99": 1.675,
+     "max": 2.764
+    },
+    "configuresPerCommand": {
+     "n": 300,
+     "min": 3,
+     "p50": 3,
+     "p95": 3,
+     "p99": 3,
+     "max": 3
+    },
+    "fixturesTouchedPerCommand": {
+     "n": 300,
+     "min": 3,
+     "p50": 3,
+     "p95": 3,
+     "p99": 3,
+     "max": 3
+    },
+    "idleConfiguresAfter1sTotal": 0,
+    "oracleErrorsTotal": 0
+   },
+   "swap@250ms": {
+    "repetitions": 3,
+    "commands": 300,
+    "commandsWithoutConfigure": 0,
+    "sendToFirstConfigureMs": {
+     "n": 300,
+     "min": 11.188,
+     "p50": 11.548,
+     "p95": 12.68,
+     "p99": 13.878,
+     "max": 16.032
+    },
+    "sendToFirstSizeConfigureMs": {
+     "n": 300,
+     "min": 11.193,
+     "p50": 11.554,
+     "p95": 12.686,
+     "p99": 13.878,
+     "max": 16.032
+    },
+    "configuresPerCommand": {
+     "n": 300,
+     "min": 3,
+     "p50": 3,
+     "p95": 3,
+     "p99": 3,
+     "max": 3
+    },
+    "fixturesTouchedPerCommand": {
+     "n": 300,
+     "min": 3,
+     "p50": 3,
+     "p95": 3,
+     "p99": 3,
+     "max": 3
+    },
+    "idleConfiguresAfter1sTotal": 0,
+    "oracleErrorsTotal": 0
+   },
+   "resize@250ms": {
+    "repetitions": 3,
+    "commands": 300,
+    "commandsWithoutConfigure": 0,
+    "sendToFirstConfigureMs": {
+     "n": 300,
+     "min": 0.572,
+     "p50": 0.73,
+     "p95": 0.982,
+     "p99": 1.571,
+     "max": 2.361
+    },
+    "sendToFirstSizeConfigureMs": {
+     "n": 300,
+     "min": 0.572,
+     "p50": 0.73,
+     "p95": 0.982,
+     "p99": 1.571,
+     "max": 2.361
+    },
+    "configuresPerCommand": {
+     "n": 300,
+     "min": 3,
+     "p50": 3,
+     "p95": 3,
+     "p99": 3,
+     "max": 3
+    },
+    "fixturesTouchedPerCommand": {
+     "n": 300,
+     "min": 3,
+     "p50": 3,
+     "p95": 3,
+     "p99": 3,
+     "max": 3
+    },
+    "idleConfiguresAfter1sTotal": 0,
+    "oracleErrorsTotal": 0
+   }
+  },
+  "plastile": {
+   "swap@25ms": {
+    "repetitions": 3,
+    "commands": 300,
+    "commandsWithoutConfigure": 0,
+    "sendToFirstConfigureMs": {
+     "n": 300,
+     "min": 0.718,
+     "p50": 0.954,
+     "p95": 1.475,
+     "p99": 1.783,
+     "max": 2.951
+    },
+    "sendToFirstSizeConfigureMs": {
+     "n": 300,
+     "min": 0.718,
+     "p50": 0.954,
+     "p95": 1.475,
+     "p99": 1.783,
+     "max": 2.951
+    },
+    "configuresPerCommand": {
+     "n": 300,
+     "min": 2,
+     "p50": 2,
+     "p95": 2,
+     "p99": 2,
+     "max": 2
+    },
+    "fixturesTouchedPerCommand": {
+     "n": 300,
+     "min": 2,
+     "p50": 2,
+     "p95": 2,
+     "p99": 2,
+     "max": 2
+    },
+    "idleConfiguresAfter1sTotal": 0,
+    "oracleErrorsTotal": 0
+   },
+   "resize@25ms": {
+    "repetitions": 3,
+    "commands": 300,
+    "commandsWithoutConfigure": 0,
+    "sendToFirstConfigureMs": {
+     "n": 300,
+     "min": 0.764,
+     "p50": 0.964,
+     "p95": 1.307,
+     "p99": 1.856,
+     "max": 1.934
+    },
+    "sendToFirstSizeConfigureMs": {
+     "n": 300,
+     "min": 0.764,
+     "p50": 0.964,
+     "p95": 1.307,
+     "p99": 1.856,
+     "max": 1.934
+    },
+    "configuresPerCommand": {
+     "n": 300,
+     "min": 3,
+     "p50": 3,
+     "p95": 3,
+     "p99": 3,
+     "max": 3
+    },
+    "fixturesTouchedPerCommand": {
+     "n": 300,
+     "min": 3,
+     "p50": 3,
+     "p95": 3,
+     "p99": 3,
+     "max": 3
+    },
+    "idleConfiguresAfter1sTotal": 0,
+    "oracleErrorsTotal": 0
+   },
+   "swap@250ms": {
+    "repetitions": 3,
+    "commands": 300,
+    "commandsWithoutConfigure": 0,
+    "sendToFirstConfigureMs": {
+     "n": 300,
+     "min": 0.762,
+     "p50": 0.99,
+     "p95": 1.792,
+     "p99": 2.022,
+     "max": 2.483
+    },
+    "sendToFirstSizeConfigureMs": {
+     "n": 300,
+     "min": 0.762,
+     "p50": 0.99,
+     "p95": 1.792,
+     "p99": 2.022,
+     "max": 2.483
+    },
+    "configuresPerCommand": {
+     "n": 300,
+     "min": 2,
+     "p50": 2,
+     "p95": 2,
+     "p99": 2,
+     "max": 2
+    },
+    "fixturesTouchedPerCommand": {
+     "n": 300,
+     "min": 2,
+     "p50": 2,
+     "p95": 2,
+     "p99": 2,
+     "max": 2
+    },
+    "idleConfiguresAfter1sTotal": 0,
+    "oracleErrorsTotal": 0
+   },
+   "resize@250ms": {
+    "repetitions": 3,
+    "commands": 300,
+    "commandsWithoutConfigure": 0,
+    "sendToFirstConfigureMs": {
+     "n": 300,
+     "min": 0.762,
+     "p50": 1.008,
+     "p95": 1.569,
+     "p99": 2.229,
+     "max": 3.564
+    },
+    "sendToFirstSizeConfigureMs": {
+     "n": 300,
+     "min": 0.762,
+     "p50": 1.008,
+     "p95": 1.569,
+     "p99": 2.229,
+     "max": 3.564
+    },
+    "configuresPerCommand": {
+     "n": 300,
+     "min": 3,
+     "p50": 3,
+     "p95": 3,
+     "p99": 3,
+     "max": 3
+    },
+    "fixturesTouchedPerCommand": {
+     "n": 300,
+     "min": 3,
+     "p50": 3,
+     "p95": 3,
+     "p99": 3,
+     "max": 3
+    },
+    "idleConfiguresAfter1sTotal": 0,
+    "oracleErrorsTotal": 0
+   }
+  }
+ },
+ "repetitions": [
+  {
+   "stamp": "20261017T211242",
+   "tilers": {
+    "polonium": {
+     "context": {
+      "currentActivityEmpty": false,
+      "workspaceActivities": 1,
+      "windowActivityCounts": [
+       1,
+       1,
+       1
+      ]
+     },
+     "teardown": {
+      "unloadReturned": true,
+      "isScriptLoadedAfter": false
+     },
+     "activities": {
+      "enabled": true,
+      "exitCode": -15
+     },
+     "kamdUsedNestedDataHome": true,
+     "log": {
+      "poloniumErrors": [],
+      "poloniumWarnings": 0,
+      "qmlErrors": []
+     },
+     "scriptConfig": {},
+     "metadata": {
+      "Id": "polonium",
+      "Version": "1.2.2",
+      "API": "declarativescript",
+      "MinimumApi": "6.0"
+     },
+     "packageSha256": "b7c188635c753fbc67f4f154dab7203d15845c323a0af037e19325c09656fa15",
+     "install": {
+      "returncode": 0,
+      "installedIntoNestedDataHome": true,
+      "stdout": "Successfully installed <nested-root>/data/kwin/scripts/polonium/",
+      "stderr": ""
+     },
+     "seconds": 69.8,
+     "afterOpen": {
+      "errors": [],
+      "allNativeTile": true,
+      "areaCoverage": 0.978,
+      "frames": [
+       {
+        "x": 4,
+        "y": 4,
+        "width": 634,
+        "height": 394
+       },
+       {
+        "x": 642,
+        "y": 4,
+        "width": 634,
+        "height": 792
+       },
+       {
+        "x": 4,
+        "y": 402,
+        "width": 634,
+        "height": 394
+       }
+      ]
+     },
+     "final": {
+      "errors": [],
+      "allNativeTile": true,
+      "areaCoverage": 0.978,
+      "frames": [
+       {
+        "x": 4,
+        "y": 4,
+        "width": 634,
+        "height": 394
+       },
+       {
+        "x": 642,
+        "y": 4,
+        "width": 634,
+        "height": 792
+       },
+       {
+        "x": 4,
+        "y": 402,
+        "width": 634,
+        "height": 394
+       }
+      ]
+     },
+     "phases": {
+      "swap@25ms": {
+       "commands": 100,
+       "commandsWithConfigure": 100,
+       "sendToFirstConfigureMs": {
+        "n": 100,
+        "min": 11.277,
+        "p50": 12.103,
+        "p95": 12.577,
+        "p99": 13.633,
+        "max": 13.779
+       },
+       "sendToFirstSizeConfigureMs": {
+        "n": 100,
+        "min": 11.277,
+        "p50": 12.103,
+        "p95": 12.579,
+        "p99": 13.635,
+        "max": 13.78
+       },
+       "configuresPerCommand": {
+        "n": 100,
+        "min": 3,
+        "p50": 3,
+        "p95": 3,
+        "p99": 3,
+        "max": 3
+       },
+       "configuresTotal": 300,
+       "idleConfiguresAfter1s": 0,
+       "idleWindowSeconds": 2.03,
+       "oracleErrors": []
+      },
+      "resize@25ms": {
+       "commands": 100,
+       "commandsWithConfigure": 100,
+       "sendToFirstConfigureMs": {
+        "n": 100,
+        "min": 0.524,
+        "p50": 0.703,
+        "p95": 1.0,
+        "p99": 1.844,
+        "max": 2.764
+       },
+       "sendToFirstSizeConfigureMs": {
+        "n": 100,
+        "min": 0.524,
+        "p50": 0.703,
+        "p95": 1.0,
+        "p99": 1.844,
+        "max": 2.764
+       },
+       "configuresPerCommand": {
+        "n": 100,
+        "min": 3,
+        "p50": 3,
+        "p95": 3,
+        "p99": 3,
+        "max": 3
+       },
+       "configuresTotal": 300,
+       "idleConfiguresAfter1s": 0,
+       "idleWindowSeconds": 2.03,
+       "oracleErrors": []
+      },
+      "swap@250ms": {
+       "commands": 100,
+       "commandsWithConfigure": 100,
+       "sendToFirstConfigureMs": {
+        "n": 100,
+        "min": 11.207,
+        "p50": 11.571,
+        "p95": 12.445,
+        "p99": 13.104,
+        "max": 13.181
+       },
+       "sendToFirstSizeConfigureMs": {
+        "n": 100,
+        "min": 11.21,
+        "p50": 11.578,
+        "p95": 12.449,
+        "p99": 13.109,
+        "max": 13.185
+       },
+       "configuresPerCommand": {
+        "n": 100,
+        "min": 3,
+        "p50": 3,
+        "p95": 3,
+        "p99": 3,
+        "max": 3
+       },
+       "configuresTotal": 300,
+       "idleConfiguresAfter1s": 0,
+       "idleWindowSeconds": 2.26,
+       "oracleErrors": []
+      },
+      "resize@250ms": {
+       "commands": 100,
+       "commandsWithConfigure": 100,
+       "sendToFirstConfigureMs": {
+        "n": 100,
+        "min": 0.572,
+        "p50": 0.707,
+        "p95": 0.941,
+        "p99": 1.35,
+        "max": 2.361
+       },
+       "sendToFirstSizeConfigureMs": {
+        "n": 100,
+        "min": 0.572,
+        "p50": 0.707,
+        "p95": 0.941,
+        "p99": 1.35,
+        "max": 2.361
+       },
+       "configuresPerCommand": {
+        "n": 100,
+        "min": 3,
+        "p50": 3,
+        "p95": 3,
+        "p99": 3,
+        "max": 3
+       },
+       "configuresTotal": 300,
+       "idleConfiguresAfter1s": 0,
+       "idleWindowSeconds": 2.27,
+       "oracleErrors": []
+      }
+     }
+    },
+    "plastile": {
+     "context": {
+      "currentActivityEmpty": false,
+      "workspaceActivities": 1,
+      "windowActivityCounts": [
+       1,
+       1,
+       1
+      ]
+     },
+     "teardown": {
+      "stoppedLogged": true,
+      "isScriptLoadedAfter": false
+     },
+     "activities": {
+      "enabled": true,
+      "exitCode": -15
+     },
+     "kamdUsedNestedDataHome": true,
+     "log": {
+      "plastileErrors": []
+     },
+     "seconds": 69.8,
+     "afterOpen": {
+      "errors": [],
+      "allNativeTile": false,
+      "areaCoverage": 0.957,
+      "frames": [
+       {
+        "x": 8,
+        "y": 8,
+        "width": 691,
+        "height": 784
+       },
+       {
+        "x": 707,
+        "y": 8,
+        "width": 565,
+        "height": 388
+       },
+       {
+        "x": 707,
+        "y": 404,
+        "width": 565,
+        "height": 388
+       }
+      ]
+     },
+     "final": {
+      "errors": [],
+      "allNativeTile": false,
+      "areaCoverage": 0.957,
+      "frames": [
+       {
+        "x": 8,
+        "y": 8,
+        "width": 691,
+        "height": 784
+       },
+       {
+        "x": 707,
+        "y": 8,
+        "width": 565,
+        "height": 388
+       },
+       {
+        "x": 707,
+        "y": 404,
+        "width": 565,
+        "height": 388
+       }
+      ]
+     },
+     "phases": {
+      "swap@25ms": {
+       "commands": 100,
+       "commandsWithConfigure": 100,
+       "sendToFirstConfigureMs": {
+        "n": 100,
+        "min": 0.747,
+        "p50": 0.935,
+        "p95": 1.25,
+        "p99": 1.558,
+        "max": 1.605
+       },
+       "sendToFirstSizeConfigureMs": {
+        "n": 100,
+        "min": 0.747,
+        "p50": 0.935,
+        "p95": 1.25,
+        "p99": 1.558,
+        "max": 1.605
+       },
+       "configuresPerCommand": {
+        "n": 100,
+        "min": 2,
+        "p50": 2,
+        "p95": 2,
+        "p99": 2,
+        "max": 2
+       },
+       "configuresTotal": 200,
+       "idleConfiguresAfter1s": 0,
+       "idleWindowSeconds": 2.03,
+       "oracleErrors": [],
+       "plastileCountersDelta": {
+        "solves": 100,
+        "commands": 100,
+        "writes": 200,
+        "skipNoop": 100,
+        "observations": 200,
+        "settled": 200
+       }
+      },
+      "resize@25ms": {
+       "commands": 100,
+       "commandsWithConfigure": 100,
+       "sendToFirstConfigureMs": {
+        "n": 100,
+        "min": 0.764,
+        "p50": 0.929,
+        "p95": 1.129,
+        "p99": 1.932,
+        "max": 1.934
+       },
+       "sendToFirstSizeConfigureMs": {
+        "n": 100,
+        "min": 0.764,
+        "p50": 0.929,
+        "p95": 1.129,
+        "p99": 1.932,
+        "max": 1.934
+       },
+       "configuresPerCommand": {
+        "n": 100,
+        "min": 3,
+        "p50": 3,
+        "p95": 3,
+        "p99": 3,
+        "max": 3
+       },
+       "configuresTotal": 300,
+       "idleConfiguresAfter1s": 0,
+       "idleWindowSeconds": 2.03,
+       "oracleErrors": [],
+       "plastileCountersDelta": {
+        "solves": 100,
+        "commands": 100,
+        "writes": 300,
+        "observations": 300,
+        "settled": 300
+       }
+      },
+      "swap@250ms": {
+       "commands": 100,
+       "commandsWithConfigure": 100,
+       "sendToFirstConfigureMs": {
+        "n": 100,
+        "min": 0.762,
+        "p50": 0.984,
+        "p95": 1.44,
+        "p99": 2.024,
+        "max": 2.309
+       },
+       "sendToFirstSizeConfigureMs": {
+        "n": 100,
+        "min": 0.762,
+        "p50": 0.984,
+        "p95": 1.44,
+        "p99": 2.024,
+        "max": 2.309
+       },
+       "configuresPerCommand": {
+        "n": 100,
+        "min": 2,
+        "p50": 2,
+        "p95": 2,
+        "p99": 2,
+        "max": 2
+       },
+       "configuresTotal": 200,
+       "idleConfiguresAfter1s": 0,
+       "idleWindowSeconds": 2.26,
+       "oracleErrors": [],
+       "plastileCountersDelta": {
+        "solves": 100,
+        "commands": 100,
+        "writes": 200,
+        "skipNoop": 100,
+        "observations": 200,
+        "settled": 200
+       }
+      },
+      "resize@250ms": {
+       "commands": 100,
+       "commandsWithConfigure": 100,
+       "sendToFirstConfigureMs": {
+        "n": 100,
+        "min": 0.762,
+        "p50": 1.032,
+        "p95": 1.713,
+        "p99": 2.352,
+        "max": 3.564
+       },
+       "sendToFirstSizeConfigureMs": {
+        "n": 100,
+        "min": 0.762,
+        "p50": 1.032,
+        "p95": 1.713,
+        "p99": 2.352,
+        "max": 3.564
+       },
+       "configuresPerCommand": {
+        "n": 100,
+        "min": 3,
+        "p50": 3,
+        "p95": 3,
+        "p99": 3,
+        "max": 3
+       },
+       "configuresTotal": 300,
+       "idleConfiguresAfter1s": 0,
+       "idleWindowSeconds": 2.27,
+       "oracleErrors": [],
+       "plastileCountersDelta": {
+        "solves": 100,
+        "commands": 100,
+        "writes": 300,
+        "observations": 300,
+        "settled": 300
+       }
+      }
+     }
+    }
+   }
+  },
+  {
+   "stamp": "20261017T211502",
+   "tilers": {
+    "polonium": {
+     "context": {
+      "currentActivityEmpty": false,
+      "workspaceActivities": 1,
+      "windowActivityCounts": [
+       1,
+       1,
+       1
+      ]
+     },
+     "teardown": {
+      "unloadReturned": true,
+      "isScriptLoadedAfter": false
+     },
+     "activities": {
+      "enabled": true,
+      "exitCode": -15
+     },
+     "kamdUsedNestedDataHome": true,
+     "log": {
+      "poloniumErrors": [],
+      "poloniumWarnings": 0,
+      "qmlErrors": []
+     },
+     "scriptConfig": {},
+     "metadata": {
+      "Id": "polonium",
+      "Version": "1.2.2",
+      "API": "declarativescript",
+      "MinimumApi": "6.0"
+     },
+     "packageSha256": "b7c188635c753fbc67f4f154dab7203d15845c323a0af037e19325c09656fa15",
+     "install": {
+      "returncode": 0,
+      "installedIntoNestedDataHome": true,
+      "stdout": "Successfully installed <nested-root>/data/kwin/scripts/polonium/",
+      "stderr": ""
+     },
+     "seconds": 69.8,
+     "afterOpen": {
+      "errors": [],
+      "allNativeTile": true,
+      "areaCoverage": 0.978,
+      "frames": [
+       {
+        "x": 4,
+        "y": 4,
+        "width": 634,
+        "height": 394
+       },
+       {
+        "x": 642,
+        "y": 4,
+        "width": 634,
+        "height": 792
+       },
+       {
+        "x": 4,
+        "y": 402,
+        "width": 634,
+        "height": 394
+       }
+      ]
+     },
+     "final": {
+      "errors": [],
+      "allNativeTile": true,
+      "areaCoverage": 0.978,
+      "frames": [
+       {
+        "x": 4,
+        "y": 4,
+        "width": 634,
+        "height": 394
+       },
+       {
+        "x": 642,
+        "y": 4,
+        "width": 634,
+        "height": 792
+       },
+       {
+        "x": 4,
+        "y": 402,
+        "width": 634,
+        "height": 394
+       }
+      ]
+     },
+     "phases": {
+      "swap@25ms": {
+       "commands": 100,
+       "commandsWithConfigure": 100,
+       "sendToFirstConfigureMs": {
+        "n": 100,
+        "min": 11.252,
+        "p50": 12.279,
+        "p95": 13.353,
+        "p99": 13.675,
+        "max": 13.849
+       },
+       "sendToFirstSizeConfigureMs": {
+        "n": 100,
+        "min": 11.253,
+        "p50": 12.306,
+        "p95": 13.356,
+        "p99": 13.675,
+        "max": 13.849
+       },
+       "configuresPerCommand": {
+        "n": 100,
+        "min": 3,
+        "p50": 3,
+        "p95": 3,
+        "p99": 3,
+        "max": 3
+       },
+       "configuresTotal": 300,
+       "idleConfiguresAfter1s": 0,
+       "idleWindowSeconds": 2.03,
+       "oracleErrors": []
+      },
+      "resize@25ms": {
+       "commands": 100,
+       "commandsWithConfigure": 100,
+       "sendToFirstConfigureMs": {
+        "n": 100,
+        "min": 0.577,
+        "p50": 0.69,
+        "p95": 0.854,
+        "p99": 1.018,
+        "max": 1.683
+       },
+       "sendToFirstSizeConfigureMs": {
+        "n": 100,
+        "min": 0.577,
+        "p50": 0.69,
+        "p95": 0.854,
+        "p99": 1.018,
+        "max": 1.683
+       },
+       "configuresPerCommand": {
+        "n": 100,
+        "min": 3,
+        "p50": 3,
+        "p95": 3,
+        "p99": 3,
+        "max": 3
+       },
+       "configuresTotal": 300,
+       "idleConfiguresAfter1s": 0,
+       "idleWindowSeconds": 2.04,
+       "oracleErrors": []
+      },
+      "swap@250ms": {
+       "commands": 100,
+       "commandsWithConfigure": 100,
+       "sendToFirstConfigureMs": {
+        "n": 100,
+        "min": 11.188,
+        "p50": 11.562,
+        "p95": 13.299,
+        "p99": 14.33,
+        "max": 14.512
+       },
+       "sendToFirstSizeConfigureMs": {
+        "n": 100,
+        "min": 11.193,
+        "p50": 11.572,
+        "p95": 13.304,
+        "p99": 14.333,
+        "max": 14.512
+       },
+       "configuresPerCommand": {
+        "n": 100,
+        "min": 3,
+        "p50": 3,
+        "p95": 3,
+        "p99": 3,
+        "max": 3
+       },
+       "configuresTotal": 300,
+       "idleConfiguresAfter1s": 0,
+       "idleWindowSeconds": 2.27,
+       "oracleErrors": []
+      },
+      "resize@250ms": {
+       "commands": 100,
+       "commandsWithConfigure": 100,
+       "sendToFirstConfigureMs": {
+        "n": 100,
+        "min": 0.596,
+        "p50": 0.783,
+        "p95": 1.057,
+        "p99": 1.689,
+        "max": 1.757
+       },
+       "sendToFirstSizeConfigureMs": {
+        "n": 100,
+        "min": 0.596,
+        "p50": 0.783,
+        "p95": 1.057,
+        "p99": 1.689,
+        "max": 1.757
+       },
+       "configuresPerCommand": {
+        "n": 100,
+        "min": 3,
+        "p50": 3,
+        "p95": 3,
+        "p99": 3,
+        "max": 3
+       },
+       "configuresTotal": 300,
+       "idleConfiguresAfter1s": 0,
+       "idleWindowSeconds": 2.27,
+       "oracleErrors": []
+      }
+     }
+    },
+    "plastile": {
+     "context": {
+      "currentActivityEmpty": false,
+      "workspaceActivities": 1,
+      "windowActivityCounts": [
+       1,
+       1,
+       1
+      ]
+     },
+     "teardown": {
+      "stoppedLogged": true,
+      "isScriptLoadedAfter": false
+     },
+     "activities": {
+      "enabled": true,
+      "exitCode": -15
+     },
+     "kamdUsedNestedDataHome": true,
+     "log": {
+      "plastileErrors": []
+     },
+     "seconds": 69.8,
+     "afterOpen": {
+      "errors": [],
+      "allNativeTile": false,
+      "areaCoverage": 0.957,
+      "frames": [
+       {
+        "x": 8,
+        "y": 8,
+        "width": 691,
+        "height": 784
+       },
+       {
+        "x": 707,
+        "y": 8,
+        "width": 565,
+        "height": 388
+       },
+       {
+        "x": 707,
+        "y": 404,
+        "width": 565,
+        "height": 388
+       }
+      ]
+     },
+     "final": {
+      "errors": [],
+      "allNativeTile": false,
+      "areaCoverage": 0.957,
+      "frames": [
+       {
+        "x": 8,
+        "y": 8,
+        "width": 691,
+        "height": 784
+       },
+       {
+        "x": 707,
+        "y": 8,
+        "width": 565,
+        "height": 388
+       },
+       {
+        "x": 707,
+        "y": 404,
+        "width": 565,
+        "height": 388
+       }
+      ]
+     },
+     "phases": {
+      "swap@25ms": {
+       "commands": 100,
+       "commandsWithConfigure": 100,
+       "sendToFirstConfigureMs": {
+        "n": 100,
+        "min": 0.809,
+        "p50": 0.974,
+        "p95": 1.479,
+        "p99": 1.783,
+        "max": 1.788
+       },
+       "sendToFirstSizeConfigureMs": {
+        "n": 100,
+        "min": 0.809,
+        "p50": 0.974,
+        "p95": 1.479,
+        "p99": 1.783,
+        "max": 1.788
+       },
+       "configuresPerCommand": {
+        "n": 100,
+        "min": 2,
+        "p50": 2,
+        "p95": 2,
+        "p99": 2,
+        "max": 2
+       },
+       "configuresTotal": 200,
+       "idleConfiguresAfter1s": 0,
+       "idleWindowSeconds": 2.03,
+       "oracleErrors": [],
+       "plastileCountersDelta": {
+        "solves": 100,
+        "commands": 100,
+        "writes": 200,
+        "skipNoop": 100,
+        "observations": 200,
+        "settled": 200
+       }
+      },
+      "resize@25ms": {
+       "commands": 100,
+       "commandsWithConfigure": 100,
+       "sendToFirstConfigureMs": {
+        "n": 100,
+        "min": 0.772,
+        "p50": 0.99,
+        "p95": 1.307,
+        "p99": 1.85,
+        "max": 1.883
+       },
+       "sendToFirstSizeConfigureMs": {
+        "n": 100,
+        "min": 0.772,
+        "p50": 0.99,
+        "p95": 1.307,
+        "p99": 1.85,
+        "max": 1.883
+       },
+       "configuresPerCommand": {
+        "n": 100,
+        "min": 3,
+        "p50": 3,
+        "p95": 3,
+        "p99": 3,
+        "max": 3
+       },
+       "configuresTotal": 300,
+       "idleConfiguresAfter1s": 0,
+       "idleWindowSeconds": 2.03,
+       "oracleErrors": [],
+       "plastileCountersDelta": {
+        "solves": 100,
+        "commands": 100,
+        "writes": 300,
+        "observations": 300,
+        "settled": 300
+       }
+      },
+      "swap@250ms": {
+       "commands": 100,
+       "commandsWithConfigure": 100,
+       "sendToFirstConfigureMs": {
+        "n": 100,
+        "min": 0.829,
+        "p50": 1.01,
+        "p95": 1.854,
+        "p99": 2.0,
+        "max": 2.483
+       },
+       "sendToFirstSizeConfigureMs": {
+        "n": 100,
+        "min": 0.829,
+        "p50": 1.01,
+        "p95": 1.854,
+        "p99": 2.0,
+        "max": 2.483
+       },
+       "configuresPerCommand": {
+        "n": 100,
+        "min": 2,
+        "p50": 2,
+        "p95": 2,
+        "p99": 2,
+        "max": 2
+       },
+       "configuresTotal": 200,
+       "idleConfiguresAfter1s": 0,
+       "idleWindowSeconds": 2.26,
+       "oracleErrors": [],
+       "plastileCountersDelta": {
+        "solves": 100,
+        "commands": 100,
+        "writes": 200,
+        "skipNoop": 100,
+        "observations": 200,
+        "settled": 200
+       }
+      },
+      "resize@250ms": {
+       "commands": 100,
+       "commandsWithConfigure": 100,
+       "sendToFirstConfigureMs": {
+        "n": 100,
+        "min": 0.782,
+        "p50": 1.014,
+        "p95": 1.397,
+        "p99": 1.964,
+        "max": 2.229
+       },
+       "sendToFirstSizeConfigureMs": {
+        "n": 100,
+        "min": 0.782,
+        "p50": 1.014,
+        "p95": 1.397,
+        "p99": 1.964,
+        "max": 2.229
+       },
+       "configuresPerCommand": {
+        "n": 100,
+        "min": 3,
+        "p50": 3,
+        "p95": 3,
+        "p99": 3,
+        "max": 3
+       },
+       "configuresTotal": 300,
+       "idleConfiguresAfter1s": 0,
+       "idleWindowSeconds": 2.26,
+       "oracleErrors": [],
+       "plastileCountersDelta": {
+        "solves": 100,
+        "commands": 100,
+        "writes": 300,
+        "observations": 300,
+        "settled": 300
+       }
+      }
+     }
+    }
+   }
+  },
+  {
+   "stamp": "20261017T211721",
+   "tilers": {
+    "polonium": {
+     "context": {
+      "currentActivityEmpty": false,
+      "workspaceActivities": 1,
+      "windowActivityCounts": [
+       1,
+       1,
+       1
+      ]
+     },
+     "teardown": {
+      "unloadReturned": true,
+      "isScriptLoadedAfter": false
+     },
+     "activities": {
+      "enabled": true,
+      "exitCode": -15
+     },
+     "kamdUsedNestedDataHome": true,
+     "log": {
+      "poloniumErrors": [],
+      "poloniumWarnings": 0,
+      "qmlErrors": []
+     },
+     "scriptConfig": {},
+     "metadata": {
+      "Id": "polonium",
+      "Version": "1.2.2",
+      "API": "declarativescript",
+      "MinimumApi": "6.0"
+     },
+     "packageSha256": "b7c188635c753fbc67f4f154dab7203d15845c323a0af037e19325c09656fa15",
+     "install": {
+      "returncode": 0,
+      "installedIntoNestedDataHome": true,
+      "stdout": "Successfully installed <nested-root>/data/kwin/scripts/polonium/",
+      "stderr": ""
+     },
+     "seconds": 69.8,
+     "afterOpen": {
+      "errors": [],
+      "allNativeTile": true,
+      "areaCoverage": 0.978,
+      "frames": [
+       {
+        "x": 4,
+        "y": 4,
+        "width": 634,
+        "height": 394
+       },
+       {
+        "x": 642,
+        "y": 4,
+        "width": 634,
+        "height": 792
+       },
+       {
+        "x": 4,
+        "y": 402,
+        "width": 634,
+        "height": 394
+       }
+      ]
+     },
+     "final": {
+      "errors": [],
+      "allNativeTile": true,
+      "areaCoverage": 0.978,
+      "frames": [
+       {
+        "x": 4,
+        "y": 4,
+        "width": 634,
+        "height": 394
+       },
+       {
+        "x": 642,
+        "y": 4,
+        "width": 634,
+        "height": 792
+       },
+       {
+        "x": 4,
+        "y": 402,
+        "width": 634,
+        "height": 394
+       }
+      ]
+     },
+     "phases": {
+      "swap@25ms": {
+       "commands": 100,
+       "commandsWithConfigure": 100,
+       "sendToFirstConfigureMs": {
+        "n": 100,
+        "min": 11.398,
+        "p50": 12.386,
+        "p95": 13.533,
+        "p99": 14.265,
+        "max": 14.807
+       },
+       "sendToFirstSizeConfigureMs": {
+        "n": 100,
+        "min": 11.4,
+        "p50": 12.388,
+        "p95": 13.533,
+        "p99": 14.267,
+        "max": 14.812
+       },
+       "configuresPerCommand": {
+        "n": 100,
+        "min": 3,
+        "p50": 3,
+        "p95": 3,
+        "p99": 3,
+        "max": 3
+       },
+       "configuresTotal": 300,
+       "idleConfiguresAfter1s": 0,
+       "idleWindowSeconds": 2.03,
+       "oracleErrors": []
+      },
+      "resize@25ms": {
+       "commands": 100,
+       "commandsWithConfigure": 100,
+       "sendToFirstConfigureMs": {
+        "n": 100,
+        "min": 0.542,
+        "p50": 0.689,
+        "p95": 0.883,
+        "p99": 1.628,
+        "max": 1.675
+       },
+       "sendToFirstSizeConfigureMs": {
+        "n": 100,
+        "min": 0.542,
+        "p50": 0.689,
+        "p95": 0.883,
+        "p99": 1.628,
+        "max": 1.675
+       },
+       "configuresPerCommand": {
+        "n": 100,
+        "min": 3,
+        "p50": 3,
+        "p95": 3,
+        "p99": 3,
+        "max": 3
+       },
+       "configuresTotal": 300,
+       "idleConfiguresAfter1s": 0,
+       "idleWindowSeconds": 2.03,
+       "oracleErrors": []
+      },
+      "swap@250ms": {
+       "commands": 100,
+       "commandsWithConfigure": 100,
+       "sendToFirstConfigureMs": {
+        "n": 100,
+        "min": 11.199,
+        "p50": 11.522,
+        "p95": 12.57,
+        "p99": 13.409,
+        "max": 16.032
+       },
+       "sendToFirstSizeConfigureMs": {
+        "n": 100,
+        "min": 11.2,
+        "p50": 11.525,
+        "p95": 12.573,
+        "p99": 13.412,
+        "max": 16.032
+       },
+       "configuresPerCommand": {
+        "n": 100,
+        "min": 3,
+        "p50": 3,
+        "p95": 3,
+        "p99": 3,
+        "max": 3
+       },
+       "configuresTotal": 300,
+       "idleConfiguresAfter1s": 0,
+       "idleWindowSeconds": 2.26,
+       "oracleErrors": []
+      },
+      "resize@250ms": {
+       "commands": 100,
+       "commandsWithConfigure": 100,
+       "sendToFirstConfigureMs": {
+        "n": 100,
+        "min": 0.578,
+        "p50": 0.696,
+        "p95": 0.79,
+        "p99": 0.942,
+        "max": 0.958
+       },
+       "sendToFirstSizeConfigureMs": {
+        "n": 100,
+        "min": 0.578,
+        "p50": 0.696,
+        "p95": 0.79,
+        "p99": 0.942,
+        "max": 0.958
+       },
+       "configuresPerCommand": {
+        "n": 100,
+        "min": 3,
+        "p50": 3,
+        "p95": 3,
+        "p99": 3,
+        "max": 3
+       },
+       "configuresTotal": 300,
+       "idleConfiguresAfter1s": 0,
+       "idleWindowSeconds": 2.26,
+       "oracleErrors": []
+      }
+     }
+    },
+    "plastile": {
+     "context": {
+      "currentActivityEmpty": false,
+      "workspaceActivities": 1,
+      "windowActivityCounts": [
+       1,
+       1,
+       1
+      ]
+     },
+     "teardown": {
+      "stoppedLogged": true,
+      "isScriptLoadedAfter": false
+     },
+     "activities": {
+      "enabled": true,
+      "exitCode": -15
+     },
+     "kamdUsedNestedDataHome": true,
+     "log": {
+      "plastileErrors": []
+     },
+     "seconds": 69.7,
+     "afterOpen": {
+      "errors": [],
+      "allNativeTile": false,
+      "areaCoverage": 0.957,
+      "frames": [
+       {
+        "x": 8,
+        "y": 8,
+        "width": 691,
+        "height": 784
+       },
+       {
+        "x": 707,
+        "y": 8,
+        "width": 565,
+        "height": 388
+       },
+       {
+        "x": 707,
+        "y": 404,
+        "width": 565,
+        "height": 388
+       }
+      ]
+     },
+     "final": {
+      "errors": [],
+      "allNativeTile": false,
+      "areaCoverage": 0.957,
+      "frames": [
+       {
+        "x": 8,
+        "y": 8,
+        "width": 691,
+        "height": 784
+       },
+       {
+        "x": 707,
+        "y": 8,
+        "width": 565,
+        "height": 388
+       },
+       {
+        "x": 707,
+        "y": 404,
+        "width": 565,
+        "height": 388
+       }
+      ]
+     },
+     "phases": {
+      "swap@25ms": {
+       "commands": 100,
+       "commandsWithConfigure": 100,
+       "sendToFirstConfigureMs": {
+        "n": 100,
+        "min": 0.718,
+        "p50": 0.962,
+        "p95": 1.511,
+        "p99": 2.61,
+        "max": 2.951
+       },
+       "sendToFirstSizeConfigureMs": {
+        "n": 100,
+        "min": 0.718,
+        "p50": 0.962,
+        "p95": 1.511,
+        "p99": 2.61,
+        "max": 2.951
+       },
+       "configuresPerCommand": {
+        "n": 100,
+        "min": 2,
+        "p50": 2,
+        "p95": 2,
+        "p99": 2,
+        "max": 2
+       },
+       "configuresTotal": 200,
+       "idleConfiguresAfter1s": 0,
+       "idleWindowSeconds": 2.03,
+       "oracleErrors": [],
+       "plastileCountersDelta": {
+        "solves": 100,
+        "commands": 100,
+        "writes": 200,
+        "skipNoop": 100,
+        "observations": 200,
+        "settled": 200
+       }
+      },
+      "resize@25ms": {
+       "commands": 100,
+       "commandsWithConfigure": 100,
+       "sendToFirstConfigureMs": {
+        "n": 100,
+        "min": 0.791,
+        "p50": 0.978,
+        "p95": 1.335,
+        "p99": 1.731,
+        "max": 1.856
+       },
+       "sendToFirstSizeConfigureMs": {
+        "n": 100,
+        "min": 0.791,
+        "p50": 0.978,
+        "p95": 1.335,
+        "p99": 1.731,
+        "max": 1.856
+       },
+       "configuresPerCommand": {
+        "n": 100,
+        "min": 3,
+        "p50": 3,
+        "p95": 3,
+        "p99": 3,
+        "max": 3
+       },
+       "configuresTotal": 300,
+       "idleConfiguresAfter1s": 0,
+       "idleWindowSeconds": 2.03,
+       "oracleErrors": [],
+       "plastileCountersDelta": {
+        "solves": 100,
+        "commands": 100,
+        "writes": 300,
+        "observations": 300,
+        "settled": 300
+       }
+      },
+      "swap@250ms": {
+       "commands": 100,
+       "commandsWithConfigure": 100,
+       "sendToFirstConfigureMs": {
+        "n": 100,
+        "min": 0.776,
+        "p50": 0.972,
+        "p95": 1.344,
+        "p99": 2.001,
+        "max": 2.022
+       },
+       "sendToFirstSizeConfigureMs": {
+        "n": 100,
+        "min": 0.776,
+        "p50": 0.972,
+        "p95": 1.344,
+        "p99": 2.001,
+        "max": 2.022
+       },
+       "configuresPerCommand": {
+        "n": 100,
+        "min": 2,
+        "p50": 2,
+        "p95": 2,
+        "p99": 2,
+        "max": 2
+       },
+       "configuresTotal": 200,
+       "idleConfiguresAfter1s": 0,
+       "idleWindowSeconds": 2.26,
+       "oracleErrors": [],
+       "plastileCountersDelta": {
+        "solves": 100,
+        "commands": 100,
+        "writes": 200,
+        "skipNoop": 100,
+        "observations": 200,
+        "settled": 200
+       }
+      },
+      "resize@250ms": {
+       "commands": 100,
+       "commandsWithConfigure": 100,
+       "sendToFirstConfigureMs": {
+        "n": 100,
+        "min": 0.784,
+        "p50": 0.985,
+        "p95": 1.186,
+        "p99": 1.973,
+        "max": 2.428
+       },
+       "sendToFirstSizeConfigureMs": {
+        "n": 100,
+        "min": 0.784,
+        "p50": 0.985,
+        "p95": 1.186,
+        "p99": 1.973,
+        "max": 2.428
+       },
+       "configuresPerCommand": {
+        "n": 100,
+        "min": 3,
+        "p50": 3,
+        "p95": 3,
+        "p99": 3,
+        "max": 3
+       },
+       "configuresTotal": 300,
+       "idleConfiguresAfter1s": 0,
+       "idleWindowSeconds": 2.26,
+       "oracleErrors": [],
+       "plastileCountersDelta": {
+        "solves": 100,
+        "commands": 100,
+        "writes": 300,
+        "observations": 300,
+        "settled": 300
+       }
+      }
+     }
+    }
+   }
+  }
+ ],
+ "controls": {
+  "poloniumRebuildDelay1": {
+   "stamp": "20261017T212020",
+   "purpose": "attribute Polonium swap latency: kwinrc [Script-polonium] RebuildDelay=1 (default 10 ms)",
+   "tilers": {
+    "polonium": {
+     "context": {
+      "currentActivityEmpty": false,
+      "workspaceActivities": 1,
+      "windowActivityCounts": [
+       1,
+       1,
+       1
+      ]
+     },
+     "teardown": {
+      "unloadReturned": true,
+      "isScriptLoadedAfter": false
+     },
+     "activities": {
+      "enabled": true,
+      "exitCode": -15
+     },
+     "kamdUsedNestedDataHome": true,
+     "log": {
+      "poloniumErrors": [],
+      "poloniumWarnings": 0,
+      "qmlErrors": []
+     },
+     "scriptConfig": {
+      "RebuildDelay": "1"
+     },
+     "metadata": {
+      "Id": "polonium",
+      "Version": "1.2.2",
+      "API": "declarativescript",
+      "MinimumApi": "6.0"
+     },
+     "packageSha256": "b7c188635c753fbc67f4f154dab7203d15845c323a0af037e19325c09656fa15",
+     "install": {
+      "returncode": 0,
+      "installedIntoNestedDataHome": true,
+      "stdout": "Successfully installed <nested-root>/data/kwin/scripts/polonium/",
+      "stderr": ""
+     },
+     "seconds": 69.9,
+     "afterOpen": {
+      "errors": [],
+      "allNativeTile": true,
+      "areaCoverage": 0.978,
+      "frames": [
+       {
+        "x": 4,
+        "y": 4,
+        "width": 634,
+        "height": 394
+       },
+       {
+        "x": 642,
+        "y": 4,
+        "width": 634,
+        "height": 792
+       },
+       {
+        "x": 4,
+        "y": 402,
+        "width": 634,
+        "height": 394
+       }
+      ]
+     },
+     "final": {
+      "errors": [],
+      "allNativeTile": true,
+      "areaCoverage": 0.978,
+      "frames": [
+       {
+        "x": 4,
+        "y": 4,
+        "width": 634,
+        "height": 394
+       },
+       {
+        "x": 642,
+        "y": 4,
+        "width": 634,
+        "height": 792
+       },
+       {
+        "x": 4,
+        "y": 402,
+        "width": 634,
+        "height": 394
+       }
+      ]
+     },
+     "phases": {
+      "swap@25ms": {
+       "commands": 100,
+       "commandsWithConfigure": 100,
+       "sendToFirstConfigureMs": {
+        "n": 100,
+        "min": 2.196,
+        "p50": 3.035,
+        "p95": 3.802,
+        "p99": 4.332,
+        "max": 4.507
+       },
+       "sendToFirstSizeConfigureMs": {
+        "n": 100,
+        "min": 2.196,
+        "p50": 3.038,
+        "p95": 3.805,
+        "p99": 4.384,
+        "max": 4.511
+       },
+       "configuresPerCommand": {
+        "n": 100,
+        "min": 3,
+        "p50": 3,
+        "p95": 3,
+        "p99": 3,
+        "max": 3
+       },
+       "configuresTotal": 300,
+       "idleConfiguresAfter1s": 0,
+       "idleWindowSeconds": 2.03,
+       "oracleErrors": []
+      },
+      "resize@25ms": {
+       "commands": 100,
+       "commandsWithConfigure": 100,
+       "sendToFirstConfigureMs": {
+        "n": 100,
+        "min": 0.542,
+        "p50": 0.709,
+        "p95": 0.89,
+        "p99": 1.025,
+        "max": 1.442
+       },
+       "sendToFirstSizeConfigureMs": {
+        "n": 100,
+        "min": 0.542,
+        "p50": 0.709,
+        "p95": 0.89,
+        "p99": 1.025,
+        "max": 1.442
+       },
+       "configuresPerCommand": {
+        "n": 100,
+        "min": 3,
+        "p50": 3,
+        "p95": 3,
+        "p99": 3,
+        "max": 3
+       },
+       "configuresTotal": 300,
+       "idleConfiguresAfter1s": 0,
+       "idleWindowSeconds": 2.03,
+       "oracleErrors": []
+      },
+      "swap@250ms": {
+       "commands": 100,
+       "commandsWithConfigure": 100,
+       "sendToFirstConfigureMs": {
+        "n": 100,
+        "min": 2.913,
+        "p50": 3.265,
+        "p95": 3.918,
+        "p99": 4.149,
+        "max": 4.232
+       },
+       "sendToFirstSizeConfigureMs": {
+        "n": 100,
+        "min": 2.915,
+        "p50": 3.268,
+        "p95": 3.92,
+        "p99": 4.161,
+        "max": 4.232
+       },
+       "configuresPerCommand": {
+        "n": 100,
+        "min": 3,
+        "p50": 3,
+        "p95": 3,
+        "p99": 3,
+        "max": 3
+       },
+       "configuresTotal": 300,
+       "idleConfiguresAfter1s": 0,
+       "idleWindowSeconds": 2.27,
+       "oracleErrors": []
+      },
+      "resize@250ms": {
+       "commands": 100,
+       "commandsWithConfigure": 100,
+       "sendToFirstConfigureMs": {
+        "n": 100,
+        "min": 0.63,
+        "p50": 0.743,
+        "p95": 0.92,
+        "p99": 1.225,
+        "max": 1.309
+       },
+       "sendToFirstSizeConfigureMs": {
+        "n": 100,
+        "min": 0.63,
+        "p50": 0.743,
+        "p95": 0.92,
+        "p99": 1.225,
+        "max": 1.309
+       },
+       "configuresPerCommand": {
+        "n": 100,
+        "min": 3,
+        "p50": 3,
+        "p95": 3,
+        "p99": 3,
+        "max": 3
+       },
+       "configuresTotal": 300,
+       "idleConfiguresAfter1s": 0,
+       "idleWindowSeconds": 2.27,
+       "oracleErrors": []
+      }
+     }
+    }
+   }
+  },
+  "noActivitiesService": {
+   "stamp": "20261017T212130",
+   "purpose": "nested session without kactivitymanagerd (the default harness environment)",
+   "tilers": {
+    "polonium": {
+     "context": {
+      "currentActivityEmpty": true,
+      "workspaceActivities": 1,
+      "windowActivityCounts": [
+       0,
+       0,
+       0
+      ]
+     },
+     "teardown": {
+      "unloadReturned": true,
+      "isScriptLoadedAfter": false
+     },
+     "kamdUsedNestedDataHome": null,
+     "log": {
+      "poloniumErrors": [],
+      "poloniumWarnings": 0,
+      "qmlErrors": []
+     },
+     "scriptConfig": {
+      "LogLevel": "3"
+     },
+     "metadata": {
+      "Id": "polonium",
+      "Version": "1.2.2",
+      "API": "declarativescript",
+      "MinimumApi": "6.0"
+     },
+     "packageSha256": "b7c188635c753fbc67f4f154dab7203d15845c323a0af037e19325c09656fa15",
+     "install": {
+      "returncode": 0,
+      "installedIntoNestedDataHome": true,
+      "stdout": "Successfully installed <nested-root>/data/kwin/scripts/polonium/",
+      "stderr": ""
+     },
+     "seconds": 9.6,
+     "afterOpen": {
+      "errors": [
+       "plastile-fixture 1 overlaps plastile-fixture 2",
+       "plastile-fixture 1 overlaps plastile-fixture 3",
+       "plastile-fixture 2 overlaps plastile-fixture 3"
+      ],
+      "allNativeTile": false,
+      "areaCoverage": 0.384,
+      "frames": [
+       {
+        "x": 440,
+        "y": 236,
+        "width": 400,
+        "height": 328
+       },
+       {
+        "x": 466.6666666666667,
+        "y": 252.66666666666666,
+        "width": 400.00000000000006,
+        "height": 328
+       },
+       {
+        "x": 493.33333333333337,
+        "y": 269.3333333333333,
+        "width": 400,
+        "height": 327.99999999999994
+       }
+      ]
+     },
+     "final": {
+      "errors": [
+       "plastile-fixture 1 overlaps plastile-fixture 2",
+       "plastile-fixture 1 overlaps plastile-fixture 3",
+       "plastile-fixture 2 overlaps plastile-fixture 3"
+      ],
+      "allNativeTile": false,
+      "areaCoverage": 0.384,
+      "frames": [
+       {
+        "x": 440,
+        "y": 236,
+        "width": 400,
+        "height": 328
+       },
+       {
+        "x": 466.6666666666667,
+        "y": 252.66666666666666,
+        "width": 400.00000000000006,
+        "height": 328
+       },
+       {
+        "x": 493.33333333333337,
+        "y": 269.3333333333333,
+        "width": 400,
+        "height": 327.99999999999994
+       }
+      ]
+     },
+     "phases": {
+      "swap@25ms": {
+       "commands": 20,
+       "commandsWithConfigure": 0,
+       "sendToFirstConfigureMs": null,
+       "sendToFirstSizeConfigureMs": null,
+       "configuresPerCommand": {
+        "n": 20,
+        "min": 0,
+        "p50": 0,
+        "p95": 0,
+        "p99": 0,
+        "max": 0
+       },
+       "configuresTotal": 0,
+       "idleConfiguresAfter1s": 0,
+       "idleWindowSeconds": 2.03,
+       "oracleErrors": [
+        "plastile-fixture 1 overlaps plastile-fixture 2",
+        "plastile-fixture 1 overlaps plastile-fixture 3",
+        "plastile-fixture 2 overlaps plastile-fixture 3"
+       ]
+      },
+      "resize@25ms": {
+       "commands": 20,
+       "commandsWithConfigure": 0,
+       "sendToFirstConfigureMs": null,
+       "sendToFirstSizeConfigureMs": null,
+       "configuresPerCommand": {
+        "n": 20,
+        "min": 0,
+        "p50": 0,
+        "p95": 0,
+        "p99": 0,
+        "max": 0
+       },
+       "configuresTotal": 0,
+       "idleConfiguresAfter1s": 0,
+       "idleWindowSeconds": 2.03,
+       "oracleErrors": [
+        "plastile-fixture 1 overlaps plastile-fixture 2",
+        "plastile-fixture 1 overlaps plastile-fixture 3",
+        "plastile-fixture 2 overlaps plastile-fixture 3"
+       ]
+      }
+     }
+    },
+    "plastile": {
+     "context": {
+      "currentActivityEmpty": true,
+      "workspaceActivities": 1,
+      "windowActivityCounts": [
+       0,
+       0,
+       0
+      ]
+     },
+     "teardown": {
+      "stoppedLogged": true,
+      "isScriptLoadedAfter": false
+     },
+     "kamdUsedNestedDataHome": null,
+     "log": {
+      "plastileErrors": []
+     },
+     "seconds": 9.6,
+     "afterOpen": {
+      "errors": [],
+      "allNativeTile": false,
+      "areaCoverage": 0.957,
+      "frames": [
+       {
+        "x": 8,
+        "y": 8,
+        "width": 691,
+        "height": 784
+       },
+       {
+        "x": 707,
+        "y": 8,
+        "width": 565,
+        "height": 388
+       },
+       {
+        "x": 707,
+        "y": 404,
+        "width": 565,
+        "height": 388
+       }
+      ]
+     },
+     "final": {
+      "errors": [],
+      "allNativeTile": false,
+      "areaCoverage": 0.957,
+      "frames": [
+       {
+        "x": 8,
+        "y": 8,
+        "width": 691,
+        "height": 784
+       },
+       {
+        "x": 707,
+        "y": 8,
+        "width": 565,
+        "height": 388
+       },
+       {
+        "x": 707,
+        "y": 404,
+        "width": 565,
+        "height": 388
+       }
+      ]
+     },
+     "phases": {
+      "swap@25ms": {
+       "commands": 20,
+       "commandsWithConfigure": 20,
+       "sendToFirstConfigureMs": {
+        "n": 20,
+        "min": 0.94,
+        "p50": 1.056,
+        "p95": 1.897,
+        "p99": 2.047,
+        "max": 2.047
+       },
+       "sendToFirstSizeConfigureMs": {
+        "n": 20,
+        "min": 0.94,
+        "p50": 1.056,
+        "p95": 1.897,
+        "p99": 2.047,
+        "max": 2.047
+       },
+       "configuresPerCommand": {
+        "n": 20,
+        "min": 2,
+        "p50": 2,
+        "p95": 2,
+        "p99": 2,
+        "max": 2
+       },
+       "configuresTotal": 40,
+       "idleConfiguresAfter1s": 0,
+       "idleWindowSeconds": 2.03,
+       "oracleErrors": [],
+       "plastileCountersDelta": {
+        "solves": 20,
+        "commands": 20,
+        "writes": 40,
+        "skipNoop": 20,
+        "observations": 40,
+        "settled": 40
+       }
+      },
+      "resize@25ms": {
+       "commands": 20,
+       "commandsWithConfigure": 20,
+       "sendToFirstConfigureMs": {
+        "n": 20,
+        "min": 0.77,
+        "p50": 0.965,
+        "p95": 1.131,
+        "p99": 1.216,
+        "max": 1.216
+       },
+       "sendToFirstSizeConfigureMs": {
+        "n": 20,
+        "min": 0.77,
+        "p50": 0.965,
+        "p95": 1.131,
+        "p99": 1.216,
+        "max": 1.216
+       },
+       "configuresPerCommand": {
+        "n": 20,
+        "min": 3,
+        "p50": 3,
+        "p95": 3,
+        "p99": 3,
+        "max": 3
+       },
+       "configuresTotal": 60,
+       "idleConfiguresAfter1s": 0,
+       "idleWindowSeconds": 2.03,
+       "oracleErrors": [],
+       "plastileCountersDelta": {
+        "solves": 20,
+        "commands": 20,
+        "writes": 60,
+        "observations": 60,
+        "settled": 60
+       }
+      }
+     }
+    }
+   },
+   "poloniumLogExcerpt": [
+    " 40601.548 qml Polonium DBG: adding driver for display {\"d\":\"640022e9-cc89-48d8-92de-6031ba003b6b\",\"a\":\"00000000-0000-0000-0000-000000000000\",\"o\":\"Virtual-0\"}",
+    " 40601.548 qml Polonium LOG: controller initialized. Welcome to Polonium!",
+    " 40601.633 qml Polonium DBG: Handling 2 event(s)",
+    " 40601.633 qml Polonium DBG: handling event windowActivated",
+    " 40601.633 qml Polonium LOG: window activated plastile-fixture",
+    " 40601.633 qml Polonium DBG: handling event newWindow",
+    " 40601.633 qml Polonium LOG: registering window plastile-fixture",
+    " 40601.633 qml Polonium DBG: Handling 0 post event(s)",
+    " 40601.900 qml Polonium DBG: Handling 2 event(s)",
+    " 40601.900 qml Polonium DBG: handling event windowActivated",
+    " 40601.900 qml Polonium LOG: window activated plastile-fixture",
+    " 40601.900 qml Polonium DBG: handling event newWindow"
+   ],
+   "poloniumRebuildLines": 0
+  }
+ }
+}

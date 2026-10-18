@@ -28,12 +28,14 @@
 #include <wayland-client.h>
 
 #include "presentation-time-client-protocol.h"
+#include "wlr-layer-shell-unstable-v1-client-protocol.h"
 #include "xdg-decoration-unstable-v1-client-protocol.h"
 #include "xdg-shell-client-protocol.h"
 
 #define MAX_BUFFERS 16
 #define CFG_QUEUE 64
 #define MAX_STATES 32
+#define MAX_OUTPUTS 16
 #define STRIP_CELL 16
 #define STRIP_COLS 16
 #define STRIP_ROWS 2
@@ -137,8 +139,17 @@ static void log_error(const char *fmt, ...)
 
 enum deco_req { DECO_NONE, DECO_SSD, DECO_CSD };
 enum delay_mode { DELAY_LATEST, DELAY_EACH };
+enum panel_edge { PANEL_NONE, PANEL_TOP, PANEL_BOTTOM, PANEL_LEFT, PANEL_RIGHT };
 
 struct window;
+
+/* A bound wl_output (panel mode only), used to pick the panel's output by name. */
+struct output {
+	struct wl_output *wl;
+	uint32_t global_name;
+	char name[64];
+	bool have_name;
+};
 
 struct buffer {
 	struct window *win;
@@ -167,11 +178,13 @@ struct tracked {
 };
 
 struct window {
-	const char *name; /* "main" or "child" */
+	const char *name; /* "main", "child" or "panel" */
 	bool is_child;
+	bool is_panel; /* zwlr_layer_surface_v1 role instead of xdg_toplevel */
 	struct wl_surface *surface;
 	struct xdg_surface *xdg_surface;
 	struct xdg_toplevel *toplevel;
+	struct zwlr_layer_surface_v1 *layer;
 	struct zxdg_toplevel_decoration_v1 *deco;
 	uint32_t deco_mode; /* last decoration configure, 0 = none */
 
@@ -214,6 +227,9 @@ static struct {
 	int64_t parent_after_ms;
 	int64_t exit_after_ms;
 	enum deco_req deco_req;
+	enum panel_edge panel_edge; /* PANEL_NONE: ordinary xdg_toplevel client */
+	int32_t panel_size;
+	const char *panel_output; /* wl_output name to anchor the panel to, or NULL */
 
 	/* wayland */
 	struct wl_display *display;
@@ -228,6 +244,11 @@ static struct {
 	uint32_t pres_adv, pres_ver;
 	struct zxdg_decoration_manager_v1 *deco_mgr;
 	uint32_t deco_adv, deco_ver;
+	struct zwlr_layer_shell_v1 *layer_shell;
+	uint32_t layer_adv, layer_ver;
+	struct output outputs[MAX_OUTPUTS];
+	int n_outputs;
+	uint32_t output_adv, output_ver;
 	bool shm_xrgb;
 
 	struct window main_win, child_win;
@@ -622,7 +643,10 @@ static void commit_buffer(struct window *w, int32_t width, int32_t height, int64
 
 static void process_cfg(struct window *w, const struct pending_cfg *c)
 {
-	xdg_surface_ack_configure(w->xdg_surface, c->serial);
+	if (w->layer)
+		zwlr_layer_surface_v1_ack_configure(w->layer, c->serial);
+	else
+		xdg_surface_ack_configure(w->xdg_surface, c->serial);
 	uint64_t t = now_ns();
 	lstart_at("ack", t);
 	lstr("win", w->name);
@@ -636,7 +660,9 @@ static void process_cfg(struct window *w, const struct pending_cfg *c)
 	int32_t width = c->w > 0 ? c->w : w->cur_w;
 	int32_t height = c->h > 0 ? c->h : w->cur_h;
 	const char *reason = initial ? "initial" : "configure";
-	if (g.ignore_size && !w->is_child) {
+	if (w->is_panel) {
+		/* A layer surface commits exactly what the compositor configured. */
+	} else if (g.ignore_size && !w->is_child) {
 		width = w->cur_w;
 		height = w->cur_h;
 		if (!initial)
@@ -858,6 +884,103 @@ static const struct zxdg_toplevel_decoration_v1_listener deco_listener = {
 };
 
 /* ------------------------------------------------------------------------ */
+/* wlr-layer-shell listeners (panel mode)                                    */
+/* ------------------------------------------------------------------------ */
+
+static const char *panel_edge_name(enum panel_edge e)
+{
+	switch (e) {
+	case PANEL_TOP: return "top";
+	case PANEL_BOTTOM: return "bottom";
+	case PANEL_LEFT: return "left";
+	case PANEL_RIGHT: return "right";
+	default: return NULL;
+	}
+}
+
+static void layer_configure(void *data, struct zwlr_layer_surface_v1 *ls, uint32_t serial, uint32_t width,
+			    uint32_t height)
+{
+	(void)ls;
+	struct window *w = data;
+	uint64_t t = now_ns();
+	w->cfg_count++;
+	/* Same record shape as the xdg path; a layer surface has no states. */
+	lstart_at("configure", t);
+	lstr("win", w->name);
+	luint("serial", serial);
+	lint("width", (int64_t)width);
+	lint("height", (int64_t)height);
+	lraw(",\"states\":[]");
+	lstr("shell", "layer");
+	luint("n", w->cfg_count);
+	lend();
+	enqueue_cfg(w, serial, (int32_t)width, (int32_t)height, t);
+}
+
+static void layer_closed(void *data, struct zwlr_layer_surface_v1 *ls)
+{
+	(void)ls;
+	struct window *w = data;
+	lstart("close_requested");
+	lstr("win", w->name);
+	lstr("shell", "layer");
+	lend();
+	g.running = false;
+	g.exit_reason = "close";
+}
+
+static const struct zwlr_layer_surface_v1_listener layer_listener = {
+	.configure = layer_configure,
+	.closed = layer_closed,
+};
+
+static void output_geometry(void *data, struct wl_output *o, int32_t x, int32_t y, int32_t pw, int32_t ph,
+			    int32_t subpixel, const char *make, const char *model, int32_t transform)
+{
+	(void)data; (void)o; (void)x; (void)y; (void)pw; (void)ph; (void)subpixel; (void)make; (void)model;
+	(void)transform;
+}
+
+static void output_mode(void *data, struct wl_output *o, uint32_t flags, int32_t w, int32_t h, int32_t refresh)
+{
+	(void)data; (void)o; (void)flags; (void)w; (void)h; (void)refresh;
+}
+
+static void output_done(void *data, struct wl_output *o)
+{
+	(void)data;
+	(void)o;
+}
+
+static void output_scale(void *data, struct wl_output *o, int32_t factor)
+{
+	(void)data; (void)o; (void)factor;
+}
+
+static void output_name(void *data, struct wl_output *o, const char *name)
+{
+	(void)o;
+	struct output *out = data;
+	snprintf(out->name, sizeof(out->name), "%s", name);
+	out->have_name = true;
+}
+
+static void output_description(void *data, struct wl_output *o, const char *desc)
+{
+	(void)data; (void)o; (void)desc;
+}
+
+static const struct wl_output_listener output_listener = {
+	.geometry = output_geometry,
+	.mode = output_mode,
+	.done = output_done,
+	.scale = output_scale,
+	.name = output_name,
+	.description = output_description,
+};
+
+/* ------------------------------------------------------------------------ */
 /* Window lifecycle                                                          */
 /* ------------------------------------------------------------------------ */
 
@@ -911,6 +1034,96 @@ static bool window_create(struct window *w, const char *name, bool is_child, con
 	return true;
 }
 
+/* Panel mode: a zwlr_layer_surface_v1 on the top layer, scope "dock", anchored to
+ * `edge` plus both perpendicular edges, with exclusive_zone == size. */
+static bool panel_create(struct window *w, enum panel_edge edge, int32_t size, const char *output_name)
+{
+	memset(w, 0, sizeof(*w));
+	w->name = "panel";
+	w->is_panel = true;
+	w->cur_w = size; /* fallbacks only; the compositor sends the real size */
+	w->cur_h = size;
+	w->cfg_tfd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK | TFD_CLOEXEC);
+	if (w->cfg_tfd < 0) {
+		log_error("timerfd_create: %s", strerror(errno));
+		return false;
+	}
+	struct wl_output *out = NULL;
+	const char *out_used = NULL;
+	if (output_name) {
+		for (int i = 0; i < g.n_outputs; i++) {
+			if (g.outputs[i].have_name && !strcmp(g.outputs[i].name, output_name)) {
+				out = g.outputs[i].wl;
+				out_used = g.outputs[i].name;
+				break;
+			}
+		}
+		if (!out) {
+			log_error("panel: no wl_output named %s (bound %d outputs, wl_output v%u)", output_name,
+				  g.n_outputs, g.output_ver);
+			return false;
+		}
+	}
+	uint32_t anchor;
+	int32_t req_w = 0, req_h = 0;
+	switch (edge) {
+	case PANEL_TOP:
+		anchor = ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP | ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT |
+			 ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT;
+		req_h = size;
+		break;
+	case PANEL_BOTTOM:
+		anchor = ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM | ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT |
+			 ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT;
+		req_h = size;
+		break;
+	case PANEL_LEFT:
+		anchor = ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT | ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP |
+			 ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM;
+		req_w = size;
+		break;
+	case PANEL_RIGHT:
+		anchor = ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT | ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP |
+			 ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM;
+		req_w = size;
+		break;
+	default:
+		log_error("panel: invalid edge");
+		return false;
+	}
+	w->surface = wl_compositor_create_surface(g.compositor);
+	w->layer = zwlr_layer_shell_v1_get_layer_surface(g.layer_shell, w->surface, out,
+							 ZWLR_LAYER_SHELL_V1_LAYER_TOP, "dock");
+	zwlr_layer_surface_v1_add_listener(w->layer, &layer_listener, w);
+	zwlr_layer_surface_v1_set_anchor(w->layer, anchor);
+	zwlr_layer_surface_v1_set_size(w->layer, (uint32_t)req_w, (uint32_t)req_h);
+	zwlr_layer_surface_v1_set_exclusive_zone(w->layer, size);
+	zwlr_layer_surface_v1_set_keyboard_interactivity(w->layer, ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_NONE);
+	wl_surface_commit(w->surface); /* initial bufferless commit */
+	wl_display_flush(g.display);
+	lstart("initial_commit");
+	lstr("win", w->name);
+	lstr("shell", "layer");
+	lstr("layer", "top");
+	lstr("scope", "dock");
+	lstr("edge", panel_edge_name(edge));
+	lint("exclusive_zone", size);
+	lint("width", req_w);
+	lint("height", req_h);
+	lstr("output", out_used);
+	lraw(",\"outputs\":[");
+	for (int i = 0; i < g.n_outputs; i++) {
+		lraw(i ? "," : "");
+		if (g.outputs[i].have_name)
+			lesc(g.outputs[i].name);
+		else
+			lraw("null");
+	}
+	lraw("]");
+	lend();
+	return true;
+}
+
 static void window_destroy(struct window *w)
 {
 	while (w->tracked)
@@ -921,6 +1134,8 @@ static void window_destroy(struct window *w)
 		xdg_toplevel_destroy(w->toplevel);
 	if (w->xdg_surface)
 		xdg_surface_destroy(w->xdg_surface);
+	if (w->layer)
+		zwlr_layer_surface_v1_destroy(w->layer);
 	if (w->surface)
 		wl_surface_destroy(w->surface);
 	for (int i = 0; i < MAX_BUFFERS; i++)
@@ -939,6 +1154,10 @@ static void spawn_child(void)
 	}
 	if (!g.main_win.mapped) {
 		log_error("cannot spawn child before main window is mapped");
+		return;
+	}
+	if (g.main_win.is_panel) {
+		log_error("cannot spawn a child in panel mode (no xdg_toplevel parent)");
 		return;
 	}
 	char title[600];
@@ -1051,6 +1270,22 @@ static void registry_global(void *data, struct wl_registry *reg, uint32_t name, 
 			g.deco_ver = 1;
 			g.deco_mgr = wl_registry_bind(reg, name, &zxdg_decoration_manager_v1_interface, 1);
 		}
+	} else if (!strcmp(iface, zwlr_layer_shell_v1_interface.name) && !g.layer_shell) {
+		g.layer_adv = version;
+		if (g.panel_edge != PANEL_NONE) {
+			g.layer_ver = umin(version, (uint32_t)zwlr_layer_shell_v1_interface.version);
+			g.layer_shell = wl_registry_bind(reg, name, &zwlr_layer_shell_v1_interface, g.layer_ver);
+		}
+	} else if (!strcmp(iface, wl_output_interface.name)) {
+		g.output_adv = version;
+		/* Outputs are bound only in panel mode (the toplevel path stays output-agnostic). */
+		if (g.panel_edge != PANEL_NONE && g.n_outputs < MAX_OUTPUTS) {
+			g.output_ver = umin(version, 4); /* v4: name/description events */
+			struct output *o = &g.outputs[g.n_outputs++];
+			o->global_name = name;
+			o->wl = wl_registry_bind(reg, name, &wl_output_interface, g.output_ver);
+			wl_output_add_listener(o->wl, &output_listener, o);
+		}
 	}
 }
 
@@ -1094,6 +1329,8 @@ static void log_bound(void)
 	log_bound_entry("xdg_wm_base", g.wm_base_adv, g.wm_base_ver, &first);
 	log_bound_entry("wp_presentation", g.pres_adv, g.pres_ver, &first);
 	log_bound_entry("zxdg_decoration_manager_v1", g.deco_adv, g.deco_ver, &first);
+	log_bound_entry("zwlr_layer_shell_v1", g.layer_adv, g.layer_ver, &first);
+	log_bound_entry("wl_output", g.output_adv, g.output_ver, &first);
 	lraw("}");
 	lend();
 }
@@ -1115,6 +1352,10 @@ static void handle_command(char *line)
 	lend();
 
 	int a = 0, b = 0;
+	if (g.main_win.is_panel && strcmp(cmd, "quit") != 0) {
+		log_error("%s: not supported in panel mode (layer surface, no xdg_toplevel)", cmd);
+		return;
+	}
 	if (!strcmp(cmd, "resize")) {
 		if (!rest || sscanf(rest, "%d %d", &a, &b) != 2 || a <= 0 || b <= 0) {
 			log_error("usage: resize W H");
@@ -1230,7 +1471,32 @@ static void usage(FILE *f)
 		"  --parent-after-ms N      spawn transient child N ms after mapping\n"
 		"  --exit-after-ms N        exit after N ms\n"
 		"  --ssd | --csd            negotiate xdg-decoration mode\n"
-		"stdin commands: resize W H | min W H | max W H | child | close-child | title STR | quit\n");
+		"  --panel EDGE:SIZE        be a wlr-layer-shell panel instead of an xdg_toplevel:\n"
+		"                           layer top, scope dock, anchored to EDGE (top|bottom|left|right)\n"
+		"                           plus both perpendicular edges, exclusive_zone SIZE\n"
+		"  --output NAME            panel mode: wl_output name to anchor to (default: compositor's choice)\n"
+		"stdin commands: resize W H | min W H | max W H | child | close-child | title STR | quit\n"
+		"                (panel mode accepts only quit)\n");
+}
+
+static bool parse_panel(const char *s, enum panel_edge *edge, int32_t *size)
+{
+	const char *colon = strchr(s, ':');
+	if (!colon || colon == s)
+		return false;
+	size_t n = (size_t)(colon - s);
+	if (n == 3 && !strncmp(s, "top", 3)) *edge = PANEL_TOP;
+	else if (n == 6 && !strncmp(s, "bottom", 6)) *edge = PANEL_BOTTOM;
+	else if (n == 4 && !strncmp(s, "left", 4)) *edge = PANEL_LEFT;
+	else if (n == 5 && !strncmp(s, "right", 5)) *edge = PANEL_RIGHT;
+	else return false;
+	char *end;
+	errno = 0;
+	long v = strtol(colon + 1, &end, 10);
+	if (errno || end == colon + 1 || *end || v <= 0 || v > 16384)
+		return false;
+	*size = (int32_t)v;
+	return true;
 }
 
 static bool parse_wxh(const char *s, int32_t *w, int32_t *h)
@@ -1259,7 +1525,7 @@ static int parse_args(int argc, char **argv)
 {
 	enum {
 		O_APPID = 256, O_TITLE, O_ID, O_SIZE, O_MIN, O_MAX, O_DELAY, O_DMODE, O_IGNORE,
-		O_FIXED, O_PARENT, O_EXIT, O_SSD, O_CSD, O_CLAMP, O_HELP
+		O_FIXED, O_PARENT, O_EXIT, O_SSD, O_CSD, O_CLAMP, O_PANEL, O_OUTPUT, O_HELP
 	};
 	static const struct option opts[] = {
 		{"app-id", required_argument, NULL, O_APPID},
@@ -1277,6 +1543,8 @@ static int parse_args(int argc, char **argv)
 		{"exit-after-ms", required_argument, NULL, O_EXIT},
 		{"ssd", no_argument, NULL, O_SSD},
 		{"csd", no_argument, NULL, O_CSD},
+		{"panel", required_argument, NULL, O_PANEL},
+		{"output", required_argument, NULL, O_OUTPUT},
 		{"help", no_argument, NULL, O_HELP},
 		{0, 0, 0, 0},
 	};
@@ -1325,6 +1593,10 @@ static int parse_args(int argc, char **argv)
 			break;
 		case O_SSD: g.deco_req = DECO_SSD; break;
 		case O_CSD: g.deco_req = DECO_CSD; break;
+		case O_PANEL:
+			if (!parse_panel(optarg, &g.panel_edge, &g.panel_size)) goto bad;
+			break;
+		case O_OUTPUT: g.panel_output = optarg; break;
 		case 'h':
 		case O_HELP: usage(stdout); exit(0);
 		default: goto bad;
@@ -1332,6 +1604,8 @@ static int parse_args(int argc, char **argv)
 	}
 	if (optind != argc)
 		goto bad;
+	if (g.panel_output && g.panel_edge == PANEL_NONE)
+		goto bad; /* --output only means something for a panel */
 	if (fixed) {
 		g.have_min = g.have_max = true;
 		g.min_w = g.max_w = g.init_w;
@@ -1373,6 +1647,11 @@ static void log_start(int argc, char **argv)
 	lstr("decoration_request", g.deco_req == DECO_SSD ? "server_side"
 				   : g.deco_req == DECO_CSD ? "client_side"
 							    : NULL);
+	if (g.panel_edge != PANEL_NONE) {
+		lstr("panel_edge", panel_edge_name(g.panel_edge));
+		lint("panel_size", g.panel_size);
+		lstr("panel_output", g.panel_output);
+	}
 	lstr("log_clock", "CLOCK_MONOTONIC");
 	lend();
 }
@@ -1541,20 +1820,28 @@ int main(int argc, char **argv)
 	wl_registry_add_listener(g.registry, &registry_listener, NULL);
 	wl_display_roundtrip(g.display);
 	log_bound();
-	wl_display_roundtrip(g.display); /* shm formats, presentation clock id */
+	wl_display_roundtrip(g.display); /* shm formats, presentation clock id, wl_output names */
 
 	g.running = true;
 	g.exit_reason = "unknown";
 	g.stdin_open = true;
-	if (!g.compositor || !g.shm || !g.wm_base) {
-		log_error("missing required global (wl_compositor, wl_shm, xdg_wm_base)");
+	bool panel = g.panel_edge != PANEL_NONE;
+	if (!g.compositor || !g.shm || (!panel && !g.wm_base) || (panel && !g.layer_shell)) {
+		log_error("missing required global (wl_compositor, wl_shm, %s)",
+			  panel ? "zwlr_layer_shell_v1" : "xdg_wm_base");
 		g.exit_reason = "missing-globals";
 		g.exit_code = 1;
 		g.running = false;
 	} else if (!g.shm_xrgb) {
 		log_error("wl_shm does not advertise XRGB8888");
 	}
-	if (g.running && !window_create(&g.main_win, "main", false, g.title, g.init_w, g.init_h)) {
+	if (g.running && panel) {
+		if (!panel_create(&g.main_win, g.panel_edge, g.panel_size, g.panel_output)) {
+			g.exit_reason = "window-create-failed";
+			g.exit_code = 1;
+			g.running = false;
+		}
+	} else if (g.running && !window_create(&g.main_win, "main", false, g.title, g.init_w, g.init_h)) {
 		g.exit_reason = "window-create-failed";
 		g.exit_code = 1;
 		g.running = false;
@@ -1574,6 +1861,18 @@ int main(int argc, char **argv)
 		window_destroy(&g.main_win);
 	if (g.deco_mgr)
 		zxdg_decoration_manager_v1_destroy(g.deco_mgr);
+	if (g.layer_shell) {
+		if (g.layer_ver >= 3)
+			zwlr_layer_shell_v1_destroy(g.layer_shell);
+		else
+			wl_proxy_destroy((struct wl_proxy *)g.layer_shell);
+	}
+	for (int i = 0; i < g.n_outputs; i++) {
+		if (g.output_ver >= 3)
+			wl_output_release(g.outputs[i].wl);
+		else
+			wl_proxy_destroy((struct wl_proxy *)g.outputs[i].wl);
+	}
 	if (g.presentation)
 		wp_presentation_destroy(g.presentation);
 	if (g.wm_base)

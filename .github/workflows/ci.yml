@@ -1,0 +1,230 @@
+# Plastile continuous integration (task T33, hosted-runner part).
+#
+# What CI can and cannot do (see docs/status/CI.md):
+#   - It runs the pure/replay TypeScript tests, the type check, the bundle build,
+#     the documentation integrity check, the release-zip reproducibility check and
+#     the native test-tool builds.
+#   - It CANNOT run KWin. The nested-KWin integration scenarios
+#     (python3 tests/integration/run.py) need kwin_wayland 6.7+ and the
+#     physical-session checks need a real Plasma desktop. Neither exists on a hosted
+#     runner, so those layers are reported as NOT RUN, never as passed.
+#
+# Nothing here publishes, installs into a home directory, or touches a compositor.
+
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # The TypeScript tests run directly with `node --test tests/core/*.test.ts`, which
+  # relies on Node's built-in type stripping (no tsx/ts-node; no dependency is added).
+  # package.json declares engines.node >= 26 and @types/node 26. actions/setup-node
+  # resolves "26" from the nodejs.org release index (v26.12.0 listed 2026-10-14).
+  NODE_MAJOR: "26"
+  # The integration tooling and docs checker are developed on Python 3.14; pin it
+  # instead of relying on the image's system Python (3.12 on Ubuntu 24.04).
+  PYTHON_VERSION: "3.14"
+
+jobs:
+  core:
+    name: Core (typecheck, tests, bundle, docs, fixtures)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_MAJOR }}
+          cache: npm
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Verify Node major version
+        # Guard against a silently older toolchain producing a misleading result.
+        run: |
+          node --version
+          major="$(node -p 'process.versions.node.split(".")[0]')"
+          if [ "$major" -lt "$NODE_MAJOR" ]; then
+            echo "::error::Node $major found; the test suite requires Node >= $NODE_MAJOR" >&2
+            exit 1
+          fi
+          python3 --version
+
+      - name: Install dependencies (npm ci)
+        # npm 11 does not run esbuild's postinstall script by default; esbuild still
+        # works through its platform optional dependency (@esbuild/linux-x64).
+        run: npm ci
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Pure and replay tests (tests/core)
+        run: npm test
+
+      - name: Build the KWin script bundle
+        run: npm run build
+
+      - name: Verify bundle output
+        run: |
+          test -s package/contents/code/plastile.mjs
+          wc -c package/contents/code/plastile.mjs
+          # The bundle targets ES2016 for KWin's QV4. This is a cheap syntax sanity
+          # guard, not a QV4 run: warn if a few known-rejected constructs leak through.
+          if grep -vE '^\s*//' package/contents/code/plastile.mjs | grep -qE '^\s*(async |#|static \w+ =)'; then
+            grep -nE '^\s*(async |#|static \w+ =)' package/contents/code/plastile.mjs | head
+            echo "::warning::possible QV4-incompatible syntax in bundle (see M0 probe report)"
+          fi
+
+      - name: Documentation integrity (links, source pins, backlog)
+        run: python3 tools/check_docs.py
+
+      - name: Release package is reproducible (tools/release.py --check)
+        # Builds dist/plastile-<version>.kwinscript twice and compares bytes. It does
+        # not install anything (installation is exercised only in nested sessions).
+        if: hashFiles('tools/release.py') != ''
+        run: python3 tools/release.py --check --out dist
+
+      - name: Integration scenario registry imports (no KWin is started)
+        # Imports tests/integration/scenarios*.py through run.py --list. This only
+        # proves the scenario modules import and register; it does not run them.
+        run: |
+          python3 tests/integration/run.py --list | tee scenarios.txt
+          n="$(grep -c . scenarios.txt)"
+          echo "integration scenarios registered: $n (NOT RUN in CI: needs nested KWin)"
+          test "$n" -gt 0
+          echo "SCENARIO_COUNT=$n" >> "$GITHUB_ENV"
+
+      - name: Install native build dependencies (Wayland and X11 fixture clients)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential pkg-config libwayland-dev wayland-protocols \
+            libxcb1-dev libxcb-icccm4-dev
+
+      - name: Build fixtures/client (plastile-fixture)
+        # Raw libwayland client (xdg-shell, presentation-time, xdg-decoration,
+        # vendored wlr-layer-shell); -Wall -Wextra -Werror. Built only, never run:
+        # running it needs a Wayland compositor.
+        run: |
+          make -C fixtures/client
+          test -x fixtures/client/build/plastile-fixture
+
+      - name: Build fixtures/xclient (plastile-xclient)
+        # X11 (xcb) client for XWayland scenarios. Built only, never run.
+        if: hashFiles('fixtures/xclient/Makefile') != ''
+        run: |
+          make -C fixtures/xclient
+          test -x fixtures/xclient/build/plastile-xclient
+
+      - name: Install libei (input injector)
+        id: libei_install
+        # Ubuntu 24.04 (ubuntu-latest) ships libei-dev 1.2.1; the injector is developed
+        # against libei 1.6.0. Every libei symbol it uses is declared in the 1.2.1
+        # public header and the source type-checks against it (-fsyntax-only, measured
+        # 2026-10-17), but it has not been linked on the runner yet, so this stays
+        # non-fatal until seen green. The outcome is in the job summary.
+        continue-on-error: true
+        run: |
+          sudo apt-get install -y --no-install-recommends libei-dev
+          pkg-config --modversion libei-1.0
+
+      - name: Build tools/input (plastile-input)
+        id: input_build
+        continue-on-error: true
+        if: steps.libei_install.outcome == 'success'
+        run: |
+          make -C tools/input
+          test -x build/input/plastile-input
+
+      - name: Job summary
+        if: always()
+        # T33 acceptance: CI may not pass by skipping mandatory tests unnoticed.
+        # Every optional step and every layer CI cannot run is listed explicitly.
+        run: |
+          {
+            echo "## Plastile CI: core job"
+            echo
+            echo "| Check | Result |"
+            echo "|---|---|"
+            echo "| Node ${NODE_MAJOR} type check, tests/core (pure + replay), bundle, docs check, release --check, fixture builds | required: job status ${{ job.status }} |"
+            echo "| libei-dev install (optional) | ${{ steps.libei_install.outcome }} |"
+            echo "| tools/input build (optional) | ${{ steps.input_build.outcome }} |"
+            echo "| Nested KWin integration scenarios (${SCENARIO_COUNT:-?} registered) | **NOT RUN**: requires kwin_wayland; run locally with \`python3 tests/integration/run.py\` |"
+            echo "| Physical-session checks | **NOT RUN**: requires a live Plasma Wayland desktop |"
+            echo
+            echo "See docs/status/CI.md for the TEST_MATRIX coverage split."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload bundle, release zip and fixture binaries
+        if: success()
+        uses: actions/upload-artifact@v7
+        with:
+          name: plastile-build-${{ github.sha }}
+          if-no-files-found: error
+          retention-days: 14
+          path: |
+            package/contents/code/plastile.mjs
+            dist/*.kwinscript
+            fixtures/client/build/plastile-fixture
+            fixtures/xclient/build/plastile-xclient
+            build/input/plastile-input
+
+  native-tools:
+    # Measurement-only and settings-check helpers (never shipped in the package).
+    # tools/measure needs Qt >= 6.5 (qt_standard_project_setup REQUIRES 6.5) and
+    # tools/settings-check needs Qt6 UiTools plus KF6Config/KF6ConfigWidgets.
+    # Ubuntu 24.04 (ubuntu-latest) has Qt 6.4.2 and no KF6 packages, so this job uses
+    # the ubuntu-26.04 image (label listed in actions/runner-images; Qt 6.10, KF 6.24).
+    # Package names were checked on packages.ubuntu.com for "resolute", not on a live
+    # runner, so the job is non-fatal until it has been seen green.
+    name: Native test tools (Qt6/KF6, optional)
+    runs-on: ubuntu-26.04
+    continue-on-error: true
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install Qt6 / KF6 development packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential cmake ninja-build pkg-config \
+            qt6-base-dev qt6-declarative-dev qt6-declarative-dev-tools qt6-tools-dev \
+            libkf6config-dev libkf6configwidgets-dev
+
+      - name: Build tools/measure (Plastile.Measure QML module)
+        run: |
+          cmake -S tools/measure -B build/measure -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build/measure
+          ls -R build/measure/qml
+
+      - name: Build tools/settings-check
+        run: |
+          cmake -S tools/settings-check -B build/settings-check -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build/settings-check
+          test -x build/settings-check/plastile-settings-check
+
+      - name: Job summary
+        if: always()
+        run: |
+          {
+            echo "## Plastile CI: native test tools (optional job)"
+            echo
+            echo "Status: ${{ job.status }}. This job is continue-on-error; a failure here does"
+            echo "not fail the workflow but is recorded here. The settings-check binary is only"
+            echo "built, not run (it needs a display)."
+          } >> "$GITHUB_STEP_SUMMARY"

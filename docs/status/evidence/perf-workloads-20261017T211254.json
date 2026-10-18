@@ -1,0 +1,1783 @@
+{
+ "implementationCommit": "819a91c16fd44b9910ab2bba8051bf33aae55e76",
+ "kwin": "kwin 6.7.5",
+ "layer": "nested KWin virtual backend (not physical); machine shared with other agents",
+ "loadAvg1mStartEnd": [
+  6.53,
+  5.91
+ ],
+ "clock": "CLOCK_MONOTONIC via the measurement module inside QV4; fixture t_ns and Python monotonic_ns are the same clock; KWin log timestamps (%{time boot}) are ms-resolution and calibrated in logClockMinusMonotonicMs",
+ "dispatchToReturnNs": "command handler entry -> return after the last frame request was issued (not presentation)",
+ "seed": 2,
+ "samples": 200,
+ "checks": {
+  "P05 n=4: all 4 tiled without overlap (oracle)": {
+   "pass": true,
+   "detail": []
+  },
+  "P05 n=4: create solves bounded (<= n)": {
+   "pass": true,
+   "detail": {
+    "solves": 2,
+    "flushes": 3,
+    "writes": 5,
+    "observations": 5,
+    "settled": 4,
+    "stale": 1,
+    "adopted": 4
+   }
+  },
+  "P05 n=4: create solves <= flushes (one context: at most one solve per flush)": {
+   "pass": true,
+   "detail": {
+    "solves": 2,
+    "flushes": 3,
+    "writes": 5,
+    "observations": 5,
+    "settled": 4,
+    "stale": 1,
+    "adopted": 4
+   }
+  },
+  "P05 n=4: no overflow, no errors": {
+   "pass": true,
+   "detail": {
+    "solves": 2,
+    "flushes": 4,
+    "commands": 0,
+    "commandsQueued": 0,
+    "writes": 5,
+    "corrections": 0,
+    "skipOutstanding": 0,
+    "skipNoop": 0,
+    "skipDiverged": 0,
+    "observations": 5,
+    "observationsDuringApply": 0,
+    "settled": 4,
+    "stale": 1,
+    "partial": 0,
+    "external": 0,
+    "learned": 0,
+    "diverged": 0,
+    "deadlines": 0,
+    "overflow": 0,
+    "adopted": 4,
+    "removed": 0,
+    "staleEvents": 0,
+    "errors": 0,
+    "raises": 0,
+    "activations": 0
+   }
+  },
+  "P05 n=4: close solves bounded (<= n)": {
+   "pass": true,
+   "detail": {
+    "solves": 2,
+    "flushes": 3,
+    "writes": 4,
+    "removed": 4
+   }
+  },
+  "P05 n=4: close solves <= flushes": {
+   "pass": true,
+   "detail": {
+    "solves": 2,
+    "flushes": 3,
+    "writes": 4,
+    "removed": 4
+   }
+  },
+  "P05 n=4: windows gone, no errors": {
+   "pass": true,
+   "detail": {
+    "windows": 0,
+    "errors": 0
+   }
+  },
+  "P05 n=8: all 8 tiled without overlap (oracle)": {
+   "pass": true,
+   "detail": []
+  },
+  "P05 n=8: create solves bounded (<= n)": {
+   "pass": true,
+   "detail": {
+    "solves": 5,
+    "flushes": 9,
+    "writes": 32,
+    "corrections": 10,
+    "skipOutstanding": 3,
+    "observations": 22,
+    "settled": 8,
+    "stale": 14,
+    "adopted": 8
+   }
+  },
+  "P05 n=8: create solves <= flushes (one context: at most one solve per flush)": {
+   "pass": true,
+   "detail": {
+    "solves": 5,
+    "flushes": 9,
+    "writes": 32,
+    "corrections": 10,
+    "skipOutstanding": 3,
+    "observations": 22,
+    "settled": 8,
+    "stale": 14,
+    "adopted": 8
+   }
+  },
+  "P05 n=8: no overflow, no errors": {
+   "pass": true,
+   "detail": {
+    "solves": 5,
+    "flushes": 10,
+    "commands": 0,
+    "commandsQueued": 0,
+    "writes": 32,
+    "corrections": 10,
+    "skipOutstanding": 3,
+    "skipNoop": 0,
+    "skipDiverged": 0,
+    "observations": 22,
+    "observationsDuringApply": 0,
+    "settled": 8,
+    "stale": 14,
+    "partial": 0,
+    "external": 0,
+    "learned": 0,
+    "diverged": 0,
+    "deadlines": 0,
+    "overflow": 0,
+    "adopted": 8,
+    "removed": 0,
+    "staleEvents": 0,
+    "errors": 0,
+    "raises": 0,
+    "activations": 0
+   }
+  },
+  "P05 n=8: close solves bounded (<= n)": {
+   "pass": true,
+   "detail": {
+    "solves": 3,
+    "flushes": 6,
+    "writes": 13,
+    "corrections": 2,
+    "observations": 3,
+    "settled": 1,
+    "stale": 2,
+    "removed": 8
+   }
+  },
+  "P05 n=8: close solves <= flushes": {
+   "pass": true,
+   "detail": {
+    "solves": 3,
+    "flushes": 6,
+    "writes": 13,
+    "corrections": 2,
+    "observations": 3,
+    "settled": 1,
+    "stale": 2,
+    "removed": 8
+   }
+  },
+  "P05 n=8: windows gone, no errors": {
+   "pass": true,
+   "detail": {
+    "windows": 0,
+    "errors": 0
+   }
+  },
+  "P05 n=16: all 16 tiled without overlap (oracle)": {
+   "pass": true,
+   "detail": []
+  },
+  "P05 n=16: create solves bounded (<= n)": {
+   "pass": true,
+   "detail": {
+    "solves": 8,
+    "flushes": 11,
+    "writes": 89,
+    "corrections": 20,
+    "skipOutstanding": 4,
+    "skipNoop": 2,
+    "observations": 69,
+    "settled": 16,
+    "stale": 53,
+    "adopted": 16
+   }
+  },
+  "P05 n=16: create solves <= flushes (one context: at most one solve per flush)": {
+   "pass": true,
+   "detail": {
+    "solves": 8,
+    "flushes": 11,
+    "writes": 89,
+    "corrections": 20,
+    "skipOutstanding": 4,
+    "skipNoop": 2,
+    "observations": 69,
+    "settled": 16,
+    "stale": 53,
+    "adopted": 16
+   }
+  },
+  "P05 n=16: no overflow, no errors": {
+   "pass": true,
+   "detail": {
+    "solves": 8,
+    "flushes": 12,
+    "commands": 0,
+    "commandsQueued": 0,
+    "writes": 89,
+    "corrections": 20,
+    "skipOutstanding": 4,
+    "skipNoop": 2,
+    "skipDiverged": 0,
+    "observations": 69,
+    "observationsDuringApply": 0,
+    "settled": 16,
+    "stale": 53,
+    "partial": 0,
+    "external": 0,
+    "learned": 0,
+    "diverged": 0,
+    "deadlines": 0,
+    "overflow": 0,
+    "adopted": 16,
+    "removed": 0,
+    "staleEvents": 0,
+    "errors": 0,
+    "raises": 0,
+    "activations": 0
+   }
+  },
+  "P05 n=16: close solves bounded (<= n)": {
+   "pass": true,
+   "detail": {
+    "solves": 6,
+    "flushes": 9,
+    "writes": 45,
+    "corrections": 6,
+    "skipOutstanding": 2,
+    "observations": 14,
+    "settled": 5,
+    "stale": 9,
+    "removed": 16
+   }
+  },
+  "P05 n=16: close solves <= flushes": {
+   "pass": true,
+   "detail": {
+    "solves": 6,
+    "flushes": 9,
+    "writes": 45,
+    "corrections": 6,
+    "skipOutstanding": 2,
+    "observations": 14,
+    "settled": 5,
+    "stale": 9,
+    "removed": 16
+   }
+  },
+  "P05 n=16: windows gone, no errors": {
+   "pass": true,
+   "detail": {
+    "windows": 0,
+    "errors": 0
+   }
+  },
+  "P05 n=32: all 32 tiled without overlap (oracle)": {
+   "pass": true,
+   "detail": []
+  },
+  "P05 n=32: create solves bounded (<= n)": {
+   "pass": true,
+   "detail": {
+    "solves": 14,
+    "flushes": 19,
+    "writes": 309,
+    "corrections": 77,
+    "skipOutstanding": 3,
+    "skipNoop": 10,
+    "observations": 232,
+    "settled": 76,
+    "stale": 155,
+    "partial": 1,
+    "adopted": 32
+   }
+  },
+  "P05 n=32: create solves <= flushes (one context: at most one solve per flush)": {
+   "pass": true,
+   "detail": {
+    "solves": 14,
+    "flushes": 19,
+    "writes": 309,
+    "corrections": 77,
+    "skipOutstanding": 3,
+    "skipNoop": 10,
+    "observations": 232,
+    "settled": 76,
+    "stale": 155,
+    "partial": 1,
+    "adopted": 32
+   }
+  },
+  "P05 n=32: no overflow, no errors": {
+   "pass": true,
+   "detail": {
+    "solves": 14,
+    "flushes": 20,
+    "commands": 0,
+    "commandsQueued": 0,
+    "writes": 309,
+    "corrections": 77,
+    "skipOutstanding": 3,
+    "skipNoop": 10,
+    "skipDiverged": 0,
+    "observations": 232,
+    "observationsDuringApply": 0,
+    "settled": 76,
+    "stale": 155,
+    "partial": 1,
+    "external": 0,
+    "learned": 0,
+    "diverged": 0,
+    "deadlines": 0,
+    "overflow": 0,
+    "adopted": 32,
+    "removed": 0,
+    "staleEvents": 0,
+    "errors": 0,
+    "raises": 0,
+    "activations": 0
+   }
+  },
+  "P05 n=32: close solves bounded (<= n)": {
+   "pass": true,
+   "detail": {
+    "solves": 5,
+    "flushes": 7,
+    "writes": 130,
+    "corrections": 12,
+    "skipNoop": 1,
+    "observations": 69,
+    "settled": 9,
+    "stale": 60,
+    "removed": 32
+   }
+  },
+  "P05 n=32: close solves <= flushes": {
+   "pass": true,
+   "detail": {
+    "solves": 5,
+    "flushes": 7,
+    "writes": 130,
+    "corrections": 12,
+    "skipNoop": 1,
+    "observations": 69,
+    "settled": 9,
+    "stale": 60,
+    "removed": 32
+   }
+  },
+  "P05 n=32: windows gone, no errors": {
+   "pass": true,
+   "detail": {
+    "windows": 0,
+    "errors": 0
+   }
+  },
+  "P07 n=2: initial 2 tiled": {
+   "pass": true,
+   "detail": null
+  },
+  "P07 n=2: 50 back-to-back swaps -> expected permutation (oracle)": {
+   "pass": true,
+   "detail": []
+  },
+  "P07 n=2: 50 perf records for the burst": {
+   "pass": true,
+   "detail": {
+    "samples": 50,
+    "accepted": 50
+   }
+  },
+  "P07 n=2: +50 paced swaps -> expected permutation (oracle)": {
+   "pass": true,
+   "detail": []
+  },
+  "P07 n=2: even count (50, 100) returns to the initial frames": {
+   "pass": true,
+   "detail": null
+  },
+  "P07 n=2: 100 commands counted, errors == 0": {
+   "pass": true,
+   "detail": {
+    "solves": 100,
+    "flushes": 24,
+    "commands": 100,
+    "writes": 228,
+    "corrections": 28,
+    "observations": 182,
+    "settled": 153,
+    "stale": 29
+   }
+  },
+  "P07 n=2: no outstanding requests at the end": {
+   "pass": true,
+   "detail": 0
+  },
+  "P07 n=4: initial 4 tiled": {
+   "pass": true,
+   "detail": null
+  },
+  "P07 n=4: 50 back-to-back swaps -> expected permutation (oracle)": {
+   "pass": true,
+   "detail": []
+  },
+  "P07 n=4: 50 perf records for the burst": {
+   "pass": true,
+   "detail": {
+    "samples": 50,
+    "accepted": 50
+   }
+  },
+  "P07 n=4: +50 paced swaps -> expected permutation (oracle)": {
+   "pass": true,
+   "detail": []
+  },
+  "P07 n=4: after 108 swaps (multiple of the period 12) back to the initial frames": {
+   "pass": true,
+   "detail": {
+    "plastile-fixture 1": {
+     "x": 8,
+     "y": 8,
+     "width": 1043,
+     "height": 1064
+    },
+    "plastile-fixture 2": {
+     "x": 1059,
+     "y": 8,
+     "width": 853,
+     "height": 349
+    },
+    "plastile-fixture 3": {
+     "x": 1059,
+     "y": 365,
+     "width": 853,
+     "height": 350
+    },
+    "plastile-fixture 4": {
+     "x": 1059,
+     "y": 723,
+     "width": 853,
+     "height": 349
+    }
+   }
+  },
+  "P07 n=4: 100 commands counted, errors == 0": {
+   "pass": true,
+   "detail": {
+    "solves": 100,
+    "flushes": 22,
+    "commands": 100,
+    "writes": 230,
+    "corrections": 30,
+    "skipOutstanding": 42,
+    "skipNoop": 153,
+    "observations": 216,
+    "observationsDuringApply": 18,
+    "settled": 189,
+    "stale": 25,
+    "partial": 1,
+    "external": 1
+   }
+  },
+  "P07 n=4: no outstanding requests at the end": {
+   "pass": true,
+   "detail": 0
+  },
+  "P12: 4 desktops": {
+   "pass": true,
+   "detail": 4
+  },
+  "P12: 2 visible + 6 hidden windows": {
+   "pass": true,
+   "detail": {
+    "visible": [
+     "plastile-fixture 1",
+     "plastile-fixture 2"
+    ]
+   }
+  },
+  "P12: adoption solved only the visible context (1 solve)": {
+   "pass": true,
+   "detail": 1
+  },
+  "P12: visible pair tiled": {
+   "pass": true,
+   "detail": null
+  },
+  "P12: 20 ratio commands -> exactly 20 solves": {
+   "pass": true,
+   "detail": {
+    "solves": 20,
+    "commands": 20,
+    "writes": 40,
+    "observations": 40,
+    "settled": 40
+   }
+  },
+  "P12: writes only to the visible pair (2 per command)": {
+   "pass": true,
+   "detail": {
+    "solves": 20,
+    "commands": 20,
+    "writes": 40,
+    "observations": 40,
+    "settled": 40
+   }
+  },
+  "P12: zero geometry change on the 6 hidden windows (oracle)": {
+   "pass": true,
+   "detail": []
+  },
+  "P12: visible pair still tiled": {
+   "pass": true,
+   "detail": null
+  },
+  "P12: desktop switch -> exactly one solve (newly visible context)": {
+   "pass": true,
+   "detail": {
+    "solves": 1,
+    "flushes": 1,
+    "writes": 2,
+    "observations": 2,
+    "settled": 2
+   }
+  },
+  "P12: newly visible pair tiled without overlap (oracle)": {
+   "pass": true,
+   "detail": [
+    {
+     "x": 8,
+     "y": 8,
+     "width": 1043,
+     "height": 1064
+    },
+    {
+     "x": 1059,
+     "y": 8,
+     "width": 853,
+     "height": 1064
+    }
+   ]
+  },
+  "P12: the other 6 windows unchanged by the switch (oracle)": {
+   "pass": true,
+   "detail": []
+  },
+  "P12: errors == 0": {
+   "pass": true,
+   "detail": 0
+  },
+  "P13: 10 rules activated without rejection": {
+   "pass": true,
+   "detail": {
+    "jsonChars": 906,
+    "reconfigureToActivatedMs": 193.598568,
+    "reconfigureCallMs": 2.726586,
+    "reconfigureToConfigChangedMs": 193.343433,
+    "configChangedToActivatedMs": 0.994049,
+    "configChangedSignals": 1,
+    "rejected": false,
+    "warnings": 0,
+    "activationDelta": {
+     "solves": 1,
+     "flushes": 1,
+     "skipNoop": 8
+    },
+    "line": "info configuration activated {\"revision\":2}"
+   }
+  },
+  "P13: 10 rules: activation writes nothing (no window matches)": {
+   "pass": true,
+   "detail": {
+    "solves": 1,
+    "flushes": 1,
+    "skipNoop": 8
+   }
+  },
+  "P13: 100 rules activated without rejection": {
+   "pass": true,
+   "detail": {
+    "jsonChars": 8961,
+    "reconfigureToActivatedMs": 215.316959,
+    "reconfigureCallMs": 2.316607,
+    "reconfigureToConfigChangedMs": 213.022917,
+    "configChangedToActivatedMs": 3.067886,
+    "configChangedSignals": 1,
+    "rejected": false,
+    "warnings": 0,
+    "activationDelta": {
+     "solves": 1,
+     "flushes": 1,
+     "skipNoop": 8
+    },
+    "line": "info configuration activated {\"revision\":3}"
+   }
+  },
+  "P13: 100 rules: activation writes nothing (no window matches)": {
+   "pass": true,
+   "detail": {
+    "solves": 1,
+    "flushes": 1,
+    "skipNoop": 8
+   }
+  },
+  "P13: 256 rules activated without rejection": {
+   "pass": true,
+   "detail": {
+    "jsonChars": 23235,
+    "reconfigureToActivatedMs": 200.212458,
+    "reconfigureCallMs": 2.572346,
+    "reconfigureToConfigChangedMs": 193.519753,
+    "configChangedToActivatedMs": 7.67809,
+    "configChangedSignals": 1,
+    "rejected": false,
+    "warnings": 0,
+    "activationDelta": {
+     "solves": 1,
+     "flushes": 1,
+     "skipNoop": 8
+    },
+    "line": "info configuration activated {\"revision\":4}"
+   }
+  },
+  "P13: 256 rules: activation writes nothing (no window matches)": {
+   "pass": true,
+   "detail": {
+    "solves": 1,
+    "flushes": 1,
+    "skipNoop": 8
+   }
+  },
+  "P13 control: rule 255 (glob, floating) matched (explain: r255, mode floating)": {
+   "pass": true,
+   "detail": " {\"id\":\"{10e6834f-1545-44e1-a0d3-f05445b6526d}\",\"appId\":\"org.example.app255-control\",\"kind\":\"normal\",\"mode\":\"floating\",\"userMode\":null,\"decision\":{\"mode\":\"floating\",\"source\":\"rule\",\"reason\":\"floating by rule\",\"ruleIds\":[\"r255\"]},\"context\":{\"output\":\"Virtual-0\",\"desktop\":\"05179f87-63c9-4f1a-8a06-0aae"
+  },
+  "P13 control: floating window kept its own 400x300 client size (oracle)": {
+   "pass": true,
+   "detail": {
+    "x": 760,
+    "y": 717,
+    "width": 400,
+    "height": 300
+   }
+  },
+  "P13 control: rule 1 (glob, tiled) window tiled with the other 8 (oracle, no overlap)": {
+   "pass": true,
+   "detail": []
+  },
+  "P13 control: floating window overlaps tiles (not placed in the layout)": {
+   "pass": true,
+   "detail": {
+    "x": 760,
+    "y": 689,
+    "width": 400,
+    "height": 328
+   }
+  },
+  "P13 control: the original windows return to their frames after the controls close (oracle)": {
+   "pass": true,
+   "detail": {
+    "plastile-fixture 1": {
+     "x": 8,
+     "y": 8,
+     "width": 1043,
+     "height": 1690
+    },
+    "plastile-fixture 5": {
+     "x": 1059,
+     "y": 8,
+     "width": 853,
+     "height": 235
+    },
+    "plastile-fixture 6": {
+     "x": 1059,
+     "y": 251,
+     "width": 853,
+     "height": 234
+    },
+    "plastile-fixture 4": {
+     "x": 1059,
+     "y": 493,
+     "width": 853,
+     "height": 235
+    },
+    "plastile-fixture 2": {
+     "x": 1059,
+     "y": 736,
+     "width": 853,
+     "height": 234
+    },
+    "plastile-fixture 7": {
+     "x": 1059,
+     "y": 978,
+     "width": 853,
+     "height": 235
+    },
+    "plastile-fixture 3": {
+     "x": 1059,
+     "y": 1221,
+     "width": 853,
+     "height": 234
+    },
+    "plastile-fixture 8": {
+     "x": 1059,
+     "y": 1463,
+     "width": 853,
+     "height": 235
+    }
+   }
+  },
+  "P13: 1000 rules rejected (cap 256), previous revision kept, nothing written": {
+   "pass": true,
+   "detail": {
+    "rejected": [
+     "; keeping previous revision [\"rules: at most 256 entries allowed (got 1000)\"]"
+    ],
+    "activated": 0,
+    "delta": {}
+   }
+  },
+  "P13: tiled without overlap after all activations": {
+   "pass": true,
+   "detail": null
+  },
+  "P13: errors == 0": {
+   "pass": true,
+   "detail": 0
+  },
+  "P13: ratio-command p50 with 256 rules within 1.5x of no rules (coarse, shared machine)": {
+   "pass": true,
+   "detail": {
+    "none": {
+     "n": 100,
+     "p50": 445129,
+     "p95": 775379,
+     "p99": 923988,
+     "max": 925879,
+     "min": 329730
+    },
+    "rules256": {
+     "n": 100,
+     "p50": 433089,
+     "p95": 568149,
+     "p99": 1252699,
+     "max": 1357278,
+     "min": 303889
+    },
+    "none-after": {
+     "n": 100,
+     "p50": 421239,
+     "p95": 534510,
+     "p99": 1081278,
+     "max": 1212468,
+     "min": 293850
+    }
+   }
+  },
+  "instr debug: 200 accepted commands, errors == 0": {
+   "pass": true,
+   "detail": {
+    "accepted": 200,
+    "errors": 0
+   }
+  },
+  "instr debug: tiled without overlap": {
+   "pass": true,
+   "detail": null
+  },
+  "instr off: 200 accepted commands, errors == 0": {
+   "pass": true,
+   "detail": {
+    "accepted": 200,
+    "errors": 0
+   }
+  },
+  "instr off: tiled without overlap": {
+   "pass": true,
+   "detail": null
+  }
+ },
+ "exceptions": [],
+ "p05": {
+  "4": {
+   "n": 4,
+   "spawnSpanMs": 1.399288,
+   "mappedSpanMs": 0.50014,
+   "mappedCount": 4,
+   "create": {
+    "solves": 2,
+    "flushes": 3,
+    "writes": 5,
+    "observations": 5,
+    "settled": 4,
+    "stale": 1,
+    "adopted": 4
+   },
+   "solvesPerFlush": 0.6666666666666666,
+   "solvesPerWindow": 0.5,
+   "lastMappedToLastClientCommitMs": 15.772718,
+   "lastMappedToOracleTiledMs": 30.353598,
+   "lastMappedToOracleTiledBoundsMs": [
+    0.0,
+    30.354
+   ],
+   "passingPollMs": 10.983475,
+   "writesPerWindow": 1.25,
+   "oraclePolls": 2,
+   "configuresPerWindow": {
+    "n": 4,
+    "p50": 3,
+    "p95": 3,
+    "p99": 3,
+    "max": 4,
+    "min": 3
+   },
+   "finalTilingErrors": [],
+   "overflow": 0,
+   "errors": 0,
+   "close": {
+    "solves": 2,
+    "flushes": 3,
+    "writes": 4,
+    "removed": 4
+   },
+   "closeSpanMs": 227.936794,
+   "closeSolvesPerFlush": 0.6666666666666666
+  },
+  "8": {
+   "n": 8,
+   "spawnSpanMs": 2.782576,
+   "mappedSpanMs": 29.285519,
+   "mappedCount": 8,
+   "create": {
+    "solves": 5,
+    "flushes": 9,
+    "writes": 32,
+    "corrections": 10,
+    "skipOutstanding": 3,
+    "observations": 22,
+    "settled": 8,
+    "stale": 14,
+    "adopted": 8
+   },
+   "solvesPerFlush": 0.5555555555555556,
+   "solvesPerWindow": 0.625,
+   "lastMappedToLastClientCommitMs": 11.249165,
+   "lastMappedToOracleTiledMs": 35.091042,
+   "lastMappedToOracleTiledBoundsMs": [
+    0.0,
+    35.091
+   ],
+   "passingPollMs": 8.938828,
+   "writesPerWindow": 4.0,
+   "oraclePolls": 3,
+   "configuresPerWindow": {
+    "n": 8,
+    "p50": 6,
+    "p95": 7,
+    "p99": 7,
+    "max": 7,
+    "min": 3
+   },
+   "finalTilingErrors": [],
+   "overflow": 0,
+   "errors": 0,
+   "close": {
+    "solves": 3,
+    "flushes": 6,
+    "writes": 13,
+    "corrections": 2,
+    "observations": 3,
+    "settled": 1,
+    "stale": 2,
+    "removed": 8
+   },
+   "closeSpanMs": 255.815346,
+   "closeSolvesPerFlush": 0.5
+  },
+  "16": {
+   "n": 16,
+   "spawnSpanMs": 5.281323,
+   "mappedSpanMs": 103.425127,
+   "mappedCount": 16,
+   "create": {
+    "solves": 8,
+    "flushes": 11,
+    "writes": 89,
+    "corrections": 20,
+    "skipOutstanding": 4,
+    "skipNoop": 2,
+    "observations": 69,
+    "settled": 16,
+    "stale": 53,
+    "adopted": 16
+   },
+   "solvesPerFlush": 0.7272727272727273,
+   "solvesPerWindow": 0.5,
+   "lastMappedToLastClientCommitMs": 23.689697,
+   "lastMappedToOracleTiledMs": 55.297213,
+   "lastMappedToOracleTiledBoundsMs": [
+    3.888,
+    55.297
+   ],
+   "passingPollMs": 8.718348,
+   "writesPerWindow": 5.5625,
+   "oraclePolls": 5,
+   "configuresPerWindow": {
+    "n": 16,
+    "p50": 6,
+    "p95": 9,
+    "p99": 9,
+    "max": 9,
+    "min": 3
+   },
+   "finalTilingErrors": [],
+   "overflow": 0,
+   "errors": 0,
+   "close": {
+    "solves": 6,
+    "flushes": 9,
+    "writes": 45,
+    "corrections": 6,
+    "skipOutstanding": 2,
+    "observations": 14,
+    "settled": 5,
+    "stale": 9,
+    "removed": 16
+   },
+   "closeSpanMs": 301.712042,
+   "closeSolvesPerFlush": 0.6666666666666666
+  },
+  "32": {
+   "n": 32,
+   "spawnSpanMs": 17.548966,
+   "mappedSpanMs": 235.337214,
+   "mappedCount": 32,
+   "create": {
+    "solves": 14,
+    "flushes": 19,
+    "writes": 309,
+    "corrections": 77,
+    "skipOutstanding": 3,
+    "skipNoop": 10,
+    "observations": 232,
+    "settled": 76,
+    "stale": 155,
+    "partial": 1,
+    "adopted": 32
+   },
+   "solvesPerFlush": 0.7368421052631579,
+   "solvesPerWindow": 0.4375,
+   "lastMappedToLastClientCommitMs": 39.484806,
+   "lastMappedToOracleTiledMs": 86.309021,
+   "lastMappedToOracleTiledBoundsMs": [
+    20.994,
+    86.309
+   ],
+   "passingPollMs": 9.861607,
+   "writesPerWindow": 9.65625,
+   "oraclePolls": 7,
+   "configuresPerWindow": {
+    "n": 32,
+    "p50": 11,
+    "p95": 17,
+    "p99": 17,
+    "max": 21,
+    "min": 3
+   },
+   "finalTilingErrors": [],
+   "overflow": 0,
+   "errors": 0,
+   "close": {
+    "solves": 5,
+    "flushes": 7,
+    "writes": 130,
+    "corrections": 12,
+    "skipNoop": 1,
+    "observations": 69,
+    "settled": 9,
+    "stale": 60,
+    "removed": 32
+   },
+   "closeSpanMs": 265.751502,
+   "closeSolvesPerFlush": 0.7142857142857143
+  }
+ },
+ "p07": {
+  "2": {
+   "n": 2,
+   "burstSendSpanMs": 59.864237,
+   "burst": {
+    "samples": 50,
+    "accepted": 50,
+    "dispatchToReturnNs": {
+     "n": 50,
+     "p50": 147260,
+     "p95": 332660,
+     "p99": 470479,
+     "max": 635429,
+     "min": 97320
+    },
+    "solveNs": {
+     "n": 50,
+     "p50": 41730,
+     "p95": 68420,
+     "p99": 254380,
+     "max": 372259,
+     "min": 26010
+    },
+    "applyNs": {
+     "n": 50,
+     "p50": 44950,
+     "p95": 66810,
+     "p99": 98920,
+     "max": 265429,
+     "min": 30630
+    },
+    "writesPerCommand": {
+     "n": 50,
+     "p50": 2,
+     "p95": 2,
+     "p99": 2,
+     "max": 2,
+     "min": 2
+    },
+    "dbusSendToEntryNs": {
+     "n": 50,
+     "p50": 683379,
+     "p95": 4693664,
+     "p99": 5379262,
+     "max": 5773052,
+     "min": 444449
+    },
+    "logClockMinusMonotonicMs": {
+     "n": 50,
+     "p50": -0.265684,
+     "p95": 0.106037,
+     "p99": 0.200207,
+     "max": 0.496,
+     "min": -0.821983
+    }
+   },
+   "paced": {
+    "samples": 50,
+    "accepted": 50,
+    "dispatchToReturnNs": {
+     "n": 50,
+     "p50": 254269,
+     "p95": 310400,
+     "p99": 321090,
+     "max": 652929,
+     "min": 205940
+    },
+    "solveNs": {
+     "n": 50,
+     "p50": 57530,
+     "p95": 70729,
+     "p99": 77160,
+     "max": 458669,
+     "min": 38620
+    },
+    "applyNs": {
+     "n": 50,
+     "p50": 85800,
+     "p95": 107820,
+     "p99": 122740,
+     "max": 125080,
+     "min": 64640
+    },
+    "writesPerCommand": {
+     "n": 50,
+     "p50": 2,
+     "p95": 2,
+     "p99": 2,
+     "max": 2,
+     "min": 2
+    },
+    "dbusSendToEntryNs": {
+     "n": 50,
+     "p50": 583390,
+     "p95": 702399,
+     "p99": 810869,
+     "max": 884279,
+     "min": 501719
+    },
+    "logClockMinusMonotonicMs": {
+     "n": 50,
+     "p50": -0.250419,
+     "p95": 0.170842,
+     "p99": 0.220554,
+     "max": 0.227425,
+     "min": -0.716914
+    }
+   },
+   "counters": {
+    "solves": 100,
+    "flushes": 24,
+    "commands": 100,
+    "writes": 228,
+    "corrections": 28,
+    "observations": 182,
+    "settled": 153,
+    "stale": 29
+   },
+   "commandsQueued": 0,
+   "errors": 0,
+   "swapPeriod": 2,
+   "topupSwaps": 0
+  },
+  "4": {
+   "n": 4,
+   "burstSendSpanMs": 60.605167,
+   "burst": {
+    "samples": 50,
+    "accepted": 50,
+    "dispatchToReturnNs": {
+     "n": 50,
+     "p50": 177680,
+     "p95": 536009,
+     "p99": 585589,
+     "max": 639779,
+     "min": 119810
+    },
+    "solveNs": {
+     "n": 50,
+     "p50": 50020,
+     "p95": 264570,
+     "p99": 429289,
+     "max": 461280,
+     "min": 30770
+    },
+    "applyNs": {
+     "n": 50,
+     "p50": 66670,
+     "p95": 106540,
+     "p99": 111900,
+     "max": 134280,
+     "min": 37190
+    },
+    "writesPerCommand": {
+     "n": 50,
+     "p50": 2,
+     "p95": 3,
+     "p99": 3,
+     "max": 3,
+     "min": 2
+    },
+    "dbusSendToEntryNs": {
+     "n": 50,
+     "p50": 697519,
+     "p95": 2035977,
+     "p99": 5626552,
+     "max": 5684412,
+     "min": 278889
+    },
+    "logClockMinusMonotonicMs": {
+     "n": 50,
+     "p50": -0.251089,
+     "p95": 0.197805,
+     "p99": 0.380178,
+     "max": 0.600669,
+     "min": -0.776023
+    }
+   },
+   "paced": {
+    "samples": 50,
+    "accepted": 50,
+    "dispatchToReturnNs": {
+     "n": 50,
+     "p50": 260640,
+     "p95": 324210,
+     "p99": 332929,
+     "max": 621999,
+     "min": 209950
+    },
+    "solveNs": {
+     "n": 50,
+     "p50": 55009,
+     "p95": 79250,
+     "p99": 84880,
+     "max": 438239,
+     "min": 43550
+    },
+    "applyNs": {
+     "n": 50,
+     "p50": 89440,
+     "p95": 117130,
+     "p99": 119220,
+     "max": 127939,
+     "min": 72760
+    },
+    "writesPerCommand": {
+     "n": 50,
+     "p50": 2,
+     "p95": 2,
+     "p99": 2,
+     "max": 2,
+     "min": 2
+    },
+    "dbusSendToEntryNs": {
+     "n": 50,
+     "p50": 576869,
+     "p95": 657870,
+     "p99": 679749,
+     "max": 716819,
+     "min": 518139
+    },
+    "logClockMinusMonotonicMs": {
+     "n": 50,
+     "p50": -0.244448,
+     "p95": 0.222306,
+     "p99": 0.270368,
+     "max": 0.290093,
+     "min": -0.73115
+    }
+   },
+   "counters": {
+    "solves": 100,
+    "flushes": 22,
+    "commands": 100,
+    "writes": 230,
+    "corrections": 30,
+    "skipOutstanding": 42,
+    "skipNoop": 153,
+    "observations": 216,
+    "observationsDuringApply": 18,
+    "settled": 189,
+    "stale": 25,
+    "partial": 1,
+    "external": 1
+   },
+   "commandsQueued": 0,
+   "errors": 0,
+   "swapPeriod": 12,
+   "topupSwaps": 8
+  }
+ },
+ "p12": {
+  "ratio20": {
+   "samples": 20,
+   "accepted": 20,
+   "dispatchToReturnNs": {
+    "n": 20,
+    "p50": 326189,
+    "p95": 649019,
+    "p99": 649019,
+    "max": 688919,
+    "min": 237999
+   },
+   "solveNs": {
+    "n": 20,
+    "p50": 63790,
+    "p95": 224520,
+    "p99": 224520,
+    "max": 228709,
+    "min": 36310
+   },
+   "applyNs": {
+    "n": 20,
+    "p50": 91790,
+    "p95": 111320,
+    "p99": 111320,
+    "max": 296000,
+    "min": 69240
+   },
+   "writesPerCommand": {
+    "n": 20,
+    "p50": 2,
+    "p95": 2,
+    "p99": 2,
+    "max": 2,
+    "min": 2
+   },
+   "dbusSendToEntryNs": {
+    "n": 20,
+    "p50": 600359,
+    "p95": 861419,
+    "p99": 861419,
+    "max": 1327829,
+    "min": 520319
+   },
+   "logClockMinusMonotonicMs": {
+    "n": 20,
+    "p50": -0.150075,
+    "p95": 0.160074,
+    "p99": 0.160074,
+    "max": 0.275177,
+    "min": -0.667345
+   }
+  },
+  "commandDelta": {
+   "solves": 20,
+   "commands": 20,
+   "writes": 40,
+   "observations": 40,
+   "settled": 40
+  },
+  "switchDelta": {
+   "solves": 1,
+   "flushes": 1,
+   "writes": 2,
+   "observations": 2,
+   "settled": 2
+  },
+  "desktops": 4
+ },
+ "p13": {
+  "activation": {
+   "10": {
+    "jsonChars": 906,
+    "reconfigureToActivatedMs": 193.598568,
+    "reconfigureCallMs": 2.726586,
+    "reconfigureToConfigChangedMs": 193.343433,
+    "configChangedToActivatedMs": 0.994049,
+    "configChangedSignals": 1,
+    "rejected": false,
+    "warnings": 0,
+    "activationDelta": {
+     "solves": 1,
+     "flushes": 1,
+     "skipNoop": 8
+    },
+    "line": "info configuration activated {\"revision\":2}"
+   },
+   "100": {
+    "jsonChars": 8961,
+    "reconfigureToActivatedMs": 215.316959,
+    "reconfigureCallMs": 2.316607,
+    "reconfigureToConfigChangedMs": 213.022917,
+    "configChangedToActivatedMs": 3.067886,
+    "configChangedSignals": 1,
+    "rejected": false,
+    "warnings": 0,
+    "activationDelta": {
+     "solves": 1,
+     "flushes": 1,
+     "skipNoop": 8
+    },
+    "line": "info configuration activated {\"revision\":3}"
+   },
+   "256": {
+    "jsonChars": 23235,
+    "reconfigureToActivatedMs": 200.212458,
+    "reconfigureCallMs": 2.572346,
+    "reconfigureToConfigChangedMs": 193.519753,
+    "configChangedToActivatedMs": 7.67809,
+    "configChangedSignals": 1,
+    "rejected": false,
+    "warnings": 0,
+    "activationDelta": {
+     "solves": 1,
+     "flushes": 1,
+     "skipNoop": 8
+    },
+    "line": "info configuration activated {\"revision\":4}"
+   },
+   "1000-over-cap": {
+    "rules": 1000,
+    "jsonChars": 91311,
+    "rejected": true,
+    "configChangedToRejectedMs": 5.793092,
+    "reconfigureToConfigChangedMs": 194.168633,
+    "delta": {}
+   },
+   "none-again": {
+    "jsonChars": 0,
+    "reconfigureToActivatedMs": 212.380969,
+    "reconfigureCallMs": 2.015807,
+    "reconfigureToConfigChangedMs": 212.599447,
+    "configChangedToActivatedMs": 0.41082,
+    "configChangedSignals": 1,
+    "rejected": false,
+    "warnings": 0,
+    "activationDelta": {
+     "solves": 1,
+     "flushes": 1,
+     "skipNoop": 8
+    },
+    "line": "info configuration activated {\"revision\":6}"
+   }
+  },
+  "latency": {
+   "none": {
+    "samples": 100,
+    "accepted": 100,
+    "dispatchToReturnNs": {
+     "n": 100,
+     "p50": 445129,
+     "p95": 775379,
+     "p99": 923988,
+     "max": 925879,
+     "min": 329730
+    },
+    "solveNs": {
+     "n": 100,
+     "p50": 83730,
+     "p95": 156460,
+     "p99": 510129,
+     "max": 546529,
+     "min": 52280
+    },
+    "applyNs": {
+     "n": 100,
+     "p50": 184680,
+     "p95": 251999,
+     "p99": 568260,
+     "max": 602339,
+     "min": 133470
+    },
+    "writesPerCommand": {
+     "n": 100,
+     "p50": 8,
+     "p95": 8,
+     "p99": 8,
+     "max": 8,
+     "min": 8
+    },
+    "dbusSendToEntryNs": {
+     "n": 100,
+     "p50": 653360,
+     "p95": 3178495,
+     "p99": 4116584,
+     "max": 4324534,
+     "min": 490370
+    },
+    "logClockMinusMonotonicMs": {
+     "n": 100,
+     "p50": -0.038823,
+     "p95": 0.450144,
+     "p99": 0.516054,
+     "max": 0.704973,
+     "min": -0.643107
+    }
+   },
+   "rules256": {
+    "samples": 100,
+    "accepted": 100,
+    "dispatchToReturnNs": {
+     "n": 100,
+     "p50": 433089,
+     "p95": 568149,
+     "p99": 1252699,
+     "max": 1357278,
+     "min": 303889
+    },
+    "solveNs": {
+     "n": 100,
+     "p50": 80790,
+     "p95": 122900,
+     "p99": 883169,
+     "max": 896768,
+     "min": 51340
+    },
+    "applyNs": {
+     "n": 100,
+     "p50": 188840,
+     "p95": 247910,
+     "p99": 319020,
+     "max": 329850,
+     "min": 127230
+    },
+    "writesPerCommand": {
+     "n": 100,
+     "p50": 8,
+     "p95": 8,
+     "p99": 8,
+     "max": 8,
+     "min": 8
+    },
+    "dbusSendToEntryNs": {
+     "n": 100,
+     "p50": 647469,
+     "p95": 3407225,
+     "p99": 4593223,
+     "max": 5715782,
+     "min": 497929
+    },
+    "logClockMinusMonotonicMs": {
+     "n": 100,
+     "p50": 0.0186,
+     "p95": 0.440205,
+     "p99": 0.764433,
+     "max": 0.791355,
+     "min": -0.611094
+    }
+   },
+   "none-after": {
+    "samples": 100,
+    "accepted": 100,
+    "dispatchToReturnNs": {
+     "n": 100,
+     "p50": 421239,
+     "p95": 534510,
+     "p99": 1081278,
+     "max": 1212468,
+     "min": 293850
+    },
+    "solveNs": {
+     "n": 100,
+     "p50": 77400,
+     "p95": 107670,
+     "p99": 125080,
+     "max": 846849,
+     "min": 50820
+    },
+    "applyNs": {
+     "n": 100,
+     "p50": 177380,
+     "p95": 244380,
+     "p99": 251869,
+     "max": 253180,
+     "min": 120489
+    },
+    "writesPerCommand": {
+     "n": 100,
+     "p50": 8,
+     "p95": 8,
+     "p99": 8,
+     "max": 8,
+     "min": 8
+    },
+    "dbusSendToEntryNs": {
+     "n": 100,
+     "p50": 621310,
+     "p95": 1492268,
+     "p99": 2723036,
+     "max": 2785776,
+     "min": 436300
+    },
+    "logClockMinusMonotonicMs": {
+     "n": 100,
+     "p50": -0.048745,
+     "p95": 0.390566,
+     "p99": 0.480906,
+     "max": 0.554181,
+     "min": -0.663045
+    }
+   }
+  },
+  "ruleControl": {
+   "openDelta": {
+    "solves": 1,
+    "flushes": 2,
+    "writes": 8,
+    "skipNoop": 1,
+    "observations": 8,
+    "settled": 8,
+    "adopted": 2
+   },
+   "closeDelta": {
+    "solves": 1,
+    "flushes": 2,
+    "writes": 7,
+    "skipNoop": 1,
+    "observations": 7,
+    "settled": 7,
+    "removed": 2
+   },
+   "floatingFrame": {
+    "x": 760,
+    "y": 689,
+    "width": 400,
+    "height": 328
+   },
+   "explain": "{\"id\":\"{10e6834f-1545-44e1-a0d3-f05445b6526d}\",\"appId\":\"org.example.app255-control\",\"kind\":\"normal\",\"mode\":\"floating\",\"userMode\":null,\"decision\":{\"mode\":\"floating\",\"source\":\"rule\",\"reason\":\"floating by rule\",\"ruleIds\":[\"r255\"]},\"context\":{\"output\":\"Virtual-0\",\"desktop\":\"05179f87-63c9-4f1a-8a06-0aaee99332a7\",\"activity\":\"default\"},\"layout\":\"master-stack\",\"suspensions\":[],\"constraints\":{\"minFrame\":{\""
+  },
+  "p50RatioRules256OverNone": 1.0281312983840527,
+  "windows": 8,
+  "samplesPerRun": 100
+ },
+ "instrumentation": {
+  "order": [
+   "debug",
+   "off"
+  ],
+  "debug": {
+   "windows": 16,
+   "ratio": {
+    "samples": 200,
+    "accepted": 200,
+    "dispatchToReturnNs": {
+     "n": 200,
+     "p50": 582990,
+     "p95": 1098658,
+     "p99": 1337988,
+     "max": 1689768,
+     "min": 379429
+    },
+    "solveNs": {
+     "n": 200,
+     "p50": 109010,
+     "p95": 283409,
+     "p99": 741730,
+     "max": 877239,
+     "min": 77470
+    },
+    "applyNs": {
+     "n": 200,
+     "p50": 277320,
+     "p95": 393310,
+     "p99": 904549,
+     "max": 1268399,
+     "min": 180689
+    },
+    "writesPerCommand": {
+     "n": 200,
+     "p50": 16,
+     "p95": 16,
+     "p99": 16,
+     "max": 16,
+     "min": 16
+    },
+    "dbusSendToEntryNs": {
+     "n": 200,
+     "p50": 612449,
+     "p95": 4221335,
+     "p99": 5565742,
+     "max": 7526740,
+     "min": 463800
+    },
+    "logClockMinusMonotonicMs": {
+     "n": 200,
+     "p50": 0.111271,
+     "p95": 0.688537,
+     "p99": 1.123445,
+     "max": 1.267976,
+     "min": -0.459086
+    }
+   },
+   "plastileLogLinesDuringRun": 409,
+   "counters": {
+    "solves": 201,
+    "flushes": 1,
+    "commands": 200,
+    "commandsQueued": 0,
+    "writes": 3216,
+    "corrections": 0,
+    "skipOutstanding": 0,
+    "skipNoop": 0,
+    "skipDiverged": 0,
+    "observations": 3216,
+    "observationsDuringApply": 0,
+    "settled": 3216,
+    "stale": 0,
+    "partial": 0,
+    "external": 0,
+    "learned": 0,
+    "diverged": 0,
+    "deadlines": 0,
+    "overflow": 0,
+    "adopted": 16,
+    "removed": 0,
+    "staleEvents": 0,
+    "errors": 0,
+    "raises": 0,
+    "activations": 0
+   }
+  },
+  "off": {
+   "windows": 16,
+   "ratio": {
+    "samples": 200,
+    "accepted": 200,
+    "dispatchToReturnNs": {
+     "n": 200,
+     "p50": 580109,
+     "p95": 939119,
+     "p99": 1299088,
+     "max": 1374249,
+     "min": 406130
+    },
+    "solveNs": {
+     "n": 200,
+     "p50": 109740,
+     "p95": 183690,
+     "p99": 616469,
+     "max": 724119,
+     "min": 77230
+    },
+    "applyNs": {
+     "n": 200,
+     "p50": 270950,
+     "p95": 402559,
+     "p99": 889679,
+     "max": 990519,
+     "min": 191370
+    },
+    "writesPerCommand": {
+     "n": 200,
+     "p50": 16,
+     "p95": 16,
+     "p99": 16,
+     "max": 16,
+     "min": 16
+    },
+    "dbusSendToEntryNs": {
+     "n": 200,
+     "p50": 636309,
+     "p95": 4806574,
+     "p99": 6784561,
+     "max": 6942280,
+     "min": 466620
+    },
+    "logClockMinusMonotonicMs": {
+     "n": 200,
+     "p50": 0.091331,
+     "p95": 0.651459,
+     "p99": 0.90807,
+     "max": 1.139016,
+     "min": -0.483681
+    }
+   },
+   "plastileLogLinesDuringRun": 209,
+   "counters": {
+    "solves": 201,
+    "flushes": 1,
+    "commands": 200,
+    "commandsQueued": 0,
+    "writes": 3216,
+    "corrections": 0,
+    "skipOutstanding": 0,
+    "skipNoop": 0,
+    "skipDiverged": 0,
+    "observations": 3216,
+    "observationsDuringApply": 0,
+    "settled": 3216,
+    "stale": 0,
+    "partial": 0,
+    "external": 0,
+    "learned": 0,
+    "diverged": 0,
+    "deadlines": 0,
+    "overflow": 0,
+    "adopted": 16,
+    "removed": 0,
+    "staleEvents": 0,
+    "errors": 0,
+    "raises": 0,
+    "activations": 0
+   }
+  },
+  "debugOverOff": {
+   "p50": 1.0049663080559,
+   "p95": 1.1698815592060219,
+   "p99": 1.029944083849593
+  }
+ }
+}

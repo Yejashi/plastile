@@ -1,0 +1,1709 @@
+{
+ "what": "TEST_MATRIX section 4: representative real applications in a nested KWin with two fixture windows",
+ "layer": "nested KWin virtual backend (not physical)",
+ "implementationCommit": "819a91c16fd44b9910ab2bba8051bf33aae55e76",
+ "implementationDirty": true,
+ "kwin": "kwin 6.7.5",
+ "judgement": "geometry by the KWin oracle (one-shot scripts); Plastile counters only for work amounts",
+ "candidates": {
+  "konsole": "not installed",
+  "kate": "not installed",
+  "kwrite": "not installed",
+  "dolphin": "dolphin 26.08.2-1",
+  "kcalc": "not installed",
+  "gwenview": "not installed",
+  "okular": "not installed",
+  "systemsettings": "systemsettings 6.7.5-1",
+  "kdialog": "not installed",
+  "xmessage": "xorg-xmessage 1.0.7-2",
+  "gtk4-demo": "not installed",
+  "gnome-calculator": "gnome-calculator 51.0-1",
+  "foot": "not installed",
+  "alacritty": "alacritty 0.17.0-1",
+  "firefox": "firefox 157.0.1-1",
+  "chromium": "chromium 153.0.8010.52-1"
+ },
+ "notes": [
+  "Earlier run 20261017T211412 (same bundle, before the constraint-agreement check existed): gnome-calculator-x11-tall tiled without overflow because Plastile's constraints had been refreshed to 410x666 (client-space value used as frame minimum, 50 px over the true 360x616 frame minimum); zenity-info-x11 stale 0/Infinity as in every other run. Stale X11 constraints therefore seen in 4/5 gnome-calculator-x11 runs and 5/5 zenity-x11 runs.",
+  "Probe (no Plastile, passive watcher script): at workspace.windowAdded KWin 6.7 reports minSize 0x0, maxSize 2147483647, resizeable true for X11 GTK4 clients (zenity --info, gnome-calculator under GDK_BACKEND=x11); the real hints (zenity 344x270 fixed, resizeable false; gnome-calculator min 410x666 client incl. 25 px _GTK_FRAME_EXTENTS) appear later without a NOTIFY. Wayland zenity reports 300x226 fixed already at windowAdded.",
+  "kdialog, kcalc, konsole, kate, kwrite, gwenview, okular, gtk4-demo and foot are not installed; zenity 4.2.2 message boxes are the stand-in dialog clients, and systemsettings/gnome-calculator are the large-minimum clients."
+ ],
+ "apps": {
+  "realapps-gnome-calculator-x11-tall": {
+   "runs": [
+    {
+     "run": "20261017T211831",
+     "pass": false,
+     "failed": [
+      "gnome-calculator-x11-tall: Plastile constraints match KWin's current minSize/fixed (frame space)",
+      "gnome-calculator-x11-tall: tiled with the fixtures without overlap (oracle)"
+     ]
+    },
+    {
+     "run": "20261017T211849",
+     "pass": false,
+     "failed": [
+      "gnome-calculator-x11-tall: Plastile constraints match KWin's current minSize/fixed (frame space)",
+      "gnome-calculator-x11-tall: tiled with the fixtures without overlap (oracle)"
+     ]
+    },
+    {
+     "run": "20261017T211908",
+     "pass": false,
+     "failed": [
+      "gnome-calculator-x11-tall: Plastile constraints match KWin's current minSize/fixed (frame space)",
+      "gnome-calculator-x11-tall: tiled with the fixtures without overlap (oracle)"
+     ]
+    },
+    {
+     "run": "20261017T211947",
+     "pass": false,
+     "failed": [
+      "gnome-calculator-x11-tall: Plastile constraints match KWin's current minSize/fixed (frame space)",
+      "gnome-calculator-x11-tall: tiled with the fixtures without overlap (oracle)"
+     ]
+    }
+   ],
+   "run": "20261017T211947",
+   "pass": false,
+   "error": null,
+   "seconds": 8.8,
+   "version": "gnome-calculator 51.0-1",
+   "xwayland": true,
+   "output": {
+    "width": 1920,
+    "height": 1200
+   },
+   "expect": "tiled",
+   "note": null,
+   "x11": true,
+   "mapTimeSeconds": 2.93,
+   "resourceClass": "gnome-calculator",
+   "desktopFileName": "org.gnome.Calculator",
+   "kind": {
+    "normalWindow": true,
+    "dialog": false,
+    "utility": false,
+    "transient": false,
+    "modal": false,
+    "popupWindow": false,
+    "specialWindow": false,
+    "resizeable": true,
+    "windowType": 0
+   },
+   "mustFloat": null,
+   "x11Hints": {
+    "exit": 0,
+    "gtkFrameExtents": [
+     25,
+     25,
+     25,
+     25
+    ],
+    "min": {
+     "width": 410,
+     "height": 666
+    },
+    "max": null,
+    "userSize": null,
+    "programSize": null,
+    "netWmWindowType": "_NET_WM_WINDOW_TYPE_NORMAL",
+    "transientFor": false
+   },
+   "finalMode": "tiled",
+   "decision": {
+    "mode": "tiled",
+    "source": "default",
+    "reason": "normal resizable window",
+    "ruleIds": []
+   },
+   "exception": "keeps changing its own size; Plastile stopped correcting it",
+   "constraint": {
+    "kwinMinSize": {
+     "width": 410,
+     "height": 666
+    },
+    "kwinMaxSize": {
+     "width": 2147483647,
+     "height": 2147483647
+    },
+    "resizeable": true,
+    "kwinFixed": false,
+    "expectedMinFrame": {
+     "width": 360,
+     "height": 616
+    },
+    "learnedMin": null,
+    "learnedMax": null,
+    "effective": {
+     "minFrame": {
+      "width": 0,
+      "height": 0
+     },
+     "maxFrame": {
+      "width": "Infinity",
+      "height": "Infinity"
+     },
+     "fixed": false
+    }
+   },
+   "frame": {
+    "x": 1059,
+    "y": 604,
+    "width": 853,
+    "height": 616
+   },
+   "counters": {
+    "sinceLaunch": {
+     "solves": 1,
+     "flushes": 3,
+     "writes": 4,
+     "corrections": 2,
+     "skipNoop": 1,
+     "observations": 7,
+     "observationsDuringApply": 3,
+     "settled": 4,
+     "external": 3,
+     "diverged": 1,
+     "adopted": 1
+    },
+    "quiet3s": {},
+    "outstanding": 0,
+    "windowLedgerCorrections": 2
+   },
+   "extraWindows": [],
+   "logErrorsTotal": 0,
+   "sweptBeforeStop": [
+    "at-spi-bus-laun",
+    "dbus-broker",
+    "dbus-broker-lau",
+    "gvfsd",
+    "gvfsd-fuse",
+    "xdg-desktop-por",
+    "xdg-document-po",
+    "xdg-permission-"
+   ],
+   "sweptAfterStop": [],
+   "checks": {
+    "gnome-calculator-x11-tall: baseline two fixtures tiled": true,
+    "gnome-calculator-x11-tall: window mapped within 20 s": true,
+    "gnome-calculator-x11-tall: resourceClass in ('org.gnome.Calculator', 'gnome-calculator')": true,
+    "gnome-calculator-x11-tall: main window still present": true,
+    "gnome-calculator-x11-tall: tiled with the fixtures without overlap (oracle)": false,
+    "gnome-calculator-x11-tall: no extra untracked normal windows": true,
+    "gnome-calculator-x11-tall: expected mode tiled": true,
+    "gnome-calculator-x11-tall: corrections <= 2 over 3 s after settle": true,
+    "gnome-calculator-x11-tall: corrections <= 2 since launch (engine and window ledger)": true,
+    "gnome-calculator-x11-tall: converged (no outstanding requests)": true,
+    "gnome-calculator-x11-tall: client >= KWin-reported minSize (client coords)": true,
+    "gnome-calculator-x11-tall: Plastile constraints match KWin's current minSize/fixed (frame space)": false,
+    "gnome-calculator-x11-tall: no plastile error/warn or JS exceptions": true,
+    "gnome-calculator-x11-tall: all app windows gone after kill": true,
+    "gnome-calculator-x11-tall: fixtures retiled to two full-height tiles after close": true,
+    "gnome-calculator-x11-tall: fixtures back at the baseline slots": true,
+    "gnome-calculator-x11-tall: no errors through close": true,
+    "gnome-calculator-x11-tall: no process of the session survives teardown": true
+   },
+   "failedChecks": {
+    "gnome-calculator-x11-tall: tiled with the fixtures without overlap (oracle)": [
+     "gnome-calculator#7fd12736 outside area {'x': 1059, 'y': 604, 'width': 853, 'height': 616}"
+    ],
+    "gnome-calculator-x11-tall: Plastile constraints match KWin's current minSize/fixed (frame space)": {
+     "plastile": {
+      "minFrame": {
+       "width": 0,
+       "height": 0
+      },
+      "maxFrame": {
+       "width": "Infinity",
+       "height": "Infinity"
+      },
+      "fixed": false
+     },
+     "kwinFixed": false,
+     "expectedMinFrame": {
+      "width": 360,
+      "height": 616
+     },
+     "kwinMinSize": {
+      "width": 410,
+      "height": 666
+     },
+     "frameMinusClient": {
+      "width": -50,
+      "height": -50
+     }
+    }
+   }
+  },
+  "realapps-zenity-info-x11": {
+   "runs": [
+    {
+     "run": "20261017T211831",
+     "pass": false,
+     "failed": [
+      "zenity-info-x11: Plastile constraints match KWin's current minSize/fixed (frame space)"
+     ]
+    },
+    {
+     "run": "20261017T211849",
+     "pass": false,
+     "failed": [
+      "zenity-info-x11: Plastile constraints match KWin's current minSize/fixed (frame space)"
+     ]
+    },
+    {
+     "run": "20261017T211908",
+     "pass": false,
+     "failed": [
+      "zenity-info-x11: Plastile constraints match KWin's current minSize/fixed (frame space)"
+     ]
+    },
+    {
+     "run": "20261017T211947",
+     "pass": false,
+     "failed": [
+      "zenity-info-x11: Plastile constraints match KWin's current minSize/fixed (frame space)"
+     ]
+    }
+   ],
+   "run": "20261017T211947",
+   "pass": false,
+   "error": null,
+   "seconds": 9.1,
+   "version": "zenity 4.2.2-1",
+   "xwayland": true,
+   "output": {
+    "width": 1280,
+    "height": 800
+   },
+   "expect": "kind",
+   "note": "stand-in for kdialog --msgbox (X11 client, EWMH window type)",
+   "x11": true,
+   "mapTimeSeconds": 3.0,
+   "resourceClass": "zenity",
+   "desktopFileName": "",
+   "kind": {
+    "normalWindow": true,
+    "dialog": false,
+    "utility": false,
+    "transient": false,
+    "modal": true,
+    "popupWindow": false,
+    "specialWindow": false,
+    "resizeable": false,
+    "windowType": 0
+   },
+   "mustFloat": "transient/modal",
+   "x11Hints": {
+    "exit": 0,
+    "gtkFrameExtents": [
+     22,
+     22,
+     22,
+     22
+    ],
+    "min": {
+     "width": 344,
+     "height": 270
+    },
+    "max": {
+     "width": 344,
+     "height": 270
+    },
+    "userSize": null,
+    "programSize": null,
+    "netWmWindowType": "_NET_WM_WINDOW_TYPE_NORMAL",
+    "transientFor": false
+   },
+   "finalMode": "floating",
+   "decision": {
+    "mode": "floating",
+    "source": "type",
+    "reason": "modal transient",
+    "ruleIds": []
+   },
+   "exception": null,
+   "constraint": {
+    "kwinMinSize": {
+     "width": 344,
+     "height": 270
+    },
+    "kwinMaxSize": {
+     "width": 344,
+     "height": 270
+    },
+    "resizeable": false,
+    "kwinFixed": true,
+    "expectedMinFrame": {
+     "width": 300,
+     "height": 226
+    },
+    "learnedMin": null,
+    "learnedMax": null,
+    "effective": {
+     "minFrame": {
+      "width": 0,
+      "height": 0
+     },
+     "maxFrame": {
+      "width": "Infinity",
+      "height": "Infinity"
+     },
+     "fixed": false
+    }
+   },
+   "frame": {
+    "x": 490,
+    "y": 287,
+    "width": 300,
+    "height": 226
+   },
+   "counters": {
+    "sinceLaunch": {
+     "flushes": 1,
+     "adopted": 1
+    },
+    "quiet3s": {},
+    "outstanding": 0,
+    "windowLedgerCorrections": 0
+   },
+   "extraWindows": [],
+   "logErrorsTotal": 0,
+   "sweptBeforeStop": [
+    "at-spi-bus-laun",
+    "dbus-broker",
+    "dbus-broker-lau",
+    "gvfsd",
+    "gvfsd-fuse",
+    "xdg-desktop-por",
+    "xdg-document-po",
+    "xdg-permission-"
+   ],
+   "sweptAfterStop": [],
+   "checks": {
+    "zenity-info-x11: baseline two fixtures tiled": true,
+    "zenity-info-x11: window mapped within 20 s": true,
+    "zenity-info-x11: resourceClass in ('zenity', 'Zenity', 'org.gnome.Zenity')": true,
+    "zenity-info-x11: main window still present": true,
+    "zenity-info-x11: floating window keeps its own size (not fought)": true,
+    "zenity-info-x11: fixtures keep the whole area": true,
+    "zenity-info-x11: transient/modal -> floating": true,
+    "zenity-info-x11: corrections <= 2 over 3 s after settle": true,
+    "zenity-info-x11: corrections <= 2 since launch (engine and window ledger)": true,
+    "zenity-info-x11: converged (no outstanding requests)": true,
+    "zenity-info-x11: Plastile constraints match KWin's current minSize/fixed (frame space)": false,
+    "zenity-info-x11: no plastile error/warn or JS exceptions": true,
+    "zenity-info-x11: all app windows gone after kill": true,
+    "zenity-info-x11: fixtures retiled to two full-height tiles after close": true,
+    "zenity-info-x11: fixtures back at the baseline slots": true,
+    "zenity-info-x11: no errors through close": true,
+    "zenity-info-x11: no process of the session survives teardown": true
+   },
+   "failedChecks": {
+    "zenity-info-x11: Plastile constraints match KWin's current minSize/fixed (frame space)": {
+     "plastile": {
+      "minFrame": {
+       "width": 0,
+       "height": 0
+      },
+      "maxFrame": {
+       "width": "Infinity",
+       "height": "Infinity"
+      },
+      "fixed": false
+     },
+     "kwinFixed": true,
+     "expectedMinFrame": {
+      "width": 300,
+      "height": 226
+     },
+     "kwinMinSize": {
+      "width": 344,
+      "height": 270
+     },
+     "frameMinusClient": {
+      "width": -44,
+      "height": -44
+     }
+    }
+   }
+  },
+  "realapps-dolphin": {
+   "runs": [
+    {
+     "run": "20261017T211947",
+     "pass": true,
+     "failed": []
+    }
+   ],
+   "run": "20261017T211947",
+   "pass": true,
+   "error": null,
+   "seconds": 6.4,
+   "version": "dolphin 26.08.2-1",
+   "xwayland": false,
+   "output": {
+    "width": 1280,
+    "height": 800
+   },
+   "expect": "kind",
+   "note": null,
+   "x11": false,
+   "mapTimeSeconds": 0.29,
+   "resourceClass": "org.kde.dolphin",
+   "desktopFileName": "org.kde.dolphin",
+   "kind": {
+    "normalWindow": true,
+    "dialog": false,
+    "utility": false,
+    "transient": false,
+    "modal": false,
+    "popupWindow": false,
+    "specialWindow": false,
+    "resizeable": true,
+    "windowType": 0
+   },
+   "mustFloat": null,
+   "x11Hints": null,
+   "finalMode": "tiled",
+   "decision": {
+    "mode": "tiled",
+    "source": "default",
+    "reason": "normal resizable window",
+    "ruleIds": []
+   },
+   "exception": null,
+   "constraint": {
+    "kwinMinSize": {
+     "width": 173,
+     "height": 150
+    },
+    "kwinMaxSize": {
+     "width": 2147483647,
+     "height": 2147483647
+    },
+    "resizeable": true,
+    "kwinFixed": false,
+    "expectedMinFrame": {
+     "width": 173,
+     "height": 178
+    },
+    "learnedMin": null,
+    "learnedMax": null,
+    "effective": {
+     "minFrame": {
+      "width": 173,
+      "height": 178
+     },
+     "maxFrame": {
+      "width": "Infinity",
+      "height": "Infinity"
+     },
+     "fixed": false
+    }
+   },
+   "frame": {
+    "x": 707,
+    "y": 404,
+    "width": 565,
+    "height": 388
+   },
+   "counters": {
+    "sinceLaunch": {
+     "solves": 1,
+     "flushes": 1,
+     "writes": 2,
+     "skipNoop": 1,
+     "observations": 2,
+     "settled": 2,
+     "adopted": 1
+    },
+    "quiet3s": {},
+    "outstanding": 0,
+    "windowLedgerCorrections": 0
+   },
+   "extraWindows": [],
+   "logErrorsTotal": 0,
+   "sweptBeforeStop": [
+    "xdg-desktop-por",
+    "xdg-document-po",
+    "xdg-permission-"
+   ],
+   "sweptAfterStop": [],
+   "checks": {
+    "dolphin: baseline two fixtures tiled": true,
+    "dolphin: window mapped within 20 s": true,
+    "dolphin: resourceClass in ('org.kde.dolphin', 'dolphin')": true,
+    "dolphin: main window still present": true,
+    "dolphin: tiled with the fixtures without overlap (oracle)": true,
+    "dolphin: no extra untracked normal windows": true,
+    "dolphin: normal resizable -> tiled or explained overflow": true,
+    "dolphin: corrections <= 2 over 3 s after settle": true,
+    "dolphin: corrections <= 2 since launch (engine and window ledger)": true,
+    "dolphin: converged (no outstanding requests)": true,
+    "dolphin: client >= KWin-reported minSize (client coords)": true,
+    "dolphin: Plastile constraints match KWin's current minSize/fixed (frame space)": true,
+    "dolphin: no plastile error/warn or JS exceptions": true,
+    "dolphin: all app windows gone after kill": true,
+    "dolphin: fixtures retiled to two full-height tiles after close": true,
+    "dolphin: fixtures back at the baseline slots": true,
+    "dolphin: no errors through close": true,
+    "dolphin: no process of the session survives teardown": true
+   },
+   "failedChecks": {}
+  },
+  "realapps-systemsettings": {
+   "runs": [
+    {
+     "run": "20261017T211947",
+     "pass": true,
+     "failed": []
+    }
+   ],
+   "run": "20261017T211947",
+   "pass": true,
+   "error": null,
+   "seconds": 7.0,
+   "version": "systemsettings 6.7.5-1",
+   "xwayland": false,
+   "output": {
+    "width": 1280,
+    "height": 800
+   },
+   "expect": "overflow",
+   "note": null,
+   "x11": false,
+   "mapTimeSeconds": 0.99,
+   "resourceClass": "systemsettings",
+   "desktopFileName": "systemsettings",
+   "kind": {
+    "normalWindow": true,
+    "dialog": false,
+    "utility": false,
+    "transient": false,
+    "modal": false,
+    "popupWindow": false,
+    "specialWindow": false,
+    "resizeable": true,
+    "windowType": 0
+   },
+   "mustFloat": null,
+   "x11Hints": null,
+   "finalMode": "floating",
+   "decision": {
+    "mode": "tiled",
+    "source": "default",
+    "reason": "normal resizable window",
+    "ruleIds": []
+   },
+   "exception": "overflow: <window>: does not fit (stack column of 2 needs 864 px height, has 784); overflow float-new",
+   "constraint": {
+    "kwinMinSize": {
+     "width": 930,
+     "height": 650
+    },
+    "kwinMaxSize": {
+     "width": 2147483647,
+     "height": 2147483647
+    },
+    "resizeable": true,
+    "kwinFixed": false,
+    "expectedMinFrame": {
+     "width": 930,
+     "height": 678
+    },
+    "learnedMin": null,
+    "learnedMax": null,
+    "effective": {
+     "minFrame": {
+      "width": 930,
+      "height": 678
+     },
+     "maxFrame": {
+      "width": "Infinity",
+      "height": "Infinity"
+     },
+     "fixed": false
+    }
+   },
+   "frame": {
+    "x": 175,
+    "y": 61,
+    "width": 930,
+    "height": 678
+   },
+   "counters": {
+    "sinceLaunch": {
+     "solves": 2,
+     "flushes": 2,
+     "skipNoop": 4,
+     "overflow": 1,
+     "adopted": 1
+    },
+    "quiet3s": {},
+    "outstanding": 0,
+    "windowLedgerCorrections": 0
+   },
+   "extraWindows": [],
+   "logErrorsTotal": 0,
+   "sweptBeforeStop": [
+    "xdg-desktop-por",
+    "xdg-document-po",
+    "xdg-permission-"
+   ],
+   "sweptAfterStop": [],
+   "checks": {
+    "systemsettings: baseline two fixtures tiled": true,
+    "systemsettings: window mapped within 20 s": true,
+    "systemsettings: resourceClass in ('systemsettings', 'org.kde.systemsettings')": true,
+    "systemsettings: main window still present": true,
+    "systemsettings: floating window keeps its own size (not fought)": true,
+    "systemsettings: fixtures keep the whole area": true,
+    "systemsettings: minimum does not fit -> explained overflow float": true,
+    "systemsettings: corrections <= 2 over 3 s after settle": true,
+    "systemsettings: corrections <= 2 since launch (engine and window ledger)": true,
+    "systemsettings: converged (no outstanding requests)": true,
+    "systemsettings: Plastile constraints match KWin's current minSize/fixed (frame space)": true,
+    "systemsettings: no plastile error/warn or JS exceptions": true,
+    "systemsettings: all app windows gone after kill": true,
+    "systemsettings: fixtures retiled to two full-height tiles after close": true,
+    "systemsettings: fixtures back at the baseline slots": true,
+    "systemsettings: no errors through close": true,
+    "systemsettings: no process of the session survives teardown": true
+   },
+   "failedChecks": {}
+  },
+  "realapps-systemsettings-tall": {
+   "runs": [
+    {
+     "run": "20261017T211947",
+     "pass": true,
+     "failed": []
+    }
+   ],
+   "run": "20261017T211947",
+   "pass": true,
+   "error": null,
+   "seconds": 6.9,
+   "version": "systemsettings 6.7.5-1",
+   "xwayland": false,
+   "output": {
+    "width": 1920,
+    "height": 1200
+   },
+   "expect": "tiled",
+   "note": null,
+   "x11": false,
+   "mapTimeSeconds": 0.93,
+   "resourceClass": "systemsettings",
+   "desktopFileName": "systemsettings",
+   "kind": {
+    "normalWindow": true,
+    "dialog": false,
+    "utility": false,
+    "transient": false,
+    "modal": false,
+    "popupWindow": false,
+    "specialWindow": false,
+    "resizeable": true,
+    "windowType": 0
+   },
+   "mustFloat": null,
+   "x11Hints": null,
+   "finalMode": "tiled",
+   "decision": {
+    "mode": "tiled",
+    "source": "default",
+    "reason": "normal resizable window",
+    "ruleIds": []
+   },
+   "exception": null,
+   "constraint": {
+    "kwinMinSize": {
+     "width": 930,
+     "height": 650
+    },
+    "kwinMaxSize": {
+     "width": 2147483647,
+     "height": 2147483647
+    },
+    "resizeable": true,
+    "kwinFixed": false,
+    "expectedMinFrame": {
+     "width": 930,
+     "height": 678
+    },
+    "learnedMin": null,
+    "learnedMax": null,
+    "effective": {
+     "minFrame": {
+      "width": 930,
+      "height": 678
+     },
+     "maxFrame": {
+      "width": "Infinity",
+      "height": "Infinity"
+     },
+     "fixed": false
+    }
+   },
+   "frame": {
+    "x": 982,
+    "y": 514,
+    "width": 930,
+    "height": 678
+   },
+   "counters": {
+    "sinceLaunch": {
+     "solves": 1,
+     "flushes": 1,
+     "writes": 3,
+     "observations": 3,
+     "observationsDuringApply": 1,
+     "settled": 3,
+     "adopted": 1
+    },
+    "quiet3s": {},
+    "outstanding": 0,
+    "windowLedgerCorrections": 0
+   },
+   "extraWindows": [],
+   "logErrorsTotal": 0,
+   "sweptBeforeStop": [
+    "xdg-desktop-por",
+    "xdg-document-po",
+    "xdg-permission-"
+   ],
+   "sweptAfterStop": [],
+   "checks": {
+    "systemsettings-tall: baseline two fixtures tiled": true,
+    "systemsettings-tall: window mapped within 20 s": true,
+    "systemsettings-tall: resourceClass in ('systemsettings', 'org.kde.systemsettings')": true,
+    "systemsettings-tall: main window still present": true,
+    "systemsettings-tall: tiled with the fixtures without overlap (oracle)": true,
+    "systemsettings-tall: no extra untracked normal windows": true,
+    "systemsettings-tall: expected mode tiled": true,
+    "systemsettings-tall: corrections <= 2 over 3 s after settle": true,
+    "systemsettings-tall: corrections <= 2 since launch (engine and window ledger)": true,
+    "systemsettings-tall: converged (no outstanding requests)": true,
+    "systemsettings-tall: client >= KWin-reported minSize (client coords)": true,
+    "systemsettings-tall: Plastile constraints match KWin's current minSize/fixed (frame space)": true,
+    "systemsettings-tall: no plastile error/warn or JS exceptions": true,
+    "systemsettings-tall: all app windows gone after kill": true,
+    "systemsettings-tall: fixtures retiled to two full-height tiles after close": true,
+    "systemsettings-tall: fixtures back at the baseline slots": true,
+    "systemsettings-tall: no errors through close": true,
+    "systemsettings-tall: no process of the session survives teardown": true
+   },
+   "failedChecks": {}
+  },
+  "realapps-gnome-calculator": {
+   "runs": [
+    {
+     "run": "20261017T211947",
+     "pass": true,
+     "failed": []
+    }
+   ],
+   "run": "20261017T211947",
+   "pass": true,
+   "error": null,
+   "seconds": 9.4,
+   "version": "gnome-calculator 51.0-1",
+   "xwayland": false,
+   "output": {
+    "width": 1280,
+    "height": 800
+   },
+   "expect": "overflow",
+   "note": null,
+   "x11": false,
+   "mapTimeSeconds": 3.41,
+   "resourceClass": "org.gnome.Calculator",
+   "desktopFileName": "org.gnome.Calculator",
+   "kind": {
+    "normalWindow": true,
+    "dialog": false,
+    "utility": false,
+    "transient": false,
+    "modal": false,
+    "popupWindow": false,
+    "specialWindow": false,
+    "resizeable": true,
+    "windowType": 0
+   },
+   "mustFloat": null,
+   "x11Hints": null,
+   "finalMode": "floating",
+   "decision": {
+    "mode": "tiled",
+    "source": "default",
+    "reason": "normal resizable window",
+    "ruleIds": []
+   },
+   "exception": "overflow: <window>: does not fit (stack column of 2 needs 802 px height, has 784); overflow float-new",
+   "constraint": {
+    "kwinMinSize": {
+     "width": 360,
+     "height": 616
+    },
+    "kwinMaxSize": {
+     "width": 2147483647,
+     "height": 2147483647
+    },
+    "resizeable": true,
+    "kwinFixed": false,
+    "expectedMinFrame": {
+     "width": 360,
+     "height": 616
+    },
+    "learnedMin": null,
+    "learnedMax": null,
+    "effective": {
+     "minFrame": {
+      "width": 360,
+      "height": 616
+     },
+     "maxFrame": {
+      "width": "Infinity",
+      "height": "Infinity"
+     },
+     "fixed": false
+    }
+   },
+   "frame": {
+    "x": 460,
+    "y": 92,
+    "width": 360,
+    "height": 616
+   },
+   "counters": {
+    "sinceLaunch": {
+     "solves": 2,
+     "flushes": 2,
+     "skipNoop": 4,
+     "overflow": 1,
+     "adopted": 1
+    },
+    "quiet3s": {},
+    "outstanding": 0,
+    "windowLedgerCorrections": 0
+   },
+   "extraWindows": [],
+   "logErrorsTotal": 0,
+   "sweptBeforeStop": [
+    "at-spi-bus-laun",
+    "dbus-broker",
+    "dbus-broker-lau",
+    "gvfsd",
+    "gvfsd-fuse",
+    "xdg-desktop-por",
+    "xdg-document-po",
+    "xdg-permission-"
+   ],
+   "sweptAfterStop": [],
+   "checks": {
+    "gnome-calculator: baseline two fixtures tiled": true,
+    "gnome-calculator: window mapped within 20 s": true,
+    "gnome-calculator: resourceClass in ('org.gnome.Calculator', 'gnome-calculator')": true,
+    "gnome-calculator: main window still present": true,
+    "gnome-calculator: floating window keeps its own size (not fought)": true,
+    "gnome-calculator: fixtures keep the whole area": true,
+    "gnome-calculator: minimum does not fit -> explained overflow float": true,
+    "gnome-calculator: corrections <= 2 over 3 s after settle": true,
+    "gnome-calculator: corrections <= 2 since launch (engine and window ledger)": true,
+    "gnome-calculator: converged (no outstanding requests)": true,
+    "gnome-calculator: Plastile constraints match KWin's current minSize/fixed (frame space)": true,
+    "gnome-calculator: no plastile error/warn or JS exceptions": true,
+    "gnome-calculator: all app windows gone after kill": true,
+    "gnome-calculator: fixtures retiled to two full-height tiles after close": true,
+    "gnome-calculator: fixtures back at the baseline slots": true,
+    "gnome-calculator: no errors through close": true,
+    "gnome-calculator: no process of the session survives teardown": true
+   },
+   "failedChecks": {}
+  },
+  "realapps-gnome-calculator-tall": {
+   "runs": [
+    {
+     "run": "20261017T211947",
+     "pass": true,
+     "failed": []
+    }
+   ],
+   "run": "20261017T211947",
+   "pass": true,
+   "error": null,
+   "seconds": 9.2,
+   "version": "gnome-calculator 51.0-1",
+   "xwayland": false,
+   "output": {
+    "width": 1920,
+    "height": 1200
+   },
+   "expect": "tiled",
+   "note": null,
+   "x11": false,
+   "mapTimeSeconds": 3.27,
+   "resourceClass": "org.gnome.Calculator",
+   "desktopFileName": "org.gnome.Calculator",
+   "kind": {
+    "normalWindow": true,
+    "dialog": false,
+    "utility": false,
+    "transient": false,
+    "modal": false,
+    "popupWindow": false,
+    "specialWindow": false,
+    "resizeable": true,
+    "windowType": 0
+   },
+   "mustFloat": null,
+   "x11Hints": null,
+   "finalMode": "tiled",
+   "decision": {
+    "mode": "tiled",
+    "source": "default",
+    "reason": "normal resizable window",
+    "ruleIds": []
+   },
+   "exception": null,
+   "constraint": {
+    "kwinMinSize": {
+     "width": 360,
+     "height": 616
+    },
+    "kwinMaxSize": {
+     "width": 2147483647,
+     "height": 2147483647
+    },
+    "resizeable": true,
+    "kwinFixed": false,
+    "expectedMinFrame": {
+     "width": 360,
+     "height": 616
+    },
+    "learnedMin": null,
+    "learnedMax": null,
+    "effective": {
+     "minFrame": {
+      "width": 360,
+      "height": 616
+     },
+     "maxFrame": {
+      "width": "Infinity",
+      "height": "Infinity"
+     },
+     "fixed": false
+    }
+   },
+   "frame": {
+    "x": 1059,
+    "y": 576,
+    "width": 853,
+    "height": 616
+   },
+   "counters": {
+    "sinceLaunch": {
+     "solves": 1,
+     "flushes": 1,
+     "writes": 2,
+     "skipNoop": 1,
+     "observations": 2,
+     "settled": 2,
+     "adopted": 1
+    },
+    "quiet3s": {},
+    "outstanding": 0,
+    "windowLedgerCorrections": 0
+   },
+   "extraWindows": [],
+   "logErrorsTotal": 0,
+   "sweptBeforeStop": [
+    "at-spi-bus-laun",
+    "dbus-broker",
+    "dbus-broker-lau",
+    "gvfsd",
+    "gvfsd-fuse",
+    "xdg-desktop-por",
+    "xdg-document-po",
+    "xdg-permission-"
+   ],
+   "sweptAfterStop": [],
+   "checks": {
+    "gnome-calculator-tall: baseline two fixtures tiled": true,
+    "gnome-calculator-tall: window mapped within 20 s": true,
+    "gnome-calculator-tall: resourceClass in ('org.gnome.Calculator', 'gnome-calculator')": true,
+    "gnome-calculator-tall: main window still present": true,
+    "gnome-calculator-tall: tiled with the fixtures without overlap (oracle)": true,
+    "gnome-calculator-tall: no extra untracked normal windows": true,
+    "gnome-calculator-tall: expected mode tiled": true,
+    "gnome-calculator-tall: corrections <= 2 over 3 s after settle": true,
+    "gnome-calculator-tall: corrections <= 2 since launch (engine and window ledger)": true,
+    "gnome-calculator-tall: converged (no outstanding requests)": true,
+    "gnome-calculator-tall: client >= KWin-reported minSize (client coords)": true,
+    "gnome-calculator-tall: Plastile constraints match KWin's current minSize/fixed (frame space)": true,
+    "gnome-calculator-tall: no plastile error/warn or JS exceptions": true,
+    "gnome-calculator-tall: all app windows gone after kill": true,
+    "gnome-calculator-tall: fixtures retiled to two full-height tiles after close": true,
+    "gnome-calculator-tall: fixtures back at the baseline slots": true,
+    "gnome-calculator-tall: no errors through close": true,
+    "gnome-calculator-tall: no process of the session survives teardown": true
+   },
+   "failedChecks": {}
+  },
+  "realapps-alacritty": {
+   "runs": [
+    {
+     "run": "20261017T211947",
+     "pass": true,
+     "failed": []
+    }
+   ],
+   "run": "20261017T211947",
+   "pass": true,
+   "error": null,
+   "seconds": 6.1,
+   "version": "alacritty 0.17.0-1",
+   "xwayland": false,
+   "output": {
+    "width": 1280,
+    "height": 800
+   },
+   "expect": "tiled",
+   "note": null,
+   "x11": false,
+   "mapTimeSeconds": 0.13,
+   "resourceClass": "Alacritty",
+   "desktopFileName": "Alacritty",
+   "kind": {
+    "normalWindow": true,
+    "dialog": false,
+    "utility": false,
+    "transient": false,
+    "modal": false,
+    "popupWindow": false,
+    "specialWindow": false,
+    "resizeable": true,
+    "windowType": 0
+   },
+   "mustFloat": null,
+   "x11Hints": null,
+   "finalMode": "tiled",
+   "decision": {
+    "mode": "tiled",
+    "source": "default",
+    "reason": "normal resizable window",
+    "ruleIds": []
+   },
+   "exception": null,
+   "constraint": {
+    "kwinMinSize": {
+     "width": 150,
+     "height": 150
+    },
+    "kwinMaxSize": {
+     "width": 2147483647,
+     "height": 2147483647
+    },
+    "resizeable": true,
+    "kwinFixed": false,
+    "expectedMinFrame": {
+     "width": 150,
+     "height": 178
+    },
+    "learnedMin": null,
+    "learnedMax": null,
+    "effective": {
+     "minFrame": {
+      "width": 150,
+      "height": 178
+     },
+     "maxFrame": {
+      "width": "Infinity",
+      "height": "Infinity"
+     },
+     "fixed": false
+    }
+   },
+   "frame": {
+    "x": 707,
+    "y": 404,
+    "width": 565,
+    "height": 388
+   },
+   "counters": {
+    "sinceLaunch": {
+     "solves": 1,
+     "flushes": 1,
+     "writes": 2,
+     "skipNoop": 1,
+     "observations": 2,
+     "settled": 2,
+     "adopted": 1
+    },
+    "quiet3s": {},
+    "outstanding": 0,
+    "windowLedgerCorrections": 0
+   },
+   "extraWindows": [],
+   "logErrorsTotal": 0,
+   "sweptBeforeStop": [],
+   "sweptAfterStop": [],
+   "checks": {
+    "alacritty: baseline two fixtures tiled": true,
+    "alacritty: window mapped within 20 s": true,
+    "alacritty: resourceClass in ('Alacritty', 'alacritty')": true,
+    "alacritty: main window still present": true,
+    "alacritty: tiled with the fixtures without overlap (oracle)": true,
+    "alacritty: no extra untracked normal windows": true,
+    "alacritty: expected mode tiled": true,
+    "alacritty: corrections <= 2 over 3 s after settle": true,
+    "alacritty: corrections <= 2 since launch (engine and window ledger)": true,
+    "alacritty: converged (no outstanding requests)": true,
+    "alacritty: client >= KWin-reported minSize (client coords)": true,
+    "alacritty: Plastile constraints match KWin's current minSize/fixed (frame space)": true,
+    "alacritty: no plastile error/warn or JS exceptions": true,
+    "alacritty: all app windows gone after kill": true,
+    "alacritty: fixtures retiled to two full-height tiles after close": true,
+    "alacritty: fixtures back at the baseline slots": true,
+    "alacritty: no errors through close": true,
+    "alacritty: no process of the session survives teardown": true
+   },
+   "failedChecks": {}
+  },
+  "realapps-firefox": {
+   "runs": [
+    {
+     "run": "20261017T211947",
+     "pass": true,
+     "failed": []
+    }
+   ],
+   "run": "20261017T211947",
+   "pass": true,
+   "error": null,
+   "seconds": 6.6,
+   "version": "firefox 157.0.1-1",
+   "xwayland": false,
+   "output": {
+    "width": 1280,
+    "height": 800
+   },
+   "expect": "tiled",
+   "note": null,
+   "x11": false,
+   "mapTimeSeconds": 0.55,
+   "resourceClass": "firefox",
+   "desktopFileName": "firefox",
+   "kind": {
+    "normalWindow": true,
+    "dialog": false,
+    "utility": false,
+    "transient": false,
+    "modal": false,
+    "popupWindow": false,
+    "specialWindow": false,
+    "resizeable": true,
+    "windowType": 0
+   },
+   "mustFloat": null,
+   "x11Hints": null,
+   "finalMode": "tiled",
+   "decision": {
+    "mode": "tiled",
+    "source": "default",
+    "reason": "normal resizable window",
+    "ruleIds": []
+   },
+   "exception": null,
+   "constraint": {
+    "kwinMinSize": {
+     "width": 425,
+     "height": 150
+    },
+    "kwinMaxSize": {
+     "width": 16384,
+     "height": 16384
+    },
+    "resizeable": true,
+    "kwinFixed": false,
+    "expectedMinFrame": {
+     "width": 425,
+     "height": 178
+    },
+    "learnedMin": null,
+    "learnedMax": null,
+    "effective": {
+     "minFrame": {
+      "width": 425,
+      "height": 178
+     },
+     "maxFrame": {
+      "width": 16384,
+      "height": 16412
+     },
+     "fixed": false
+    }
+   },
+   "frame": {
+    "x": 707,
+    "y": 404,
+    "width": 565,
+    "height": 388
+   },
+   "counters": {
+    "sinceLaunch": {
+     "solves": 1,
+     "flushes": 1,
+     "writes": 2,
+     "skipNoop": 1,
+     "observations": 2,
+     "settled": 2,
+     "adopted": 1
+    },
+    "quiet3s": {},
+    "outstanding": 0,
+    "windowLedgerCorrections": 0
+   },
+   "extraWindows": [],
+   "logErrorsTotal": 0,
+   "sweptBeforeStop": [
+    "at-spi-bus-laun",
+    "gvfsd",
+    "gvfsd-fuse",
+    "gvfsd-metadata",
+    "xdg-desktop-por",
+    "xdg-document-po",
+    "xdg-permission-"
+   ],
+   "sweptAfterStop": [],
+   "checks": {
+    "firefox: baseline two fixtures tiled": true,
+    "firefox: window mapped within 40 s": true,
+    "firefox: resourceClass in ('firefox', 'org.mozilla.firefox', 'Firefox')": true,
+    "firefox: main window still present": true,
+    "firefox: tiled with the fixtures without overlap (oracle)": true,
+    "firefox: no extra untracked normal windows": true,
+    "firefox: expected mode tiled": true,
+    "firefox: corrections <= 2 over 3 s after settle": true,
+    "firefox: corrections <= 2 since launch (engine and window ledger)": true,
+    "firefox: converged (no outstanding requests)": true,
+    "firefox: client >= KWin-reported minSize (client coords)": true,
+    "firefox: Plastile constraints match KWin's current minSize/fixed (frame space)": true,
+    "firefox: no plastile error/warn or JS exceptions": true,
+    "firefox: all app windows gone after kill": true,
+    "firefox: fixtures retiled to two full-height tiles after close": true,
+    "firefox: fixtures back at the baseline slots": true,
+    "firefox: no errors through close": true,
+    "firefox: no process of the session survives teardown": true
+   },
+   "failedChecks": {}
+  },
+  "realapps-chromium": {
+   "runs": [
+    {
+     "run": "20261017T211947",
+     "pass": true,
+     "failed": []
+    }
+   ],
+   "run": "20261017T211947",
+   "pass": true,
+   "error": null,
+   "seconds": 6.5,
+   "version": "chromium 153.0.8010.52-1",
+   "xwayland": false,
+   "output": {
+    "width": 1280,
+    "height": 800
+   },
+   "expect": "tiled",
+   "note": null,
+   "x11": false,
+   "mapTimeSeconds": 0.54,
+   "resourceClass": "chromium",
+   "desktopFileName": "chromium",
+   "kind": {
+    "normalWindow": true,
+    "dialog": false,
+    "utility": false,
+    "transient": false,
+    "modal": false,
+    "popupWindow": false,
+    "specialWindow": false,
+    "resizeable": true,
+    "windowType": 0
+   },
+   "mustFloat": null,
+   "x11Hints": null,
+   "finalMode": "tiled",
+   "decision": {
+    "mode": "tiled",
+    "source": "default",
+    "reason": "normal resizable window",
+    "ruleIds": []
+   },
+   "exception": null,
+   "constraint": {
+    "kwinMinSize": {
+     "width": 500,
+     "height": 87
+    },
+    "kwinMaxSize": {
+     "width": 2147483647,
+     "height": 2147483647
+    },
+    "resizeable": true,
+    "kwinFixed": false,
+    "expectedMinFrame": {
+     "width": 500,
+     "height": 87
+    },
+    "learnedMin": null,
+    "learnedMax": null,
+    "effective": {
+     "minFrame": {
+      "width": 500,
+      "height": 87
+     },
+     "maxFrame": {
+      "width": "Infinity",
+      "height": "Infinity"
+     },
+     "fixed": false
+    }
+   },
+   "frame": {
+    "x": 707,
+    "y": 404,
+    "width": 565,
+    "height": 388
+   },
+   "counters": {
+    "sinceLaunch": {
+     "solves": 1,
+     "flushes": 1,
+     "writes": 2,
+     "skipNoop": 1,
+     "observations": 2,
+     "settled": 2,
+     "adopted": 1
+    },
+    "quiet3s": {},
+    "outstanding": 0,
+    "windowLedgerCorrections": 0
+   },
+   "extraWindows": [],
+   "logErrorsTotal": 0,
+   "sweptBeforeStop": [
+    "at-spi-bus-laun",
+    "gvfsd",
+    "gvfsd-fuse",
+    "xdg-desktop-por",
+    "xdg-document-po",
+    "xdg-permission-"
+   ],
+   "sweptAfterStop": [
+    "plasma_waitforn"
+   ],
+   "checks": {
+    "chromium: baseline two fixtures tiled": true,
+    "chromium: window mapped within 40 s": true,
+    "chromium: resourceClass in ('chromium', 'Chromium', 'chromium-browser')": true,
+    "chromium: main window still present": true,
+    "chromium: tiled with the fixtures without overlap (oracle)": true,
+    "chromium: no extra untracked normal windows": true,
+    "chromium: expected mode tiled": true,
+    "chromium: corrections <= 2 over 3 s after settle": true,
+    "chromium: corrections <= 2 since launch (engine and window ledger)": true,
+    "chromium: converged (no outstanding requests)": true,
+    "chromium: client >= KWin-reported minSize (client coords)": true,
+    "chromium: Plastile constraints match KWin's current minSize/fixed (frame space)": true,
+    "chromium: no plastile error/warn or JS exceptions": true,
+    "chromium: all app windows gone after kill": true,
+    "chromium: fixtures retiled to two full-height tiles after close": true,
+    "chromium: fixtures back at the baseline slots": true,
+    "chromium: no errors through close": true,
+    "chromium: no process of the session survives teardown": true
+   },
+   "failedChecks": {}
+  },
+  "realapps-xmessage": {
+   "runs": [
+    {
+     "run": "20261017T211947",
+     "pass": true,
+     "failed": []
+    }
+   ],
+   "run": "20261017T211947",
+   "pass": true,
+   "error": null,
+   "seconds": 6.2,
+   "version": "xorg-xmessage 1.0.7-2",
+   "xwayland": true,
+   "output": {
+    "width": 1280,
+    "height": 800
+   },
+   "expect": "kind",
+   "note": "task expected fixed-size float; expectation derived from the client's hints instead",
+   "x11": true,
+   "mapTimeSeconds": 0.16,
+   "resourceClass": "Xmessage",
+   "desktopFileName": "",
+   "kind": {
+    "normalWindow": true,
+    "dialog": false,
+    "utility": false,
+    "transient": false,
+    "modal": false,
+    "popupWindow": false,
+    "specialWindow": false,
+    "resizeable": true,
+    "windowType": 0
+   },
+   "mustFloat": null,
+   "x11Hints": {
+    "exit": 0,
+    "gtkFrameExtents": null,
+    "min": null,
+    "max": null,
+    "userSize": null,
+    "programSize": {
+     "width": 182,
+     "height": 52
+    },
+    "netWmWindowType": null,
+    "transientFor": false
+   },
+   "finalMode": "tiled",
+   "decision": {
+    "mode": "tiled",
+    "source": "default",
+    "reason": "normal resizable window",
+    "ruleIds": []
+   },
+   "exception": null,
+   "constraint": {
+    "kwinMinSize": {
+     "width": 0,
+     "height": 0
+    },
+    "kwinMaxSize": {
+     "width": 2147483647,
+     "height": 2147483647
+    },
+    "resizeable": true,
+    "kwinFixed": false,
+    "expectedMinFrame": {
+     "width": 0,
+     "height": 0
+    },
+    "learnedMin": null,
+    "learnedMax": null,
+    "effective": {
+     "minFrame": {
+      "width": 0,
+      "height": 0
+     },
+     "maxFrame": {
+      "width": "Infinity",
+      "height": "Infinity"
+     },
+     "fixed": false
+    }
+   },
+   "frame": {
+    "x": 707,
+    "y": 404,
+    "width": 565,
+    "height": 388
+   },
+   "counters": {
+    "sinceLaunch": {
+     "solves": 1,
+     "flushes": 1,
+     "writes": 2,
+     "skipNoop": 1,
+     "observations": 2,
+     "observationsDuringApply": 1,
+     "settled": 2,
+     "adopted": 1
+    },
+    "quiet3s": {},
+    "outstanding": 0,
+    "windowLedgerCorrections": 0
+   },
+   "extraWindows": [],
+   "logErrorsTotal": 0,
+   "sweptBeforeStop": [
+    "at-spi-bus-laun",
+    "dbus-broker",
+    "dbus-broker-lau",
+    "gvfsd",
+    "gvfsd-fuse",
+    "xdg-desktop-por",
+    "xdg-document-po",
+    "xdg-permission-"
+   ],
+   "sweptAfterStop": [],
+   "checks": {
+    "xmessage: baseline two fixtures tiled": true,
+    "xmessage: window mapped within 20 s": true,
+    "xmessage: resourceClass in ('Xmessage', 'xmessage')": true,
+    "xmessage: main window still present": true,
+    "xmessage: tiled with the fixtures without overlap (oracle)": true,
+    "xmessage: no extra untracked normal windows": true,
+    "xmessage: normal resizable -> tiled or explained overflow": true,
+    "xmessage: corrections <= 2 over 3 s after settle": true,
+    "xmessage: corrections <= 2 since launch (engine and window ledger)": true,
+    "xmessage: converged (no outstanding requests)": true,
+    "xmessage: client >= KWin-reported minSize (client coords)": true,
+    "xmessage: Plastile constraints match KWin's current minSize/fixed (frame space)": true,
+    "xmessage: no plastile error/warn or JS exceptions": true,
+    "xmessage: all app windows gone after kill": true,
+    "xmessage: fixtures retiled to two full-height tiles after close": true,
+    "xmessage: fixtures back at the baseline slots": true,
+    "xmessage: no errors through close": true,
+    "xmessage: no process of the session survives teardown": true
+   },
+   "failedChecks": {}
+  },
+  "realapps-zenity-info": {
+   "runs": [
+    {
+     "run": "20261017T211947",
+     "pass": true,
+     "failed": []
+    }
+   ],
+   "run": "20261017T211947",
+   "pass": true,
+   "error": null,
+   "seconds": 9.1,
+   "version": "zenity 4.2.2-1",
+   "xwayland": false,
+   "output": {
+    "width": 1280,
+    "height": 800
+   },
+   "expect": "kind",
+   "note": "stand-in for kdialog --msgbox (Wayland xdg_toplevel without parent)",
+   "x11": false,
+   "mapTimeSeconds": 3.11,
+   "resourceClass": "zenity",
+   "desktopFileName": "zenity",
+   "kind": {
+    "normalWindow": true,
+    "dialog": false,
+    "utility": false,
+    "transient": false,
+    "modal": true,
+    "popupWindow": false,
+    "specialWindow": false,
+    "resizeable": false,
+    "windowType": 0
+   },
+   "mustFloat": "transient/modal",
+   "x11Hints": null,
+   "finalMode": "floating",
+   "decision": {
+    "mode": "floating",
+    "source": "type",
+    "reason": "modal transient",
+    "ruleIds": []
+   },
+   "exception": null,
+   "constraint": {
+    "kwinMinSize": {
+     "width": 300,
+     "height": 226
+    },
+    "kwinMaxSize": {
+     "width": 300,
+     "height": 226
+    },
+    "resizeable": false,
+    "kwinFixed": true,
+    "expectedMinFrame": {
+     "width": 300,
+     "height": 226
+    },
+    "learnedMin": null,
+    "learnedMax": null,
+    "effective": {
+     "minFrame": {
+      "width": 300,
+      "height": 226
+     },
+     "maxFrame": {
+      "width": 300,
+      "height": 226
+     },
+     "fixed": true
+    }
+   },
+   "frame": {
+    "x": 490,
+    "y": 287,
+    "width": 300,
+    "height": 226
+   },
+   "counters": {
+    "sinceLaunch": {
+     "flushes": 1,
+     "adopted": 1
+    },
+    "quiet3s": {},
+    "outstanding": 0,
+    "windowLedgerCorrections": 0
+   },
+   "extraWindows": [],
+   "logErrorsTotal": 0,
+   "sweptBeforeStop": [
+    "at-spi-bus-laun",
+    "dbus-broker",
+    "dbus-broker-lau",
+    "gvfsd",
+    "gvfsd-fuse",
+    "xdg-desktop-por",
+    "xdg-document-po",
+    "xdg-permission-"
+   ],
+   "sweptAfterStop": [],
+   "checks": {
+    "zenity-info: baseline two fixtures tiled": true,
+    "zenity-info: window mapped within 20 s": true,
+    "zenity-info: resourceClass in ('zenity', 'org.gnome.Zenity')": true,
+    "zenity-info: main window still present": true,
+    "zenity-info: floating window keeps its own size (not fought)": true,
+    "zenity-info: fixtures keep the whole area": true,
+    "zenity-info: transient/modal -> floating": true,
+    "zenity-info: corrections <= 2 over 3 s after settle": true,
+    "zenity-info: corrections <= 2 since launch (engine and window ledger)": true,
+    "zenity-info: converged (no outstanding requests)": true,
+    "zenity-info: Plastile constraints match KWin's current minSize/fixed (frame space)": true,
+    "zenity-info: no plastile error/warn or JS exceptions": true,
+    "zenity-info: all app windows gone after kill": true,
+    "zenity-info: fixtures retiled to two full-height tiles after close": true,
+    "zenity-info: fixtures back at the baseline slots": true,
+    "zenity-info: no errors through close": true,
+    "zenity-info: no process of the session survives teardown": true
+   },
+   "failedChecks": {}
+  }
+ },
+ "summary": {
+  "scenarios": 12,
+  "passedLatest": 10,
+  "runs": [
+   "20261017T211831",
+   "20261017T211849",
+   "20261017T211908",
+   "20261017T211947"
+  ]
+ }
+}

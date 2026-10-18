@@ -1,0 +1,711 @@
+{
+ "what": "L13/L14 native tile coexistence with the production package (tests/integration/scenarios_native.py)",
+ "kwin": "kwin 6.7.5",
+ "scenarios": {
+  "native-tree-edit-L14": {
+   "layer": "nested KWin virtual backend (not physical)",
+   "measuredAt": "2026-10-17T21:18:47",
+   "run": "20261017T211845",
+   "checks": {
+    "setup: three tiled": true,
+    "a: native tree actually changed (split, resize, remove)": true,
+    "a: Plastile-tiled windows did not move (oracle)": true,
+    "a: no Plastile writes, solves or corrections": true,
+    "a: no window gained a native tile": true,
+    "a: Plastile errors counter 0 and no warnings logged": true,
+    "a: explain: all still tiled, nativeTile false": true
+   },
+   "treeBefore": {
+    "rel": [
+     0,
+     0,
+     1,
+     1
+    ],
+    "dir": 1,
+    "windows": 0,
+    "tiles": [
+     {
+      "rel": [
+       0,
+       0,
+       0.25,
+       1
+      ],
+      "dir": 1,
+      "windows": 0,
+      "tiles": []
+     },
+     {
+      "rel": [
+       0.25,
+       0,
+       0.5,
+       1
+      ],
+      "dir": 1,
+      "windows": 0,
+      "tiles": []
+     },
+     {
+      "rel": [
+       0.75,
+       0,
+       0.25,
+       1
+      ],
+      "dir": 1,
+      "windows": 0,
+      "tiles": []
+     }
+    ]
+   },
+   "afterSplit": {
+    "rel": [
+     0,
+     0,
+     1,
+     1
+    ],
+    "dir": 1,
+    "windows": 0,
+    "tiles": [
+     {
+      "rel": [
+       0,
+       0,
+       0.25,
+       1
+      ],
+      "dir": 1,
+      "windows": 0,
+      "tiles": []
+     },
+     {
+      "rel": [
+       0.25,
+       0,
+       0.5,
+       1
+      ],
+      "dir": 1,
+      "windows": 0,
+      "tiles": []
+     },
+     {
+      "rel": [
+       0.75,
+       0,
+       0.25,
+       1
+      ],
+      "dir": 1,
+      "windows": 0,
+      "tiles": []
+     },
+     {
+      "rel": [
+       0,
+       0,
+       0.5,
+       1
+      ],
+      "dir": 1,
+      "windows": 0,
+      "tiles": []
+     },
+     {
+      "rel": [
+       0.5,
+       0,
+       0.5,
+       1
+      ],
+      "dir": 1,
+      "windows": 0,
+      "tiles": []
+     }
+    ]
+   },
+   "afterResize": {
+    "rel": [
+     0,
+     0,
+     1,
+     1
+    ],
+    "dir": 1,
+    "windows": 0,
+    "tiles": [
+     {
+      "rel": [
+       0,
+       0,
+       0.3,
+       1
+      ],
+      "dir": 1,
+      "windows": 0,
+      "tiles": []
+     },
+     {
+      "rel": [
+       0.3,
+       0,
+       0.45,
+       1
+      ],
+      "dir": 1,
+      "windows": 0,
+      "tiles": []
+     },
+     {
+      "rel": [
+       0.75,
+       0,
+       0.25,
+       1
+      ],
+      "dir": 1,
+      "windows": 0,
+      "tiles": []
+     },
+     {
+      "rel": [
+       0,
+       0,
+       0.5,
+       1
+      ],
+      "dir": 1,
+      "windows": 0,
+      "tiles": []
+     },
+     {
+      "rel": [
+       0.5,
+       0,
+       0.5,
+       1
+      ],
+      "dir": 1,
+      "windows": 0,
+      "tiles": []
+     }
+    ]
+   },
+   "afterRemove": {
+    "rel": [
+     0,
+     0,
+     1,
+     1
+    ],
+    "dir": 1,
+    "windows": 0,
+    "tiles": [
+     {
+      "rel": [
+       0,
+       0,
+       0.3,
+       1
+      ],
+      "dir": 1,
+      "windows": 0,
+      "tiles": []
+     },
+     {
+      "rel": [
+       0.3,
+       0,
+       0.45,
+       1
+      ],
+      "dir": 1,
+      "windows": 0,
+      "tiles": []
+     },
+     {
+      "rel": [
+       0.75,
+       0,
+       0.25,
+       1
+      ],
+      "dir": 1,
+      "windows": 0,
+      "tiles": []
+     },
+     {
+      "rel": [
+       0,
+       0,
+       1,
+       1
+      ],
+      "dir": 1,
+      "windows": 0,
+      "tiles": []
+     }
+    ]
+   },
+   "splitResult": {
+    "returned": "object",
+    "children": 5
+   },
+   "removeResult": {
+    "canBeRemoved": true,
+    "children": 4
+   },
+   "counterDelta": {},
+   "explain": {
+    "plastile-fixture 1": {
+     "mode": "tiled",
+     "userMode": null,
+     "nativeTile": false,
+     "slot": {
+      "x": 8,
+      "y": 8,
+      "width": 691,
+      "height": 784
+     },
+     "ledger": "settled"
+    },
+    "plastile-fixture 2": {
+     "mode": "tiled",
+     "userMode": null,
+     "nativeTile": false,
+     "slot": {
+      "x": 707,
+      "y": 8,
+      "width": 565,
+      "height": 388
+     },
+     "ledger": "settled"
+    },
+    "plastile-fixture 3": {
+     "mode": "tiled",
+     "userMode": null,
+     "nativeTile": false,
+     "slot": {
+      "x": 707,
+      "y": 404,
+      "width": 565,
+      "height": 388
+     },
+     "ledger": "settled"
+    }
+   }
+  },
+  "native-manage-L14": {
+   "layer": "nested KWin virtual backend (not physical)",
+   "measuredAt": "2026-10-17T21:18:55",
+   "run": "20261017T211845",
+   "checks": {
+    "b: manage() returned true and set w.tile synchronously": true,
+    "b: fixture 2 takes the native tile geometry (oracle, within padding)": true,
+    "b: peers retile as two full-height tiles": true,
+    "b: yield costs one solve and at most two writes (peers), no corrections": true,
+    "b: explain mode native, nativeTile true": true,
+    "b: native tile not fought afterwards (no writes in 1.5 s, frame unchanged)": true,
+    "b: unmanage() returned true and cleared w.tile synchronously": true,
+    "b: unmanage: no Plastile write (no snap back into the layout)": true,
+    "b: unmanage: still yielded (mode native, nativeTile false, no slot)": true,
+    "b: unmanage: peers keep the two-tile layout": true,
+    "b: peer resize solve leaves the released window alone": true,
+    "b: released window stays put (1.5 s, no writes)": true,
+    "b: adopt-native retiles three (oracle)": true,
+    "b: adopt-native: explain tiled, nativeTile false": true,
+    "b: adopt-native: one solve, no corrections": true,
+    "b: no Plastile errors/warnings": true,
+    "b: tileChanged observed for manage (true) and unmanage (false)": true
+   },
+   "manageCall": {
+    "returned": true,
+    "hasTileSync": true,
+    "sameTile": true,
+    "padding": 4,
+    "tile": {
+     "x": 0,
+     "y": 0,
+     "width": 320,
+     "height": 800
+    }
+   },
+   "unmanageCall": {
+    "returned": true,
+    "hasTileSync": false
+   },
+   "explainBefore": {
+    "mode": "tiled",
+    "userMode": null,
+    "nativeTile": false,
+    "slot": {
+     "x": 707,
+     "y": 8,
+     "width": 565,
+     "height": 388
+    },
+    "ledger": "settled"
+   },
+   "explainManaged": {
+    "mode": "native",
+    "userMode": null,
+    "nativeTile": true,
+    "slot": null,
+    "ledger": "idle"
+   },
+   "explainReleased": {
+    "mode": "native",
+    "userMode": null,
+    "nativeTile": false,
+    "slot": null,
+    "ledger": "idle"
+   },
+   "explainAdopted": {
+    "mode": "tiled",
+    "userMode": "tiled",
+    "nativeTile": false,
+    "slot": {
+     "x": 707,
+     "y": 8,
+     "width": 565,
+     "height": 388
+    },
+    "ledger": "settled"
+   },
+   "frames": {
+    "pre": {
+     "plastile-fixture 1": {
+      "x": 8,
+      "y": 8,
+      "width": 691,
+      "height": 784
+     },
+     "plastile-fixture 2": {
+      "x": 707,
+      "y": 8,
+      "width": 565,
+      "height": 388
+     },
+     "plastile-fixture 3": {
+      "x": 707,
+      "y": 404,
+      "width": 565,
+      "height": 388
+     }
+    },
+    "managed": {
+     "plastile-fixture 1": {
+      "x": 8,
+      "y": 8,
+      "width": 691,
+      "height": 784
+     },
+     "plastile-fixture 2": {
+      "x": 4,
+      "y": 4,
+      "width": 314,
+      "height": 792
+     },
+     "plastile-fixture 3": {
+      "x": 707,
+      "y": 8,
+      "width": 565,
+      "height": 784
+     }
+    },
+    "released": {
+     "plastile-fixture 1": {
+      "x": 8,
+      "y": 8,
+      "width": 691,
+      "height": 784
+     },
+     "plastile-fixture 2": {
+      "x": 707,
+      "y": 8,
+      "width": 565,
+      "height": 388
+     },
+     "plastile-fixture 3": {
+      "x": 707,
+      "y": 8,
+      "width": 565,
+      "height": 784
+     }
+    }
+   },
+   "releasedFrameEqualsPreManageFrame": true,
+   "counterDelta": {
+    "manage": {
+     "solves": 1,
+     "flushes": 1,
+     "writes": 1,
+     "skipNoop": 1,
+     "observations": 2,
+     "settled": 1,
+     "external": 1
+    },
+    "unmanage": {
+     "observations": 1
+    },
+    "peerResize": {
+     "solves": 1,
+     "commands": 1,
+     "writes": 2,
+     "observations": 2,
+     "settled": 2
+    },
+    "adopt": {
+     "solves": 2,
+     "commands": 2,
+     "writes": 3,
+     "skipNoop": 2,
+     "observations": 3,
+     "settled": 3
+    }
+   },
+   "tileChanged": {
+    "sequence": [
+     "PLT-MARK manage-begin",
+     "PLT-MARK manage-end",
+     "PLT-TC plastile-fixture 2 true",
+     "PLT-MARK unmanage-begin",
+     "PLT-MARK unmanage-end",
+     "PLT-TC plastile-fixture 2 false"
+    ],
+    "emittedInsideManage": [],
+    "emittedInsideUnmanage": []
+   }
+  },
+  "native-editor-toggle-L14": {
+   "layer": "nested KWin virtual backend (not physical)",
+   "measuredAt": "2026-10-17T21:18:58",
+   "run": "20261017T211845",
+   "checks": {
+    "c: 'Edit Tiles' kglobalaccel action exists": true,
+    "c: editor became active then inactive (activeEffects)": true,
+    "c: windows unchanged while the editor is open (oracle)": true,
+    "c: layout unchanged after closing the editor (oracle)": true,
+    "c: no writes/solves/corrections caused by the toggle": true,
+    "c: no Plastile errors/warnings": true,
+    "c: still three tiled": true
+   },
+   "action": "Edit Tiles",
+   "tileShortcutCandidates": [
+    "Edit Tiles"
+   ],
+   "activeEffects": {
+    "before": [
+     "blur",
+     "scale"
+    ],
+    "open": [
+     "blur",
+     "tileseditor"
+    ],
+    "closed": [
+     "blur"
+    ]
+   },
+   "counterDelta": {}
+  },
+  "native-quicktile-repeat-L13": {
+   "layer": "nested KWin virtual backend (not physical)",
+   "measuredAt": "2026-10-17T21:19:04",
+   "run": "20261017T211845",
+   "checks": {
+    "d: quick tile left kept (left half, native tile)": true,
+    "d: yielded: explain mode native": true,
+    "d: peers retiled as two": true,
+    "d: repeated quick tile left: no Plastile work, still native": true,
+    "d: toggle-float #1 from native re-adopts: three tiled, tile association released": true,
+    "d: toggle-float #2 floats at the remembered (quick-tile) rect, peers two": true,
+    "d: toggle-float #3 returns the window to the layout": true,
+    "d: no Plastile errors/warnings": true
+   },
+   "quickTile": {
+    "frame": {
+     "x": 0,
+     "y": 0,
+     "width": 640,
+     "height": 800
+    },
+    "explain": {
+     "mode": "native",
+     "userMode": null,
+     "nativeTile": true,
+     "slot": null,
+     "ledger": "idle"
+    }
+   },
+   "repeat": {
+    "kwinNoop": true,
+    "explain": {
+     "mode": "native",
+     "userMode": null,
+     "nativeTile": true,
+     "slot": null,
+     "ledger": "idle"
+    },
+    "counterDelta": {}
+   },
+   "toggles": [
+    {
+     "toggle": 1,
+     "explain": {
+      "mode": "tiled",
+      "userMode": "tiled",
+      "nativeTile": false,
+      "slot": {
+       "x": 707,
+       "y": 404,
+       "width": 565,
+       "height": 388
+      },
+      "ledger": "settled"
+     },
+     "frame": {
+      "x": 707,
+      "y": 404,
+      "width": 565,
+      "height": 388
+     },
+     "nativeTile": false,
+     "threeTiledErrors": [],
+     "peersTwo": false
+    },
+    {
+     "toggle": 2,
+     "explain": {
+      "mode": "floating",
+      "userMode": "floating",
+      "nativeTile": false,
+      "slot": null,
+      "ledger": "settled"
+     },
+     "frame": {
+      "x": 0,
+      "y": 0,
+      "width": 640,
+      "height": 800
+     },
+     "nativeTile": false,
+     "threeTiledErrors": [
+      "plastile-fixture 2 closer than 8px to the area edge: {'x': 0, 'y': 0, 'width': 640, 'height': 800}",
+      "plastile-fixture 1 overlaps plastile-fixture 2"
+     ],
+     "peersTwo": true
+    },
+    {
+     "toggle": 3,
+     "explain": {
+      "mode": "tiled",
+      "userMode": "tiled",
+      "nativeTile": false,
+      "slot": {
+       "x": 707,
+       "y": 404,
+       "width": 565,
+       "height": 388
+      },
+      "ledger": "settled"
+     },
+     "frame": {
+      "x": 707,
+      "y": 404,
+      "width": 565,
+      "height": 388
+     },
+     "nativeTile": false,
+     "threeTiledErrors": [],
+     "peersTwo": false
+    }
+   ]
+  },
+  "native-adopt-noop-L13": {
+   "layer": "nested KWin virtual backend (not physical)",
+   "measuredAt": "2026-10-17T21:19:05",
+   "run": "20261017T211845",
+   "checks": {
+    "e: adopt-native on a tiled window is a noop with a reason": true,
+    "e: no writes/solves": true,
+    "e: windows unchanged (oracle)": true,
+    "e: no Plastile errors/warnings": true
+   },
+   "result": {
+    "command": "plastile.window.adopt-native",
+    "status": "noop",
+    "reason": "window is not natively tiled",
+    "targets": [],
+    "revision": 0,
+    "requested": false
+   },
+   "counterDelta": {
+    "commands": 1
+   }
+  },
+  "native-unmanage-config-L14": {
+   "layer": "nested KWin virtual backend (not physical)",
+   "measuredAt": "2026-10-17T21:19:08",
+   "run": "20261017T211845",
+   "checks": {
+    "setup: released window yielded (mode native, nativeTile false)": true,
+    "config activation does not re-adopt the released window (mode stays native)": false,
+    "config activation does not move the released window (oracle)": false,
+    "no Plastile errors/warnings": true
+   },
+   "released": {
+    "frame": {
+     "x": 707,
+     "y": 8,
+     "width": 565,
+     "height": 388
+    },
+    "explain": {
+     "mode": "native",
+     "userMode": null,
+     "nativeTile": false,
+     "slot": null,
+     "ledger": "idle"
+    }
+   },
+   "afterConfigActivation": {
+    "frame": {
+     "x": 709,
+     "y": 406,
+     "width": 563,
+     "height": 386
+    },
+    "explain": {
+     "mode": "tiled",
+     "userMode": null,
+     "nativeTile": false,
+     "slot": {
+      "x": 709,
+      "y": 406,
+      "width": 563,
+      "height": 386
+     },
+     "ledger": "settled"
+    }
+   },
+   "counterDelta": {
+    "solves": 1,
+    "flushes": 1,
+    "writes": 3,
+    "observations": 3,
+    "settled": 3
+   }
+  }
+ },
+ "notes": {
+  "reproduce": "python3 tests/integration/run.py --only native-tree-edit-L14,native-manage-L14,native-editor-toggle-L14,native-quicktile-repeat-L13,native-adopt-noop-L13,native-unmanage-config-L14",
+  "tileChanged": "measured: Window.tileChanged fires for Tile.manage (true) and Tile.unmanage (false), but not inside the call: both emissions were logged after the call returned (w.tile itself changes synchronously)",
+  "unmanageGeometry": "measured: after Tile.unmanage KWin itself restores the window's pre-manage frame (here the old 3-window slot, overlapping a peer); Plastile issued no write",
+  "toggleFloatFromNative": "measured: from a native (quick-tile) yield, the first window.toggle-float re-adopts into the layout, the second floats at the quick-tile rect, the third tiles again. The task wording 'toggle-float twice returns the window to the layout' does not hold after exactly two toggles; it holds after one (and three)",
+  "defect": "native-unmanage-config-L14 FAILS: after Tile.unmanage the window is yielded only because engine.nativeTileChanged(false) leaves mode 'native' without reclassifying; any later reclassify (configuration activation reclassifies every window) derives mode from r.nativeTile=false and silently re-tiles it"
+ }
+}

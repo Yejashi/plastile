@@ -1,0 +1,115 @@
+{
+ "implementationCommit": "819a91c16fd44b9910ab2bba8051bf33aae55e76",
+ "implementationDirty": false,
+ "kwin": "kwin 6.7.5",
+ "layer": "nested KWin virtual backend (not physical)",
+ "startedAt": "2026-10-17T21:10:14",
+ "purpose": "T34/P14: 100 Plastile reload cycles with pending work and window churn, nested KWin",
+ "p14": {
+  "probe": "P14",
+  "cycles": 100,
+  "fixtures": 4,
+  "delayedFixtureMs": 200,
+  "openCloseEachCycle": true,
+  "pendingAtUnload": "resize.grow with one 200 ms-delayed client",
+  "cyclesWithOutstandingAtUnload": 100,
+  "maxOutstandingAtUnload": 4,
+  "connections": {
+   "baseline": 71,
+   "min": 71,
+   "max": 71,
+   "constant": true
+  },
+  "windows": {
+   "baseline": 4,
+   "constant": true
+  },
+  "shortcutNames": {
+   "first": 213,
+   "min": 213,
+   "max": 213
+  },
+  "rssKiB": {
+   "beforeCycles": 249768,
+   "afterCycles": 255808,
+   "delta": 6040,
+   "byCycle": [
+    249852,
+    251944,
+    255100,
+    253052,
+    256236,
+    255232,
+    252640,
+    252960,
+    256124,
+    255984
+   ],
+   "secondHalfDelta": 576
+  },
+  "deadInstanceLines": 0,
+  "errorWarnExceptionLines": 0,
+  "errorWarnSamples": [],
+  "finalCounters": {
+   "solves": 3,
+   "flushes": 3,
+   "commands": 0,
+   "commandsQueued": 0,
+   "writes": 10,
+   "corrections": 0,
+   "skipOutstanding": 0,
+   "skipNoop": 3,
+   "skipDiverged": 0,
+   "observations": 10,
+   "observationsDuringApply": 0,
+   "settled": 9,
+   "stale": 0,
+   "partial": 0,
+   "external": 0,
+   "learned": 0,
+   "diverged": 0,
+   "deadlines": 0,
+   "overflow": 0,
+   "adopted": 5,
+   "removed": 1,
+   "staleEvents": 0,
+   "errors": 0,
+   "raises": 0,
+   "activations": 0
+  },
+  "finalLayoutErrors": [],
+  "secondsTotal": 80.2,
+  "failures": [],
+  "pass": true
+ },
+ "control": {
+  "probe": "P14-control",
+  "script": "probes/lifecycle/empty-package (empty Item)",
+  "cycles": 100,
+  "fixtures": 4,
+  "openCloseEachCycle": true,
+  "shortcutNames": {
+   "min": 167,
+   "max": 167
+  },
+  "rssKiB": {
+   "beforeCycles": 243676,
+   "afterCycles": 248624,
+   "delta": 4948,
+   "byCycle": [
+    245000,
+    248064,
+    247992,
+    248536,
+    249384,
+    248464,
+    248208,
+    248324,
+    248468,
+    248284
+   ],
+   "secondHalfDelta": 744
+  },
+  "secondsTotal": 5.4
+ }
+}

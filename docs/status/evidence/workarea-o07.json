@@ -1,0 +1,397 @@
+{
+ "id": "workarea-o07",
+ "task": "O07 work areas from wlr-layer-shell panels (exclusive zones)",
+ "date": "2026-10-17",
+ "layer": "nested KWin 6.7.5 virtual backend, 1280x800 per output (not physical; no plasmashell)",
+ "implementationCommit": "819a91c (working tree dirty: src/package unchanged by this task)",
+ "fixture": {
+  "mode": "--panel EDGE:SIZE [--output NAME]",
+  "protocol": "zwlr_layer_shell_v1 v5 (vendored unmodified XML, sha256 87e0b9c837aecd6977f76f3c47d73088b7159871f5d979dc1840f6cadb5e2ed8)",
+  "surface": "layer top, namespace 'dock', anchor EDGE + both perpendicular edges, exclusive_zone SIZE, keyboard interactivity none, size SIZE x 0",
+  "build": "make -C fixtures/client: -Wall -Wextra -Werror, no warnings (measured)",
+  "observedConfigures": {
+   "bottom:40": "1280x40 (one configure)",
+   "left:48 alone": "48x800; after a bottom:40 panel was added: reconfigured to 48x760 (KWin stacks exclusive zones)"
+  }
+ },
+ "kwinReportsForPanel": {
+  "source": "measured (one-shot KWin script oracle)",
+  "bottom": [
+   {
+    "dock": true,
+    "windowType": 2,
+    "normalWindow": false,
+    "managed": true,
+    "resourceClass": "plastile-fixture",
+    "resourceName": "plastile-fixture",
+    "caption": "",
+    "output": "Virtual-0",
+    "frame": {
+     "x": 0,
+     "y": 760,
+     "width": 1280,
+     "height": 40
+    }
+   }
+  ],
+  "leftAndBottom": [
+   {
+    "dock": true,
+    "windowType": 2,
+    "normalWindow": false,
+    "managed": true,
+    "resourceClass": "plastile-fixture",
+    "resourceName": "plastile-fixture",
+    "caption": "",
+    "output": "Virtual-0",
+    "frame": {
+     "x": 0,
+     "y": 0,
+     "width": 48,
+     "height": 760
+    }
+   },
+   {
+    "dock": true,
+    "windowType": 2,
+    "normalWindow": false,
+    "managed": true,
+    "resourceClass": "plastile-fixture",
+    "resourceName": "plastile-fixture",
+    "caption": "",
+    "output": "Virtual-0",
+    "frame": {
+     "x": 0,
+     "y": 760,
+     "width": 1280,
+     "height": 40
+    }
+   }
+  ],
+  "notes": [
+   "dock=true, windowType=2 (Dock), normalWindow=false, managed=true, caption empty",
+   "resourceClass/resourceName = the fixture executable name (layer surfaces carry no app id); oracle queries by resourceClass include the panel"
+  ]
+ },
+ "workArea": {
+  "source": "measured",
+  "bottom40": {
+   "before": {
+    "x": 0,
+    "y": 0,
+    "width": 1280,
+    "height": 800
+   },
+   "after": {
+    "x": 0,
+    "y": 0,
+    "width": 1280,
+    "height": 760
+   }
+  },
+  "left48+bottom40": {
+   "x": 48,
+   "y": 0,
+   "width": 1232,
+   "height": 760
+  },
+  "panelOnVirtual-1": "Virtual-1 area height 800 -> 760, Virtual-0 unchanged"
+ },
+ "currentPackage": {
+  "label": "measured with the shared bundle as built from src at 819a91c",
+  "scenarios": {
+   "workarea-panel-add-remove-O07": {
+    "pass": false,
+    "checks": 18,
+    "passed": 12,
+    "failed": {
+     "a: 3 tiles inside the new area, no overlap, gaps>=8": [
+      "plastile-fixture 1 outside area {'x': 8, 'y': 8, 'width': 691, 'height': 784}",
+      "plastile-fixture 3 outside area {'x': 707, 'y': 404, 'width': 565, 'height': 388}"
+     ],
+     "a: lowest tile bottom == area.bottom - 8 (no double subtraction)": {
+      "lowestBottom": 792,
+      "expected": 752
+     },
+     "a: retiled exactly once (solves +1)": {
+      "flushes": 2,
+      "writes": 2,
+      "corrections": 2,
+      "observations": 4,
+      "observationsDuringApply": 1,
+      "settled": 2,
+      "external": 2,
+      "adopted": 1
+     },
+     "a: adapter topology path triggered (trace has 'topology')": {
+      "add": 1,
+      "mode": 1,
+      "settled": 2,
+      "write": 2
+     },
+     "b: retiled exactly once (solves +1)": {
+      "flushes": 1,
+      "removed": 1
+     },
+     "b: adapter topology path triggered (trace has 'topology')": {
+      "remove": 1
+     }
+    }
+   },
+   "workarea-panel-before-load-O07": {
+    "pass": true,
+    "checks": 5,
+    "passed": 5,
+    "failed": {}
+   },
+   "workarea-two-panels-O07": {
+    "pass": false,
+    "checks": 15,
+    "passed": 10,
+    "failed": {
+     "d-left: 3 tiles inside the new area, no overlap, gaps>=8": [
+      "plastile-fixture 1 outside area {'x': 8, 'y': 8, 'width': 691, 'height': 784}",
+      "plastile-fixture 1 closer than 8px to the area edge: {'x': 8, 'y': 8, 'width': 691, 'height': 784}"
+     ],
+     "d-left: leftmost tile x == area.x + 8": {
+      "leftmost": 8,
+      "expected": 56
+     },
+     "d-left: retiled exactly once (solves +1)": {
+      "flushes": 1,
+      "writes": 1,
+      "corrections": 1,
+      "observations": 2,
+      "observationsDuringApply": 1,
+      "settled": 1,
+      "external": 1,
+      "adopted": 1
+     },
+     "d-left: adapter topology path triggered (trace has 'topology')": {
+      "add": 1,
+      "mode": 1,
+      "settled": 1,
+      "write": 1
+     },
+     "d-both: each tile written at most once (writes <= 3)": {
+      "solves": 1,
+      "flushes": 1,
+      "writes": 4,
+      "corrections": 1,
+      "observations": 6,
+      "observationsDuringApply": 1,
+      "settled": 4,
+      "partial": 1,
+      "external": 1,
+      "adopted": 1
+     }
+    }
+   },
+   "workarea-panel-one-output-O07": {
+    "pass": false,
+    "checks": 12,
+    "passed": 8,
+    "failed": {
+     "e-Virtual-1: 2 tiles inside the new area, no overlap, gaps>=8": [
+      "plastile-fixture 2 outside area {'x': 1288, 'y': 8, 'width': 691, 'height': 784}",
+      "plastile-fixture 3 closer than 8px to the area edge: {'x': 1987, 'y': 0, 'width': 565, 'height': 760}"
+     ],
+     "e-Virtual-1: lowest tile bottom == area.bottom - 8 (no double subtraction)": {
+      "lowestBottom": 792,
+      "expected": 752
+     },
+     "e-Virtual-1: Virtual-1's context retiled exactly once": {
+      "solves": 0,
+      "counters": {
+       "flushes": 2,
+       "writes": 1,
+       "corrections": 1,
+       "observations": 3,
+       "settled": 1,
+       "external": 1,
+       "adopted": 1
+      }
+     },
+     "e-Virtual-1: adapter topology path triggered (trace has 'topology')": {
+      "add": 1,
+      "mode": 1,
+      "settled": 1,
+      "write": 1
+     }
+    }
+   }
+  },
+  "finding": "FAIL. Adding or removing a dock does not schedule a topology update: no 'topology' trace record, zero solves. The dock's frame is already final when workspace.windowAdded fires, so the adapter's dock frameGeometryChanged hook never fires for a new panel, and the hook is released on removal. KWin itself moves windows that intersect the new strut (Plastile counts them as 'external') and Plastile then writes a correction back to the stale plan, leaving tiles under the panel (lowest tile bottom 792 with area bottom 760). After removal, tiles keep the reduced area. Initial tiling with a pre-existing panel is correct (clientArea already reflects it)."
+ },
+ "prototypes": {
+  "label": "measured with private bundles built from a scratch copy of src (not committed; shared bundle untouched)",
+  "A_dockAddRemoveSchedulesTopology": {
+   "scenarios": {
+    "workarea-panel-add-remove-O07": {
+     "pass": false,
+     "checks": 18,
+     "passed": 17,
+     "failed": {
+      "a: each tile written at most once (writes <= 3)": {
+       "solves": 1,
+       "flushes": 2,
+       "writes": 4,
+       "corrections": 1,
+       "observations": 6,
+       "observationsDuringApply": 1,
+       "settled": 4,
+       "partial": 1,
+       "external": 1,
+       "adopted": 1
+      }
+     }
+    },
+    "workarea-panel-before-load-O07": {
+     "pass": true,
+     "checks": 5,
+     "passed": 5,
+     "failed": {}
+    },
+    "workarea-two-panels-O07": {
+     "pass": false,
+     "checks": 15,
+     "passed": 13,
+     "failed": {
+      "d-left: each tile written at most once (writes <= 3)": {
+       "solves": 1,
+       "flushes": 2,
+       "writes": 4,
+       "corrections": 1,
+       "observations": 5,
+       "observationsDuringApply": 1,
+       "settled": 4,
+       "external": 1,
+       "adopted": 1
+      },
+      "d-both: each tile written at most once (writes <= 3)": {
+       "solves": 1,
+       "flushes": 1,
+       "writes": 4,
+       "corrections": 1,
+       "observations": 6,
+       "observationsDuringApply": 1,
+       "settled": 4,
+       "partial": 1,
+       "external": 1,
+       "adopted": 1
+      }
+     }
+    },
+    "workarea-panel-one-output-O07": {
+     "pass": true,
+     "checks": 12,
+     "passed": 12,
+     "failed": {}
+    }
+   },
+   "finding": "geometry correct; one stale correction write precedes the retile (4 writes for 3 tiles)"
+  },
+  "A+B_correctionRechecksArea": {
+   "scenarios": {
+    "workarea-panel-add-remove-O07": {
+     "pass": false,
+     "checks": 18,
+     "passed": 17,
+     "failed": {
+      "a: retiled exactly once (solves +1)": {
+       "solves": 2,
+       "flushes": 2,
+       "writes": 3,
+       "skipOutstanding": 3,
+       "observations": 5,
+       "settled": 3,
+       "partial": 1,
+       "external": 1,
+       "adopted": 1
+      }
+     }
+    },
+    "workarea-panel-before-load-O07": {
+     "pass": true,
+     "checks": 5,
+     "passed": 5,
+     "failed": {}
+    },
+    "workarea-two-panels-O07": {
+     "pass": false,
+     "checks": 15,
+     "passed": 13,
+     "failed": {
+      "d-left: retiled exactly once (solves +1)": {
+       "solves": 2,
+       "flushes": 2,
+       "writes": 3,
+       "skipOutstanding": 3,
+       "observations": 4,
+       "settled": 3,
+       "external": 1,
+       "adopted": 1
+      },
+      "d-both: retiled exactly once (solves +1)": {
+       "solves": 2,
+       "flushes": 2,
+       "writes": 3,
+       "skipOutstanding": 3,
+       "observations": 5,
+       "settled": 3,
+       "partial": 1,
+       "external": 1,
+       "adopted": 1
+      }
+     }
+    },
+    "workarea-panel-one-output-O07": {
+     "pass": true,
+     "checks": 12,
+     "passed": 12,
+     "failed": {}
+    }
+   },
+   "finding": "writes 3, but the correction flush and the topology flush both solve (solves +2)"
+  },
+  "A+B+C_topologySkipsUnchangedAreas": {
+   "scenarios": {
+    "workarea-panel-add-remove-O07": {
+     "pass": true,
+     "checks": 18,
+     "passed": 18,
+     "failed": {}
+    },
+    "workarea-panel-before-load-O07": {
+     "pass": true,
+     "checks": 5,
+     "passed": 5,
+     "failed": {}
+    },
+    "workarea-two-panels-O07": {
+     "pass": true,
+     "checks": 15,
+     "passed": 15,
+     "failed": {}
+    },
+    "workarea-panel-one-output-O07": {
+     "pass": true,
+     "checks": 12,
+     "passed": 12,
+     "failed": {}
+    }
+   },
+   "finding": "all O07 checks pass: solves +1, writes == tiles, zero writes/solves for the other output"
+  },
+  "A+B+C_regression": {
+   "coreSuite": "27/27 scenarios (scenarios.py + scenarios_workarea.py)",
+   "unitTests": "112/112 node --test tests/core/*.test.ts on the patched copy"
+  }
+ },
+ "toplevelPathRegression": "adopt-open-close PASS 7/7 with the rebuilt fixture against the shared bundle (measured)",
+ "notPerformed": [
+  "physical session with plasmashell panels",
+  "autohide / panel resize / X11 _NET_WM_STRUT docks",
+  "fractional scale with panels"
+ ]
+}

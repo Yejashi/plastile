@@ -1,0 +1,302 @@
+{
+ "task": "T16",
+ "layer": "pure (node:test) + nested KWin virtual backend (not physical)",
+ "kwin": "kwin 6.7.5",
+ "implementationCommit": "819a91c16fd44b9910ab2bba8051bf33aae55e76",
+ "implementationDirty": true,
+ "unit": {
+  "file": "tests/core/classify.test.ts",
+  "tests": 15,
+  "pass": 15,
+  "fail": 0,
+  "npmTestTotal": {
+   "tests": 112,
+   "pass": 112,
+   "fail": 0
+  }
+ },
+ "integration": {
+  "runs": 3,
+  "perRun": [
+   {
+    "classify-builtin-T16": {
+     "pass": true,
+     "failedChecks": []
+    },
+    "classify-rule-title-T16": {
+     "pass": true,
+     "failedChecks": []
+    },
+    "classify-rule-border-Q10-T16": {
+     "pass": false,
+     "failedChecks": [
+      "explain 1 output contains the border rule id 'no-borders'"
+     ]
+    }
+   },
+   {
+    "classify-builtin-T16": {
+     "pass": true,
+     "failedChecks": []
+    },
+    "classify-rule-title-T16": {
+     "pass": true,
+     "failedChecks": []
+    },
+    "classify-rule-border-Q10-T16": {
+     "pass": false,
+     "failedChecks": [
+      "explain 1 output contains the border rule id 'no-borders'"
+     ]
+    }
+   },
+   {
+    "classify-builtin-T16": {
+     "pass": true,
+     "failedChecks": []
+    },
+    "classify-rule-title-T16": {
+     "pass": true,
+     "failedChecks": []
+    },
+    "classify-rule-border-Q10-T16": {
+     "pass": false,
+     "failedChecks": [
+      "explain 1 output contains the border rule id 'no-borders'"
+     ]
+    }
+   }
+  ],
+  "scenarios": {
+   "classify-builtin-T16": {
+    "pass": true,
+    "checks": {
+     "load with only krunner + portal: zero writes, zero solves": true,
+     "krunner frame unchanged by load": true,
+     "portal frame unchanged by load": true,
+     "ordinary fixtures tile beside the excluded/floating windows": true,
+     "tiled pair fills the area width (krunner/portal do not take slots)": true,
+     "krunner frame unchanged after neighbours opened": true,
+     "portal frame unchanged after neighbours opened": true,
+     "user move of krunner/portal: not corrected, no writes": true,
+     "late krunner: frame unchanged, no writes, tiled pair untouched": true,
+     "trace: zero writes for krunner and portal window ids": true,
+     "trace: writes recorded for the tiled fixtures (trace is live)": true,
+     "explain krunner: excluded, builtin": true,
+     "explain portal: floating, builtin": true,
+     "explain fixture 1: tiled by default": true,
+     "no model errors": true
+    },
+    "observed": {
+     "explainKrunner": {
+      "appId": "org.kde.krunner",
+      "kind": "normal",
+      "mode": "excluded",
+      "userMode": null,
+      "decision": {
+       "mode": "excluded",
+       "source": "builtin",
+       "reason": "shell/compositor surface org.kde.krunner",
+       "ruleIds": []
+      },
+      "exception": null
+     },
+     "explainPortal": {
+      "appId": "xdg-desktop-portal-kde",
+      "kind": "normal",
+      "mode": "floating",
+      "userMode": null,
+      "decision": {
+       "mode": "floating",
+       "source": "builtin",
+       "reason": "helper application xdg-desktop-portal-kde",
+       "ruleIds": []
+      },
+      "exception": null
+     },
+     "explainTiled": {
+      "appId": "plastile-fixture",
+      "kind": "normal",
+      "mode": "tiled",
+      "userMode": null,
+      "decision": {
+       "mode": "tiled",
+       "source": "default",
+       "reason": "normal resizable window",
+       "ruleIds": []
+      },
+      "exception": null
+     },
+     "writesByWindow": {
+      "krunner9": 0,
+      "portal8": 0,
+      "krunner7": 0
+     },
+     "loadCounters": {
+      "writes": 0,
+      "solves": 0
+     }
+    }
+   },
+   "classify-rule-title-T16": {
+    "pass": true,
+    "checks": {
+     "configuration accepted (no rejection/warnings)": true,
+     "fixtures 1 and 3 tile without overlap": true,
+     "fixtures 1 and 3 split the area width (2 holds no slot)": true,
+     "fixture 2 floats: frame unchanged by load": true,
+     "trace: zero writes for fixture 2": true,
+     "explain 2: floating by rule with ruleIds ['float-two']": true,
+     "explain 1: tiled by default, no ruleIds": true,
+     "retitle: former 3 now floats by rule": true,
+     "retitle: former 2 now tiles by default": true,
+     "retitle: 1 and x2 tile without overlap": true,
+     "no model errors": true
+    },
+    "observed": {
+     "rule": {
+      "schemaVersion": 1,
+      "rules": [
+       {
+        "id": "float-two",
+        "match": {
+         "title": {
+          "glob": "plastile-fixture 2*"
+         }
+        },
+        "actions": {
+         "mode": "floating"
+        }
+       }
+      ]
+     },
+     "explainFloating": {
+      "appId": "plastile-fixture",
+      "kind": "normal",
+      "mode": "floating",
+      "userMode": null,
+      "decision": {
+       "mode": "floating",
+       "source": "rule",
+       "reason": "floating by rule",
+       "ruleIds": [
+        "float-two"
+       ]
+      },
+      "exception": null
+     },
+     "explainTiled": {
+      "appId": "plastile-fixture",
+      "kind": "normal",
+      "mode": "tiled",
+      "userMode": null,
+      "decision": {
+       "mode": "tiled",
+       "source": "default",
+       "reason": "normal resizable window",
+       "ruleIds": []
+      },
+      "exception": null
+     },
+     "explainRetitledFloating": {
+      "appId": "plastile-fixture",
+      "kind": "normal",
+      "mode": "floating",
+      "userMode": null,
+      "decision": {
+       "mode": "floating",
+       "source": "rule",
+       "reason": "floating by rule",
+       "ruleIds": [
+        "float-two"
+       ]
+      },
+      "exception": null
+     },
+     "explainRetitledTiled": {
+      "appId": "plastile-fixture",
+      "kind": "normal",
+      "mode": "tiled",
+      "userMode": null,
+      "decision": {
+       "mode": "tiled",
+       "source": "default",
+       "reason": "normal resizable window",
+       "ruleIds": []
+      },
+      "exception": null
+     }
+    }
+   },
+   "classify-rule-border-Q10-T16": {
+    "pass": false,
+    "checks": {
+     "pre-load: 1 and 2 decorated, 3 user-borderless": true,
+     "configuration accepted (no rejection/warnings)": true,
+     "tiled: all three noBorder true": true,
+     "tiled: no overlap": true,
+     "explain 1 output contains the border rule id 'no-borders'": false,
+     "user border change on 2 kept through solves": true,
+     "solves ran after the user change (the check exercised the engine)": true,
+     "toggle-float: border restored while floating, removed again when re-tiled": true,
+     "unload: fixture 1 border restored (noBorder false)": true,
+     "unload: fixture 2 keeps the user's in-session change (false)": true,
+     "Q10 unload: fixture 3 keeps the user's pre-load noBorder true (not clobbered)": true
+    },
+    "observed": {
+     "rule": {
+      "schemaVersion": 1,
+      "rules": [
+       {
+        "id": "no-borders",
+        "match": {
+         "appId": "plastile-fixture"
+        },
+        "actions": {
+         "border": "none"
+        }
+       }
+      ]
+     },
+     "preLoad": {
+      "plastile-fixture 1": false,
+      "plastile-fixture 2": false,
+      "plastile-fixture 3": true
+     },
+     "tiled": {
+      "plastile-fixture 1": true,
+      "plastile-fixture 2": true,
+      "plastile-fixture 3": true
+     },
+     "afterUserChange": {
+      "plastile-fixture 1": true,
+      "plastile-fixture 2": false,
+      "plastile-fixture 3": true
+     },
+     "toggleFloat": {
+      "floating": false,
+      "retiled": true
+     },
+     "afterUnload": {
+      "plastile-fixture 1": false,
+      "plastile-fixture 2": false,
+      "plastile-fixture 3": true
+     },
+     "explain": {
+      "appId": "plastile-fixture",
+      "kind": "normal",
+      "mode": "tiled",
+      "userMode": null,
+      "decision": {
+       "mode": "tiled",
+       "source": "default",
+       "reason": "normal resizable window",
+       "ruleIds": []
+      },
+      "exception": null
+     }
+    }
+   }
+  }
+ }
+}
