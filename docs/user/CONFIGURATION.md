@@ -4,7 +4,7 @@
 
 **Where it lives.** Everything is in `~/.config/kwinrc` under `[Script-plastile]`, written by the settings dialog or by hand ([INSTALL](INSTALL.md#4-settings-dialog)).
 
-**When changes take effect.** After a KWin reconfigure (`qdbus6 org.kde.KWin /KWin reconfigure`) or when the script is (re)enabled. The dialog's Apply alone does **not** reach the running script, and neither does the *Reload configuration* shortcut on its own ([measured, see INSTALL](INSTALL.md#applying-settings-changes)).
+**When changes take effect.** After a KWin reconfigure (`qdbus6 org.kde.KWin /KWin reconfigure`) or when the script is (re)enabled. The dialog's Apply alone does **not** reach the running script, and neither does the *Reload configuration* shortcut on its own ([measured, see INSTALL](INSTALL.md#applying-settings-changes)). An activation re-evaluates only what changed: a settings change (gaps, ratios, layout, overrides) re-arranges only the screens and desktops whose resolved settings differ and re-classifies no window, except where `enabled` flipped; a rule change re-classifies every window and re-arranges only where a window joined or left the layout; a diagnostics-only change touches no window.
 
 ## Flat keys
 
@@ -242,7 +242,7 @@ All three examples were compiled with the runtime's own `compileConfig` in Node,
 
 ## How windows are classified
 
-**When.** The decision is made when a window appears. It is made again when the window's application id or resource name, transience or modality, or its desktop or output membership change, when a new configuration is activated, and when a desktop is renamed. A title change re-evaluates only if some rule uses `title`. The window type is read with the other metadata at those moments; KWin does not report a later type change.
+**When.** The decision is made when a window appears. It is made again when the window's application id or resource name, transience or modality, or its desktop or output membership change, when a configuration with changed rules is activated (or one that enables or disables tiling where the window is), and when a desktop is renamed. A title change re-evaluates only if some rule uses `title`. The window type is read with the other metadata at those moments; KWin does not report a later type change.
 
 **Size constraints** (minimum and maximum size, fixed size) have no change notification in KWin 6.7.5. Plastile re-reads them, and re-classifies if they changed, at these points only:
 

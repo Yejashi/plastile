@@ -53,6 +53,7 @@ qdbus6 org.kde.kglobalaccel /component/kwin org.kde.kglobalaccel.Component.invok
 | `counters.learned` | Times a client's accepted size taught Plastile a tighter minimum or maximum than the client advertised. A client that has not answered at all teaches nothing. |
 | `counters.accepted` | Times a client settled at most 32 px short of its slot (for example a terminal sizing itself in whole character cells) and Plastile accepted that size instead of learning a maximum. |
 | `counters.overflow` | Windows floated because the layout could not fit them. |
+| `counters.reclassified` | Window classifications: when a window appears, when its identity, transience, membership or size constraints change, and on a configuration activation that changed rules (a gap or ratio change adds none). |
 | `counters.adopted`, `removed`, `staleEvents` | Windows adopted and dropped, and events ignored because they referred to a window generation that no longer exists. |
 | `counters.errors` | Caught exceptions in commands, flushes or restores. Should stay 0. |
 | `outstanding` | Windows with a geometry request not yet settled. Should return to 0 shortly after any action. |

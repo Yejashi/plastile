@@ -60,6 +60,19 @@ export interface EngineOptions {
   traceEnabled?: boolean;
   /** Optional high-resolution clock (ns) for measurement builds; never required. */
   clockNs?: () => number;
+  /**
+   * configure() only: what this activation changed (src/config/diff.ts). Absent: anything may
+   * have, as on a first activation, so everything is re-evaluated.
+   */
+  changes?: ConfigChanges;
+}
+
+/** The parts of a configuration activation the engine depends on. */
+export interface ConfigChanges {
+  /** Window rule matching may give other results. */
+  readonly rules: boolean;
+  /** Context settings may resolve to other values. */
+  readonly settings: boolean;
 }
 
 /** Timing of the most recent solve+apply (only when a clockNs is supplied). */
@@ -470,20 +483,57 @@ export class Engine {
     this.ensureFlush();
   }
 
-  /** New configuration activated: settings/rules functions replaced atomically. */
+  /**
+   * New configuration activated: settings/rules functions replaced atomically. Only what the
+   * change can affect is invalidated (T26, BEHAVIOR §12). A rule change re-evaluates every
+   * window's rules, and a context is re-solved only where a window joined or left. A settings
+   * change re-solves the contexts whose effective settings differ (a gap-only change
+   * reclassifies nothing) and reclassifies windows only where tiling was enabled or disabled.
+   * An activation that changed neither (diagnostics) touches no window or context.
+   */
   configure(opts: EngineOptions): void {
-    this.trace.record(this.svc.now(), "configure");
+    const { changes, ...next } = opts;
+    const rules = changes ? changes.rules : true, settings = changes ? changes.settings : true;
+    this.trace.record(this.svc.now(), "configure", undefined, { rules, settings });
+    const prevSettingsFor = this.opts.settingsFor;
     const before = new Map<Ctx, ContextSettings>();
-    for (const c of this.contexts.values()) if (c.states["master-stack"] !== undefined) before.set(c, this.ctxSettings(c));
-    this.opts = { ...this.opts, ...opts, deadlineMs: opts.deadlineMs ?? this.opts.deadlineMs,
-                  readinessMs: opts.readinessMs ?? this.opts.readinessMs };
-    if (opts.traceCapacity !== undefined && opts.traceCapacity !== this.trace.capacity) this.trace.resize(opts.traceCapacity);
-    if (opts.traceEnabled !== undefined) this.trace.enabled = opts.traceEnabled;
-    for (const c of this.contexts.values()) c.settings = null;
-    for (const [c, old] of before) this.rebaseMasterStack(c, old);
-    for (const r of this.recs.values()) this.reclassify(r, "config");
-    for (const c of this.contexts.values()) this.markDirty(c.key);
-    this.retryOverflow("*");
+    if (settings) for (const c of this.contexts.values()) before.set(c, this.ctxSettings(c));
+    this.opts = { ...this.opts, ...next, deadlineMs: next.deadlineMs ?? this.opts.deadlineMs,
+                  readinessMs: next.readinessMs ?? this.opts.readinessMs };
+    if (next.traceCapacity !== undefined && next.traceCapacity !== this.trace.capacity) this.trace.resize(next.traceCapacity);
+    if (next.traceEnabled !== undefined) this.trace.enabled = next.traceEnabled;
+    // Whether tiling was enabled or disabled per context id, filled as contexts are compared.
+    const toggled = new Map<ContextId, boolean>();
+    if (settings) {
+      for (const [c, old] of before) {
+        c.settings = null;
+        const now = this.ctxSettings(c);
+        toggled.set(c.id, old.enabled !== now.enabled);
+        if (sameValue(old, now)) continue;
+        if (c.states["master-stack"] !== undefined) this.rebaseMasterStack(c, old);
+        this.markDirty(c.key);
+        this.retryOverflow(c.id); // layout parameters changed (BEHAVIOR §11)
+      }
+    }
+    if (rules) {
+      for (const r of this.recs.values()) this.reclassify(r, "config");
+      this.retryOverflow("*");
+    } else if (settings) {
+      // Windows floating where tiling was disabled have no context object to compare.
+      const prev = (k: ContextKey): ContextSettings => (prevSettingsFor ? prevSettingsFor(k) : DEFAULT_SETTINGS);
+      for (const r of this.recs.values()) {
+        if (r.mode === "pending" || r.mode === "excluded") continue;
+        const key = this.singleContextKey(r.membership);
+        if (key === null) continue;
+        const id = contextId(key);
+        let flipped = toggled.get(id);
+        if (flipped === undefined) {
+          flipped = prev(key).enabled !== this.settingsFor(key).enabled;
+          toggled.set(id, flipped);
+        }
+        if (flipped) this.reclassify(r, "config");
+      }
+    }
     this.ensureFlush();
   }
 
@@ -567,6 +617,7 @@ export class Engine {
   }
 
   private reclassify(r: Rec, why: string): void {
+    this.counters.reclassified++;
     const key = this.singleContextKey(r.membership);
     r.rules = this.opts.rulesFor ? this.opts.rulesFor(r.meta, key) : null;
     r.decision = classify({
@@ -1485,6 +1536,17 @@ function suspensionsOf(s: WindowStates): Set<Suspension> {
 function sameSet<T>(a: Set<T>, b: Set<T>): boolean {
   if (a.size !== b.size) return false;
   for (const v of a) if (!b.has(v)) return false;
+  return true;
+}
+
+/** Structural equality of plain data (settings): primitives, arrays and plain objects. */
+function sameValue(a: unknown, b: unknown): boolean {
+  if (a === b) return true;
+  if (typeof a !== "object" || typeof b !== "object" || a === null || b === null) return false;
+  const x = a as Record<string, unknown>, y = b as Record<string, unknown>;
+  const keys = Object.keys(x);
+  if (keys.length !== Object.keys(y).length) return false;
+  for (const k of keys) if (!sameValue(x[k], y[k])) return false;
   return true;
 }
 
