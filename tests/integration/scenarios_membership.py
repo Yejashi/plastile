@@ -114,13 +114,26 @@ def kwin_frames(lst: Listener, offset: int) -> dict[str, list[dict]]:
     return out
 
 
+def steps(seq: list[dict]) -> list[dict]:
+    """The rectangles KWin reported, consecutive repeats merged (one per write: a write is one
+    frameGeometryChanged in these sessions)."""
+    out: list[dict] = []
+    for r in seq:
+        if not out or not near(out[-1], r, 0.5):
+            out.append(r)
+    return out
+
+
 def pingpong(seq: list[dict]) -> list[dict]:
     """Rectangles KWin reported again after the window had left them for another (A -> B -> A)."""
-    steps: list[dict] = []
-    for r in seq:
-        if not steps or not near(steps[-1], r, 0.5):
-            steps.append(r)
-    return [r for k, r in enumerate(steps) if any(near(r, p, 0.5) for p in steps[:max(0, k - 1)])]
+    st = steps(seq)
+    return [r for k, r in enumerate(st) if any(near(r, p, 0.5) for p in st[:max(0, k - 1)])]
+
+
+def unrecorded(kw: dict[str, list[dict]], writes: dict[str, int]) -> dict:
+    """KWin's side of "one target per window": frames that changed without a Plastile write in
+    the same interval, or that went through more than one rectangle (listener vs trace)."""
+    return {k: v for k, v in kw.items() if k not in writes or len(steps(v)) > 1}
 
 
 def covered(frames: list[dict], area: dict) -> float:
@@ -201,6 +214,12 @@ class Run:
               not r["writes"] and r["delta"].get("solves", 0) == 0, {"writes": r["writes"], "delta": r["delta"]})
         pp = {k: pingpong(v) for k, v in r["kwin"].items() if pingpong(v)}
         c(f"{label}: no frame goes back to a rectangle it left (listener, every fixture)", not pp, pp)
+        # Independent of Plastile's own records: KWin moved only windows the trace says were
+        # written, each to one rectangle; an already applied context moved nothing at all.
+        un = unrecorded(r["kwin"], r["writes"])
+        c(f"{label}: KWin changed only frames Plastile wrote, each to one rectangle"
+          + ("; nothing at all for an applied context" if applied else "") + " (listener vs trace)",
+          not un and not (applied and any(r["kwin"].values())), {"kwin": r["kwin"], "writes": r["writes"]})
         self.view(label, desk, act, r["counters"])
 
 
@@ -592,6 +611,7 @@ def send_activity_switch(out: Path, c: Checks):
             time.sleep(1.0)  # past the 400 ms delayed ack and the 750 ms request deadline: late leftovers would show
             b = s.settle(timeout=6, quiet=0.3)
             if case == "same-turn":
+                fired = s.log_lines(r"PLT-SAMETURN sent", hoff)
                 s.kw.unload("plt-sameturn")
             recs = trace_since(trace(s), t0)
             vis = [k for k, x in enumerate(recs) if x.get("kind") == "visibility"]
@@ -604,11 +624,14 @@ def send_activity_switch(out: Path, c: Checks):
                            "between": between, "writesBeforeSwitch": wb, "writesAfterSwitch": wa, "delta": delta(a, b),
                            "visibilityRecords": len(vis),
                            "kwinFrames": {k: len(v) for k, v in kwin_frames(run.lst, mark).items()}}
+            # Same-turn: both handlers run inside one emission; which of the two scripts KWin calls
+            # first is recorded ("order"), not assumed.
             c(f"{case}: end state: B and Desktop 1 shown (no follow), 2 on A/Two (oracle)",
               landed and current_activity(s) == B and current_desktop(s) == D1 and st[2]["desktops"] == [D2]
               and st[2]["activities"] == [A], {"current": activity_state(s), "desktop": current_desktop(s), "2": st[2]})
             c(f"{case}: KWin reported the switch to Plastile (trace visibility record)", bool(vis), facts[case])
             if case == "same-turn":
+                c("same-turn: the helper sent 2 inside KWin's currentActivityChanged emission (log)", len(fired) == 1, fired)
                 c("same-turn: the send and the switch reached Plastile with no flush work between them (trace)",
                   between is not None and not any(k in ("solve", "write") for k in between), between)
                 c("same-turn: nothing written at all: the source context was hidden by the time Plastile flushed (trace)",
@@ -618,6 +641,10 @@ def send_activity_switch(out: Path, c: Checks):
                   wb in ({}, {fx(3): 1}), wb)
             c(f"{case}: no write after the switch, no corrections (trace)", not wa and delta(a, b).get("corrections", 0) == 0,
               {"after": wa, "delta": delta(a, b)})
+            race_kw = kwin_frames(run.lst, mark)
+            un = unrecorded(race_kw, {**wb, **wa})
+            c(f"{case}: over the race KWin changed only frames Plastile wrote, each to one rectangle (listener vs trace)",
+              not un, {"kwin": race_kw, "writes": {"before": wb, "after": wa}})
             f1 = s.frames()
             c(f"{case}: B's windows and the multi-activity window untouched (oracle)",
               all(near(f1[fx(i)]["frame"], keepB[i], 0.5) for i in (5, 6, 7)), {i: f1[fx(i)]["frame"] for i in (5, 6, 7)})
