@@ -28,7 +28,7 @@ The 23 core integration scenarios in `tests/integration/scenarios.py` passed: 10
 
 - Adopting existing windows at load, tiling new windows and reflowing on close, with bounded work for a burst of nine windows.
 - Master/stack, BSP and monocle layouts, and switching between them with window order preserved. BSP rotate, mirror, reinsert and equalize. The floating layout does not fight user geometry.
-- Focus, swap and grow/shrink commands. Focus commands never write geometry. Commands with nothing to do write nothing.
+- Focus, swap and grow/shrink commands. Focus commands never write geometry (except in the experimental scrolling layout, where focus scrolls). Commands with nothing to do write nothing.
 - Clients that resize themselves, ignore requested sizes or clamp them. Plastile corrects such a client at most twice per target, then leaves it alone with an explanation. A slow client (300 ms) that reverses a grow/shrink still ends where the model says.
 - Fullscreen, maximize and minimize are respected: KWin keeps ownership while the state lasts, peers reflow, and the window returns to its slot afterwards. Overlapping states are handled.
 - Native quick tiling (`Meta+arrow`) is kept and not snapped back. *Adopt natively tiled window* brings the window back into the layout.
@@ -93,6 +93,24 @@ Every tiled window gets the whole area (minus the outer gap), and the focused or
 ### Floating
 
 Plastile places nothing in a floating context, and windows keep ordinary KDE behaviour. When a context is switched to floating, each window that has a remembered floating rectangle is restored to it once.
+
+### Scrolling (experimental)
+
+**Off unless you select it**: set `layout` to `scrolling` (flat key or JSON, globally or in an override), or run *Scrolling layout* in a context. It is experimental: tested with mock and nested-KWin scenarios only, and not yet checked on physical monitors (see below).
+
+- **Strip:** each screen and desktop has a horizontal strip of columns. A new window gets a new column right of the focused one. Windows can share a column, stacked vertically (*consume* / *expel*). A column's width is a fraction of the usable width: ½ by default; *width-cycle* steps through ⅓, ½, ⅔ and full width. A column is never narrower than the minimum width of a window in it.
+- **Scrolling follows focus:** focusing a window by command, click, Alt+Tab or an application activating it scrolls the strip so the window's column is fully visible. With `lazy` (default) the strip scrolls only as far as needed and never past its ends; with `centered` the focused column is centred. An activated dialog floats, and its parent's column is scrolled into view. Scrolling moves windows without resizing them and is instantaneous (no animation).
+- **Columns off screen** (not fully visible) are moved outside every monitor: above their own screen, or below, left or right of it when that place is taken, always nearest their own screen so KWin keeps them there. They keep their size. Plastile never hides windows with transparency, minimizing or taskbar flags. If a screen is surrounded by other screens on all four sides, columns that do not fit are kept at the screen's edge, overlapping, and the explanation says so.
+- **Leaving:** suspending, unloading, switching the context to another layout, disabling tiling there, a rule floating a window, or *Reconcile* brings every off-screen window back inside its screen's usable area.
+
+Settings (JSON only): `scrolling.policy` (`lazy` or `centered`), `scrolling.defaultWidth` and `scrolling.widthPresets` ([CONFIGURATION](CONFIGURATION.md#scrolling-layout-settings-experimental)). Commands: [SHORTCUTS](SHORTCUTS.md#scrolling-layout-experimental).
+
+Known limitations:
+
+- **Physical-session checks are open.** That windows moved outside every monitor show no pixels and take no pointer input on neighbouring monitors at mixed scales is an inference from KWin's behaviour; the nested test compositor cannot show where pixels land on real monitors.
+- When screens change (a monitor plugged, a scale changed), KWin pulls off-screen windows partly back on screen. Plastile moves them out again in the same update (measured about 5 ms in nested KWin), so they may flash briefly.
+- The strip (columns, widths, scroll position) lasts for the KWin session only; it is not saved.
+- Unlike the other layouts, focus changes move windows here, so focus is more expensive than in master/stack. No latency comparison with a scrolling baseline has been made.
 
 ### Overflow
 

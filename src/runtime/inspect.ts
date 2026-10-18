@@ -37,7 +37,7 @@ type Obj = Record<string, unknown>;
 
 const LAYOUT_NAMES: Readonly<Record<string, string>> = {
   "master-stack": "master and stack", bsp: "binary split (BSP)", monocle: "monocle (one window shown at a time)",
-  floating: "floating (this desktop does not tile)",
+  floating: "floating (this desktop does not tile)", scrolling: "scrolling (experimental)",
 };
 
 const SUSPENSIONS: Readonly<Record<string, string>> = {

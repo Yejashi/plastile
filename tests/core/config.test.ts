@@ -555,3 +555,24 @@ test("256-rule config: compile and resolve timings (Node, informational)", (t) =
   assert.ok(cachedMs < 0.05, `cached resolve ${cachedMs} ms`);
   assert.ok(compileMs < 250, `compile ${compileMs} ms`);
 });
+
+test("scrolling (experimental): layout value and settings validate; arrays replace; errors name the path", () => {
+  const s = json({ schemaVersion: 1, defaults: { layout: "scrolling", scrolling: { policy: "centered", defaultWidth: 0.4 } },
+    overrides: [{ id: "o", match: { desktopId: "d2" }, set: { scrolling: { widthPresets: [0.25, 0.75] } } }] });
+  assert.equal(s.defaults.layout, "scrolling");
+  assert.deepEqual(s.defaults.scrolling, { policy: "centered", defaultWidth: 0.4, widthPresets: DEFAULT_SETTINGS.scrolling.widthPresets });
+  const ctx = resolveContext(s, { outputName: "DP-1", desktopId: "d2", desktopName: "", activityId: "a" }).settings;
+  assert.deepEqual(ctx.scrolling, { policy: "centered", defaultWidth: 0.4, widthPresets: [0.25, 0.75] });
+  assert.ok(Object.isFrozen(ctx.scrolling.widthPresets));
+  assert.equal(ok(compileConfig({ layout: "scrolling" }, 1)).defaults.layout, "scrolling", "the flat key accepts it too");
+  assert.deepEqual(DEFAULT_SETTINGS.scrolling, { policy: "lazy", defaultWidth: 0.5, widthPresets: [1 / 3, 1 / 2, 2 / 3, 1] });
+  const bad = (scrolling: unknown) => errors({ configJson: JSON.stringify({ schemaVersion: 1, defaults: { scrolling } }) });
+  assert.match(bad({ policy: "eager" })[0], /^defaults\.scrolling\.policy: /);
+  assert.match(bad({ defaultWidth: 0 })[0], /^defaults\.scrolling\.defaultWidth: must be greater than 0 and at most 1/);
+  assert.match(bad({ defaultWidth: 1.5 })[0], /^defaults\.scrolling\.defaultWidth: /);
+  assert.match(bad({ widthPresets: [] })[0], /^defaults\.scrolling\.widthPresets: must hold 1\.\.8/);
+  assert.match(bad({ widthPresets: [0.5, 0.5] })[0], /^defaults\.scrolling\.widthPresets\[1\]: presets must be strictly ascending/);
+  assert.match(bad({ widthPresets: [0.5, 2] })[0], /^defaults\.scrolling\.widthPresets\[1\]: /);
+  assert.match(bad({ widthPresets: "1/2" })[0], /^defaults\.scrolling\.widthPresets: /);
+  assert.match(bad({ speed: 1 })[0], /^defaults\.scrolling\.speed: unknown key/);
+});

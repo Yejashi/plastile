@@ -85,7 +85,7 @@ export interface Decision {
   readonly ruleIds: readonly string[];
 }
 
-export type LayoutKind = "master-stack" | "bsp" | "monocle" | "floating";
+export type LayoutKind = "master-stack" | "bsp" | "monocle" | "floating" | "scrolling";
 
 export interface GapSettings {
   readonly inner: number;
@@ -106,6 +106,16 @@ export interface BspSettings {
   readonly ratioStep: number;
 }
 
+/** Scrolling layout (experimental, ADR-014, docs/design/SCROLLING.md). */
+export interface ScrollingSettings {
+  /** "centered": the focused column is centred when it fits; "lazy": scroll just enough to show it. */
+  readonly policy: "centered" | "lazy";
+  /** Width of a new column as a fraction of the usable width, (0, 1]. */
+  readonly defaultWidth: number;
+  /** Fractions the width-cycle command steps through, ascending, each in (0, 1]. */
+  readonly widthPresets: readonly number[];
+}
+
 /** Effective per-context settings after precedence resolution (M5 provides them). */
 export interface ContextSettings {
   readonly enabled: boolean;
@@ -113,6 +123,7 @@ export interface ContextSettings {
   readonly gaps: GapSettings;
   readonly masterStack: MasterStackSettings;
   readonly bsp: BspSettings;
+  readonly scrolling: ScrollingSettings;
   readonly overflow: "float-new";
   readonly singleWindowGaps: boolean;
   /** Send to desktop/output also shows that desktop there and activates the window (T24). */
