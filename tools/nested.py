@@ -197,6 +197,20 @@ class NestedKwin:
         return self._kwin.pid if self._kwin else None
 
     # ----------------------------------------------------------------- D-Bus
+    def compositing_type(self) -> str | None:
+        """'OpenGL' or 'QPainter' from KWin's support information (None if unreadable).
+
+        Without a DRM render node KWin's virtual backend composites with QPainter,
+        and GL-only effects such as the tile editor never load.
+        """
+        try:
+            data = self.call("/KWin", "org.kde.KWin", "supportInformation")
+        except NestedError:
+            return None
+        info = data[0] if isinstance(data, list) and data else data  # busctl --json: [value]
+        m = re.search(r"^Compositing Type: (\S+)", info if isinstance(info, str) else "", re.M)
+        return m.group(1) if m else None
+
     def call(self, path: str, interface: str, method: str, signature: str = "", *args,
              service: str = "org.kde.KWin", timeout: float = 10.0):
         cmd = ["busctl", f"--address={self.bus_address}", "--json=short",

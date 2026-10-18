@@ -28,11 +28,21 @@ from configparser import ConfigParser
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "tools"))
+import sysinfo  # noqa: E402
 PACKAGES = [
     "kwin", "plasma-workspace", "plasma-desktop", "breeze", "kdecoration", "kscreen", "libkscreen",
     "qt6-base", "qt6-declarative", "qt6-wayland", "kcoreaddons", "kconfig", "kglobalaccel", "kpackage",
     "kwindowsystem", "plasma-activities", "xorg-xwayland", "wayland", "wayland-protocols", "mesa",
     "libdrm", "linux", "nodejs", "npm", "typescript", "cmake", "gcc", "clang", "python", "python-dbus",
+]
+# Debian/Ubuntu names for the same components (Ubuntu 26.10 sandbox, tools/sandbox/).
+DPKG_PACKAGES = [
+    "kwin-wayland", "kwin-common", "plasma-workspace", "plasma-desktop", "kwin-style-breeze", "libkdecorations3-6",
+    "kscreen", "libkscreen-bin", "libqt6core6t64", "libqt6qml6", "qt6-wayland", "libkf6coreaddons6",
+    "libkf6config6", "libkf6globalaccel6", "libkf6package6", "libkf6windowsystem6", "kactivitymanagerd",
+    "xwayland", "libwayland-client0", "wayland-protocols", "libgl1-mesa-dri", "libdrm2", "cmake", "gcc",
+    "clang", "python3", "python3-dbus",
 ]
 TOOLS = ["kwin_wayland", "kpackagetool6", "qdbus6", "busctl", "dbus-daemon", "kscreen-doctor", "qml6",
          "wayland-scanner", "cmake", "g++", "clang", "node", "npm", "tsc", "python3", "getcap",
@@ -48,11 +58,8 @@ def run(cmd: list[str], timeout: float = 10.0) -> tuple[int, str]:
 
 
 def packages() -> dict[str, str | None]:
-    out = {}
-    for name in PACKAGES:
-        code, text = run(["pacman", "-Q", name])
-        out[name] = text.split()[1] if code == 0 and text.strip() else None
-    return out
+    names = DPKG_PACKAGES if sysinfo.packaging() == "dpkg" else PACKAGES
+    return {name: sysinfo.package_version(name) for name in names}
 
 
 def os_release() -> dict[str, str]:

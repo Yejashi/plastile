@@ -19,14 +19,14 @@ import zipfile
 from pathlib import Path
 
 from scenarios import scenario, Checks, three  # noqa: F401
-from harness import Session, delta, near, tiling_errors, Input, centre, ROOT, PLUGIN  # noqa: F401
+from harness import Session, delta, evidence_file, near, tiling_errors, Input, centre, ROOT, PLUGIN  # noqa: F401
 
 sys.path.insert(0, str(ROOT / "tools"))
 import release  # noqa: E402
 from nested import NestedKwin  # noqa: E402
 
 INSTALL = ROOT / "tools/install.sh"
-EVIDENCE = ROOT / "docs/status/evidence/package-install.json"
+EVIDENCE = evidence_file("package-install.json")
 STARTED = r"plastile info started "
 STOPPED = r"plastile info stopped"
 

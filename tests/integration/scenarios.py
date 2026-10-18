@@ -17,6 +17,14 @@ def scenario(name):
     return deco
 
 
+class Skipped(Exception):
+    """A capability the scenario needs is absent from this environment.
+
+    run.py reports the scenario as SKIP with this reason, by ID. A skip is never
+    counted as a pass, and `run.py --fail-on-skip` turns it into a failure.
+    """
+
+
 class Checks:
     def __init__(self):
         self.items: dict[str, dict] = {}

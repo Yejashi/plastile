@@ -10,15 +10,15 @@ from __future__ import annotations
 
 import json
 import re
-import shutil
 import time
 from pathlib import Path
 
-from scenarios import scenario, Checks
+from scenarios import scenario, Checks, Skipped
 from harness import Session, near, tiling_errors, ROOT
+import sysinfo  # tools/ is on sys.path via harness  # noqa: E402
 
 LISTENER = ROOT / "probes/contexts/listen.js"
-KAMD = "/usr/lib/kactivitymanagerd"
+KAMD = sysinfo.find_helper("kactivitymanagerd")  # /usr/lib (Arch), /usr/lib/<triplet>/libexec (Debian)
 UUID = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
 NIL_UUID = "00000000-0000-0000-0000-000000000000"
 ERRORS = r"plastile (error|warn)|TypeError|ReferenceError"
@@ -228,7 +228,7 @@ def per_output_desktops(out: Path, c: Checks):
 
 # ---------------------------------------------------------------- E08
 def kamd_available() -> bool:
-    return Path(KAMD).exists() or shutil.which("kactivitymanagerd") is not None
+    return KAMD is not None
 
 
 def activity_state(s: Session) -> dict:
@@ -237,7 +237,7 @@ def activity_state(s: Session) -> dict:
 
 
 def start_kamd(s: Session, timeout: float = 15.0) -> dict:
-    s.kw.spawn([KAMD if Path(KAMD).exists() else shutil.which("kactivitymanagerd")])
+    s.kw.spawn([KAMD])
     deadline = time.monotonic() + timeout
     st = activity_state(s)
     while time.monotonic() < deadline:
@@ -270,8 +270,7 @@ def window_acts(s: Session) -> dict[str, list]:
 def activities(out: Path, c: Checks):
     facts: dict = {}
     if not kamd_available():
-        c("E08: kactivitymanagerd available", False, "not installed: E08 untestable in nested sessions")
-        return
+        raise Skipped("kactivitymanagerd not found (PATH, /usr/lib, libexec): E08 needs the activity service")
     with Session(out, config={"traceCapacity": 8192}) as s:
         facts["withoutService"] = activity_state(s)
         off = listen(s)
@@ -401,8 +400,7 @@ def activities_late(out: Path, c: Checks):
     """
     facts: dict = {}
     if not kamd_available():
-        c("E08: kactivitymanagerd available", False, "not installed")
-        return
+        raise Skipped("kactivitymanagerd not found (PATH, /usr/lib, libexec): E08 needs the activity service")
     with Session(out, config={"traceCapacity": 8192}) as s:
         off = listen(s)
         for i in (1, 2, 3):
@@ -458,8 +456,7 @@ def activities_add_second(out: Path, c: Checks):
     """
     facts: dict = {}
     if not kamd_available():
-        c("E08: kactivitymanagerd available", False, "not installed")
-        return
+        raise Skipped("kactivitymanagerd not found (PATH, /usr/lib, libexec): E08 needs the activity service")
     with Session(out, config={"traceCapacity": 8192}) as s:
         off = listen(s)
         A = start_kamd(s)["current"]

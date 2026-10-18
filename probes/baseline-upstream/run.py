@@ -58,11 +58,12 @@ sys.path.insert(0, str(ROOT / "tools"))
 sys.path.insert(0, str(ROOT / "tests/integration"))
 from nested import NestedKwin, NestedError, _terminate  # noqa: E402
 from harness import Session, FIXTURE, tiling_errors  # noqa: E402
+import sysinfo  # noqa: E402
 
 DEFAULT_ZIP = Path("/tmp/claude-1000/upstream/nightly-zip/polonium.kwinscript")
 POLONIUM_PIN = "227967ed448205d42b5e63e4cc4b868d72606467"
 POLONIUM_ID = "polonium"
-KAMD = "/usr/lib/kactivitymanagerd"
+KAMD = sysinfo.find_helper("kactivitymanagerd")
 NS = 1_000_000_000
 
 WORKLOADS = {
@@ -101,6 +102,8 @@ class Activities:
     def start(self, kw: NestedKwin) -> None:
         env = kw.env()
         env["QT_QPA_PLATFORM"] = "offscreen"
+        if KAMD is None:
+            raise NestedError("kactivitymanagerd not found (PATH, /usr/lib, libexec)")
         self.proc = subprocess.Popen([KAMD], env=env, stdout=open(kw.root / "kamd.log", "wb"),
                                      stderr=subprocess.STDOUT)
 
@@ -232,8 +235,7 @@ def snapshot(kw: NestedKwin) -> dict:
 
 def versions() -> dict:
     kwin = subprocess.run(["kwin_wayland", "--version"], capture_output=True, text=True).stdout.strip()
-    pk = subprocess.run(["pacman", "-Q", "kwin", "kactivitymanagerd", "qt6-declarative"], capture_output=True,
-                        text=True).stdout.split("\n")
+    pk = [sysinfo.component_version(c) for c in ("kwin", "kactivitymanagerd", "qt6-declarative")]
     head = (ROOT / ".git/HEAD").read_text().strip()
     commit = head
     if head.startswith("ref: "):

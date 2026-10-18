@@ -23,12 +23,13 @@ import subprocess
 import time
 from pathlib import Path
 
-from harness import NestedError, ROOT, Session, delta, near, tiling_errors
+from harness import NestedError, ROOT, Session, delta, evidence_file, near, tiling_errors
+import sysinfo  # tools/ is on sys.path via harness  # noqa: E402
 from scenarios import Checks, scenario
 
 XCLIENT = ROOT / "fixtures/xclient/build/plastile-xclient"
 XCLASS = "plastile-xclient"
-EVIDENCE = ROOT / "docs/status/evidence/xwayland-g10.json"
+EVIDENCE = evidence_file("xwayland-g10.json")
 GAP = 8
 FIELDS = (
     "({id: String(w.internalId), caption: w.caption, resourceClass: w.resourceClass, resourceName: w.resourceName,"
@@ -227,7 +228,7 @@ def record(name: str, data: dict, out: Path, c: Checks) -> None:
     except (OSError, ValueError):
         ev = {}
     kwin = subprocess.run(["kwin_wayland", "--version"], capture_output=True, text=True).stdout.strip()
-    xw = subprocess.run(["pacman", "-Q", "xorg-xwayland"], capture_output=True, text=True).stdout.strip()
+    xw = sysinfo.component_version("xwayland")
     ev.update({"what": "G10 XWayland fixture scenarios (tests/integration/scenarios_xwayland.py)",
                "kwin": kwin, "xwayland": xw or None, "client": "fixtures/xclient/build/plastile-xclient (xcb)"})
     ev.setdefault("scenarios", {})[name] = data

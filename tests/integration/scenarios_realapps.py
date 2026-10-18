@@ -33,6 +33,7 @@ import time
 from pathlib import Path
 
 from harness import NestedError, ROOT, Session, delta, tiling_errors
+import sysinfo  # tools/ is on sys.path via harness  # noqa: E402
 from scenarios import Checks, scenario
 
 RAW_DIR = ROOT / "artifacts/realapps"
@@ -53,13 +54,9 @@ KIND_KEYS = ("normalWindow", "dialog", "utility", "transient", "modal", "popupWi
              "windowType")
 
 
-def pacman_version(binary: str) -> str | None:
-    path = shutil.which(binary)
-    if not path:
-        return None
-    r = subprocess.run(["pacman", "-Qo", path], capture_output=True, text=True)
-    m = re.search(r"is owned by (\S+) (\S+)", r.stdout)
-    return f"{m.group(1)} {m.group(2)}" if m else None
+def package_version(binary: str) -> str | None:
+    """Owning package and version (pacman, dpkg or rpm), or None."""
+    return sysinfo.binary_version(binary)
 
 
 def all_windows(s: Session) -> list[dict]:
@@ -231,7 +228,7 @@ def run_app(app: App, out: Path, c: Checks) -> None:
     RAW_DIR.mkdir(parents=True, exist_ok=True)
     out.mkdir(parents=True, exist_ok=True)
     raw = (RAW_DIR / f"{stamp}-{app.name}.jsonl").open("w")
-    result: dict = {"app": app.name, "binary": app.binary, "version": pacman_version(app.binary), "layer":
+    result: dict = {"app": app.name, "binary": app.binary, "version": package_version(app.binary), "layer":
                     "nested KWin virtual backend (not physical)", "xwayland": app.xwayland,
                     "output": {"width": app.width, "height": app.height}, "expect": app.expect, "note": app.note,
                     "windows": []}
@@ -526,7 +523,7 @@ def evidence(run_dirs: list[Path], dest: Path, notes: list[str] | None = None) -
                 "checks": {k: v["pass"] for k, v in sc["checks"].items()},
                 "failedChecks": {k: v["detail"] for k, v in sc["checks"].items() if not v["pass"]},
             }
-    installed = {b: pacman_version(b) for b in CHECKED}
+    installed = {b: package_version(b) for b in CHECKED}
     doc = {"what": "TEST_MATRIX section 4: representative real applications in a nested KWin with two fixture windows",
            "layer": "nested KWin virtual backend; not a physical session", **meta,
            "judgement": "geometry by the KWin oracle (one-shot scripts); Plastile counters only for work amounts",

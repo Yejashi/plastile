@@ -26,10 +26,10 @@ import subprocess
 import time
 from pathlib import Path
 
-from harness import ROOT, Session, delta, near, tiling_errors
-from scenarios import Checks, scenario, three
+from harness import ROOT, Session, delta, evidence_file, near, tiling_errors
+from scenarios import Checks, Skipped, scenario, three
 
-EVIDENCE = ROOT / "docs/status/evidence/native-l14.json"
+EVIDENCE = evidence_file("native-l14.json")
 GAP = 8
 ERR = r"plastile (error|warn)|TypeError|ReferenceError"
 UUID = re.compile(r"\{?[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\}?")
@@ -280,7 +280,11 @@ def native_editor_toggle(out: Path, c: Checks):
         started(s)
         names = s.kw.shortcut_names()
         cand = sorted(n for n in names if "tile" in n.lower() and "quick" not in n.lower() and not n.startswith("plastile."))
-        c(f"c: '{EDITOR_ACTION}' kglobalaccel action exists", EDITOR_ACTION in names, cand)
+        comp = s.kw.compositing_type()
+        if EDITOR_ACTION not in names and comp == "QPainter":
+            raise Skipped(f"'{EDITOR_ACTION}' is registered by the GL-only tileseditor effect; "
+                          "this session composites with QPainter (no DRM render node)")
+        c(f"c: '{EDITOR_ACTION}' kglobalaccel action exists", EDITOR_ACTION in names, {"candidates": cand, "compositing": comp})
         f0, c0, off = frames(s), s.counters(), s.kw.mark()
         e0 = effects(s)
         s.kw.invoke_shortcut(EDITOR_ACTION)

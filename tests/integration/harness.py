@@ -7,6 +7,7 @@ for work-amount gates (solves, writes, corrections), never for geometry claims.
 from __future__ import annotations
 
 import json
+import os
 import re
 import subprocess
 import sys
@@ -22,6 +23,20 @@ PACKAGE_QML = ROOT / "package/contents/ui/main.qml"
 PLUGIN = "plastile"
 COUNTERS = re.compile(r"plastile counters (\{.*\})$")
 TOL = 0.5
+
+
+def evidence_file(name: str) -> Path:
+    """Where a scenario records its evidence summary.
+
+    Committed summaries in docs/status/evidence/ change only when publishing is
+    requested (PLASTILE_PUBLISH_EVIDENCE=1); ordinary runs write to the gitignored
+    artifacts/evidence/, so running the suite never rewrites another environment's
+    committed evidence or dirties the tree.
+    """
+    base = ROOT / ("docs/status/evidence" if os.environ.get("PLASTILE_PUBLISH_EVIDENCE") == "1"
+                   else "artifacts/evidence")
+    base.mkdir(parents=True, exist_ok=True)
+    return base / name
 
 
 def near(a, b, tol=TOL):
