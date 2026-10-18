@@ -74,6 +74,15 @@ def plan(seed: int) -> list[dict]:
                                "--idle-pairs", "3"], 3600)
     add("churn-p15-control", "churn", [PY, "probes/perf/churn.py", "p15control", "--minutes", "20", "--seed", "7"], 3600)
     random.Random(seed).shuffle(units)
+    # Added after the G2 campaign of 320cf72; shuffled on their own so the order above is unchanged.
+    extra: list[dict] = []
+    for r in range(2):
+        for mode in MODES:
+            extra.append({"id": f"gcrate-n32-{mode}-r{r}", "family": "gc-rate", "timeoutS": 1200,
+                          "argv": [PY, "probes/perf/qualify.py", "--n", "32", "--mode", mode, "--diag", "gc", "--run", str(r + 1),
+                                   "--seed", str(seed)]})
+    random.Random(seed + 1).shuffle(extra)
+    units += extra
     for i, u in enumerate(units):
         u["order"] = i
     return units
@@ -86,7 +95,8 @@ def out_flag(u: dict, d: Path) -> list[str]:
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--seed", type=int, default=20261018)
-    ap.add_argument("--only", default="", help="comma list of families to keep (qualify,qualify-diag,baseline,upstream,p05,boundary,workloads,churn)")
+    ap.add_argument("--only", default="", help="comma list of families to keep (qualify,qualify-diag,baseline,upstream,p05,boundary,"
+                                                "workloads,churn,gc-rate)")
     ap.add_argument("--plan", action="store_true")
     ap.add_argument("--out", type=Path, default=None)
     ap.add_argument("--resume", type=Path, default=None)

@@ -30,8 +30,9 @@ Modes:
   observer overhead.
 
 Diagnostic modes (--diag, never pooled with the above):
-  gc      instrumented + the QV4 garbage collector's own log (qt.qml.gc.*: incremental GC state
-          transitions and step timings), for tail attribution
+  gc      the QV4 garbage collector's own log (qt.qml.gc.*: incremental GC state transitions and
+          step timings): instrumented, it attributes tails to collections inside a handler;
+          uninstrumented, it gives the collection rate of the production path (no perf lines)
   frames  instrumented + a passive KWin script counting frameGeometryChanged per window, to check
           one geometry request per changed window against KWin's own observation
 
@@ -223,8 +224,8 @@ def main() -> int:
     ap.add_argument("--diag", choices=("gc", "frames"), default=None)
     ap.add_argument("--out", type=Path, default=None)
     args = ap.parse_args()
-    if args.diag and args.mode != "instrumented":
-        sys.exit("--diag needs --mode instrumented")
+    if args.diag == "frames" and args.mode != "instrumented":
+        sys.exit("--diag frames needs --mode instrumented")
     n, instrumented = args.n, args.mode == "instrumented"
     seed = unit_seed(args.seed, n, args.mode + ("-" + args.diag if args.diag else ""), args.run)
     order_rng, pause_rng = random.Random(seed), random.Random(seed + 1)

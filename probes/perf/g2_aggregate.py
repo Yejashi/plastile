@@ -41,6 +41,7 @@ WORKLOADS = ("ratio", "swap", "master", "focus", "noop")
 ORDINARY = ("ratio", "swap", "master", "focus")
 SOLVING = ("ratio", "swap", "master")
 BOOT = 2000
+GC_DIRS: list[Path] = []  # further campaigns holding GC diagnostic units (--gc-campaign)
 
 
 def jl(path: Path) -> list[dict]:
@@ -329,27 +330,53 @@ def gc_attribution(cdir: Path, rows: list[dict]) -> dict | None:
 def frames_check(cdir: Path) -> dict | None:
     """Frames diagnostic unit: KWin's own frameGeometryChanged emissions against Plastile's writes, per block.
 
-    A move is applied (and logged) inside the write, a resize when the client commits, after the
-    command returned, so changes cannot be attributed to single commands from the log order. A block
-    is a run of consecutive commands of one workload; the harness settles after each block, so every
-    change caused by a block is logged before the next block's first command.
+    A move is applied (and logged) inside the write, before its command's perf line; a resize is applied
+    when the client commits, after the command returned. A block is a run of consecutive commands of one
+    command family; the harness settles after each block. A frame line belongs to the block of the next
+    perf line when it was logged at or after that command's entry (log clock, ms, calibrated against the
+    perf lines' CLOCK_MONOTONIC entry times), otherwise to the block of the previous perf line.
     """
     d = cdir / "units/qualify-n32-diag-frames"
     if not (d / "diag.log").exists():
         return None
-    blocks: list[dict] = []
+    events = []  # (kind, ts_ms, payload)
     for ln in (d / "diag.log").read_text().splitlines():
+        m = re.match(r"^\s*(\d+\.\d+) ", ln)
+        if not m:
+            continue
+        ts = float(m.group(1)) * 1e3
         if "plastile perf " in ln:
-            rec = json.loads(ln.split("plastile perf ", 1)[1])
-            wl = rec["id"].replace("plastile.", "").split(".")[0]
-            if not blocks or blocks[-1]["family"] != wl or blocks[-1]["closed"]:
-                blocks.append({"family": wl, "commands": 0, "writes": 0, "frameChanges": 0, "windows": set(), "closed": False})
-            b = blocks[-1]
-            b["commands"] += 1
-            b["writes"] += (rec.get("timing") or {}).get("writes", 0) if rec.get("timing") else 0
-        elif "PLT-L frame " in ln and blocks:
-            blocks[-1]["frameChanges"] += 1
-            blocks[-1]["windows"].add(ln.split("PLT-L frame ", 1)[1].split("|", 1)[0])
+            events.append(("perf", ts, json.loads(ln.split("plastile perf ", 1)[1])))
+        elif "PLT-L frame " in ln:
+            events.append(("frame", ts, ln.split("PLT-L frame ", 1)[1].split("|", 1)[0]))
+    perfs = [(ts, rec) for k, ts, rec in events if k == "perf"]
+    off = min(ts - rec["entryNs"] / 1e6 for ts, rec in perfs) if perfs else 0.0
+    blocks: list[dict] = []
+    pending: list[float] = []
+
+    def family(rec):
+        return rec["id"].replace("plastile.", "").split(".")[0]
+
+    for k, ts, x in events:
+        if k == "frame":
+            pending.append(ts)
+            continue
+        entry = x["entryNs"] / 1e6 + off
+        fam = family(x)
+        new_block = not blocks or blocks[-1]["family"] != fam
+        mine = [f for f in pending if f >= entry - 0.5]
+        older = [f for f in pending if f < entry - 0.5]
+        if blocks:
+            blocks[-1]["frameChanges"] += len(older)
+        if new_block:
+            blocks.append({"family": fam, "commands": 0, "writes": 0, "frameChanges": 0})
+        b = blocks[-1]
+        b["frameChanges"] += len(mine)
+        b["commands"] += 1
+        b["writes"] += (x.get("timing") or {}).get("writes", 0) if x.get("timing") else 0
+        pending = []
+    if blocks:
+        blocks[-1]["frameChanges"] += len(pending)
     per = defaultdict(lambda: Counter())
     for b in blocks:
         c = per[b["family"]]
@@ -358,10 +385,68 @@ def frames_check(cdir: Path) -> dict | None:
         c["writes"] += b["writes"]
         c["frameChanges"] += b["frameChanges"]
         c["blocksWhereChangesEqualWrites"] += int(b["frameChanges"] == b["writes"])
+    u = json.loads((d / "unit.json").read_text())
     return {"unit": "qualify-n32-diag-frames (instrumented + passive frameGeometryChanged listener; never pooled)",
-            "note": "family = command family (resize = ratio, swap, master, focus, context/layout = no-op); the per-command "
-                    "writes exclude ledger corrections, which are counted by the engine separately",
+            "note": "family = command family (resize = ratio, swap, master, focus, context and layout = no-op); writes are "
+                    "the commands' plan writes; ledger corrections are counted by the engine separately (unit corrections)",
+            "logClockOffsetMs": round(off, 3), "unitCorrections": u.get("corrections"),
             "perFamily": {k: dict(v) for k, v in sorted(per.items())}}
+
+
+def gc_rate(cdirs: list[Path]) -> dict | None:
+    """QV4 collection cycles per 1000 commands inside the measured blocks of each GC diagnostic unit.
+
+    A block's interval runs from its first command's entry to its last command's return (dispatchNs and
+    lastRequestNs of the samples, CLOCK_MONOTONIC) and is matched against the MarkStart log lines (log clock,
+    ms; offset from the instrumented unit's perf lines, which is a property of the session's clocks)."""
+    out = {}
+    for d in sorted(p for cd in cdirs for p in (cd / "units").glob("*")):
+        if not (d / "diag.log").exists() or not (d / "unit.json").exists():
+            continue
+        u = json.loads((d / "unit.json").read_text())
+        if u.get("diag") != "gc":
+            continue
+        lines = (d / "diag.log").read_text().splitlines()
+        starts = [float(m.group(1)) * 1e3 for ln in lines if (m := GC_LINE.match(ln)) and "Performed MarkStart" in m.group(3)]
+        perf = [(float(m.group(1)) * 1e3, json.loads(m.group(2))) for ln in lines if (m := PERF_LINE.match(ln))]
+        rows = jl(d / "samples.jsonl")
+        blocks = defaultdict(list)
+        for r in rows:
+            if not r["warmup"] and r.get("dispatchNs") is not None:
+                blocks[r["block"]].append(r)
+        if perf:
+            off = min(ts - rec["entryNs"] / 1e6 for ts, rec in perf)
+        else:
+            # Uninstrumented: no perf lines. KWin's log clock (%{time boot}) minus CLOCK_MONOTONIC is the time the
+            # machine spent suspended, constant within a session; the instrumented units measured it.
+            off = None
+        out[d.name] = {"mode": u["mode"], "commands": sum(len(v) for v in blocks.values()), "blocks": len(blocks),
+                       "_starts": starts, "_blocks": {b: (min(r["dispatchNs"] for r in v), max(r["lastRequestNs"] for r in v), len(v))
+                                                       for b, v in blocks.items()}, "_off": off}
+    offs = [v["_off"] for v in out.values() if v["_off"] is not None]
+    if not out:
+        return None
+    off_all = sorted(offs)[len(offs) // 2] if offs else 0.0
+    res = {}
+    for name, v in out.items():
+        off = v["_off"] if v["_off"] is not None else off_all
+        inside = 0
+        for t0, t1, _n in v["_blocks"].values():
+            a, b = t0 / 1e6 + off - 1.0, t1 / 1e6 + off + 1.0
+            inside += sum(1 for s in v["_starts"] if a <= s <= b)
+        res[name] = {"mode": v["mode"], "commands": v["commands"], "gcCyclesInsideBlocks": inside,
+                     "gcCyclesTotalInLog": len(v["_starts"]),
+                     "cyclesPer1000Commands": round(1000 * inside / max(1, v["commands"]), 2),
+                     "logClockOffsetMs": round(off, 3), "offsetSource": "own perf lines" if v["_off"] is not None else
+                     "median of the instrumented units (same machine, no suspend during the campaign)"}
+    by_mode = defaultdict(lambda: [0, 0])
+    for v in res.values():
+        by_mode[v["mode"]][0] += v["gcCyclesInsideBlocks"]
+        by_mode[v["mode"]][1] += v["commands"]
+    return {"note": "QV4 collections are logged by KWin's process for every engine (Plastile's declarative engine and the "
+                    "harness's one-shot oracle scripts); only cycles inside measured blocks are counted, when no oracle runs",
+            "units": res,
+            "pooledCyclesPer1000Commands": {m: round(1000 * c / max(1, n), 2) for m, (c, n) in by_mode.items()}}
 
 
 def p03(cdir: Path, ev: Path, rows: list[dict], units: dict[str, dict]) -> dict:
@@ -403,6 +488,9 @@ def p03(cdir: Path, ev: Path, rows: list[dict], units: dict[str, dict]) -> dict:
                     cell["solve"] = metric(cr, "solveNs")
                     cell["apply"] = metric(cr, "applyNs")
                     cell["kwinActivate"] = stat_ms(pc.stats([r["activateNs"] for r in cr if r.get("activateNs") is not None]))
+                    # Focus: KWin's activation setter (workspace.activeWindow = w) runs inside the span.
+                    cell["outerMinusKwinActivate"] = stat_ms(pc.stats([r["outerNs"] - r["activateNs"] for r in cr
+                                                                       if r.get("activateNs") is not None and r.get("outerNs") is not None]))
                     w = [r["geometryWrites"] for r in cr if r.get("geometryWrites") is not None]
                     cell["writesPerCommand"] = dict(Counter(w))
                     cell["solvesPerCommand"] = dict(Counter(r["solves"] for r in cr if r.get("solves") is not None))
@@ -509,7 +597,7 @@ def p03(cdir: Path, ev: Path, rows: list[dict], units: dict[str, dict]) -> dict:
                                   "never recorded.",
                         "nullFields": P03_NULLS, "runs": run_table(rows)},
         "cells": cells, "instrumentationEffect": overhead, "gates": gates, "corrections": corr, "tails": tails,
-        "gcAttribution": gc_attribution(cdir, rows), "framesCheck": frames_check(cdir),
+        "gcAttribution": gc_attribution(cdir, rows), "gcRate": gc_rate([cdir] + GC_DIRS), "framesCheck": frames_check(cdir),
         "units": unit_view,
     }
 
@@ -674,13 +762,18 @@ def main() -> int:
                     help="a later campaign (campaign.py --only churn) whose churn units replace the main campaign's")
     ap.add_argument("--superseded", default="", help="text recorded for the replaced churn units")
     ap.add_argument("--p04", type=Path, default=None, help="probes/perf/pure.ts JSON output (Node, informational)")
+    ap.add_argument("--gc-campaign", type=Path, action="append", default=[],
+                    help="a campaign (campaign.py --only gc-rate) with the QV4 collection-rate units")
     args = ap.parse_args()
+    GC_DIRS.extend(args.gc_campaign)
     cdir, ev = args.campaign, args.evidence
     ev.mkdir(parents=True, exist_ok=True)
     prov, _ = campaign(cdir)
     record = {"purpose": "G2 (T20/T34/T04) measurement campaign provenance", "main": prov}
     if args.churn_campaign:
         record["churn"] = campaign(args.churn_campaign)[0] | {"replaces": args.superseded}
+    for g in args.gc_campaign:
+        record.setdefault("gcRate", []).append(campaign(g)[0])
     pc.write_json(ev / "g2-campaign.json", record)
     if args.p04:
         pc.write_json(ev / "g2-p04-node.json", {
