@@ -27,7 +27,7 @@ Item {
         }
     }
 
-    // ---- D-Bus calls and the inspector (T26 shortcut report, T28 explain view, D9 reload) ----
+    // ---- D-Bus calls and the inspector (T26 shortcut report, T28 explain view, D9 reload, the OSD) ----
     // One DBusCall (org.kde.kwin 3.0, asynchronous) per request, destroyed with its reply;
     // calls still pending at unload are destroyed with this root, so no reply outlives it.
     Component {
@@ -40,8 +40,10 @@ Item {
         }
     }
     function dbus(call, done, fail) {
-        var c = busCall.createObject(root, { service: call.service, path: call.path, dbusInterface: call.iface,
-                                             method: call.method, done: done, fail: fail });
+        var props = { service: call.service, path: call.path, dbusInterface: call.iface, method: call.method,
+                      done: done, fail: fail };
+        if (call.args) props.arguments = call.args; // as Persistence.qml passes them
+        var c = busCall.createObject(root, props);
         c.call();
     }
     // No inspector object exists until "Explain active window" opens it; closing destroys it.

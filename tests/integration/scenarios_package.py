@@ -27,8 +27,8 @@ from nested import NestedKwin  # noqa: E402
 
 INSTALL = ROOT / "tools/install.sh"
 EVIDENCE = evidence_file("package-install.json")
-STARTED = r"plastile info started "
-STOPPED = r"plastile info stopped"
+STARTED = r"plastile notice started "
+STOPPED = r"plastile notice stopped"
 
 
 def redact(text: str, kw: NestedKwin | None = None) -> str:
@@ -172,7 +172,7 @@ def package_install_autoload(out: Path, c: Checks):
             autoload = True
         except Exception as exc:  # noqa: BLE001
             lines, autoload = [str(exc)], False
-        c("autoload: 'plastile info started' observed after KWin start without manual load", autoload, lines[:1])
+        c("autoload: 'plastile notice started' observed after KWin start without manual load", autoload, lines[:1])
         c("autoload: Scripting.isScriptLoaded(plastile) is true", kw.is_loaded(PLUGIN), None)
         ev["steps"]["autoload"] = {"observed": autoload, "isScriptLoaded": kw.is_loaded(PLUGIN)}
 
@@ -213,7 +213,7 @@ def package_install_autoload(out: Path, c: Checks):
         except Exception as exc:  # noqa: BLE001
             stopped = []
             ev["steps"]["disableError"] = str(exc)
-        c("disable: kwinrc plastileEnabled=false + Scripting.start -> 'plastile info stopped'", bool(stopped), stopped[:1])
+        c("disable: kwinrc plastileEnabled=false + Scripting.start -> 'plastile notice stopped'", bool(stopped), stopped[:1])
         c("disable: isScriptLoaded false afterwards", not kw.is_loaded(PLUGIN), None)
         c("disable: no Plastile shortcut handlers keep firing (inspect.counters after unload emits nothing)",
           _no_counters_after_unload(kw), None)
@@ -238,7 +238,7 @@ def package_install_autoload(out: Path, c: Checks):
         except Exception as exc:  # noqa: BLE001
             restarted = []
             ev["steps"]["reenableError"] = str(exc)
-        c("re-enable after upgrade: 'plastile info started' again", bool(restarted), restarted[:1])
+        c("re-enable after upgrade: 'plastile notice started' again", bool(restarted), restarted[:1])
         if restarted:
             s.settle()
             frames2 = s.frames_list()

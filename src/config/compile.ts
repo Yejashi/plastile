@@ -9,6 +9,7 @@ import { err, sink } from "./validate.ts";
 
 export const DEFAULT_TRACE_CAPACITY = 2048;
 export const DEFAULT_DIAGNOSTICS: DiagnosticsLevel = "warn";
+export const DEFAULT_OSD = true;
 
 /** Priority ascending, then declaration order (explicit tiebreak; sort stability is not assumed). */
 function ordered<T>(list: readonly Ordered<T>[]): T[] {
@@ -60,6 +61,7 @@ export function compileConfig(flat: Readonly<Record<string, unknown>>, revision:
         : f.diagnostics.traceCapacity !== undefined ? f.diagnostics.traceCapacity : DEFAULT_TRACE_CAPACITY,
       diagnostics: diag.level !== undefined ? diag.level
         : f.diagnostics.level !== undefined ? f.diagnostics.level : DEFAULT_DIAGNOSTICS,
+      osd: f.osd !== null ? f.osd : DEFAULT_OSD,
       usesTitleRules,
       usesDesktopNames,
       compiled: Object.freeze({

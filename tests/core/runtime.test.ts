@@ -192,7 +192,7 @@ test("T26: the shortcut check starts on a later turn, logs one warning, and is s
   assert.match(warn[0], /Meta\+Shift\+H: "Plastile: Focus left" and "Maximize Window" \(KWin\)/);
   ws.activeWindow = wins[0];
   rt.dispatch("plastile.inspect.explain-window");
-  const ex = JSON.parse(f.lines.find((l) => l.startsWith("plastile info explain "))!.slice("plastile info explain ".length));
+  const ex = JSON.parse(f.lines.find((l) => l.startsWith("plastile notice explain "))!.slice("plastile notice explain ".length));
   assert.equal(ex.shortcutConflicts[0].key, "Meta+Shift+H");
   rt.dispatch("plastile.inspect.counters");
   const counters = JSON.parse(f.lines.find((l) => l.startsWith("plastile counters "))!.slice("plastile counters ".length));

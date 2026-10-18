@@ -83,11 +83,16 @@
       <label>Log level</label>
       <choices>
         <choice name="off"/>
+        <choice name="error"/>
         <choice name="warn"/>
         <choice name="info"/>
         <choice name="debug"/>
       </choices>
       <default>warn</default>
+    </entry>
+    <entry name="osd" type="Bool">
+      <label>Show an on-screen message when a shortcut changes the layout or pauses tiling</label>
+      <default>true</default>
     </entry>
     <entry name="traceCapacity" type="Int">
       <label>Diagnostic trace capacity (events)</label>

@@ -80,10 +80,10 @@ def gap_lines(s: Session, offset: int) -> list[str]:
     lines = s.log_lines(PLT_LINE, offset)
     out, in_gap = [], False
     for ln in lines:
-        if "plastile info stopped" in ln:
+        if "plastile notice stopped" in ln:
             in_gap = True
             continue
-        if "plastile info started" in ln:
+        if "plastile notice started" in ln:
             in_gap = False
             continue
         if in_gap:

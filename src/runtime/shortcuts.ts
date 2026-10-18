@@ -27,6 +27,8 @@ export interface BusCall {
   readonly path: string;
   readonly iface: string;
   readonly method: string;
+  /** Call arguments, passed as DBusCall's `arguments` (plain QVariants: a JS string reaches an "s" parameter). */
+  readonly args?: readonly unknown[];
 }
 
 export type Bus = (call: BusCall, done: (reply: unknown[]) => void, fail: () => void) => void;

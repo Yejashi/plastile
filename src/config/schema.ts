@@ -20,7 +20,7 @@ export const MAX_ZONE_ID = 64;
 export const MS_INSERT: readonly MasterStackSettings["insert"][] = ["after-focus", "end", "master"];
 export const BSP_INSERT: readonly BspSettings["insert"][] = ["focused", "last"];
 export const BSP_AXIS: readonly BspSettings["axis"][] = ["alternate", "longest", "horizontal", "vertical"];
-export const DIAGNOSTICS: readonly DiagnosticsLevel[] = ["off", "warn", "info", "debug"];
+export const DIAGNOSTICS: readonly DiagnosticsLevel[] = ["off", "error", "warn", "info", "debug"];
 export const WINDOW_KINDS: readonly WindowKind[] = [
   "normal", "dialog", "utility", "toolbar", "menu", "splash", "dock", "desktop",
   "notification", "tooltip", "popup", "osd", "applet-popup", "dnd-icon", "other",
@@ -57,12 +57,14 @@ export interface DiagnosticsPatch {
 
 export const FLAT_KEYS: readonly string[] = [
   "layout", "gapInner", "gapOuter", "masterRatio", "masterCount", "masterInsert", "bspInsert", "bspAxis",
-  "singleWindowGaps", "ratioStep", "traceCapacity", "diagnostics", "configJson",
+  "singleWindowGaps", "ratioStep", "traceCapacity", "diagnostics", "osd", "configJson",
 ];
 
 export interface FlatInput {
   readonly patch: SettingsPatch;
   readonly diagnostics: DiagnosticsPatch;
+  /** The `osd` key; null when not set. */
+  readonly osd: boolean | null;
   readonly json: string | null;
 }
 
@@ -92,6 +94,7 @@ export function readFlat(s: Sink, flat: Readonly<Record<string, unknown>>): Flat
   const patch: SettingsPatch = {};
   const diagnostics: DiagnosticsPatch = {};
   let json: string | null = null;
+  let osd: boolean | null = null;
   for (const key of Object.keys(flat)) {
     if (FLAT_KEYS.indexOf(key) < 0) warn(s, key, "unknown key ignored");
   }
@@ -145,12 +148,13 @@ export function readFlat(s: Sink, flat: Readonly<Record<string, unknown>>): Flat
     const x = oneOf(s, v, "diagnostics", DIAGNOSTICS);
     if (x !== null) diagnostics.level = x;
   }
+  if ((v = get("osd")) !== undefined) osd = flatBool(s, v, "osd");
   if ((v = get("configJson")) !== undefined) {
     if (typeof v !== "string") expected(s, "configJson", "a JSON string", v);
     else if (v.length > MAX_JSON_LENGTH) err(s, "configJson", `longer than ${MAX_JSON_LENGTH} characters`);
     else json = v;
   }
-  return { patch, diagnostics, json };
+  return { patch, diagnostics, osd, json };
 }
 
 // ---- settings patch (JSON `defaults` and override `set`) ----

@@ -4,7 +4,7 @@
 import { Engine, type EngineOptions } from "../core/engine.ts";
 import { COMMANDS, type CommandResult } from "../core/commands.ts";
 import type { RuntimeServices } from "../core/ports.ts";
-import type { ContextKey } from "../core/types.ts";
+import type { ContextKey, LayoutKind } from "../core/types.ts";
 import {
   compileConfig, FLAT_KEYS, formatError, resolveContext, resolveWindow, type ConfigSnapshot, type ContextInfo,
 } from "../config/index.ts";
@@ -16,6 +16,7 @@ import { describeWindow, type InspectorView } from "./inspect.ts";
 import { zoneOverlayView, type ZoneOverlayHost } from "./zoneOverlay.ts";
 import { Persister, type StateStore } from "./persistence.ts";
 import { ReplayRecorder, type RecordOptions } from "./replay.ts";
+import { layoutMessage, Osd, pauseMessage } from "./osd.ts";
 
 export const VERSION = "0.1.0";
 export { COMMANDS };
@@ -56,8 +57,16 @@ export interface InspectorHost {
   isOpen(): boolean;
 }
 
-type Level = "error" | "warn" | "info" | "debug";
-const LEVELS: Record<string, number> = { off: -1, error: 0, warn: 1, info: 2, debug: 3 };
+/**
+ * Log levels. `notice` is the few lines that tell a user Plastile is alive and what it did on
+ * its own or by a command (started, stopped, a layout a command chose, tiling paused or
+ * resumed, saved layouts restored, the explanation the user asked for). It shows at the
+ * default `warn` threshold and above; only `error` and `off` hide it. Nothing per window event.
+ */
+type Level = "error" | "notice" | "warn" | "info" | "debug";
+const LEVELS: Record<string, number> = { off: -1, error: 0, notice: 1, warn: 1, info: 2, debug: 3 };
+/** Restored layouts named in the one notice at load; the rest are counted. */
+const RESTORED_NAMED = 8;
 
 export interface Runtime {
   readonly commands: typeof COMMANDS;
@@ -73,6 +82,8 @@ export function createRuntime(env: RuntimeEnv): Runtime {
     if (LEVELS[lv] > level) return;
     env.print(`plastile ${lv} ${message}${data === undefined ? "" : " " + safeJson(data)}`);
   };
+  // On-screen feedback (Plasma's OSD over D-Bus, src/runtime/osd.ts); each configuration load sets whether it is on.
+  const osd = new Osd(env.dbus, (fn) => env.qt.callLater(fn), (m) => log("debug", m));
 
   let revision = 0;
   let snapshot: ConfigSnapshot | null = null;
@@ -105,6 +116,7 @@ export function createRuntime(env: RuntimeEnv): Runtime {
     for (const w of r.warnings) log("warn", "configuration: " + formatError(w));
     snapshot = r.snapshot;
     level = LEVELS[snapshot.diagnostics] ?? LEVELS.warn;
+    osd.setEnabled(snapshot.osd);
     return true;
   };
   loadConfig();
@@ -132,12 +144,40 @@ export function createRuntime(env: RuntimeEnv): Runtime {
 
   const engine = new Engine(rec ? rec.host(adapter) : adapter, rec ? rec.services(svc) : svc, options(snapshot!));
   const initial = adapter.attach(rec ? rec.sink(engine) : engine, snapshot!.usesTitleRules);
+  /** A desktop's name for notices and the OSD ("desktop 3" when unnamed). */
+  const desktopLabel = (desktop: string): string => {
+    const d = adapter.desktopNameOf(desktop);
+    if (d) return d;
+    const i = adapter.desktops().indexOf(desktop);
+    return i >= 0 ? `desktop ${i + 1}` : "a removed desktop";
+  };
+  /** "eDP-1 / Desktop 2": an output's connector name and a desktop's name. */
+  const placeName = (output: string, desktop: string): string => `${adapter.outputNameOf(output)} / ${desktopLabel(desktop)}`;
   // ---- persistence (T27, ADR-020): requested at start-up, applied when the helper replies ----
   const persister = new Persister(env.state, engine, {
     now: svc.now, log, stamp: () => new Date().toISOString(), clockNs: env.perf ? env.clockNs : undefined,
+    restoredLayouts: (items) => {
+      // Once per load: the saved layouts that differ from the configuration (they look permanent otherwise).
+      const odd = items.filter((x) => x.layout !== engine.configuredLayout(x.key));
+      if (odd.length === 0) return;
+      const named = odd.slice(0, RESTORED_NAMED).map((x) => `${x.layout} for ${placeName(x.key.output, x.key.desktop)}`);
+      const more = odd.length > RESTORED_NAMED ? ` and ${odd.length - RESTORED_NAMED} more` : "";
+      log("notice", `restored saved layout ${named.join(", ")}${more}`);
+    },
   });
   engine.onPersistChange = (scope) => persister.markDirty(scope);
   // ---- end T27 ----
+  // ---- notices and the OSD for what a command changed (one line each; the OSD on a later turn) ----
+  engine.onLayoutChange = (key: ContextKey, layout: LayoutKind, previous: LayoutKind) => {
+    log("notice", `layout ${layout} on ${placeName(key.output, key.desktop)} (was ${previous})`);
+    const desk = adapter.desktops().length > 1 ? desktopLabel(key.desktop) : null;
+    const out = adapter.outputs().length > 1 ? adapter.outputNameOf(key.output) : null;
+    osd.show(layoutMessage(layout, desk, out));
+  };
+  engine.onSuspendChange = (paused: boolean) => {
+    log("notice", paused ? "tiling paused" : "tiling resumed");
+    osd.show(pauseMessage(paused));
+  };
   // With a store, the first solve waits for the saved state, bounded by LOAD_HOLD_MS (ADR-020
   // addendum): a restored float or ratio is then the first geometry written, not a correction of
   // a default tile. Commands and events meanwhile update the model; their geometry is held work.
@@ -146,7 +186,16 @@ export function createRuntime(env: RuntimeEnv): Runtime {
   const hold = env.state !== undefined && !rec;
   if (rec) rec.start(initial, () => engine.start(initial));
   else engine.start(initial, hold);
-  log("info", `started ${VERSION}`, { windows: initial.length, configRevision: snapshot!.revision });
+  {
+    const shown: string[] = [];
+    const act = adapter.currentActivity();
+    for (const o of adapter.outputs()) {
+      const d = adapter.visibleDesktop(o.id);
+      if (d !== null) shown.push(`layout ${engine.layoutAt({ output: o.id, desktop: d, activity: act })} on ${placeName(o.id, d)}`);
+    }
+    log("notice", `started ${VERSION}: ${initial.length} window${initial.length === 1 ? "" : "s"}, configuration revision `
+      + `${snapshot!.revision}${shown.length ? "; " + shown.join("; ") : ""}`);
+  }
   persister.load(hold ? () => engine.releaseHold() : undefined);
 
   // KWin emits configChanged after every reconfigure (its own, the reload command's, other
@@ -218,7 +267,8 @@ export function createRuntime(env: RuntimeEnv): Runtime {
     const a = adapter.activeWindow();
     const x = a ? engine.explain(a) : null;
     const conflicts = shortcuts && shortcuts.conflicts.length > 0 ? shortcuts.conflicts : null;
-    log("info", "explain", x ? (conflicts ? { ...x, shortcutConflicts: conflicts } : x) : { error: "no active window" });
+    // Asked for by the user: a notice, so the default log level shows it.
+    log("notice", "explain", x ? (conflicts ? { ...x, shortcutConflicts: conflicts } : x) : { error: "no active window" });
     // The inspector window exists only from this command until it closes (Escape, a click
     // elsewhere, another window activated, this command again, or unload).
     const ins = env.inspector;
@@ -259,6 +309,7 @@ export function createRuntime(env: RuntimeEnv): Runtime {
         configRevision: snapshot?.revision ?? null,
         shortcuts: shortcuts ? { state: shortcuts.state, conflicts: shortcuts.conflicts.length } : null,
         inspectorOpen: env.inspector ? env.inspector.isOpen() : null, zoneOverlay: env.zones ? env.zones.state() : null,
+        osd: { state: osd.state(), sent: osd.sent }, suspended: engine.isSuspended(),
         persistence: persister.summary() }));
       return null;
     }
@@ -301,6 +352,7 @@ export function createRuntime(env: RuntimeEnv): Runtime {
     shutdown: () => {
       // Own UI and pending D-Bus replies go first: neither may reach a stopped engine.
       if (audit) audit.cancel();
+      osd.stop();
       if (env.inspector) env.inspector.close();
       if (env.zones) env.zones.destroy();
       // The last save reads the engine's preferences, so it precedes the engine's stop (T27); it is
@@ -314,7 +366,7 @@ export function createRuntime(env: RuntimeEnv): Runtime {
       for (const c of optionConns) { try { c.signal.disconnect(c.fn); } catch (_e) { /* gone */ } }
       optionConns.length = 0;
       adapter.detach();
-      log("info", "stopped");
+      log("notice", "stopped");
     },
   };
 }
