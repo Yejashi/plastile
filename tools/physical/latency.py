@@ -339,7 +339,7 @@ def validate_record(rec: dict) -> list[str]:
     if rec["inputToFirstPresentNs"] is not None and rec["inputToSettledNs"] is not None \
             and rec["inputToSettledNs"] < rec["inputToFirstPresentNs"]:
         errs.append("settled precedes first present")
-    if rec["layer"] not in ("physical", "nested-dry-run", "synthetic"):
+    if rec["layer"] not in ("physical", "nested-dry-run", "nested-windowed-gpu", "synthetic"):
         errs.append(f"unknown layer {rec['layer']!r}")
     return errs
 

@@ -75,6 +75,8 @@ class NestedKwin:
         name: str | None = None,
         prepare=None,
         kwin_bin: str = "kwin_wayland",
+        host_display: str | None = None,
+        scale: float | None = None,
     ) -> None:
         self.name = name or f"s{os.getpid()}-{_monotonic_ns() % 10**8}"
         self.root = SHORT_BASE / self.name
@@ -88,6 +90,12 @@ class NestedKwin:
         self.prepare = prepare
         # The compositor executable (default: kwin_wayland from PATH).
         self.kwin_bin = kwin_bin
+        # Windowed mode: an absolute path to a running compositor's Wayland socket. KWin's wayland
+        # backend then shows each output as a window there and renders with the real GPU; the
+        # session is still private (bus, XDG dirs, config) and still nested, never physical.
+        # None: the virtual backend (offscreen framebuffer).
+        self.host_display = host_display or os.environ.get("PLASTILE_NESTED_HOST_DISPLAY") or None
+        self.scale = scale
         self.socket = "wl-0"
         self._dbus: subprocess.Popen | None = None
         self._kwin: subprocess.Popen | None = None
@@ -164,9 +172,12 @@ class NestedKwin:
         self._wait(lambda: (self.run_dir / "bus").exists(), 5.0, "private D-Bus socket")
         if self.prepare is not None:
             self.prepare(self)
-        cmd = [self.kwin_bin, "--virtual", "--socket", self.socket,
+        backend = ["--wayland-display", self.host_display] if self.host_display else ["--virtual"]
+        cmd = [self.kwin_bin, *backend, "--socket", self.socket,
                "--width", str(self.width), "--height", str(self.height),
                "--output-count", str(self.outputs), "--no-lockscreen"]
+        if self.scale is not None:
+            cmd += ["--scale", str(self.scale)]
         if self.xwayland:
             cmd.append("--xwayland")
         self._kwin = subprocess.Popen(cmd, env=env, stdout=open(self.kwin_log, "wb"),

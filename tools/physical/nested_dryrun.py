@@ -59,8 +59,14 @@ def default_bindings() -> dict[str, str]:
     return {**KWIN_DEFAULTS, **plastile_defaults()}
 
 
+# PLASTILE_NESTED_HOST_DISPLAY (tools/nested.py) shows the nested outputs as windows on a running
+# compositor and renders with the real GPU; presentation is then the nested KWin's timeline driven by
+# the host's frame callbacks, still not scanout. The label says which.
+WINDOWED = bool(os.environ.get("PLASTILE_NESTED_HOST_DISPLAY"))
+
+
 class NestedDriver(orchestrate.Driver):
-    layer = "nested-dry-run"
+    layer = "nested-windowed-gpu" if WINDOWED else "nested-dry-run"
     input_source = "libei (the nested KWin's EIS socket) via plastile-keytap-ei"
 
     def __init__(self, session: Session):
@@ -197,7 +203,7 @@ def main(argv: list[str] | None = None) -> int:
     keytap = None
     rev, dirty = common.git_revision()
     ctx = {"stamp": outdir.name, "layer": NestedDriver.layer, "inputSource": NestedDriver.input_source,
-           "environmentId": "nested-virtual-kwin", "outputName": None, "refreshHzDeclared": None,
+           "environmentId": "nested-windowed-kwin" if WINDOWED else "nested-virtual-kwin", "outputName": None, "refreshHzDeclared": None,
            "implementationCommit": rev, "implementationDirty": dirty,
            "installedBundleSha256": common.sha256_file(common.REPO_BUNDLE)}
     rc = 0
