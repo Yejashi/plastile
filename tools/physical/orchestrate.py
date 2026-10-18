@@ -814,9 +814,9 @@ def cmd_run(args) -> int:
     return rc
 
 
-# Never injected by `keys`: toggle-suspend suspends tiling and its default collides with
-# Spectacle's region capture (docs/user/SHORTCUTS.md); inspect/reload commands do not count
-# as engine commands. Test these by hand (PHYSICAL_RUNBOOK.md P7).
+# Never injected by `keys`: toggle-suspend suspends tiling (and its pre-D10-fix default
+# Meta+Shift+S starts Spectacle's region capture); inspect/reload commands do not count as
+# engine commands. Test these by hand (PHYSICAL_RUNBOOK.md P7).
 KEYS_EXCLUDED = ("plastile.runtime.toggle-suspend", "plastile.runtime.reload-config", "plastile.inspect.")
 
 

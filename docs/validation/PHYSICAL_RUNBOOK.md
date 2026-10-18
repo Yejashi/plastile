@@ -16,11 +16,11 @@ The kit was built in a cloud container without a desktop or GPU. Everything that
 | `keytap.c`, libei backend (`plastile-keytap-ei`) | Nested KWin 6.7.5 in the Ubuntu 26.10 sandbox (virtual backend, QPainter, libei 1.5.0) | `nested_dryrun.py` runs | Not used physically |
 | Correlation (`latency.py`) and record schema | Synthetic logs; logs recorded from the real fixture in nested KWin 6.7.5 (committed, trimmed, in `tools/physical/tests/data/`) | `test_latency.py`, `test_recorded.py` | Physical presentation timing |
 | Block engine (`orchestrate.py`: plan, conditions, warmup, pacing, safety stops, offline correlation) | Fakes (dry injector, fake fixture processes) and nested dry runs that drive the same engine through `NestedDriver` | `test_orchestrate.py`, `nested_dryrun.py` | `LiveDriver` (manual and D-Bus condition switching, journal counters, fixtures in the live session): **not run** |
-| `orchestrate.py keys` (default bindings on the real keymap) | Same check through libei in nested KWin 6.7.5: 17 of 19 injected default chords reached Plastile; `Meta+Shift+=` and `Meta+Shift+-` did not (known defect D10); stored user bindings `Meta+Ctrl+=` and `Meta+Ctrl+-` did | `nested_dryrun.py --keys [--rebind-ratio]` | Physical keymap: **not run** |
+| `orchestrate.py keys` (default bindings on the real keymap) | Same check through libei in nested KWin 6.7.5: with the defaults after the D10 fix (`Meta+Ctrl+=`, `Meta+Ctrl+-`, `Meta+Ctrl+S`), all 19 injected default chords reached Plastile; with the earlier defaults `Meta+Shift+=` and `Meta+Shift+-` stored as user bindings, those two did not, so the check does detect undelivered chords | `nested_dryrun.py --keys [--binding ACTION=CHORD]` | Physical keymap: **not run** |
 | `summarize.py` (statistics, p99 refusal, bootstrap by run, verdicts) | Synthetic data; nested dry-run data | `test_summarize.py` | — |
 | `session_check.py`, `observe.py`, `soak.py`, `checklist.py` | Refusal outside a KWin Wayland session; pure helpers; checklist bundle | `test_common.py`, `test_tools.py` | Live runs: **not run** |
 
-Run the unit tests anywhere (no desktop needed): `python3 -m unittest discover -s tools/physical/tests`. A nested dry run of the latency pipeline (never a physical result; every record says `"layer": "nested-dry-run"`): `tools/sandbox/run.sh -- python3 tools/physical/nested_dryrun.py --keys --rebind-ratio` after `make -C tools/physical all ei` inside the sandbox.
+Run the unit tests anywhere (no desktop needed): `python3 -m unittest discover -s tools/physical/tests`. A nested dry run of the latency pipeline (never a physical result; every record says `"layer": "nested-dry-run"`): `tools/sandbox/run.sh -- python3 tools/physical/nested_dryrun.py --keys` after `make -C tools/physical all ei` inside the sandbox.
 
 Nested dry-run results are summarized in [evidence/physical-kit-nested-dryrun.json](../status/evidence/physical-kit-nested-dryrun.json) (Ubuntu 26.10 sandbox, KWin 6.7.5, QPainter, synthetic 60 Hz timeline). The protocol-scale run (P02-quicktile and P03-ratio, 3 windows, 5 runs × 1000 samples each in randomized order) completed all 10,000 samples successfully; the summarizer reported p99 because each workload reached 5000 samples, produced a `pass` verdict, and Plastile's counters showed one write per window per command and no corrections. That exercises the whole pipeline end to end; as a nested measurement it says nothing about physical latency. A six-workload run (2 runs × 40 samples) covered every workload, and the key-delivery check is described in the table above.
 
@@ -211,13 +211,13 @@ Consent: C7. Run `observe.py --windows 4 --out "$RUN/observe-o07"` on the output
 | PHY-03e | Move the panel to another screen edge and to another screen |
 
 - **Record:** phases, and a screenshot after each change.
-- **Pass (TEST_MATRIX O07):** no tile under a panel that reserves space; the gap between tiles and the panel equals the configured outer gap (no double subtraction); with Auto Hide the tiles use the area KWin reports; every phase converged without reversals. Known defect D2 (tiles stay under a panel added later; the reduced area persists after removal) fails this in nested KWin; if it reproduces here, record it as a fail naming D2.
+- **Pass (TEST_MATRIX O07):** no tile under a panel that reserves space; the gap between tiles and the panel equals the configured outer gap (no double subtraction); with Auto Hide the tiles use the area KWin reports; every phase converged without reversals. Defect D2 (tiles stayed under a panel added later; the reduced area persisted after removal) was found in nested KWin and addressed on main (26459be); this is its first physical check. If it reproduces, record a fail naming D2.
 
 ### P4. Activities (E08, O09)
 
 Consent: C6.
 
-1. Create a second activity (Activities manager, `Meta+Q`, or System Settings > Activities). The collapse from one to two activities is where known defect D1 strands tiles; check it first.
+1. Create a second activity (Activities manager, `Meta+Q`, or System Settings > Activities). The change from one to two activities is where defect D1 stranded tiles before it was addressed on main (0a37a67); check it first.
 2. Open and tile windows on both activities; switch between them several times (`Meta+Tab`); create and delete a third activity while windows are tiled.
 3. Put one window on all activities and check it floats (L16 policy, ADR-009).
 
@@ -230,7 +230,7 @@ Record each application's package version in the checklist note.
 | Item | Application and what to try |
 |---|---|
 | PHY-05-konsole | Konsole: tile, resize steps, tabs (`Ctrl+Shift+T`), split view, fullscreen (`Ctrl+Shift+F`) |
-| PHY-05-kate | Kate: tile; check that its minimum size is respected (known defect D3: stale constraints, `realapps-kate` fails in the sandbox) |
+| PHY-05-kate | Kate: tile; check that its minimum size is respected (defect D3, stale size constraints, was found with Kate in the sandbox and addressed on main in 34204e2; check it here) |
 | PHY-05-dolphin | Dolphin: tile, split view, its dialogs float |
 | PHY-05-browser | Firefox or Chromium: tile, video fullscreen and back, its file dialogs |
 | PHY-05-dialogs | A dialog-heavy application (for example LibreOffice or GIMP): transient dialogs float above their parent; monocle with a dialog (L07) |
@@ -268,7 +268,7 @@ Keep your desktop effects as they are, identical for every workload ([PERFORMANC
 
 The matched baselines for the verdict are P02-quicktile for P03-ratio and P03-swap, and P00-switch for P03-focus. All other pairs are reported as controls; a master/stack ratio change is not the same action as a quick tile ([PERFORMANCE §5](PERFORMANCE.md#5-workload-suite)). Direct placement (P01) and third-party tilers such as Polonium are not part of this kit: P01 needs the timing probe loaded into the live KWin, and comparing another tiler needs its installation (both would be further consent points).
 
-**Bindings.** The orchestrator reads your active chords from `kglobalshortcutsrc` and injects exactly those. The defaults for Grow and Shrink (`Meta+Shift+=`, `Meta+Shift+-`) do not work (known defect D10; [SHORTCUTS](../user/SHORTCUTS.md#default-bindings-that-do-not-work-out-of-the-box)). Before running P03-ratio, bind them to chords that work, for example `Meta+Ctrl+=` and `Meta+Ctrl+-` (in nested KWin 6.7.5, these stored user bindings reached Plastile through libei; not yet checked physically), in System Settings > Keyboard > Shortcuts > KWin. If a binding is missing, the run refuses to start; if a chord has no effect, the block stops after 10 misses. The text-to-keycode mapping assumes a US layout; on another layout pass `--binding ACTION=KEY_LEFTMETA+KEY_LEFTCTRL+KEY_EQUAL` style evdev names.
+**Bindings.** The orchestrator reads your active chords from `kglobalshortcutsrc` and injects exactly those. Since the D10 fix, Grow, Shrink and Suspend default to `Meta+Ctrl+=`, `Meta+Ctrl+-` and `Meta+Ctrl+S` ([SHORTCUTS](../user/SHORTCUTS.md#default-bindings-measured-with-real-key-presses)); earlier builds registered `Meta+Shift+=`, `Meta+Shift+-` and `Meta+Shift+S`, and the first two never reach Plastile. If an earlier build was ever loaded in this session, kglobalaccel may still hold those chords as your active bindings (not tested): check the bindings `session_check.py` prints, and rebind in System Settings > Keyboard > Shortcuts > KWin (C2) if needed. If a binding is missing, the run refuses to start; if a chord has no effect, the block stops after 10 misses. The text-to-keycode mapping assumes a US layout; on another layout pass `--binding ACTION=KEY_LEFTMETA+KEY_LEFTCTRL+KEY_EQUAL` style evdev names.
 
 **Steps, once per refresh rate** (DP-1 60 Hz, DP-2 100 Hz, HDMI-A-1 144 Hz):
 
@@ -304,12 +304,12 @@ Consent: C3.
 python3 tools/physical/orchestrate.py keys --out "$RUN/keys"
 ```
 
-   It reads Plastile's command counter (through the journal) before and after each chord and prints `delivered`, `NOT delivered` or `unknown` (no counters in the journal). It skips *Suspend/resume tiling* (its default `Meta+Shift+S` collides with Spectacle's region capture, and it suspends tiling) and the inspect and reload commands. Because the injector sends key codes and KWin applies your keyboard layout, this tests the chords on your real keymap; the text-to-keycode step assumes a US layout.
+   It reads Plastile's command counter (through the journal) before and after each chord and prints `delivered`, `NOT delivered` or `unknown` (no counters in the journal). It skips *Suspend/resume tiling* (it suspends tiling; test it by hand) and the inspect and reload commands. Because the injector sends key codes and KWin applies your keyboard layout, this tests the chords on your real keymap; the text-to-keycode step assumes a US layout.
 
-2. By hand, with your real keyboard: press `Meta+Shift+S` and note whether Spectacle opens or tiling is suspended (press it again to resume); press `Meta+T` with Plastile loaded: KWin's tile editor must open (Esc closes it); quick-tile a tiled window with `Meta+Left`: Plastile must yield it (L13), and *Adopt natively tiled window* must take it back.
+2. By hand, with your real keyboard: press your *Suspend/resume tiling* chord (default `Meta+Ctrl+S`): tiling must suspend, and pressing it again must resume it. Press `Meta+Shift+S`: it should start Spectacle's region capture and leave Plastile alone (Esc closes Spectacle); press `Meta+T` with Plastile loaded: KWin's tile editor must open (Esc closes it); quick-tile a tiled window with `Meta+Left`: Plastile must yield it (L13), and *Adopt natively tiled window* must take it back.
 
 - **Record:** `$RUN/keys/keys.json`, and what the manual chords did.
-- **Pass:** PHY-07a: every default chord reaches Plastile, or the ones that do not are listed in the checklist note (in nested KWin `Meta+Shift+=` and `Meta+Shift+-` did not; D10 stays failing until the defaults change). PHY-07b: the tile editor opens with Plastile loaded and Plastile does not fight a native quick tile.
+- **Pass:** PHY-07a: every default chord reaches Plastile, or the ones that do not are listed in the checklist note (in nested KWin 6.7.5 all injected defaults did after the D10 fix; the earlier `Meta+Shift+=` and `Meta+Shift+-` did not). PHY-07b: the tile editor opens with Plastile loaded and Plastile does not fight a native quick tile.
 
 ### P8. Soak and idle
 

@@ -38,7 +38,7 @@ Nested dry run (inside the KWin sandbox, or on any machine with KWin, libei and 
 
 ```sh
 tools/sandbox/run.sh -- bash -euc 'npm run build && make -C fixtures/client && make -C tools/physical all ei'
-tools/sandbox/run.sh -- python3 tools/physical/nested_dryrun.py --keys --rebind-ratio
+tools/sandbox/run.sh -- python3 tools/physical/nested_dryrun.py --keys
 ```
 
-The dry run first checks that both the uinput injector and the Python guard refuse the nested session, then runs randomized blocks of every workload, the per-chord delivery check with `--keys`, and writes `artifacts/physical/nested-<stamp>/`. `--rebind-ratio` stores `Meta+Ctrl+=`/`Meta+Ctrl+-` as user bindings for Grow/Shrink in the nested `kglobalshortcutsrc` before KWin starts, because the defaults do not work (D10).
+The dry run first checks that both the uinput injector and the Python guard refuse the nested session, then runs randomized blocks of every workload, the per-chord delivery check with `--keys`, and writes `artifacts/physical/nested-<stamp>/`. `--binding ACTION=CHORD` stores a user binding in the nested `kglobalshortcutsrc` before KWin starts (kglobalaccel keeps it over the registered default); for example `--binding plastile.resize.grow=Meta+Shift+=` reproduces the pre-fix D10 default, which the `--keys` check reports as not delivered.

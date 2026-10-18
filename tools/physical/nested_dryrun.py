@@ -13,7 +13,7 @@ pacing, safety stops, offline correlation, summary) inside a disposable nested K
 - presentation: the virtual backend's software 60 Hz timeline, not scanout.
 
     python3 tools/physical/nested_dryrun.py [--rounds 2] [--samples 60] [--warmup 5] [--windows 3]
-        [--workloads ...] [--rebind-ratio] [--export-testdata DIR]
+        [--workloads ...] [--keys] [--binding ACTION=CHORD ...] [--export-testdata DIR]
 
 Prerequisites (inside tools/sandbox/run.sh or on a machine with KWin): npm run build,
 make -C fixtures/client, make -C tools/physical ei, python-dbus.
@@ -24,6 +24,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -37,25 +38,25 @@ import orchestrate  # noqa: E402
 sys.path.insert(0, str(common.REPO / "tests/integration"))
 from harness import Session  # noqa: E402
 
-# Defaults as registered by the code under test (used only when the nested
-# kglobalshortcutsrc does not list an action yet).
-#   KWin: kwin v6.7.5 src/useractions.cpp initShortcut(...) defaults.
-#   Plastile: src/core/commands.ts default key sequences.
-DEFAULT_BINDINGS = {
+# KWin's own defaults (kwin v6.7.5 src/useractions.cpp, initShortcut), used only when the
+# nested kglobalshortcutsrc does not list an action yet.
+KWIN_DEFAULTS = {
     "Window Maximize": "Meta+PgUp",
     "Window Quick Tile Left": "Meta+Left",
     "Window Quick Tile Top": "Meta+Up",
     "Window Quick Tile Bottom": "Meta+Down",
     "Switch Window Right": "Meta+Alt+Right",
-    "plastile.resize.grow": "Meta+Shift+=",
-    "plastile.resize.shrink": "Meta+Shift+-",
-    "plastile.swap.master": "Meta+Shift+Return",
-    "plastile.focus.next": "Meta+Shift+N",
 }
-# What a user who followed docs/user/SHORTCUTS.md's advice for the two Shift-punctuation
-# defaults would have stored (a user binding that kglobalaccel keeps over the default).
-REBIND_RATIO = {"plastile.resize.grow": ("Meta+Ctrl+=", "Meta+Shift+=", "Plastile: Grow focused tile"),
-                "plastile.resize.shrink": ("Meta+Ctrl+-", "Meta+Shift+-", "Plastile: Shrink focused tile")}
+
+
+def plastile_defaults() -> dict[str, str]:
+    """Plastile's default chords as the code under test registers them (src/core/commands.ts)."""
+    text = (common.REPO / "src/core/commands.ts").read_text()
+    return dict(re.findall(r'id: "(plastile\.[a-z.-]+)",[^}]*?sequence: "([^"]+)"', text))
+
+
+def default_bindings() -> dict[str, str]:
+    return {**KWIN_DEFAULTS, **plastile_defaults()}
 
 
 class NestedDriver(orchestrate.Driver):
@@ -160,8 +161,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--samples", type=int, default=60)
     ap.add_argument("--warmup", type=int, default=5)
     ap.add_argument("--seed", type=int, default=1)
-    ap.add_argument("--rebind-ratio", action="store_true",
-                    help="pre-store Meta+Ctrl+=/Meta+Ctrl+- for grow/shrink in the nested kglobalshortcutsrc")
+    ap.add_argument("--binding", action="append", default=[], metavar="ACTION=CHORD",
+                    help="store a user binding in the nested kglobalshortcutsrc before KWin starts (kglobalaccel "
+                         "keeps it over the registered default), e.g. plastile.resize.grow=Meta+Shift+=")
     ap.add_argument("--bootstrap", type=int, default=500)
     ap.add_argument("--export-testdata", type=Path, default=None)
     ap.add_argument("--export-taps", type=int, default=12)
@@ -182,9 +184,13 @@ def main(argv: list[str] | None = None) -> int:
     width, height = 1280, 800
     s = Session(outdir / "session", width=width, height=height)
 
+    stored_user = orchestrate.parse_bindings(args.binding)
+    defaults = default_bindings()
+
     def prepare(kw) -> None:
-        if args.rebind_ratio:
-            lines = ["[kwin]"] + [f"{a}={x},{d},{f}" for a, (x, d, f) in REBIND_RATIO.items()]
+        if stored_user:
+            lines = ["[kwin]"] + [f"{a}={chord.replace(',', chr(92) + ',')},{defaults.get(a, 'none')},{a}"
+                                  for a, chord in stored_user.items()]
             (kw.root / "config" / "kglobalshortcutsrc").write_text("\n".join(lines) + "\n")
     s.kw.prepare = prepare
     monitor = orchestrate.Monitor()
@@ -217,14 +223,14 @@ def main(argv: list[str] | None = None) -> int:
             if stored.get(a):
                 sources[a] = "nested kglobalshortcutsrc"
             else:
-                overrides[a] = DEFAULT_BINDINGS[a]
-                sources[a] = "default table (not yet in the nested kglobalshortcutsrc)"
+                overrides[a] = defaults[a]
+                sources[a] = "registered default (not yet in the nested kglobalshortcutsrc)"
         bindings = orchestrate.resolve_bindings(actions, stored, overrides)
         print("bindings: " + ", ".join(f"{a}={b['sequence']} [{sources[a]}]" for a, b in bindings.items()))
         (outdir / "plan.json").write_text(json.dumps({
             "seed": args.seed, "rounds": args.rounds, "samples": args.samples, "warmup": args.warmup,
             "windows": windows, "workloads": names, "bindings": bindings, "bindingSources": sources,
-            "rebindRatio": args.rebind_ratio, "blocks": plan, "compositing": compositing, "guardSelfCheck": guard,
+            "storedUserBindings": stored_user, "blocks": plan, "compositing": compositing, "guardSelfCheck": guard,
             "workloadDefinitions": {n: wl_defs[n] for n in names}}, indent=1))
         params = orchestrate.Params(samples=args.samples, warmup=args.warmup, refresh_hz=ctx["refreshHzDeclared"],
                                     gap_min_ms=20, gap_max_ms=50)
