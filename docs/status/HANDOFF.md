@@ -40,7 +40,7 @@ Plasma session yet.**
 |---|---|
 | `main` (`3578f5e`) | All merged work. `npm run check` (319/319 unit tests, typecheck, bundle) and `tools/check_docs.py` passed locally before the push. The **hosted CI run for this commit was not checked**; earlier runs were cancelled by newer pushes. |
 | `wip/m9-zones` (`7c7f768`) | M9/T37 zones layout, experimental and opt-in: model, config, engine, commands, overlay, unit, replay and runtime tests, nested scenarios, docs (+2067/-37 in 28 files). `main` is already merged into it. The agent reported its unit tests green after that merge, but was stopped **before re-running its nested scenarios** on the merged tree. Merge it into `main` once `npm run check` and its scenarios `zones-assign-M9` and `zones-overlay-M9` pass. |
-| `wip/perf-g2` (`e541963`) | T20/T34 performance qualification, **unverified**. `f5dc18e` fixes the P05/P03 workload sizing (the tall output is sized with the gaps). `e541963` is an uncommitted-work snapshot taken when the agent was stopped: a pure-engine workload, churn and runner changes, and a Nix measurement environment. It has no G2 report yet. |
+| `wip/perf-g2` (`e541963`) | **Superseded by `wf/g2`** ([G2_REPORT](G2_REPORT.md) §13: what was taken, fixed or dropped). T20/T34 performance qualification, **unverified**. `f5dc18e` fixes the P05/P03 workload sizing (the tall output is sized with the gaps). `e541963` is an uncommitted-work snapshot taken when the agent was stopped: a pure-engine workload, churn and runner changes, and a Nix measurement environment. It has no G2 report yet. |
 
 ## 3. Commands
 
@@ -115,7 +115,7 @@ Beyond [AGENTS.md](../../AGENTS.md):
    the device nodes and the first KWin log.
 2. **Zones:** check out `wip/m9-zones`, run `npm run check`, the zones scenarios and a smoke set
    (`--only zones-assign-M9,zones-overlay-M9,adopt-open-close,reload-Q09`), then merge into `main`.
-3. **Performance and G2 (T20/T34):** continue from `wip/perf-g2`.
+3. **Performance and G2 (T20/T34):** done for the nested layer in [G2_REPORT](G2_REPORT.md) (branch `wf/g2`); open items are its §13 and the physical parts. The notes below were the plan.
    - A **known real defect** needs a root cause: **P05 at n=32 windows overlaps windows in the overflow case**.
      `f5dc18e` changes how the workload sizes the output; confirm whether that only removes an infeasible
      workload or whether the engine is actually wrong.
