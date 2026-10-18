@@ -1,5 +1,7 @@
 # Agent entry point
 
+> **Continuing implementation?** Read [status/HANDOFF.md](status/HANDOFF.md) first: it describes the current code, branches, test results and next work. `status/STATUS.md` and the root README are stale until rewritten.
+
 ## Mission
 
 Implement a tiling layer that preserves KDE Plasma and KWin while making ordinary window management immediate, predictable, and configurable. The user gives performance and snappiness the highest priority. Interpret that as low and stable input-to-visible-response latency, bounded work in KWin, no geometry fights, no surprise focus movement, and no persistent idle work. It does not mean minimizing the layout function alone.
