@@ -132,19 +132,22 @@ def send_next_output(s: Session, i: int, times: int = 1) -> None:
         s.settle()
 
 
-def missed_changes(s: Session, desk2: str) -> dict:
+def missed_changes(s: Session, desk2: str) -> dict[str, dict]:
     """The changes Plastile must not see live: close 3, open 6 on Virtual-0, resize 5 on Virtual-1,
-    move 4 to Virtual-2 and 7 to desktop Two. Returns the externally set frame of 5."""
+    resize 2 in place (its slot does not change, so only the drift calls for a write), move 4 to
+    Virtual-2 and 7 to desktop Two. Returns the externally set frames of 5 and 2."""
     s.kill(3)
     s.act(fx(2), "workspace.activeWindow = w")  # new windows open on the active output, after the focused one
     s.spawn(6)
-    a1 = area_of(s, "Virtual-1")
-    ext = {"x": a1["x"] + 60, "y": a1["y"] + 60, "width": 420, "height": 300}
-    s.act(fx(5), f"w.frameGeometry = {json.dumps(ext)}")
+    a0, a1 = area_of(s, "Virtual-0"), area_of(s, "Virtual-1")
+    ext = {fx(5): {"x": a1["x"] + 60, "y": a1["y"] + 60, "width": 420, "height": 300},
+           fx(2): {"x": a0["x"] + a0["width"] // 2 + 40, "y": a0["y"] + 40, "width": 380, "height": 260}}
+    for cap, r in ext.items():
+        s.act(cap, f"w.frameGeometry = {json.dumps(r)}")
     s.act(fx(4), "workspace.sendClientToScreen(w, workspace.screens.find(o => o.name === 'Virtual-2'))")
     s.act(fx(7), "w.desktops = [workspace.desktops.find(d => d.id === " + json.dumps(desk2) + ")]")
     until(lambda: (lambda f: f[fx(4)]["output"] == "Virtual-2" and f[fx(7)]["desktops"] == [desk2]
-                   and near(f[fx(5)]["frame"], ext, 1.0))(s.frames()), 5)
+                   and all(near(f[cap]["frame"], r, 1.0) for cap, r in ext.items()))(s.frames()), 5)
     return ext
 
 
@@ -164,8 +167,9 @@ def placement(s: Session) -> dict[str, str]:
 
 
 def check_adopted(c: Checks, s: Session, tag: str, before: dict[str, dict], wid: dict[str, str], recs: list[dict],
-                  closed_id: str, desk1: str, desk2: str, ext5: dict) -> None:
-    """Shared assertions after resume / re-adoption."""
+                  closed_id: str, desk1: str, desk2: str, ext: dict[str, dict], slots: dict[str, dict]) -> None:
+    """Shared assertions after resume / re-adoption. `slots` holds the frames tiled before the
+    missed changes; 1 and 2 keep their slots (2 was only resized away from it)."""
     f = s.frames()
     after = {k: v["frame"] for k, v in f.items()}
     a0, a1, a2 = area_of(s, "Virtual-0"), area_of(s, "Virtual-1"), area_of(s, "Virtual-2")
@@ -176,7 +180,10 @@ def check_adopted(c: Checks, s: Session, tag: str, before: dict[str, dict], wid:
       and f[fx(6)]["frame"]["width"] < a0["width"] - 2 * GAP, {i: f[fx(i)]["frame"] for i in (1, 2, 6)})
     c(f"{tag}: the window moved to Virtual-2 (4) fills it; the externally resized one (5) fills Virtual-1 (oracle)",
       near(f[fx(4)]["frame"], full(a2), 1.0) and near(f[fx(5)]["frame"], full(a1), 1.0),
-      {"4": f[fx(4)]["frame"], "5": f[fx(5)]["frame"], "ext5": ext5})
+      {"4": f[fx(4)]["frame"], "5": f[fx(5)]["frame"], "ext5": ext[fx(5)]})
+    c(f"{tag}: the window resized in place (2) is back in its unchanged slot, 1 never left its slot (oracle)",
+      near(f[fx(2)]["frame"], slots[fx(2)], 1.0) and near(f[fx(1)]["frame"], slots[fx(1)], 1.0),
+      {"2": f[fx(2)]["frame"], "slot2": slots[fx(2)], "ext2": ext[fx(2)], "1": f[fx(1)]["frame"], "slot1": slots[fx(1)]})
     counts = s.counters()
     ctx = {x["id"]: x["members"] for x in counts["contexts"]}
     live = len(s.frames_list())
@@ -189,11 +196,10 @@ def check_adopted(c: Checks, s: Session, tag: str, before: dict[str, dict], wid:
     w = writes_in(recs)
     changed = {k for k in after if k in before and not near(after[k], before[k], 0.5)} | {k for k in after if k not in before}
     by_cap = {cap: w.get(wid[cap], 0) for cap in after if cap in wid}
-    c(f"{tag}: windows already in their slot (1, 2) are not written and did not move (oracle + trace)",
-      by_cap.get(fx(1), 0) == 0 and by_cap.get(fx(2), 0) == 0 and fx(1) not in changed and fx(2) not in changed,
-      {"writes": by_cap, "changed": sorted(changed)})
-    c(f"{tag}: minimal writes: one per window that had to move (4, 5, 6), none for the hidden one (7)",
-      {k: v for k, v in by_cap.items() if v} == {fx(4): 1, fx(5): 1, fx(6): 1},
+    c(f"{tag}: the window already in its slot (1) is not written and did not move (oracle + trace)",
+      by_cap.get(fx(1), 0) == 0 and fx(1) not in changed, {"writes": by_cap, "changed": sorted(changed)})
+    c(f"{tag}: minimal writes: one per window that had to move (2 drifted, 4, 5, 6), none for the hidden one (7)",
+      {k: v for k, v in by_cap.items() if v} == {fx(2): 1, fx(4): 1, fx(5): 1, fx(6): 1},
       {"writes": by_cap, "changed": sorted(changed)})
     sv = solves_in(recs)
     keys = {n: ctx_key(o, desk1, list(ctx) + list(sv)) for n, o in (("V0", "Virtual-0"), ("V1", "Virtual-1"), ("V2", "Virtual-2"))}
@@ -208,7 +214,7 @@ def check_adopted(c: Checks, s: Session, tag: str, before: dict[str, dict], wid:
 # ---------------------------------------------------------------- T19 suspend
 @scenario("resume-missed-events-T19")
 def resume_missed(out: Path, c: Checks):
-    """Suspend, then open/close/move desktop/move output/external resize, then resume.
+    """Suspend, then open/close/move desktop/move output/external resize (one in place), then resume.
 
     While suspended Plastile still receives KWin's events (no write, no fight); resume must solve the
     current live state once per visible context, write only windows that are not in their slot, and
@@ -223,16 +229,18 @@ def resume_missed(out: Path, c: Checks):
           [place[fx(i)] for i in (1, 2, 3, 4, 5, 7)] == ["Virtual-0"] * 3 + ["Virtual-1"] * 3 and not per_output_errors(s),
           {"place": place, "errors": per_output_errors(s)})
         wid = ids(s)
+        slots = frames(s)
         closed = wid[fx(3)]
         c("suspend: accepted", toggle_suspend(s) and is_suspended(s))
         t_sus = last_trace_t(s)
-        ext5 = missed_changes(s, desk2)
+        ext = missed_changes(s, desk2)
         time.sleep(0.8)  # give a (wrong) write a chance to land
         f = s.frames()
         recs = trace_since(trace(s), t_sus)
         c("suspended: Plastile wrote nothing while windows opened, closed and moved (trace)", not writes_in(recs),
           readable(writes_in(recs)))
-        c("suspended: the external resize is not fought (oracle)", near(f[fx(5)]["frame"], ext5, 1.0), f[fx(5)]["frame"])
+        c("suspended: the external resizes (5, and 2 in place) are not fought (oracle)",
+          all(near(f[cap]["frame"], r, 1.0) for cap, r in ext.items()), {cap: f[cap]["frame"] for cap in ext})
         c("suspended: setup moved 4 to Virtual-2 and 7 to desktop Two (oracle)",
           f[fx(4)]["output"] == "Virtual-2" and f[fx(7)]["desktops"] == [desk2] and fx(3) not in f,
           {"4": f[fx(4)]["output"], "7": f[fx(7)]["desktops"]})
@@ -245,8 +253,18 @@ def resume_missed(out: Path, c: Checks):
         b = s.settle()
         recs = trace_since(trace(s), t_res)
         facts["resume"] = {"writes": readable(writes_in(recs)), "solves": readable(solves_in(recs)), "delta": delta(a, b)}
-        check_adopted(c, s, "resume", before, wid, recs, closed, desk1, desk2, ext5)
-        c("resume: no corrections (each write landed as requested)", delta(a, b).get("corrections", 0) == 0, delta(a, b))
+        check_adopted(c, s, "resume", before, wid, recs, closed, desk1, desk2, ext, slots)
+        # 2's settled request is its slot: re-placing it there after the drift is a correction
+        # (ledger.decideWrite). Every other write is a plan write, and none is retried.
+        reasons: dict[str, list[str]] = {}
+        for cap, i in wid.items():
+            rs = [r["data"]["reason"] for r in recs if r.get("kind") == "write" and r.get("id") == i]
+            if rs:
+                reasons[cap] = rs
+        c("resume: each write landed as requested; the only correction re-places 2, which drifted in place",
+          delta(a, b).get("corrections", 0) == 1
+          and reasons == {fx(2): ["correction"], fx(4): ["plan"], fx(5): ["plan"], fx(6): ["plan"]},
+          {"delta": delta(a, b), "reasons": reasons})
 
         # The hidden window is tiled once its desktop is shown.
         s.js("workspace.currentDesktop = workspace.desktops[1]; emit(1)")
@@ -286,11 +304,11 @@ def reenable_missed(out: Path, c: Checks):
         desk2 = setup_three_outputs(s)
         desk1 = json.loads(s.js("emit(workspace.desktops[0].id)")[0])
         wid = ids(s)
+        slots = frames(s)
         closed = wid[fx(3)]
-        base = s.counters()
         names0 = s.kw.shortcut_names()
         s.unload()
-        ext5 = missed_changes(s, desk2)
+        ext = missed_changes(s, desk2)
         time.sleep(0.3)
         wid = {**wid, **ids(s)}
         before = frames(s)
@@ -299,7 +317,7 @@ def reenable_missed(out: Path, c: Checks):
         s.settle()
         recs = trace(s)  # a fresh runtime: its whole trace is the adoption
         facts["adopt"] = {"writes": readable(writes_in(recs)), "solves": readable(solves_in(recs))}
-        check_adopted(c, s, "re-enable", before, wid, recs, closed, desk1, desk2, ext5)
+        check_adopted(c, s, "re-enable", before, wid, recs, closed, desk1, desk2, ext, slots)
 
         # Repeated suspend/resume, then disable/enable, with a command pending at each unload.
         cycles = 10
@@ -412,8 +430,10 @@ def send_reflow_once(out: Path, c: Checks):
             f = s.frames()
             c(f"{mode}: output send landed: 3 on Virtual-1, tiled full there (oracle)",
               f[fx(3)]["output"] == "Virtual-1" and near(f[fx(3)]["frame"], full(s.area(1)), 1.0), f[fx(3)])
-            c(f"{mode}: output send solves the source and the destination exactly once each, nothing else",
-              sv == {src: 1, dst_out: 1}, {"solves": readable(sv), "src": src.replace(SEP, "/"), "dst": dst_out.replace(SEP, "/")})
+            c(f"{mode}: output send solves the source and the destination exactly once each, nothing else "
+              "(trace; the solves counter agrees)",
+              sv == {src: 1, dst_out: 1} and d.get("solves", 0) == 2,
+              {"solves": readable(sv), "src": src.replace(SEP, "/"), "dst": dst_out.replace(SEP, "/"), "delta": d})
             minimal(c, f"{mode}: output send writes 2 (reflowed) and 3 (placed) once each, not 1 (slot unchanged)",
                     recs, before, frames(s), wid, {fx(2): 1, fx(3): 1})
             c(f"{mode}: output send: no corrections", d.get("corrections", 0) == 0, d)
@@ -427,32 +447,37 @@ def send_reflow_once(out: Path, c: Checks):
             c(f"{mode}: desktop send landed: 2 on desktop Two (oracle)", s.frames()[fx(2)]["desktops"] == [two])
             if mode == "default":
                 # The destination is hidden: only the source is solved now; the destination when shown.
-                c("default: desktop send solves the source once; the hidden destination not at all",
-                  sv == {src: 1}, readable(sv))
+                c("default: desktop send solves the source once; the hidden destination not at all "
+                  "(trace; the solves counter agrees)", sv == {src: 1} and d.get("solves", 0) == 1,
+                  {"solves": readable(sv), "delta": d})
                 minimal(c, "default: desktop send writes 1 (reflowed to full) once, nothing else",
                         recs, before, frames(s), wid, {fx(1): 1})
                 shown, then = (dst_desk, {fx(2): 1}), "Two"
             else:
                 # Follow shows the destination on Virtual-0: it is solved now; the source, hidden, when shown again.
-                c("follow: desktop send solves the shown destination once; the now-hidden source not at all",
-                  views["Virtual-0"] == "Two" and sv == {dst_desk: 1}, {"solves": readable(sv), "views": views})
+                c("follow: desktop send solves the shown destination once; the now-hidden source not at all "
+                  "(trace; the solves counter agrees)",
+                  views["Virtual-0"] == "Two" and sv == {dst_desk: 1} and d.get("solves", 0) == 1,
+                  {"solves": readable(sv), "views": views, "delta": d})
                 minimal(c, "follow: desktop send writes 2 (placed on Two) once, nothing else",
                         recs, before, frames(s), wid, {fx(2): 1})
                 shown, then = (src, {fx(1): 1}), "Desktop 1"
             c(f"{mode}: desktop send: no corrections", d.get("corrections", 0) == 0, d)
             # Show the context the send left hidden: one solve, its one window written once.
             before = frames(s)
+            a = s.counters()
             t0 = last_trace_t(s)
             s.js(f"workspace.setCurrentDesktopForScreen(workspace.desktops.find(d => d.name === {json.dumps(then)}),"
                  " workspace.screens[0]); emit(1)")
             until(lambda: per_screen(s)["Virtual-0"] == then, 3)
             time.sleep(0.4)
-            s.settle()
+            d = delta(a, s.settle())
             recs = trace_since(trace(s), t0)
             sv = solves_in(recs)
-            facts[f"{mode}.show"] = {"solves": readable(sv), "writes": readable(writes_in(recs))}
-            c(f"{mode}: showing the context the send left hidden solves it exactly once",
-              sv == {shown[0]: 1}, {"solves": readable(sv), "expected": shown[0].replace(SEP, "/")})
+            facts[f"{mode}.show"] = {"solves": readable(sv), "writes": readable(writes_in(recs)), "delta": d}
+            c(f"{mode}: showing the context the send left hidden solves it exactly once (trace; the solves counter agrees)",
+              sv == {shown[0]: 1} and d.get("solves", 0) == 1,
+              {"solves": readable(sv), "expected": shown[0].replace(SEP, "/"), "delta": d})
             minimal(c, f"{mode}: and writes its window once", recs, before, frames(s), wid, shown[1])
             c(f"{mode}: every output tiled after the sends (oracle)", not per_output_errors(s), per_output_errors(s))
             errs = s.log_lines(ERRORS, off)
@@ -492,6 +517,14 @@ def send_stale_close(out: Path, c: Checks):
             ctx = {x["id"]: x["members"] for x in b["contexts"]}
             facts[case] = {"delta": delta(a, b), "recordsFor4": [r["kind"] for r in recs if r.get("id") == w4],
                            "members": readable(ctx)}
+            if case == "after-write":
+                # The leftovers exist only if the write was still outstanding at the close: not
+                # settled inside the write, and no `settled` record before the removal.
+                upto = [r for r in recs[:rm[0]] if r.get("id") == w4] if rm else []
+                wr = [r for r in upto if r.get("kind") == "write"]
+                c("after-write: that write was still outstanding when the window closed (trace)",
+                  len(wr) == 1 and not wr[0]["data"]["settled"] and not [r for r in upto if r.get("kind") == "settled"],
+                  [(r["kind"], r.get("data")) for r in upto])
             c(f"{case}: the closed window's removal is recorded, and nothing for it afterwards (no write, deadline, correction)",
               bool(rm) and later == [], {"records": facts[case]["recordsFor4"], "after": later})
             c(f"{case}: no request outstanding and no correction",
