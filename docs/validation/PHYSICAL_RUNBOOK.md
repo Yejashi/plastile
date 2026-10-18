@@ -147,7 +147,7 @@ It reports the session and compositor (pid, not nested), KWin and Qt versions, c
 
 Consent: C1.
 
-1. `tools/install.sh install` (use `upgrade` if an older copy is installed). It refuses to install without the built bundle and prints, but never runs, the enable commands.
+1. `tools/install.sh install` (use `upgrade` if an older copy is installed; if that older copy already ran in this session, log out and in before step 2, or KWin starts the older version again: [INSTALL](../user/INSTALL.md#updating)). It refuses to install without the built bundle and prints, but never runs, the enable commands.
 2. System Settings > Window Management > KWin Scripts: tick **Plastile** and Apply. If it is not listed yet, wait half a minute or log out and in (measured in nested KWin: a package installed while KWin runs was found only after about 20 s).
 3. Open Plastile's settings dialog from the same page, change nothing, press Apply, then run `qdbus6 org.kde.KWin /KWin reconfigure` (the dialog's Apply alone does not reach the running script; see [INSTALL](../user/INSTALL.md#applying-settings-changes)). The dialog has never been clicked through in a live session before.
 4. Confirm the start and the diagnostics in the journal (reading the journal in a physical session is itself untested; see [TROUBLESHOOTING](../user/TROUBLESHOOTING.md#reading-the-log)):

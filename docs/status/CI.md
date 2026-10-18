@@ -144,6 +144,7 @@ facing tiles (>= the configured gap; one device pixel of tolerance at fractional
 | `native-tree-edit-L14`, `native-manage-L14`, `native-unmanage-config-L14` | L14 |
 | `native-editor-toggle-L14` | L14 editor toggle; SKIP without OpenGL compositing (the tile editor effect is GL-only) |
 | `package-install-autoload-T32`, `package-post-start-discovery-T32` | Q11 partial: install, autoload, disable, upgrade, remove within one KWin version |
+| `package-upgrade-bindings-T26-T32` | Q08 update half, Q11 version-to-version: a package built from `34204e2` (relabelled 0.0.1; the current tree relabelled where git history or Node is missing) configured and rebound, upgraded with `install.sh upgrade`, script and KWin restarted; config, rebinding and unbinding kept (KGlobalAccel, kglobalshortcutsrc, libei key presses), one dispatch per press, Meta+T untouched; removal leaves no live Plastile action. Needs the full history (`fetch-depth: 0`) |
 | `fixed-size-G07` | G07 (Wayland min == max: floats by policy, also when a rule asks to tile it; never written) |
 | `max-size-G09` | G09 (held at its maximum, centred in its cell, never configured beyond it, converged) |
 | `late-min-size-D3` | defect D3 regression: a client that clamps to its own minimum raises it after mapping (fixture `--late-min-size`); the minimum must be adopted from the hint, not learned from a refused request. Failed before 34204e2, passes after it |

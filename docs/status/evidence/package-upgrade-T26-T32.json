@@ -1,0 +1,915 @@
+{
+ "old": {
+  "commit": "34204e2b11f668f2b744d2d09705e05b96aa733f",
+  "version": "0.0.1",
+  "source": "git",
+  "commands": 46
+ },
+ "new": {
+  "version": "0.1.0",
+  "sha256": "f9c53cf1d5439ab1b1951ad0fde5cc551f2f13c6c2d1299fd309f792ea61227c",
+  "commands": 68
+ },
+ "config": {
+  "diagnostics": "debug",
+  "gapInner": "20",
+  "gapOuter": "14",
+  "masterRatio": "0.6"
+ },
+ "steps": {
+  "installOld": {
+   "argv": [
+    "tools/install.sh",
+    "install",
+    "<repo>/artifacts/integration/20261018T084509/package-upgrade-bindings-T26-T32/old-tree/package"
+   ],
+   "rc": 0,
+   "stdout": "Successfully installed <profile>/data/kwin/scripts/plastile/\n\nInstalled to: <profile>/data/kwin/scripts/plastile\nNothing was enabled, reloaded or restarted. KWin discovers packages when it (re)scans\nkwin/scripts; a package installed while KWin is running may not be visible until the\nscript list is refreshed (log out and in). To enable Plastile, either:\n\n  System Settings > Window Management > KWin Scripts > tick \"Plastile\" > Apply\n\nor, from a terminal in the same session:\n\n  kwriteconfig6 --file kwinrc --group Plugins --key plastileEnabled true\n  qdbus6 org.kde.KWin /Scripting org.kde.kwin.Scripting.start\n\nTo disable later, set the same key to false and run the same Scripting.start command.\nThis script prints these commands; it does not execute them.\n",
+   "stderr": "",
+   "kwinrcUnchanged": true
+  },
+  "rebound": {
+   "plastile.focus.next": [
+    "Meta+Alt+N",
+    "none"
+   ],
+   "plastile.focus.previous": [
+    "Meta+Alt+P",
+    "none"
+   ],
+   "plastile.inspect.counters": [
+    "Meta+Alt+C",
+    "none"
+   ],
+   "plastile.swap.master": [
+    "none",
+    "none"
+   ]
+  },
+  "upgrade": {
+   "argv": [
+    "tools/install.sh",
+    "upgrade",
+    "<repo>/artifacts/integration/20261018T084509/package-upgrade-bindings-T26-T32/dist/plastile-0.1.0.kwinscript"
+   ],
+   "rc": 0,
+   "stdout": "Upgrading package from file: <repo>/artifacts/integration/20261018T084509/package-upgrade-bindings-T26-T32/dist/plastile-0.1.0.kwinscript\nSuccessfully upgraded <profile>/data/kwin/scripts/plastile/\n\nUpgraded: <profile>/data/kwin/scripts/plastile\nA running KWin keeps executing the previously loaded version until KWin itself restarts:\nlog out and back in. Disabling and re-enabling the script (System Settings > Window\nManagement > KWin Scripts, or kwriteconfig6 + Scripting.start) is not enough: KWin 6.7.5\nstarts the older version again from its QML cache (measured in a nested session).\nSettings in kwinrc and your shortcut bindings are kept. This script restarts nothing.\n",
+   "stderr": "",
+   "kwinrcUnchanged": true
+  },
+  "scriptRestart": {
+   "stopped": true,
+   "startedVersion": "0.0.1",
+   "bindings": {
+    "file": {
+     "plastile.focus.next": [
+      "Meta+Alt+N",
+      "none"
+     ],
+     "plastile.focus.previous": [
+      "Meta+Alt+P",
+      "none"
+     ],
+     "plastile.inspect.counters": [
+      "Meta+Alt+C",
+      "none"
+     ],
+     "plastile.swap.master": [
+      "none",
+      "none"
+     ],
+     "plastile.runtime.toggle-suspend": [
+      "Meta+Shift+S",
+      "none"
+     ],
+     "plastile.resize.grow": [
+      "Meta+Shift+=",
+      "none"
+     ],
+     "plastile.resize.shrink": [
+      "Meta+Shift+-",
+      "none"
+     ],
+     "plastile.focus.left": [
+      "Meta+Shift+H",
+      "none"
+     ]
+    },
+    "defaultKeys": {
+     "plastile.focus.left": [],
+     "plastile.runtime.toggle-suspend": []
+    },
+    "names": {
+     "count": 46,
+     "unique": 46,
+     "commands": 46,
+     "missing": []
+    },
+    "replacedDefaults": {
+     "plastile.runtime.toggle-suspend": {
+      "keys": [
+       301989971
+      ],
+      "file": [
+       "Meta+Shift+S",
+       "none"
+      ]
+     },
+     "plastile.resize.grow": {
+      "keys": [
+       301989949
+      ],
+      "file": [
+       "Meta+Shift+=",
+       "none"
+      ]
+     },
+     "plastile.resize.shrink": {
+      "keys": [
+       301989933
+      ],
+      "file": [
+       "Meta+Shift+-",
+       "none"
+      ]
+     }
+    },
+    "presses": {
+     "Meta+Alt+N": [
+      "debug command {\"command\":\"plastile.focus.next\",\"status\":\"accepted\",\"targets\":[\"{1db22e56-a525-4ecf-bdab-820add82f27f}\"],"
+     ],
+     "Meta+Alt+P": [
+      "debug command {\"command\":\"plastile.focus.previous\",\"status\":\"accepted\",\"targets\":[\"{d9d0f3b8-a922-4154-9a58-288b8584f970"
+     ],
+     "Meta+Alt+C": [
+      "counters {\"counters\":{\"solves\":1,\"flushes\":1,\"commands\":2,\"commandsQueued\":0,\"writes\":0,\"corrections\":0,\"skipOutstanding"
+     ],
+     "Meta+Shift+H": [
+      "debug command {\"command\":\"plastile.focus.left\",\"status\":\"noop\",\"reason\":\"nothing left\",\"targets\":[],\"revision\":2,\"reques"
+     ],
+     "Meta+Shift+N": [],
+     "Meta+Shift+Return": []
+    },
+    "metaT": {
+     "holder": [
+      "kwin",
+      "Edit Tiles"
+     ],
+     "plastileActions": [],
+     "dispatch": []
+    }
+   }
+  },
+  "disableUpgradeEnable": {
+   "upgradeRc": 0,
+   "startedVersion": "0.0.1"
+  },
+  "kwinRestart": {
+   "startedVersion": "0.1.0",
+   "bindings": {
+    "file": {
+     "plastile.focus.next": [
+      "Meta+Alt+N",
+      "none"
+     ],
+     "plastile.focus.previous": [
+      "Meta+Alt+P",
+      "none"
+     ],
+     "plastile.inspect.counters": [
+      "Meta+Alt+C",
+      "none"
+     ],
+     "plastile.swap.master": [
+      "none",
+      "none"
+     ],
+     "plastile.runtime.toggle-suspend": [
+      "Meta+Shift+S",
+      "none"
+     ],
+     "plastile.resize.grow": [
+      "Meta+Shift+=",
+      "none"
+     ],
+     "plastile.resize.shrink": [
+      "Meta+Shift+-",
+      "none"
+     ],
+     "plastile.focus.left": [
+      "Meta+Shift+H",
+      "none"
+     ]
+    },
+    "defaultKeys": {
+     "plastile.focus.left": [],
+     "plastile.runtime.toggle-suspend": []
+    },
+    "names": {
+     "count": 68,
+     "unique": 68,
+     "commands": 68,
+     "missing": []
+    },
+    "replacedDefaults": {
+     "plastile.runtime.toggle-suspend": {
+      "keys": [
+       301989971
+      ],
+      "file": [
+       "Meta+Shift+S",
+       "none"
+      ]
+     },
+     "plastile.resize.grow": {
+      "keys": [
+       301989949
+      ],
+      "file": [
+       "Meta+Shift+=",
+       "none"
+      ]
+     },
+     "plastile.resize.shrink": {
+      "keys": [
+       301989933
+      ],
+      "file": [
+       "Meta+Shift+-",
+       "none"
+      ]
+     }
+    },
+    "presses": {
+     "Meta+Alt+N": [
+      "debug command {\"command\":\"plastile.focus.next\",\"status\":\"accepted\",\"targets\":[\"{a747d5b2-e238-4d0f-a695-453aaf8d78bd}\"],"
+     ],
+     "Meta+Alt+P": [
+      "debug command {\"command\":\"plastile.focus.previous\",\"status\":\"accepted\",\"targets\":[\"{e411455b-01a5-4227-9319-353ae94f70dc"
+     ],
+     "Meta+Alt+C": [
+      "counters {\"counters\":{\"solves\":2,\"flushes\":3,\"commands\":2,\"commandsQueued\":0,\"writes\":3,\"corrections\":0,\"skipOutstanding"
+     ],
+     "Meta+Shift+H": [
+      "debug command {\"command\":\"plastile.focus.left\",\"status\":\"noop\",\"reason\":\"nothing left\",\"targets\":[],\"revision\":2,\"reques"
+     ],
+     "Meta+Shift+N": [],
+     "Meta+Shift+Return": []
+    },
+    "metaT": {
+     "holder": [
+      "kwin",
+      "Edit Tiles"
+     ],
+     "plastileActions": [],
+     "dispatch": []
+    }
+   },
+   "conflictReport": [
+    "warn shortcut conflicts: Meta+Shift+S: \"Plastile: Suspend/resume tiling\" and \"Spectacle\" (Spectacle) (change one in System Settings, Keyboard, Shortcuts)"
+   ]
+  },
+  "cleanUpControl": {
+   "kwinNamesBefore": 235,
+   "kwinNamesAfter": 235,
+   "plastileNames": 68
+  },
+  "remove": {
+   "argv": [
+    "tools/install.sh",
+    "remove"
+   ],
+   "rc": 0,
+   "stdout": "Successfully uninstalled <profile>/data/kwin/scripts/plastile/\n\nRemoved: <profile>/data/kwin/scripts/plastile\nThe kwinrc [Plugins] plastileEnabled key and the [Script-plastile] settings group were left\nuntouched (this script never writes kwinrc). A running KWin keeps the loaded script\nuntil the session ends or the script is disabled.\n",
+   "stderr": "",
+   "kwinrcUnchanged": true
+  },
+  "release": {
+   "namesAfterRemove": 68,
+   "fileEntriesAfterRemove": 68,
+   "cleanUp": true,
+   "namesAfterCleanUp": 0,
+   "fileEntriesAfterCleanUp": 0
+  }
+ },
+ "layer": "nested KWin virtual backend (not physical); private XDG profile kept across two nested KWin processes; bindings set over D-Bus (setForeignShortcutKeys), keys pressed through libei",
+ "kwin": "kwin 6.7.5",
+ "kpackagetool6": "kpackagetool6 2.0",
+ "checks": {
+  "release: two builds yield identical bytes": {
+   "pass": true,
+   "detail": {
+    "sha256": "f9c53cf1d5439ab1b1951ad0fde5cc551f2f13c6c2d1299fd309f792ea61227c",
+    "bytes": 81082
+   }
+  },
+  "release: required entries present and sorted": {
+   "pass": true,
+   "detail": [
+    "contents/code/plastile.mjs",
+    "contents/config/main.xml",
+    "contents/ui/Inspector.qml",
+    "contents/ui/Persistence.qml",
+    "contents/ui/ZoneOverlay.qml",
+    "contents/ui/config.ui",
+    "contents/ui/main.qml",
+    "metadata.json"
+   ]
+  },
+  "release: CLI --check passes and matches the library hash": {
+   "pass": true,
+   "detail": {
+    "rc": 0,
+    "stderr": "",
+    "cliSha256": "f9c53cf1d5439ab1b1951ad0fde5cc551f2f13c6c2d1299fd309f792ea61227c"
+   }
+  },
+  "older package: built from commit 34204e2, relabelled 0.0.1": {
+   "pass": true,
+   "detail": "{\"commit\": \"34204e2b11f668f2b744d2d09705e05b96aa733f\", \"version\": \"0.0.1\", \"source\": \"git\", \"commands\": 46}"
+  },
+  "install 0.0.1: install.sh install rc 0 into the private data home, kwinrc untouched": {
+   "pass": true,
+   "detail": {
+    "argv": [
+     "tools/install.sh",
+     "install",
+     "<repo>/artifacts/integration/20261018T084509/package-upgrade-bindings-T26-T32/old-tree/package"
+    ],
+    "rc": 0,
+    "stdout": "Successfully installed <profile>/data/kwin/scripts/plastile/\n\nInstalled to: <profile>/data/kwin/scripts/plastile\nNothing was enabled, reloaded or restarted. KWin discovers packages when it (re)scans\nkwin/scripts; a package installed while KWin is running may not be visible until the\nscript list is refreshed (log out and in). To enable Plastile, either:\n\n  System Settings > Window Management > KWin Scripts > tick \"Plastile\" > Apply\n\nor, from a terminal in the same session:\n\n  kwriteconfig6 --file kwinrc --group Plugins --key plastileEnabled true\n  qdbus6 org.kde.KWin /Scripting org.kde.kwin.Scripting.start\n\nTo disable later, set the same key to false and run the same Scripting.start command.\nThis script prints these commands; it does not execute them.\n",
+    "stderr": "",
+    "kwinrcUnchanged": true
+   }
+  },
+  "autoload: KWin starts the older package ('started 0.0.1')": {
+   "pass": true,
+   "detail": "0.0.1"
+  },
+  "old version applies the non-default config (outer 14, inner 20, master ratio 0.6; oracle)": {
+   "pass": true,
+   "detail": {
+    "outer": 14,
+    "inner": 20,
+    "ratio": 0.5998,
+    "ok": true
+   }
+  },
+  "old version registered its own defaults (suspend Meta+Shift+S)": {
+   "pass": true,
+   "detail": [
+    301989971
+   ]
+  },
+  "the chosen user chords are free before the rebinding (KGlobalAccel actionList empty)": {
+   "pass": true,
+   "detail": {
+    "Meta+Alt+N": [],
+    "Meta+Alt+P": [],
+    "Meta+Alt+C": []
+   }
+  },
+  "rebinding saved by KGlobalAccel in the private kglobalshortcutsrc (3 rebound, 1 unbound)": {
+   "pass": true,
+   "detail": {
+    "plastile.focus.next": [
+     "Meta+Alt+N",
+     "none"
+    ],
+    "plastile.focus.previous": [
+     "Meta+Alt+P",
+     "none"
+    ],
+    "plastile.inspect.counters": [
+     "Meta+Alt+C",
+     "none"
+    ],
+    "plastile.swap.master": [
+     "none",
+     "none"
+    ]
+   }
+  },
+  "control on 0.0.1: Meta+Alt+N (libei) already reaches focus.next before the upgrade": {
+   "pass": true,
+   "detail": [
+    " 69794.598 qml plastile debug command {\"command\":\"plastile.focus.next\",\"status\":\"accepted\",\"targets\":[\"{1db22e56-a525-4ecf-bdab-820add82f27f}\"],\"revision\":1,\"requested\":false}"
+   ]
+  },
+  "upgrade: install.sh upgrade plastile-0.1.0.kwinscript rc 0, installed version 0.1.0, kwinrc untouched": {
+   "pass": true,
+   "detail": {
+    "argv": [
+     "tools/install.sh",
+     "upgrade",
+     "<repo>/artifacts/integration/20261018T084509/package-upgrade-bindings-T26-T32/dist/plastile-0.1.0.kwinscript"
+    ],
+    "rc": 0,
+    "stdout": "Upgrading package from file: <repo>/artifacts/integration/20261018T084509/package-upgrade-bindings-T26-T32/dist/plastile-0.1.0.kwinscript\nSuccessfully upgraded <profile>/data/kwin/scripts/plastile/\n\nUpgraded: <profile>/data/kwin/scripts/plastile\nA running KWin keeps executing the previously loaded version until KWin itself restarts:\nlog out and back in. Disabling and re-enabling the script (System Settings > Window\nManagement > KWin Scripts, or kwriteconfig6 + Scripting.start) is not enough: KWin 6.7.5\nstarts the older version again from its QML cache (measured in a nested session).\nSettings in kwinrc and your shortcut bindings are kept. This script restarts nothing.\n",
+    "stderr": "",
+    "kwinrcUnchanged": true
+   }
+  },
+  "upgrade: install.sh status reports version 0.1.0": {
+   "pass": true,
+   "detail": "ion   : 0.1.0\nenabled   : true (kwinrc [Plugins] plastileEnabled)\nkpackagetool6 --type KWin/Script --show plastile:\n  Showing info for package: plastile\n    Name       : Plastile\n    Description: Fast, predictable automatic tiling (master/stack, BSP, monocle) that preserves KWin\n    Plugin     : plastile\n    Author     : Plastile contributors\n    Path       : <profile>/data/kwin/scripts/plastile/\n"
+  },
+  "upgrade: the running KWin keeps the loaded script (no stop/start without a restart, as install.sh says)": {
+   "pass": true,
+   "detail": null
+  },
+  "upgrade: kglobalshortcutsrc rebinding untouched by the package upgrade": {
+   "pass": true,
+   "detail": {
+    "plastile.focus.next": [
+     "Meta+Alt+N",
+     "none"
+    ],
+    "plastile.focus.previous": [
+     "Meta+Alt+P",
+     "none"
+    ],
+    "plastile.inspect.counters": [
+     "Meta+Alt+C",
+     "none"
+    ],
+    "plastile.swap.master": [
+     "none",
+     "none"
+    ]
+   }
+  },
+  "script restart: the script stops and exactly one Plastile starts again": {
+   "pass": true,
+   "detail": {
+    "stopped": true,
+    "startedVersion": "0.0.1",
+    "bindings": {
+     "file": {
+      "plastile.focus.next": [
+       "Meta+Alt+N",
+       "none"
+      ],
+      "plastile.focus.previous": [
+       "Meta+Alt+P",
+       "none"
+      ],
+      "plastile.inspect.counters": [
+       "Meta+Alt+C",
+       "none"
+      ],
+      "plastile.swap.master": [
+       "none",
+       "none"
+      ],
+      "plastile.runtime.toggle-suspend": [
+       "Meta+Shift+S",
+       "none"
+      ],
+      "plastile.resize.grow": [
+       "Meta+Shift+=",
+       "none"
+      ],
+      "plastile.resize.shrink": [
+       "Meta+Shift+-",
+       "none"
+      ],
+      "plastile.focus.left": [
+       "Meta+Shift+H",
+       "none"
+      ]
+     },
+     "defaultKeys": {
+      "plastile.focus.left": [],
+      "plastile.runtime.toggle-suspend": []
+     },
+     "names": {
+      "count": 46,
+      "unique": 46,
+      "commands": 46,
+      "missing": []
+     },
+     "replacedDefaults": {
+      "plastile.runtime.toggle-suspend": {
+       "keys": [
+        301989971
+       ],
+       "file": [
+        "Meta+Shift+S",
+        "none"
+       ]
+      },
+      "plastile.resize.grow": {
+       "keys": [
+        301989949
+       ],
+       "file": [
+        "Meta+Shift+=",
+        "none"
+       ]
+      },
+      "plastile.resize.shrink": {
+       "keys": [
+        301989933
+       ],
+       "file": [
+        "Meta+Shift+-",
+        "none"
+       ]
+      }
+     },
+     "presses": {
+      "Meta+Alt+N": [
+       "debug command {\"command\":\"plastile.focus.next\",\"status\":\"accepted\",\"targets\":[\"{1db22e56-a525-4ecf-bdab-820add82f27f}\"],"
+      ],
+      "Meta+Alt+P": [
+       "debug command {\"command\":\"plastile.focus.previous\",\"status\":\"accepted\",\"targets\":[\"{d9d0f3b8-a922-4154-9a58-288b8584f970"
+      ],
+      "Meta+Alt+C": [
+       "counters {\"counters\":{\"solves\":1,\"flushes\":1,\"commands\":2,\"commandsQueued\":0,\"writes\":0,\"corrections\":0,\"skipOutstanding"
+      ],
+      "Meta+Shift+H": [
+       "debug command {\"command\":\"plastile.focus.left\",\"status\":\"noop\",\"reason\":\"nothing left\",\"targets\":[],\"revision\":2,\"reques"
+      ],
+      "Meta+Shift+N": [],
+      "Meta+Shift+Return": []
+     },
+     "metaT": {
+      "holder": [
+       "kwin",
+       "Edit Tiles"
+      ],
+      "plastileActions": [],
+      "dispatch": []
+     }
+    }
+   }
+  },
+  "script restart (0.0.1 running): config preserved and applied (oracle; [Script-plastile] unchanged)": {
+   "pass": true,
+   "detail": {
+    "outer": 14,
+    "inner": 20,
+    "ratio": 0.5998,
+    "ok": true
+   }
+  },
+  "script restart: plastile.focus.next keeps the user's Meta+Alt+N (KGlobalAccel shortcutKeys and kglobalshortcutsrc)": {
+   "pass": true,
+   "detail": {
+    "keys": [
+     402653262
+    ],
+    "file": [
+     "Meta+Alt+N",
+     "none"
+    ]
+   }
+  },
+  "script restart: plastile.focus.previous keeps the user's Meta+Alt+P (KGlobalAccel shortcutKeys and kglobalshortcutsrc)": {
+   "pass": true,
+   "detail": {
+    "keys": [
+     402653264
+    ],
+    "file": [
+     "Meta+Alt+P",
+     "none"
+    ]
+   }
+  },
+  "script restart: plastile.inspect.counters keeps the user's Meta+Alt+C (KGlobalAccel shortcutKeys and kglobalshortcutsrc)": {
+   "pass": true,
+   "detail": {
+    "keys": [
+     402653251
+    ],
+    "file": [
+     "Meta+Alt+C",
+     "none"
+    ]
+   }
+  },
+  "script restart: plastile.swap.master stays unbound (no keys; kglobalshortcutsrc 'none')": {
+   "pass": true,
+   "detail": {
+    "keys": [],
+    "file": [
+     "none",
+     "none"
+    ]
+   }
+  },
+  "script restart: an untouched default keeps its key (focus.left Meta+Shift+H)": {
+   "pass": true,
+   "detail": [
+    301989960
+   ]
+  },
+  "script restart: KGlobalAccel lists every command of 0.0.1 once": {
+   "pass": true,
+   "detail": {
+    "count": 46,
+    "unique": 46,
+    "commands": 46,
+    "missing": []
+   }
+  },
+  "script restart: defaults the upgrade replaced keep the older key the old version stored (KGlobalAccel autoloading; documented in SHORTCUTS.md)": {
+   "pass": true,
+   "detail": {
+    "plastile.runtime.toggle-suspend": {
+     "keys": [
+      301989971
+     ],
+     "file": [
+      "Meta+Shift+S",
+      "none"
+     ]
+    },
+    "plastile.resize.grow": {
+     "keys": [
+      301989949
+     ],
+     "file": [
+      "Meta+Shift+=",
+      "none"
+     ]
+    },
+    "plastile.resize.shrink": {
+     "keys": [
+      301989933
+     ],
+     "file": [
+      "Meta+Shift+-",
+      "none"
+     ]
+    }
+   }
+  },
+  "script restart: pressing Meta+Alt+N (libei) dispatches plastile.focus.next exactly once": {
+   "pass": true,
+   "detail": [
+    "debug command {\"command\":\"plastile.focus.next\",\"status\":\"accepted\",\"targets\":[\"{1db22e56-a525-4ecf-bdab-820add82f27f}\"],"
+   ]
+  },
+  "script restart: pressing Meta+Alt+P (libei) dispatches plastile.focus.previous exactly once": {
+   "pass": true,
+   "detail": [
+    "debug command {\"command\":\"plastile.focus.previous\",\"status\":\"accepted\",\"targets\":[\"{d9d0f3b8-a922-4154-9a58-288b8584f970"
+   ]
+  },
+  "script restart: pressing Meta+Shift+H (libei) dispatches plastile.focus.left exactly once": {
+   "pass": true,
+   "detail": [
+    "debug command {\"command\":\"plastile.focus.left\",\"status\":\"noop\",\"reason\":\"nothing left\",\"targets\":[],\"revision\":2,\"reques"
+   ]
+  },
+  "script restart: pressing Meta+Alt+C (libei) runs the user-bound Log counters exactly once": {
+   "pass": true,
+   "detail": [
+    "counters {\"counters\":{\"solves\":1,\"flushes\":1,\"commands\":2,\"commandsQueued\":0,\"writes\":0,\"corrections\":0,\"skipOutstanding"
+   ]
+  },
+  "script restart: the old chord Meta+Shift+N and the unbound Meta+Shift+Return reach no Plastile command": {
+   "pass": true,
+   "detail": {
+    "Meta+Shift+N": [],
+    "Meta+Shift+Return": []
+   }
+  },
+  "script restart: Meta+T is not stolen (held by kwin 'Edit Tiles', no Plastile action has it, a press reaches no Plastile command)": {
+   "pass": true,
+   "detail": {
+    "holder": [
+     "kwin",
+     "Edit Tiles"
+    ],
+    "plastileActions": [],
+    "dispatch": []
+   }
+  },
+  "disable, upgrade, enable: upgrade rc 0 and exactly one Plastile starts again": {
+   "pass": true,
+   "detail": {
+    "upgradeRc": 0,
+    "startedVersion": "0.0.1"
+   }
+  },
+  "KWin 1: no Plastile errors, warnings or JS exceptions (beyond conflict reports on the stale defaults)": {
+   "pass": true,
+   "detail": []
+  },
+  "KWin restart: autoload starts 0.1.0 exactly once": {
+   "pass": true,
+   "detail": [
+    "info started 0.1.0 {\"windows\":0,\"configRevision\":1}"
+   ]
+  },
+  "KWin restart: config preserved and applied (oracle; [Script-plastile] unchanged)": {
+   "pass": true,
+   "detail": {
+    "outer": 14,
+    "inner": 20,
+    "ratio": 0.5998,
+    "ok": true
+   }
+  },
+  "KWin restart: plastile.focus.next keeps the user's Meta+Alt+N (KGlobalAccel shortcutKeys and kglobalshortcutsrc)": {
+   "pass": true,
+   "detail": {
+    "keys": [
+     402653262
+    ],
+    "file": [
+     "Meta+Alt+N",
+     "none"
+    ]
+   }
+  },
+  "KWin restart: plastile.focus.previous keeps the user's Meta+Alt+P (KGlobalAccel shortcutKeys and kglobalshortcutsrc)": {
+   "pass": true,
+   "detail": {
+    "keys": [
+     402653264
+    ],
+    "file": [
+     "Meta+Alt+P",
+     "none"
+    ]
+   }
+  },
+  "KWin restart: plastile.inspect.counters keeps the user's Meta+Alt+C (KGlobalAccel shortcutKeys and kglobalshortcutsrc)": {
+   "pass": true,
+   "detail": {
+    "keys": [
+     402653251
+    ],
+    "file": [
+     "Meta+Alt+C",
+     "none"
+    ]
+   }
+  },
+  "KWin restart: plastile.swap.master stays unbound (no keys; kglobalshortcutsrc 'none')": {
+   "pass": true,
+   "detail": {
+    "keys": [],
+    "file": [
+     "none",
+     "none"
+    ]
+   }
+  },
+  "KWin restart: an untouched default keeps its key (focus.left Meta+Shift+H)": {
+   "pass": true,
+   "detail": [
+    301989960
+   ]
+  },
+  "KWin restart: KGlobalAccel lists every command of 0.1.0 once": {
+   "pass": true,
+   "detail": {
+    "count": 68,
+    "unique": 68,
+    "commands": 68,
+    "missing": []
+   }
+  },
+  "KWin restart: defaults the upgrade replaced keep the older key the old version stored (KGlobalAccel autoloading; documented in SHORTCUTS.md)": {
+   "pass": true,
+   "detail": {
+    "plastile.runtime.toggle-suspend": {
+     "keys": [
+      301989971
+     ],
+     "file": [
+      "Meta+Shift+S",
+      "none"
+     ]
+    },
+    "plastile.resize.grow": {
+     "keys": [
+      301989949
+     ],
+     "file": [
+      "Meta+Shift+=",
+      "none"
+     ]
+    },
+    "plastile.resize.shrink": {
+     "keys": [
+      301989933
+     ],
+     "file": [
+      "Meta+Shift+-",
+      "none"
+     ]
+    }
+   }
+  },
+  "KWin restart: pressing Meta+Alt+N (libei) dispatches plastile.focus.next exactly once": {
+   "pass": true,
+   "detail": [
+    "debug command {\"command\":\"plastile.focus.next\",\"status\":\"accepted\",\"targets\":[\"{a747d5b2-e238-4d0f-a695-453aaf8d78bd}\"],"
+   ]
+  },
+  "KWin restart: pressing Meta+Alt+P (libei) dispatches plastile.focus.previous exactly once": {
+   "pass": true,
+   "detail": [
+    "debug command {\"command\":\"plastile.focus.previous\",\"status\":\"accepted\",\"targets\":[\"{e411455b-01a5-4227-9319-353ae94f70dc"
+   ]
+  },
+  "KWin restart: pressing Meta+Shift+H (libei) dispatches plastile.focus.left exactly once": {
+   "pass": true,
+   "detail": [
+    "debug command {\"command\":\"plastile.focus.left\",\"status\":\"noop\",\"reason\":\"nothing left\",\"targets\":[],\"revision\":2,\"reques"
+   ]
+  },
+  "KWin restart: pressing Meta+Alt+C (libei) runs the user-bound Log counters exactly once": {
+   "pass": true,
+   "detail": [
+    "counters {\"counters\":{\"solves\":2,\"flushes\":3,\"commands\":2,\"commandsQueued\":0,\"writes\":3,\"corrections\":0,\"skipOutstanding"
+   ]
+  },
+  "KWin restart: the old chord Meta+Shift+N and the unbound Meta+Shift+Return reach no Plastile command": {
+   "pass": true,
+   "detail": {
+    "Meta+Shift+N": [],
+    "Meta+Shift+Return": []
+   }
+  },
+  "KWin restart: Meta+T is not stolen (held by kwin 'Edit Tiles', no Plastile action has it, a press reaches no Plastile command)": {
+   "pass": true,
+   "detail": {
+    "holder": [
+     "kwin",
+     "Edit Tiles"
+    ],
+    "plastileActions": [],
+    "dispatch": []
+   }
+  },
+  "control: Component.cleanUp() while Plastile runs keeps every Plastile action and the rebinding": {
+   "pass": true,
+   "detail": {
+    "kwinNamesBefore": 235,
+    "kwinNamesAfter": 235,
+    "plastileNames": 68
+   }
+  },
+  "remove step 1: untick + Apply (kwinrc false + Scripting.start) stops the script": {
+   "pass": true,
+   "detail": null
+  },
+  "remove step 2: install.sh remove rc 0, package directory gone, kwinrc untouched": {
+   "pass": true,
+   "detail": {
+    "argv": [
+     "tools/install.sh",
+     "remove"
+    ],
+    "rc": 0,
+    "stdout": "Successfully uninstalled <profile>/data/kwin/scripts/plastile/\n\nRemoved: <profile>/data/kwin/scripts/plastile\nThe kwinrc [Plugins] plastileEnabled key and the [Script-plastile] settings group were left\nuntouched (this script never writes kwinrc). A running KWin keeps the loaded script\nuntil the session ends or the script is disabled.\n",
+    "stderr": "",
+    "kwinrcUnchanged": true
+   }
+  },
+  "after removal: Scripting.start loads nothing; KWin does not run the script": {
+   "pass": true,
+   "detail": null
+  },
+  "after removal: the rebound and default chords reach nothing (libei)": {
+   "pass": true,
+   "detail": {
+    "Meta+Alt+N": [],
+    "Meta+Alt+C": [],
+    "Meta+Shift+H": []
+   }
+  },
+  "after removal: no Plastile action is active in KGlobalAccel (cleanUp(), which keeps live actions, removes every leftover Plastile registration)": {
+   "pass": true,
+   "detail": {
+    "namesAfterRemove": 68,
+    "fileEntriesAfterRemove": 68,
+    "cleanUp": true,
+    "namesAfterCleanUp": 0,
+    "fileEntriesAfterCleanUp": 0
+   }
+  },
+  "after removal: the leftover entries are gone from kglobalshortcutsrc after cleanUp()": {
+   "pass": true,
+   "detail": {
+    "namesAfterRemove": 68,
+    "fileEntriesAfterRemove": 68,
+    "cleanUp": true,
+    "namesAfterCleanUp": 0,
+    "fileEntriesAfterCleanUp": 0
+   }
+  },
+  "KWin 2: no Plastile errors, warnings or JS exceptions (beyond conflict reports on the stale defaults)": {
+   "pass": true,
+   "detail": []
+  }
+ }
+}
