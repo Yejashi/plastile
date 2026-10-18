@@ -649,6 +649,7 @@ export class Engine {
         break;
       case "stale":
         this.counters.stale++;
+        if (this.ownsGeometry(r) && !this.shown(r)) { this.deferHidden(r, f); break; }
         if (this.ownsGeometry(r)) {
           // Recorded only when it queues a correction: the reason for that write (T14).
           this.trace.record(this.svc.now(), "stale", id, { frame: f, request: r.ledger.request?.rect ?? null, before: r.ledger.before });
@@ -661,6 +662,10 @@ export class Engine {
       case "partial": this.counters.partial++; break;
       case "external":
         this.counters.external++;
+        // A window on a desktop or activity that is not shown is moved by KWin itself (its
+        // work-area check after a panel or output change: physical runbook, KWin 6.7.5) and is
+        // never written while hidden: the change invalidates its context, re-solved when shown.
+        if (this.ownsGeometry(r) && r.ledger.desired && !this.shown(r)) { this.deferHidden(r, f); break; }
         // KWin 6.8 confines a window to the work area on every configure-acknowledging commit
         // (XdgToplevelWindow::handleRoleCommit -> confineInteractiveMove), which pulls a parked
         // scrolling window back on activation, scale or decoration changes. A position-only
@@ -1259,6 +1264,7 @@ export class Engine {
       const r = this.recs.get(id);
       if (!r || !this.ownsGeometry(r) || !this.parked.has(id) || !r.ledger.desired) continue;
       if (rectNear(r.frame, r.ledger.desired, r.ledger.tol)) continue;
+      if (!this.shown(r)) { this.deferHidden(r, r.frame); continue; }
       this.counters.reparks++;
       this.contained("repark", () => this.write(r, r.ledger.desired!, "repark"));
     }
@@ -1282,6 +1288,8 @@ export class Engine {
       // A dirty context is re-solved in this flush and its fresh target supersedes the old
       // one (e.g. KWin moved a tile off a new panel before the area change was known).
       if (this.dirty.has(contextId(r.ctx!))) continue;
+      // Hidden since it was queued: never written while hidden, re-solved when shown.
+      if (!this.shown(r)) { this.deferHidden(r, r.frame); continue; }
       if (rectNear(r.frame, r.ledger.desired, r.ledger.tol) || rectNear(r.frame, r.ledger.accepted, r.ledger.tol)) continue;
       if (!L.canCorrect(r.ledger)) continue;
       this.contained("correction", () => this.write(r, r.ledger.desired!, "correction"));
@@ -1313,6 +1321,26 @@ export class Engine {
 
   private isVisible(key: ContextKey): boolean {
     return this.host.visibleDesktop(key.output) === key.desktop && this.host.currentActivity() === key.activity;
+  }
+
+  /** The window's context is shown (a window without a context is never written). */
+  private shown(r: Rec): boolean {
+    return r.ctx !== null && this.isVisible(r.ctx);
+  }
+
+  /**
+   * A window of a hidden context changed frame, or its correction or deadline came due while
+   * hidden. KWin moves such windows itself (its work-area check after a panel or output change),
+   * so this is not drift to correct: nothing is written while hidden, no correction is spent and
+   * nothing diverges. Its context is invalidated and re-solved, against the area then current,
+   * when it is shown (markVisibleDirty).
+   */
+  private deferHidden(r: Rec, f: Rect): void {
+    this.corrections.delete(r.id);
+    this.reparkQueue.delete(r.id);
+    const c = r.ctx ? this.contexts.get(contextId(r.ctx)) : undefined;
+    if (c && c.applied === c.revision) c.revision++;
+    this.trace.record(this.svc.now(), "hidden-external", r.id, { frame: f, desired: r.ledger.desired });
   }
 
   // ----------------------------------------------------------- solve / apply
@@ -1499,9 +1527,12 @@ export class Engine {
       if (!e.outstanding || e.pendingSince === null) continue;
       const due = e.pendingSince + this.opts.deadlineMs;
       if (due > now) { next = Math.min(next, due); continue; }
-      const x = L.expire(e, this.host.frame(r.id, r.gen));
+      const hidden = this.ownsGeometry(r) && !this.shown(r);
+      const x = L.expire(e, this.host.frame(r.id, r.gen), hidden);
       this.trace.record(now, "deadline", r.id, x.kind);
-      if (x.kind === "learn") {
+      if (x.kind === "deferred") {
+        this.deferHidden(r, this.host.frame(r.id, r.gen) ?? r.frame);
+      } else if (x.kind === "learn") {
         this.counters.learned++;
         const m = L.mergeLearned(r.learnedMin, r.learnedMax, x.min, x.max);
         r.learnedMin = m.min;

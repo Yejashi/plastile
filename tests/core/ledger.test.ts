@@ -174,3 +174,41 @@ test("frameTolerance: half a pixel at scale 1, plus one device pixel otherwise",
   assert.equal(frameTolerance(Number.NaN), 0.5);
   assert.equal(frameTolerance(0), 0.5);
 });
+
+test("deadline while hidden: KWin's confinement is deferred, never learned, corrected or diverged", () => {
+  const t = rect(8, 8, 1904, 1064);
+  const confined = rect(0, 8, 1840, 1064); // KWin's work-area check on a hidden desktop (a 64 px panel)
+  const e = L.newEntry(A);
+  L.recordWrite(e, t, 1, 0, "plan", A, A);
+  const before = e.corrections;
+  assert.equal(L.expire(e, confined, true).kind, "deferred");
+  assert.equal(e.outstanding, false);
+  assert.notEqual(e.status, "diverged");
+  assert.equal(e.corrections, before, "no correction spent");
+  assert.equal(L.decideWrite(e, t, confined), "write", "written again once shown");
+  // The same frame while shown is the client's answer: a maximum is learned.
+  const v = L.newEntry(A);
+  L.recordWrite(v, t, 1, 0, "plan", A, A);
+  assert.equal(L.expire(v, confined).kind, "learn");
+});
+
+test("deadline while hidden: the target or a rounding of it still settles or is accepted", () => {
+  const t = rect(8, 8, 800, 600);
+  const e = L.newEntry(A);
+  L.recordWrite(e, t, 1, 0, "plan", A, A);
+  assert.equal(L.expire(e, t, true).kind, "settled");
+  const r = L.newEntry(A);
+  L.recordWrite(r, t, 1, 0, "plan", A, A);
+  assert.equal(L.expire(r, rect(8, 8, 792, 590), true).kind, "accepted");
+});
+
+test("deadline while hidden never diverges, even with the correction budget spent", () => {
+  const e = L.newEntry(A);
+  const t = rect(100, 100, 512, 400);
+  L.recordWrite(e, t, 1, 0, "plan", A, A);
+  L.recordWrite(e, t, 2, 1, "correction", A, A);
+  L.recordWrite(e, t, 3, 2, "correction", A, A);
+  assert.equal(L.canCorrect(e), false);
+  assert.equal(L.expire(e, A, true).kind, "deferred");
+  assert.equal(e.status, "idle");
+});
