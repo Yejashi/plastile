@@ -404,6 +404,9 @@ def persist_reload_restart(out: Path, c: Checks):
           not watch.writes(), describe(watch.writes(), t_reload))
         c("no errors or JS exceptions logged (first session)", not unexpected(s), unexpected(s)[:5])
         facts["persistence"] = s.counters()["persistence"]
+        facts["hold"] = {"firstLoad (activates the helper)": holds(s)[0:1], "reload (helper running)": holds(s)[1:]}
+        c("start-up hold (first session): released by the helper's reply at the first load and at the reload (log)",
+          [h.get("by") for h in holds(s)] == ["reply", "reply"], holds(s))
     # A KWin restart: a new compositor process, the same XDG state and config directories.
     with psession(out / "second", base) as s:
         s.spawn(1); s.spawn(2); s.spawn(3)
@@ -426,8 +429,15 @@ def persist_reload_restart(out: Path, c: Checks):
         c("restart: the other windows tile beside it (oracle)", not tiling_errors(s.frames_list(), s.area(), GAP),
           tiling_errors(s.frames_list(), s.area(), GAP))
         c("no errors or JS exceptions logged (restart)", not unexpected(s), unexpected(s)[:5])
+        facts["hold"]["restart (a new bus: activates the helper)"] = holds(s)
+        c("start-up hold (restart): released by the helper's reply (log)", [h.get("by") for h in holds(s)] == ["reply"],
+          holds(s))
     c("facts (recorded, always passes)", True, facts)
 
+
+def holds(s: Session) -> list[dict]:
+    """Each start-up hold's release this session, from Plastile's log: by what, after how long (ADR-020 addendum)."""
+    return [json.loads(ln.split("released ", 1)[1]) for ln in s.log_lines(r"plastile info start-up hold released")]
 
 
 # ------------------------------------------------------------- T27: KWin exits
@@ -780,8 +790,9 @@ def seed(base: Path, generation: int, ratios: dict[str, float]) -> None:
 @scenario("persist-helper-delayed-Q05")
 def persist_helper_delayed(out: Path, c: Checks):
     """A slow helper (test knob PLASTILE_STATE_TEST_DELAY_MS=4000: every request waits 4 s). Load: tiling starts with
-    defaults at once, the saved preferences apply once when the reply arrives, and a change the user made before it
-    wins. Saves: the delayed Write replies do not slow KWin's main thread or commands, and the files end up with the
+    defaults once the start-up hold's 250 ms deadline passes (ADR-020 addendum), the saved preferences apply once
+    when the reply arrives, and a change the user made before it wins. The seeded slot is schema version 1, so it
+    is also loaded through the 1 -> 2 migration. Saves: the delayed Write replies do not slow KWin's main thread or commands, and the files end up with the
     latest preferences."""
     base = out / "xdg"
     seed(base, 4, {"Virtual-0": 0.65, "Virtual-1": 0.7})
@@ -802,6 +813,12 @@ def persist_helper_delayed(out: Path, c: Checks):
           before_reply and abs(early["Virtual-0"] - default_master_width(a0, 0.55)) <= 1
           and abs(early["Virtual-1"] - default_master_width(a1, 0.55)) <= 1,
           {"widths": early, "replyAlreadyIn": not before_reply, "secondsSinceStart": round(time.monotonic() - t_start, 2)})
+        held = s.log_lines(r"plastile info start-up hold released", off)
+        hold = json.loads(held[0].split("released ", 1)[1]) if held else {}
+        facts["hold"] = hold
+        c("load: the first solve waited for the reply only up to the start-up hold's 250 ms deadline (log: released "
+          "once, by the deadline, 150-600 ms after the load request: a QML Timer, observed firing at 214 ms)",
+          len(held) == 1 and hold.get("by") == "deadline" and 150 <= hold.get("heldMs", 0) <= 600, held)
         s.act(fx(3), "workspace.activeWindow = w")
         s.cmd("resize.grow")  # the user's change on Virtual-1 before the reply: 0.55 -> 0.6
         s.wait_for(lambda: abs(master_width(s, "Virtual-1") - default_master_width(a1, 0.6)) <= 1, 3, "grow on Virtual-1")

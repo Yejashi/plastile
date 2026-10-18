@@ -138,11 +138,16 @@ export function createRuntime(env: RuntimeEnv): Runtime {
   });
   engine.onPersistChange = (scope) => persister.markDirty(scope);
   // ---- end T27 ----
-  // Tiling starts with defaults now; the saved state never delays the first solve.
+  // With a store, the first solve waits for the saved state, bounded by LOAD_HOLD_MS (ADR-020
+  // addendum): a restored float or ratio is then the first geometry written, not a correction of
+  // a default tile. Commands and events meanwhile update the model; their geometry is held work.
+  // Without a store there is nothing to wait for. Recording builds do not hold: the recorder
+  // has no input for the release, and replays model no persistence.
+  const hold = env.state !== undefined && !rec;
   if (rec) rec.start(initial, () => engine.start(initial));
-  else engine.start(initial);
+  else engine.start(initial, hold);
   log("info", `started ${VERSION}`, { windows: initial.length, configRevision: snapshot!.revision });
-  persister.load();
+  persister.load(hold ? () => engine.releaseHold() : undefined);
 
   // KWin emits configChanged after every reconfigure (its own, the reload command's, other
   // settings pages'), once after a script loads; the settings dialog's Apply alone emits nothing.
@@ -248,6 +253,7 @@ export function createRuntime(env: RuntimeEnv): Runtime {
     if (id === "plastile.inspect.explain-window") { explainWindow(); return null; }
     if (id === "plastile.inspect.counters") {
       env.print("plastile counters " + safeJson({ counters: engine.counters, outstanding: engine.outstandingCount(),
+        holding: engine.isHolding(),
         connections: adapter.connectionCount(), transientConnections: adapter.transientConnectionCount(),
         windows: adapter.windowCount(), contexts: engine.contextSummary(),
         configRevision: snapshot?.revision ?? null,

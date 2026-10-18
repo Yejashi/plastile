@@ -311,6 +311,8 @@ export class Engine {
   private revision = 0;
   private alive = true;
   private suspended = false;
+  /** The first solve after start() is held until releaseHold() (start-up wait for the saved state). */
+  private holding = false;
   /** Activity count and current activity the context keys were derived from. */
   private actCount = 0;
   private actCurrent = "";
@@ -328,8 +330,17 @@ export class Engine {
 
   // ------------------------------------------------------------------ lifecycle
 
-  /** Adopt existing windows: classify once, seed order, one solve per visible context. */
-  start(initial: readonly WindowSnapshot[]): void {
+  /**
+   * Adopt existing windows: classify once, seed order, one solve per visible context.
+   *
+   * With `hold`, the first solve waits for releaseHold() (ADR-020 addendum): the runtime holds
+   * it until the saved state has been applied, or a bounded start-up deadline, so that a restored
+   * float or ratio is the first geometry written rather than a correction of a default tile.
+   * While held, events and commands update the model as usual and their geometry is kept as
+   * dirty work; nothing is solved or corrected and no tile is written.
+   */
+  start(initial: readonly WindowSnapshot[], hold = false): void {
+    this.holding = hold;
     this.refreshScales();
     this.actCount = this.host.activityCount();
     this.actCurrent = this.host.currentActivity();
@@ -339,8 +350,22 @@ export class Engine {
       if (r && r.gen === s.gen) r.startFrame = rectOf(s.frame);
     }
     this.markVisibleDirty();
-    this.flushNow();
+    if (!hold) this.flushNow();
   }
+
+  /**
+   * End the start-up hold: the held work (the first solve) runs in the next flush, on a later
+   * event-loop turn, so a caller such as the persistence reply callback writes no geometry itself.
+   * Idempotent; nothing after stop().
+   */
+  releaseHold(): void {
+    if (!this.holding) return;
+    this.holding = false;
+    this.trace.record(this.svc.now(), "hold-released");
+    this.ensureFlush();
+  }
+
+  isHolding(): boolean { return this.holding; }
 
   /** Stop owning geometry: invalidate deferred work and restore still-owned properties. */
   stop(): void {
@@ -1119,7 +1144,8 @@ export class Engine {
   }
 
   private ensureFlush(): void {
-    if (this.flushScheduled || !this.alive) return;
+    // Held at start-up: the work stays dirty and releaseHold() flushes it.
+    if (this.flushScheduled || !this.alive || this.holding) return;
     this.flushScheduled = true;
     this.svc.callLater(this.flushFn);
   }
@@ -1130,6 +1156,7 @@ export class Engine {
   private flush(): void {
     if (!this.alive) return;
     this.flushScheduled = false;
+    if (this.holding) return; // a flush asked for before the hold (flushNow from a test or the host)
     this.counters.flushes++;
     try {
       this.syncActivities();
@@ -1654,6 +1681,7 @@ export class Engine {
   private solveNow(c: Ctx): void {
     c.revision++;
     if (this.suspended) return;
+    if (this.holding) { this.dirty.add(c.id); return; } // solved when the start-up hold ends
     if (this.isVisible(c.key)) {
       this.dirty.delete(c.id);
       this.solveAndApply(c);

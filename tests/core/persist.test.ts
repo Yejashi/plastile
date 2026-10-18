@@ -12,7 +12,7 @@ import {
 } from "../../src/persist/snapshot.ts";
 import { MIGRATIONS, migrate, type RawSnapshot } from "../../src/persist/migrate.ts";
 import { identityKey, matchFloat } from "../../src/persist/match.ts";
-import { DEBOUNCE_MS, Persister, type StateStore } from "../../src/runtime/persistence.ts";
+import { DEBOUNCE_MS, LOAD_HOLD_MS, Persister, type StateStore } from "../../src/runtime/persistence.ts";
 import { createRuntime } from "../../src/runtime/main.ts";
 import { Engine } from "../../src/core/engine.ts";
 import { MockHost, meta } from "./mockHost.ts";
@@ -484,6 +484,47 @@ test("float hint: with two windows of the application the hinted one is restored
   }
 });
 
+test("start-up hold (engine): no solve or write until released; events and commands meanwhile are held work", () => {
+  {
+    const h = new MockHost();
+    const snaps = [h.make("a"), h.make("b")].map((w) => h.snapshot(w));
+    const e = new Engine(h, h, {});
+    h.engine = e;
+    e.start(snaps, true);
+    h.drain();
+    assert.equal(e.isHolding(), true);
+    h.open("c"); // a window opening during the hold
+    h.active = "a";
+    assert.equal(e.execute("plastile.resize.grow").status, "accepted", "a command runs into the model at once");
+    h.drain();
+    assert.equal(h.writes.length, 0, "nothing written while held");
+    assert.equal(e.counters.solves, 0);
+    e.restoreFloats([savedFloat("b", rect(300, 200, 500, 400), "b")]); // the saved state, then the release
+    e.releaseHold();
+    assert.equal(h.writes.length, 0, "the release itself writes nothing (next flush)");
+    h.drain();
+    assert.equal(e.counters.solves, 1, "one solve for the held work");
+    assert.equal(e.modeOf("b"), "floating");
+    assert.equal(h.writesTo("b"), 0, "the restored float was never tiled: no write at all");
+    const f = h.framesOf(["a", "c"]);
+    assertTiling(new Map(Object.entries(f)), rect(0, 0, 1280, 800));
+    assert.ok(f.a.width > f.c.width, "the held ratio step is in the first solve");
+    e.releaseHold(); // idempotent
+    h.drain();
+    assert.equal(e.counters.solves, 1);
+  }
+  {
+    const h = new MockHost();
+    const e = new Engine(h, h, {});
+    h.engine = e;
+    e.start([h.snapshot(h.make("a"))], true);
+    e.stop();
+    e.releaseHold();
+    h.drain();
+    assert.equal(h.writes.length, 0, "a release after stop does nothing");
+  }
+});
+
 // ----------------------------------------------------------------- persister
 
 function model() {
@@ -888,14 +929,14 @@ function runtimeWith(store: FakeStore) {
     ws.windows.push(w);
     return w;
   });
-  const f = fakeEnv(ws, qt);
+  const f = fakeEnv(ws, qt, { diagnostics: "info" });
   f.env.state = store;
   const rt = createRuntime(f.env);
   qt.drain();
   return { ws, qt, wins, f, rt };
 }
 
-test("T27: commands mark state dirty without store calls; the deadline issues one write; a reload tiles first, then applies the reply", () => {
+test("T27: commands mark state dirty without store calls; the deadline issues one write; a reload's first solve waits for the reply", () => {
   const store = new FakeStore();
   const a = runtimeWith(store);
   store.answerRead();
@@ -924,14 +965,98 @@ test("T27: commands mark state dirty without store calls; the deadline issues on
   store.answerWrite();
   a.rt.shutdown();
   assert.equal(store.issued.length, 1, "nothing new to save at unload");
-  // A new runtime (reload): tiles with defaults at once, then the reply applies the saved ratio in a flush.
+  // A new runtime (reload): the first solve waits for the reply (bounded), which it then solves with.
   const b = runtimeWith(store);
-  assert.equal(b.wins[0].frameGeometry.width, w0, "the first solve does not wait for the reply");
+  assert.equal(b.wins[0].frameGeometry.width, 400, "held: nothing is written before the saved state arrives");
+  assert.equal(store.timer?.ms, LOAD_HOLD_MS, "the hold is bounded by the one-shot maintenance timer");
   store.answerRead();
-  assert.equal(b.wins[0].frameGeometry.width, w0, "nothing is solved inside the reply callback");
+  assert.equal(b.wins[0].frameGeometry.width, 400, "nothing is solved inside the reply callback");
+  assert.equal(store.timer, null, "the reply ends the hold early: its deadline is cancelled");
   b.qt.drain();
-  assert.equal(b.wins[0].frameGeometry.width, grown, "the saved ratio, once the reply arrived");
+  assert.equal(b.wins[0].frameGeometry.width, grown, "the first solve already has the saved ratio");
+  assert.equal(b.f.lines.filter((l) => /start-up hold released .*"by":"reply"/.test(l)).length, 1, b.f.lines.join("\n"));
   b.rt.shutdown();
+});
+
+test("start-up hold: the deadline releases the first solve with defaults; a late reply then applies once", () => {
+  const store = new FakeStore();
+  {
+    // A first runtime saves a grown ratio.
+    const s0 = runtimeWith(store);
+    store.answerRead();
+    s0.qt.drain();
+    s0.ws.activeWindow = s0.wins[0];
+    s0.rt.dispatch("plastile.resize.grow");
+    s0.rt.dispatch("plastile.resize.grow");
+    s0.rt.shutdown(); // the final write at unload
+    store.answerWrite();
+    assert.ok(store.slots.some((t) => t !== ""), "precondition: saved");
+  }
+  const a = runtimeWith(store);
+  assert.ok(a.wins.every((w) => w.frameGeometry.width === 400), "held");
+  store.fire(); // LOAD_HOLD_MS passed without a reply
+  a.qt.drain();
+  assertTiling(new Map(a.wins.map((w) => [w.caption, w.frameGeometry])), rect(0, 0, 1280, 800));
+  const w0 = a.wins[0].frameGeometry.width;
+  assert.equal(a.f.lines.filter((l) => /start-up hold released .*"by":"deadline"/.test(l)).length, 1, a.f.lines.join("\n"));
+  store.answerRead(); // the slow helper answers after all
+  a.qt.drain();
+  assert.ok(a.wins[0].frameGeometry.width > w0, "the saved ratio applies once it arrives, as a re-solve");
+  assert.equal(a.f.lines.filter((l) => /start-up hold released/.test(l)).length, 1, "released once");
+  a.rt.shutdown();
+});
+
+test("start-up hold: commands during the hold update the model and are solved at its end; focus is not held", () => {
+  const store = new FakeStore();
+  const a = runtimeWith(store);
+  a.ws.activeWindow = a.wins[0];
+  assert.equal(a.rt.dispatch("plastile.resize.grow")?.status, "accepted", "dispatched at once, into the model");
+  a.qt.drain();
+  assert.ok(a.wins.every((w) => w.frameGeometry.width === 400), "its geometry is held");
+  a.rt.dispatch("plastile.focus.next");
+  assert.equal(a.ws.activeWindow, a.wins[1], "activation is not geometry: immediate");
+  store.answerRead(); // no saved state
+  a.qt.drain();
+  const ws = a.wins.map((w) => w.frameGeometry.width);
+  assert.ok(ws[0] > ws[1], `the first solve includes the held ratio step (${ws})`);
+  a.rt.shutdown();
+});
+
+test("start-up hold: unload during the hold cancels its deadline and releases nothing; no store means no hold", () => {
+  {
+    const store = new FakeStore();
+    const a = runtimeWith(store);
+    assert.notEqual(store.timer, null);
+    a.rt.shutdown();
+    assert.equal(store.timer, null, "the hold's deadline is cancelled at unload");
+    assert.ok(a.wins.every((w) => w.frameGeometry.width === 400), "nothing written");
+    store.answerRead(); // a reply after unload is ignored
+    a.qt.drain();
+    assert.ok(a.wins.every((w) => w.frameGeometry.width === 400));
+    assert.equal(a.f.lines.filter((l) => /start-up hold released/.test(l)).length, 0, a.f.lines.join("\n"));
+  }
+  {
+    const ws = new FakeWorkspace([output("O1", { x: 0, y: 0, width: 1280, height: 800 })], [desktop("D1")]);
+    const qt = new FakeQt();
+    const w = ws.window({ caption: "w1", resourceClass: "app1", resourceName: "app1", frameGeometry: { x: 20, y: 20, width: 400, height: 300 } });
+    ws.windows.push(w);
+    const f = fakeEnv(ws, qt); // no state store
+    const rt = createRuntime(f.env);
+    qt.drain();
+    assert.equal(w.frameGeometry.height, 784, "tiled at once: nothing to wait for");
+    rt.shutdown();
+  }
+  {
+    // The helper is absent: the failed Read ends the hold at once.
+    const store = new FakeStore();
+    store.absent = true;
+    const a = runtimeWith(store);
+    store.answerRead();
+    a.qt.drain();
+    assert.ok(a.wins.every((w) => w.frameGeometry.height === 784), "tiled");
+    assert.equal(a.f.lines.filter((l) => /start-up hold released .*"by":"failed"/.test(l)).length, 1, a.f.lines.join("\n"));
+    a.rt.shutdown();
+  }
 });
 
 test("T27: without the helper the runtime tiles and reports once", () => {
