@@ -1,0 +1,404 @@
+// KWin adapter: the only module that touches live KWin objects.
+//
+// Owns the window registry, every signal connection (registry-owned and
+// disconnected on teardown: M0 measured that unowned closures survive unload),
+// value snapshots for the engine, and the HostPort operations. Uses only the
+// script surface verified in docs/status/API_PROFILE.md.
+
+import { rectOf, type Rect } from "../../core/geometry.ts";
+import type { FrameWrite, HostPort, OutputInfo, WindowSnapshot } from "../../core/ports.ts";
+import type { Engine } from "../../core/engine.ts";
+import type { Constraints, Membership, WindowKind, WindowMeta, WindowStates } from "../../core/types.ts";
+import type { KDesktop, KOutput, KQt, KSignal, KWindow, KWorkspace } from "./kwinTypes.ts";
+
+const UNBOUNDED = 2147483647;
+
+interface Conn { signal: KSignal; fn: (...args: unknown[]) => void }
+
+interface Entry {
+  w: KWindow;
+  id: string;
+  gen: number;
+  conns: Conn[];
+  meta: WindowMeta;
+}
+
+/** Window kinds that never need geometry/state signal hookups. */
+const PASSIVE_KINDS: ReadonlySet<WindowKind> = new Set<WindowKind>([
+  "tooltip", "popup", "menu", "dnd-icon", "osd", "notification", "applet-popup", "splash",
+]);
+
+export function kindOf(w: KWindow): WindowKind {
+  if (w.desktopWindow) return "desktop";
+  if (w.dock) return "dock";
+  if (w.tooltip) return "tooltip";
+  if (w.notification || w.criticalNotification) return "notification";
+  if (w.onScreenDisplay) return "osd";
+  if (w.appletPopup) return "applet-popup";
+  if (w.dndIcon) return "dnd-icon";
+  if (w.menu || w.dropdownMenu || w.popupMenu || w.comboBox) return "menu";
+  if (w.popupWindow) return "popup";
+  if (w.splash) return "splash";
+  if (w.toolbar) return "toolbar";
+  if (w.utility) return "utility";
+  if (w.dialog) return "dialog";
+  if (w.normalWindow) return "normal";
+  return "other";
+}
+
+export function metaOf(w: KWindow): WindowMeta {
+  return {
+    appId: String(w.resourceClass || w.desktopFileName || ""),
+    resourceName: String(w.resourceName || ""),
+    title: String(w.caption || ""),
+    role: String(w.windowRole || ""),
+    kind: kindOf(w),
+    transient: !!w.transient,
+    transientFor: w.transientFor ? String(w.transientFor.internalId) : null,
+    modal: !!w.modal,
+    special: !!w.specialWindow,
+    managed: !!w.managed && !w.deleted,
+    resizeable: !!w.resizeable,
+    moveable: !!w.moveable,
+    skipTaskbar: !!w.skipTaskbar,
+    pid: w.pid,
+    own: false,
+  };
+}
+
+export function membershipOf(w: KWindow): Membership {
+  const desks: string[] = [];
+  const ds = w.desktops;
+  for (let i = 0; i < ds.length; ++i) desks.push(String(ds[i].id));
+  const acts: string[] = [];
+  const as = w.activities;
+  for (let i = 0; i < as.length; ++i) acts.push(String(as[i]));
+  return { output: w.output ? w.output.name : null, desktops: desks, onAllDesktops: !!w.onAllDesktops, activities: acts };
+}
+
+export function statesOf(w: KWindow): WindowStates {
+  return {
+    minimized: !!w.minimized,
+    fullscreen: !!w.fullScreen,
+    maximized: w.maximizeMode !== 0,
+    interactive: w.move ? "move" : w.resize ? "resize" : "none",
+    hidden: !!w.hidden,
+  };
+}
+
+/** minSize/maxSize are client-space (M0); frame constraints add decoration margins. */
+export function constraintsOf(w: KWindow): Constraints {
+  const f = w.frameGeometry, c = w.clientGeometry;
+  const mw = Math.max(0, f.width - c.width), mh = Math.max(0, f.height - c.height);
+  const min = w.minSize, max = w.maxSize;
+  const minW = min.width > 0 ? min.width + mw : 0, minH = min.height > 0 ? min.height + mh : 0;
+  const maxW = max.width > 0 && max.width < UNBOUNDED ? max.width + mw : Infinity;
+  const maxH = max.height > 0 && max.height < UNBOUNDED ? max.height + mh : Infinity;
+  const fixed = !w.resizeable || (maxW !== Infinity && maxH !== Infinity && Math.abs(maxW - minW) < 1 && Math.abs(maxH - minH) < 1);
+  return { minFrame: { width: minW, height: minH }, maxFrame: { width: maxW, height: maxH }, fixed };
+}
+
+export class KwinAdapter implements HostPort {
+  private ws: KWorkspace;
+  private qt: KQt;
+  private entries = new Map<string, Entry>();
+  private gens = new Map<string, number>();
+  private globals: Conn[] = [];
+  private outputConns: Conn[] = [];
+  private engine: Engine | null = null;
+  private watchTitles = false;
+  private alive = true;
+  private topologyPending = false;
+  private readonly topologyFlush = (): void => {
+    this.topologyPending = false;
+    if (this.alive && this.engine) this.engine.topologyChanged();
+  };
+
+  constructor(ws: KWorkspace, qt: KQt) {
+    this.ws = ws;
+    this.qt = qt;
+  }
+
+  // ----------------------------------------------------------------- lifecycle
+  attach(engine: Engine, watchTitles: boolean): WindowSnapshot[] {
+    this.engine = engine;
+    this.watchTitles = watchTitles;
+    this.own(this.ws.windowAdded, (w) => this.onAdded(w as KWindow), this.globals);
+    this.own(this.ws.windowRemoved, (w) => this.onRemoved(w as KWindow), this.globals);
+    this.own(this.ws.windowActivated, (w) => this.onActivated(w as KWindow | null), this.globals);
+    const vis = () => { if (this.alive && this.engine) this.engine.visibilityChanged(); };
+    this.own(this.ws.currentDesktopChanged, vis, this.globals);
+    this.own(this.ws.currentActivityChanged, vis, this.globals);
+    this.own(this.ws.activitiesChanged, () => this.scheduleTopology(), this.globals);
+    this.own(this.ws.desktopsChanged, () => this.scheduleTopology(), this.globals);
+    this.own(this.ws.screensChanged, () => { this.watchOutputs(); this.scheduleTopology(); }, this.globals);
+    this.own(this.ws.screenOrderChanged, () => this.scheduleTopology(), this.globals);
+    this.own(this.ws.virtualScreenGeometryChanged, () => this.scheduleTopology(), this.globals);
+    this.watchOutputs();
+    const out: WindowSnapshot[] = [];
+    const list = this.ws.windows;
+    for (let i = 0; i < list.length; ++i) {
+      const s = this.register(list[i]);
+      if (s) out.push(s);
+    }
+    return out;
+  }
+
+  /** Disconnect everything owned; called after the engine stopped (invalidate first). */
+  detach(): void {
+    this.alive = false;
+    for (const e of this.entries.values()) this.release(e);
+    this.entries.clear();
+    this.disconnectAll(this.globals);
+    this.disconnectAll(this.outputConns);
+    this.engine = null;
+  }
+
+  connectionCount(): number {
+    let n = this.globals.length + this.outputConns.length;
+    for (const e of this.entries.values()) n += e.conns.length;
+    return n;
+  }
+
+  windowCount(): number { return this.entries.size; }
+
+  private own(signal: KSignal, fn: (...args: unknown[]) => void, into: Conn[]): void {
+    signal.connect(fn);
+    into.push({ signal, fn });
+  }
+
+  private disconnectAll(list: Conn[]): void {
+    for (let i = list.length - 1; i >= 0; --i) {
+      try { list[i].signal.disconnect(list[i].fn); } catch (_e) { /* object already destroyed */ }
+    }
+    list.length = 0;
+  }
+
+  private watchOutputs(): void {
+    this.disconnectAll(this.outputConns);
+    const outs = this.ws.screens;
+    for (let i = 0; i < outs.length; ++i) this.own(outs[i].geometryChanged, () => this.scheduleTopology(), this.outputConns);
+  }
+
+  private scheduleTopology(): void {
+    if (this.topologyPending || !this.alive) return;
+    this.topologyPending = true;
+    this.qt.callLater(this.topologyFlush);
+  }
+
+  // ------------------------------------------------------------------ registry
+  private idOf(w: KWindow): string { return String(w.internalId); }
+
+  private register(w: KWindow): WindowSnapshot | null {
+    if (!w || w.deleted) return null;
+    const id = this.idOf(w);
+    if (this.entries.has(id)) return this.snapshot(this.entries.get(id)!);
+    const gen = (this.gens.get(id) ?? 0) + 1;
+    this.gens.set(id, gen);
+    const e: Entry = { w, id, gen, conns: [], meta: metaOf(w) };
+    this.entries.set(id, e);
+    if (e.meta.kind === "dock") {
+      // Panels change the usable area; KWin has no script-visible work-area signal.
+      this.own(w.frameGeometryChanged, () => this.scheduleTopology(), e.conns);
+    } else if (!PASSIVE_KINDS.has(e.meta.kind) && e.meta.kind !== "desktop") {
+      this.hook(e);
+    }
+    return this.snapshot(e);
+  }
+
+  private hook(e: Entry): void {
+    const w = e.w, id = e.id, gen = e.gen;
+    const eng = () => (this.alive ? this.engine : null);
+    this.own(w.frameGeometryChanged, () => { const g = eng(); if (g) g.frameObserved(id, gen, rectOf(w.frameGeometry)); }, e.conns);
+    const states = () => { const g = eng(); if (g) g.statesChanged(id, gen, statesOf(w)); };
+    for (const s of [w.minimizedChanged, w.fullScreenChanged, w.maximizedChanged, w.moveResizedChanged,
+                     w.interactiveMoveResizeStarted, w.interactiveMoveResizeFinished, w.hiddenChanged]) {
+      this.own(s, states, e.conns);
+    }
+    const membership = () => { const g = eng(); if (g) g.membershipChanged(id, gen, membershipOf(w)); };
+    for (const s of [w.outputChanged, w.desktopsChanged, w.activitiesChanged]) this.own(s, membership, e.conns);
+    this.own(w.tileChanged, () => { const g = eng(); if (g) g.nativeTileChanged(id, gen, w.tile !== null); }, e.conns);
+    const metadata = () => {
+      const g = eng();
+      if (!g) return;
+      e.meta = metaOf(w);
+      g.metadataChanged(id, gen, e.meta);
+      g.constraintsChanged(id, gen, constraintsOf(w));
+    };
+    for (const s of [w.windowClassChanged, w.transientChanged, w.modalChanged]) this.own(s, metadata, e.conns);
+    if (this.watchTitles) this.own(w.captionChanged, metadata, e.conns);
+  }
+
+  private release(e: Entry): void { this.disconnectAll(e.conns); }
+
+  private snapshot(e: Entry): WindowSnapshot {
+    const w = e.w;
+    return {
+      id: e.id, gen: e.gen, meta: e.meta, membership: membershipOf(w), states: statesOf(w),
+      constraints: constraintsOf(w), frame: rectOf(w.frameGeometry), nativeTile: w.tile !== null,
+    };
+  }
+
+  liveSnapshots(): WindowSnapshot[] {
+    const out: WindowSnapshot[] = [];
+    const list = this.ws.windows;
+    for (let i = 0; i < list.length; ++i) {
+      const w = list[i];
+      if (!w || w.deleted) continue;
+      const e = this.entries.get(this.idOf(w));
+      out.push(e ? this.snapshot(e) : this.register(w)!);
+    }
+    return out;
+  }
+
+  private onAdded(w: KWindow): void {
+    if (!this.alive || !this.engine) return;
+    const s = this.register(w);
+    if (s) this.engine.windowAdded(s);
+  }
+
+  private onRemoved(w: KWindow): void {
+    if (!w) return;
+    const id = this.idOf(w);
+    const e = this.entries.get(id);
+    if (!e) return;
+    this.entries.delete(id);
+    this.release(e);
+    if (this.alive && this.engine) this.engine.windowRemoved(id, e.gen);
+  }
+
+  private onActivated(w: KWindow | null): void {
+    if (!this.alive || !this.engine) return;
+    this.engine.activeChanged(w ? this.idOf(w) : null);
+  }
+
+  private get(id: string, gen: number): KWindow | null {
+    const e = this.entries.get(id);
+    if (!e || e.gen !== gen || e.w.deleted) return null;
+    return e.w;
+  }
+
+  // ---------------------------------------------------------------- HostPort
+  applyFrame(id: string, gen: number, t: Rect): FrameWrite | null {
+    const w = this.get(id, gen);
+    if (!w) return null;
+    const before = rectOf(w.frameGeometry);
+    w.frameGeometry = this.qt.rect(t.x, t.y, t.width, t.height);
+    return { before, after: rectOf(w.frameGeometry) };
+  }
+
+  frame(id: string, gen: number): Rect | null {
+    const w = this.get(id, gen);
+    return w ? rectOf(w.frameGeometry) : null;
+  }
+
+  activate(id: string, gen: number): boolean {
+    const w = this.get(id, gen);
+    if (!w) return false;
+    this.ws.activeWindow = w;
+    return true;
+  }
+
+  raise(id: string, gen: number): boolean {
+    const w = this.get(id, gen);
+    if (!w) return false;
+    this.ws.raiseWindow(w);
+    return true;
+  }
+
+  releaseNativeTile(id: string, gen: number): boolean {
+    const w = this.get(id, gen);
+    if (!w || w.tile === null) return false;
+    return !!w.tile.unmanage(w);
+  }
+
+  setNoBorder(id: string, gen: number, v: boolean): boolean {
+    const w = this.get(id, gen);
+    if (!w) return false;
+    w.noBorder = v;
+    return true;
+  }
+
+  noBorder(id: string, gen: number): boolean | null {
+    const w = this.get(id, gen);
+    return w ? !!w.noBorder : null;
+  }
+
+  sendToOutput(id: string, gen: number, output: string): boolean {
+    const w = this.get(id, gen);
+    const o = this.outputByName(output);
+    if (!w || !o) return false;
+    this.ws.sendClientToScreen(w, o);
+    return true;
+  }
+
+  sendToDesktop(id: string, gen: number, desktop: string): boolean {
+    const w = this.get(id, gen);
+    const d = this.desktopById(desktop);
+    if (!w || !d) return false;
+    w.desktops = [d];
+    return true;
+  }
+
+  activeWindow(): string | null {
+    const w = this.ws.activeWindow;
+    return w ? this.idOf(w) : null;
+  }
+
+  activeOutput(): string | null {
+    const o = this.ws.activeScreen;
+    return o ? o.name : null;
+  }
+
+  outputs(): readonly OutputInfo[] {
+    const out: OutputInfo[] = [];
+    const s = this.ws.screens;
+    for (let i = 0; i < s.length; ++i) {
+      out.push({ id: s[i].name, name: s[i].name, geometry: rectOf(s[i].geometry), scale: s[i].devicePixelRatio });
+    }
+    // Deterministic topology order: left-to-right, then top-to-bottom (not enumeration index).
+    out.sort((a, b) => a.geometry.x - b.geometry.x || a.geometry.y - b.geometry.y || (a.id < b.id ? -1 : 1));
+    return out;
+  }
+
+  workArea(output: string, desktop: string): Rect | null {
+    const o = this.outputByName(output);
+    const d = this.desktopById(desktop);
+    if (!o || !d) return null;
+    return rectOf(this.ws.clientArea(this.ws.MaximizeArea, o, d));
+  }
+
+  visibleDesktop(output: string): string | null {
+    const o = this.outputByName(output);
+    if (!o) return null;
+    const d = this.ws.currentDesktopForScreen(o);
+    return d ? String(d.id) : null;
+  }
+
+  desktops(): readonly string[] {
+    const out: string[] = [];
+    const ds = this.ws.desktops;
+    for (let i = 0; i < ds.length; ++i) out.push(String(ds[i].id));
+    return out;
+  }
+
+  currentActivity(): string { return String(this.ws.currentActivity || "default"); }
+
+  activityCount(): number { return this.ws.activities.length; }
+
+  private outputByName(name: string): KOutput | null {
+    const s = this.ws.screens;
+    for (let i = 0; i < s.length; ++i) if (s[i].name === name) return s[i];
+    return null;
+  }
+
+  private desktopById(id: string): KDesktop | null {
+    const ds = this.ws.desktops;
+    for (let i = 0; i < ds.length; ++i) if (String(ds[i].id) === id) return ds[i];
+    return null;
+  }
+
+  /** Context names for configuration matching. */
+  outputNameOf(id: string): string { return id; }
+  desktopNameOf(id: string): string { return this.desktopById(id)?.name ?? ""; }
+}

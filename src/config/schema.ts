@@ -309,7 +309,7 @@ function optMatcher(s: Sink, m: Record<string, unknown>, path: string, key: stri
   return has(m, key) ? compileStringMatcher(s, m[key], at(path, key)) : null;
 }
 
-const readOverride: ItemReader<CompiledOverride> = (s, o, path, id) => {
+function readOverride(s: Sink, o: Record<string, unknown>, path: string, id: string): CompiledOverride | null {
   if (!objectWith(s, o, path, ["id", "priority", "match", "set"])) return null;
   const errorsBefore = s.errors.length;
   const mp = at(path, "match");
@@ -326,9 +326,9 @@ const readOverride: ItemReader<CompiledOverride> = (s, o, path, id) => {
   if (s.errors.length !== errorsBefore) return null;
   if (Object.keys(set).length === 0) warn(s, at(path, "set"), "empty set has no effect");
   return { id, outputName, desktopName, desktopId, activityId, set };
-};
+}
 
-const readRule: ItemReader<CompiledRule> = (s, o, path, id) => {
+function readRule(s: Sink, o: Record<string, unknown>, path: string, id: string): CompiledRule | null {
   if (!objectWith(s, o, path, ["id", "priority", "match", "actions"])) return null;
   const errorsBefore = s.errors.length;
   const mp = at(path, "match");
@@ -366,4 +366,4 @@ const readRule: ItemReader<CompiledRule> = (s, o, path, id) => {
   if (s.errors.length !== errorsBefore) return null;
   if (Object.keys(actions).length === 0) warn(s, ap, "empty actions have no effect");
   return { id, appId, resourceName, title, windowType, transient, actions };
-};
+}

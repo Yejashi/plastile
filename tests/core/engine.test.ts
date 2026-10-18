@@ -416,3 +416,22 @@ test("randomized lifecycle: invariants hold and windows converge", () => {
   assert.equal(e.outstandingCount(), 0, "all requests settled or diverged");
   assert.equal(e.counters.errors, 0);
 });
+
+test("O01: an external transfer to another output is not written back (frame event before output event)", () => {
+  const h = new MockHost();
+  h.outs.push({ id: "O2", name: "O2", geometry: rect(1280, 0, 1280, 800), scale: 1 });
+  h.visible.set("O2", "D1");
+  const e = h.start();
+  h.open("a"); h.open("b");
+  h.drain();
+  const b = h.windows.get("b")!;
+  // KWin's sendClientToScreen: geometry first, then the output change.
+  h.userSetFrame("b", rect(1746, 236, 400, 328));
+  b.membership = { ...b.membership, output: "O2" };
+  e.membershipChanged("b", b.gen, b.membership);
+  h.drain();
+  assert.equal(b.membership.output, "O2");
+  assert.ok(b.frame.x >= 1280, `written back to ${JSON.stringify(b.frame)}`);
+  assert.ok(rectNear(b.frame, rect(1288, 8, 1264, 784)), "tiled on the destination output");
+  assert.ok(rectNear(h.windows.get("a")!.frame, rect(8, 8, 1264, 784)), "source reflowed");
+});

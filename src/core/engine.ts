@@ -152,6 +152,22 @@ export class Engine {
     this.queued = [];
   }
 
+  /**
+   * Diagnostic recovery: resync membership from the live inventory. Records without a
+   * live window are dropped; user float choices are kept. Not an idle operation.
+   */
+  reconcile(live: readonly WindowSnapshot[]): void {
+    if (!this.alive) return;
+    const ids = new Set(live.map((s) => s.id));
+    for (const r of [...this.recs.values()]) {
+      if (!ids.has(r.id)) { this.tombstones.set(r.id, r.gen); this.drop(r); this.counters.removed++; }
+    }
+    for (const s of live) this.add(s, false);
+    for (const c of this.contexts.values()) { c.revision++; this.markDirty(c.key); }
+    this.trace.record(this.svc.now(), "reconcile", undefined, { windows: live.length });
+    this.ensureFlush();
+  }
+
   isAlive(): boolean { return this.alive; }
   isSuspended(): boolean { return this.suspended; }
 
@@ -303,16 +319,20 @@ export class Engine {
     if (r.mode !== "tiled") { L.observe(r.ledger, f); return; }
     const o = L.observe(r.ledger, f);
     switch (o) {
-      case "settled": this.counters.settled++; this.trace.record(this.svc.now(), "settled", id); break;
+      case "settled":
+        this.counters.settled++;
+        this.trace.record(this.svc.now(), "settled", id);
+        this.disarmIfIdle();
+        break;
       case "stale":
         this.counters.stale++;
-        if (this.participates(r)) { this.corrections.add(id); this.ensureFlush(); }
+        if (this.ownsGeometry(r)) { this.corrections.add(id); this.ensureFlush(); }
         break;
       case "partial": this.counters.partial++; break;
       case "external":
         this.counters.external++;
         // An application (or another tool) changed a settled tile: bounded correction, then stop.
-        if (this.participates(r) && r.ledger.desired) {
+        if (this.ownsGeometry(r) && r.ledger.desired) {
           if (L.canCorrect(r.ledger)) { this.corrections.add(id); this.ensureFlush(); }
           else if (r.ledger.status !== "diverged") {
             L.diverge(r.ledger);
@@ -341,6 +361,7 @@ export class Engine {
   /** Visible desktop/activity changed on some output. */
   visibilityChanged(): void {
     if (!this.alive) return;
+    this.trace.record(this.svc.now(), "visibility");
     this.markVisibleDirty(true);
     this.ensureFlush();
   }
@@ -348,12 +369,14 @@ export class Engine {
   /** Outputs added/removed/changed, or work areas changed. */
   topologyChanged(): void {
     if (!this.alive) return;
+    this.trace.record(this.svc.now(), "topology");
     for (const c of this.contexts.values()) { c.settings = null; this.markDirty(c.key); }
     this.ensureFlush();
   }
 
   /** New configuration activated: settings/rules functions replaced atomically. */
   configure(opts: EngineOptions): void {
+    this.trace.record(this.svc.now(), "configure");
     this.opts = { ...this.opts, ...opts, deadlineMs: opts.deadlineMs ?? this.opts.deadlineMs,
                   readinessMs: opts.readinessMs ?? this.opts.readinessMs };
     if (opts.traceCapacity !== undefined && opts.traceCapacity !== this.trace.capacity) this.trace.resize(opts.traceCapacity);
@@ -415,7 +438,15 @@ export class Engine {
     if (wasTiled && (mode !== "tiled" || !sameContext(prevCtx, key))) this.leaveContext(r);
     if (mode === "floating" && wasTiled === false && r.floatRect === null && r.suspensions.size === 0) r.floatRect = r.frame;
     r.mode = mode;
-    r.ctx = mode === "tiled" || mode === "floating" ? key : null;
+    const nextCtx = mode === "tiled" || mode === "floating" ? key : null;
+    if (!sameContext(prevCtx, nextCtx)) {
+      // Targets belong to a context: a transfer (e.g. KWin moved the window to another
+      // output, emitting frameGeometryChanged before outputChanged) must not leave a
+      // queued correction that writes it back to the old context's slot.
+      r.ledger = L.newEntry(r.frame);
+      this.corrections.delete(r.id);
+    }
+    r.ctx = nextCtx;
     if (mode === "tiled" && (!wasTiled || !sameContext(prevCtx, key))) this.joinContext(r);
     if (mode !== "tiled") L.cancel(r.ledger);
     this.trace.record(this.svc.now(), "mode", r.id, { mode, why, source: r.decision.source });
@@ -491,6 +522,13 @@ export class Engine {
     return r.mode === "tiled" && r.suspensions.size === 0 && r.ctx !== null;
   }
 
+  /** Participates and its context actually places windows (the floating layout does not). */
+  private ownsGeometry(r: Rec): boolean {
+    if (!this.participates(r)) return false;
+    const c = this.contexts.get(contextId(r.ctx!));
+    return !!c && this.layoutKind(c) !== "floating";
+  }
+
   // ---------------------------------------------------------------- scheduling
 
   private markDirty(key: ContextKey): void {
@@ -535,6 +573,7 @@ export class Engine {
       this.svc.log("error", "flush failed", String(e));
     }
     if (this.dirty.size > 0 || this.corrections.size > 0 || this.queued.length > 0) this.ensureFlush();
+    else this.disarmIfIdle();
   }
 
   private runCorrections(): void {
@@ -543,7 +582,7 @@ export class Engine {
     this.corrections.clear();
     for (const id of ids) {
       const r = this.recs.get(id);
-      if (!r || !this.participates(r) || !r.ledger.desired) continue;
+      if (!r || !this.ownsGeometry(r) || !r.ledger.desired) continue;
       if (rectNear(r.frame, r.ledger.desired)) continue;
       if (!L.canCorrect(r.ledger)) continue;
       this.write(r, r.ledger.desired, "correction");
@@ -669,6 +708,17 @@ export class Engine {
     this.cancelDeadline = this.svc.deadline(Math.max(1, at - this.svc.now()), this.deadlineFn);
   }
 
+  /** Cancel the deadline once no request or readiness wait is outstanding (no idle timer). */
+  private disarmIfIdle(): void {
+    if (!this.cancelDeadline) return;
+    for (const r of this.recs.values()) {
+      if (r.ledger.outstanding || r.readyBy !== null) return;
+    }
+    this.cancelDeadline();
+    this.cancelDeadline = null;
+    this.deadlineAt = Infinity;
+  }
+
   private onDeadline(): void {
     this.cancelDeadline = null;
     this.deadlineAt = Infinity;
@@ -695,7 +745,7 @@ export class Engine {
         r.exception = `accepted ${r.frame.width}x${r.frame.height} instead of the requested size; learned as a constraint`;
         if (r.ctx) this.markDirty(r.ctx);
       } else if (x.kind === "correct") {
-        if (this.participates(r)) this.corrections.add(r.id);
+        if (this.ownsGeometry(r)) this.corrections.add(r.id);
       } else if (x.kind === "diverged") {
         this.counters.diverged++;
         r.exception = "did not reach its target after bounded corrections";

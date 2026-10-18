@@ -1,0 +1,20 @@
+{
+    "KPackageStructure": "KWin/Script",
+    "KPlugin": {
+        "Authors": [
+            {
+                "Name": "Plastile contributors"
+            }
+        ],
+        "Category": "Window Management",
+        "Description": "Fast, predictable automatic tiling (master/stack, BSP, monocle) that preserves KWin",
+        "EnabledByDefault": false,
+        "Id": "plastile",
+        "License": "Undecided",
+        "Name": "Plastile",
+        "Version": "0.1.0",
+        "Website": "https://github.com/Yejashi/plastile"
+    },
+    "X-Plasma-API": "declarativescript",
+    "X-Plasma-MainScript": "ui/main.qml"
+}
