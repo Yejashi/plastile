@@ -4,10 +4,8 @@ This is the context a new agent needs to continue Plastile. Read it after [AGENT
 [START_HERE](../START_HERE.md). It describes the repository as of `main` at `3578f5e`, which the previous
 cloud session left on 2026-10-18. That session moves to the owner's real PC next.
 
-**Warning:** [STATUS.md](STATUS.md) and the root [README.md](../../README.md) are **stale**. Among other
-errors, they claim no tiler exists, report 97 tests, call T27 "not started" and present scrolling and zones as
-unstarted. Trust this file, the code, the tests and `docs/status/evidence/` over those two files until they are
-rewritten (see "Next work", item 5).
+[STATUS.md](STATUS.md) and the root README were rewritten on 2026-10-18 and are current; sections 2, 4 and 6 below
+are the previous session's view and are partly superseded by STATUS.md.
 
 ## 1. What Plastile is now
 

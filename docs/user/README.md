@@ -17,7 +17,7 @@ Plastile is a **candidate tested in nested compositors**, not a release.
 
 | What | Where it stands |
 |---|---|
-| Tested compositor | KWin **6.7.5** (Qt 6.12.0, KF 6.30.0, Arch Linux), see the [environment profile](../status/ENVIRONMENT.md). `metadata.json` declares a minimum Plasma API of 6.7. Other versions are untested. |
+| Tested compositor | KWin **6.7.5** (Qt 6.12.0, KF 6.30.0, Arch Linux), see the [environment profile](../status/ENVIRONMENT.md). `metadata.json` declares a minimum Plasma API of 6.7. KWin 6.7.5 is also tested in an Ubuntu 26.10 sandbox; KWin **6.8.0** runs in a provisional CI job that still has open failures (memory growth across repeated script reloads, see [status](../status/STATUS.md)). Other versions are untested. |
 | How it was tested | In **disposable nested `kwin_wayland --virtual` sessions** with a controlled Wayland test client and real input injection (libei). Every geometry check reads window frames from KWin itself, never from Plastile's own bookkeeping. |
 | Physical session | **Not validated.** Plastile has never run in a live Plasma desktop with plasmashell panels, real monitors and everyday applications. Treat everything in this guide as unverified in that setting. |
 | Performance | Engine timings exist only from nested sessions and measurement builds ([status](../status/STATUS.md), [M0 probe report](../status/M0_PROBE_REPORT.md)). None of them is an input-to-photon latency claim. |

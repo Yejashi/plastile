@@ -121,13 +121,17 @@ Use nested virtual outputs for repeatable logic, then real monitors for mandator
 - **Zones:** keyboard/UI geometry equality, overlay-hidden no work, active-only pointer sampling, zone-span rounding, panel reservation, connected resize policy, malformed layout rejection.
 - **Native presentation:** retarget from current visual state; final real geometry issued once; GL cleanup in a valid context; hit-test consistency; reduced-motion and renderer/version support; package rebuild across KWin changes.
 
-## 8. Version matrix template
+## 8. Version matrix
 
-Create real rows during implementation:
+Rows are real runs; per-scenario results are in the linked reports. "All" means every scenario in
+`tests/integration/run.py --list` at that commit except the listed SKIPs.
 
 | KWin package | Qt package | Session | Renderer/GPU | Test layer | Passed IDs | Failures/limitations |
 |---|---|---|---|---|---|---|
-| Not yet tested | Not yet tested | Not yet tested | Not yet tested | None | None | Planning-only repository |
+| kwin 6.7.5 (Arch) | Qt 6.12.0, KF 6.30.0 | Nested `--virtual` on the reference host | OpenGL (host GPU, offscreen) | Nested | All 99 run scenarios at `67772ee` ([evidence](../status/evidence/integration-host-67772ee.json)) | SKIP G02 negative origin (KWin normalizes origins) |
+| kwin-wayland 4:6.7.5-0ubuntu1 (Ubuntu 26.10 sandbox) | Qt 6.11.2, KF 6.29.0 | Nested `--virtual` in CI | QPainter | Nested | All 88 run scenarios at `67772ee` (CI run 39109880796) | SKIP L14 (tile editor is GL-only), SKIP G02 |
+| kwin 6.8.0 (Nix, pinned nixpkgs) | Qt 6.11.2, KF 6.30.0 | Nested `--virtual` in CI (provisional) | llvmpipe, emulated udmabuf | Nested | 84 of 87 run scenarios at `67772ee` | FAIL `reload-Q09`, `persist-reload-cycles-Q09` (KWin RSS growth), `persist-no-qtcore-Q05` (test environment); SKIP G02 |
+| — | — | Physical Plasma session | — | Physical | None | Never run ([PHYSICAL_RUNBOOK](PHYSICAL_RUNBOOK.md)) |
 
 The initial support candidate families are 6.7 and 6.8. Earlier Plasma releases and full X11 sessions are separate compatibility work. XWayland-client coverage does not imply full X11-session support.
 

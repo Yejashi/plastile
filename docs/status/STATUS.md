@@ -1,72 +1,80 @@
 # Implementation status
 
-**Product state:** a working automatic tiler exists as a KWin declarative script package (`package/`) with a TypeScript core (`src/`). It has been validated only in **disposable nested KWin 6.7.5 sessions** (virtual backend). No probe or build has run in the user's physical session, so it is a **candidate**, not a release.
+**Product state:** a working automatic tiler, packaged as a KWin 6 declarative script (`package/`) with a
+TypeScript core (`src/`). It is a **release candidate in preparation, not a release**: everything below was
+validated in unit/replay tests and in disposable nested KWin sessions. **No physical Plasma session has run
+it.** Gate G3 stays open until the [physical runbook](../validation/PHYSICAL_RUNBOOK.md) has been run.
 
-| Field | Value |
-|---|---|
-| Current milestone | M3–M7 in progress; G0 and G1 passed (nested); G2 nested integration passing; G3 open |
-| Completed tasks (nested evidence) | T00–T03, T05–T08 (G1: direct geometry), T09–T15, T17, T19, T21–T23, T29 |
-| Partially complete | T04 (no-tiler P01/P02 done; upstream baseline in progress), T16, T18 (Wayland only), T20 (nested only), T24 (send/transfer done, follow policy not configurable), T25–T26 (schema, rules, activation; shortcut-conflict UI not built), T28 (settings dialog verified headlessly), T30 (scale/rotation/unplug nested), T32–T35 in progress |
-| Not started / deferred | T27 persistence (script API has no write path: per-session layout changes are not persisted; configuration is persisted by KConfig), T31 presentation (deferred per ADR-006), T36–T37 (M8/M9) |
-| Tested environment | KWin 6.7.5 (tag `ab7df7cc`), Qt 6.12.0, KF 6.30.0, Arch Linux, Linux 7.2.9 ([ENVIRONMENT](ENVIRONMENT.md)) |
-| Test layers used | pure/replay (Node 26, 97 tests), nested KWin integration (`tests/integration/run.py`, 23 scenarios), real input via libei in nested KWin. **Physical session: none.** |
-| Reports | [M0 probe report](M0_PROBE_REPORT.md), [script API profile](API_PROFILE.md), ADR-003 G1 record in [DECISIONS](../design/DECISIONS.md) |
-| Raw results | `artifacts/` (local, gitignored). Committed summaries in [evidence/](evidence/) |
-| Next eligible tasks | T16/T18/T20 remainder (XWayland, work areas, real apps), T32–T35 |
+Updated 2026-10-18 at `main` (see `git log`). [HANDOFF](HANDOFF.md) has the working context for the next
+agent; this file is the short status.
 
-## What works (nested KWin 6.7.5, oracle-checked)
+## Tested environments and last results
 
-- Adoption, open/close, master/stack, BSP (rotate/mirror/equalize/reinsert), monocle, floating layout; layout switching preserves order.
-- Focus/swap/move/resize/master-count commands; focus-only commands issue zero solves and zero writes; no-op commands issue zero writes.
-- Requested/observed ledger: A→B→A with a 300 ms client ends at A with one bounded correction; clients that obey a larger minimum are learned once; clients that ignore requests are corrected at most twice, then left alone with an explanation.
-- Minimize/fullscreen/maximize are respected (overlapping suspensions handled); native quick tile yields until `adopt-native`; toggle-float restores the latest real floating geometry; transients float.
-- Real pointer/keyboard input (libei): Meta+drag preserves the model, drop on a tile swaps once, drop elsewhere snaps back, Escape cancels a KWin Move action, Meta+right-drag resize becomes the new ratio; close/unload mid-drag leave no errors.
-- Two outputs with send-to-output, send-to-desktop without follow, inactive desktops placed only when shown, fractional scales 1.25–2.0, portrait rotation, output unplug with pending requests and replug.
-- Configuration: flat KConfig keys + JSON overrides/rules, validated before activation; invalid input keeps the previous revision; live reload; settings dialog bound through KConfigXT (verified headlessly).
-- 20 reload cycles with pending work: stable connection/window counts, one shortcut per command, no errors; idle produces no flushes, deadlines or writes.
-
-## Measured performance (nested, `evidence/perf-p03-nested.json`, 300 samples per cell, CLOCK_MONOTONIC in QV4)
-
-| Windows | Ratio command: dispatch→last request p50 / p95 / p99 | Solve p95 / p99 | Writes per command |
-|---|---|---|---|
-| 2 | 166 / 248 / 595 µs | 55 / 418 µs | 2 |
-| 8 | 278 / 433 / 822 µs | 88 / 543 µs | 8 |
-| 16 | 418 / 948 / 1033 µs | 135 / 675 µs | 16 |
-| 32 | 678 / 1243 / 1391 µs | 208 / 794 µs | 32 |
-
-Against the proposed budgets (PERFORMANCE §4): dispatch-to-last-request p95 ≤ 2 ms and p99 ≤ 4 ms **met** at 32 windows; pure solve p95 ≤ 0.5 ms **met**, p99 ≤ 1 ms **met**. Focus commands: zero solves/writes; their 0.6–1.0 ms is KWin's own activation call. Sample counts are below the 5000-sample tail target; p99 values are indicative. Nothing here is a physical input-to-photon measurement.
-
-## Decisions and findings that bind the implementation
-
-- **Direct geometry is the backend** (G1): native tiles cannot correct the dropped return-to-A configure and a structural rebuild cancelled user fullscreen.
-- **Mandatory connection registry**: plain closures connected to `Workspace` signals survive unload.
-- **Intent before write**: KWin emits position observations inside the `frameGeometry` setter; the ledger registers the request first.
-- **Interactive drags keep their slot**: the model is preserved during the drag, no writes to the dragged window; the drop is interpreted once in the next flush (KWin reports the end of a cancelled Move before restoring the start geometry).
-- **Context change resets the ledger**: KWin's output transfer emits the frame change before the output change.
-- **Floating-layout contexts own no geometry**; the deadline timer is disarmed when nothing is outstanding (no idle work).
-- **Settings dialog Apply does not notify the running script** (observed source: `ScriptingConfig::reload()` is a TODO in kwin v6.7.5); use the reload-configuration command or disable/enable.
-- **KWin reports a 150×150 client minimum** for the fixture by default, so dense layouts overflow on small outputs; overflow floats the newest window with an explanation.
-- **Escape does not cancel a pointer Meta+drag** in KWin 6.7.5 (measured); it cancels the keyboard Move action.
-
-## Outstanding / open gates
-
-| Item | Why open | What closes it |
+| Layer | Environment | Last result |
 |---|---|---|
-| Physical session: input-to-visible latency, real outputs at 60/100/144 Hz, panels with plasmashell, activities | Needs the user's live session (a probe would also add entries to the user's `kglobalshortcutsrc`) | User-approved install into the live session; physical latency tooling |
-| Upstream automatic-tiler baseline (T04) | In progress (nested Polonium) | `probes/baseline-upstream` |
-| XWayland constraints (G10), layer-shell panels (O07), real applications, activities (E08), per-output desktops (O08) | In progress | `tests/integration/scenarios_*.py` |
-| 100-cycle reload, 10-minute churn, idle CPU (T34) | In progress | `probes/perf/churn.py` |
-| Packaging, CI, user documentation (T32, T33, T35) | In progress | `tools/install.sh`, `.github/workflows/ci.yml`, `docs/user/` |
-| Persistence of per-session layout changes (T27) | The declarative script API exposes `readConfig` only | Documented limitation; a settings-helper path would be a separate decision |
-| Codeberg refresh (E02) | In progress | `docs/research/CODEBERG_ADDENDUM.md` |
+| Unit/replay | Node 26 (`node --test tests/core/*.test.ts`), mock host and fake KWin | 384/384 |
+| Nested, virtual backend | Reference host: Arch Linux, KWin 6.7.5, Qt 6.12.0, KF 6.30.0 ([ENVIRONMENT](ENVIRONMENT.md)) | `67772ee`: 990/990 checks, 99/99 scenarios, 1 expected SKIP ([evidence](evidence/integration-host-67772ee.json)) |
+| Nested, virtual backend (CI) | Ubuntu 26.10 sandbox: KWin 6.7.5, Qt 6.11.2, KF 6.29.0, QPainter compositing | `67772ee`: 807/807 checks, 88/88 scenarios, 2 expected SKIPs (run 39109880796) |
+| Nested, virtual backend (CI, provisional) | Nix: KWin 6.8.0, Qt 6.11.2, KF 6.30.0, llvmpipe | `67772ee`: 773/778 checks, 84/87 scenarios; failures below |
+| Nested, windowed on the real GPU | Reference host, nested KWin's outputs shown as windows on the live compositor (`PLASTILE_NESTED_HOST_DISPLAY`); private bus, config and XDG dirs | In progress; labelled `nested-windowed-gpu`, never physical |
+| Physical session | [Runbook](../validation/PHYSICAL_RUNBOOK.md) P0–P8 | **Never run** |
 
-## Known failures
+Expected SKIPs: `output-negative-origin-G02` (KWin normalizes output origins, so a negative origin cannot
+occur); `native-editor-toggle-L14` only where compositing is QPainter (the tile editor is GL-only).
 
-None outstanding in the committed suites (97 unit tests, 23 nested scenarios, last full run at `2d9bd60`).
+## Gates
+
+| Gate | State |
+|---|---|
+| G0 (APIs and measurement viable) | Passed, nested ([M0 report](M0_PROBE_REPORT.md), [API profile](API_PROFILE.md)) |
+| G1 (backend decision) | Passed, nested: direct geometry (ADR-003) |
+| G2 (integration and performance) | **Open.** Integration passes on 6.7.5; no G2 report yet (`wip/perf-g2`). The P05 burst corrections were a ledger defect fixed in `d6d0de4` ([evidence](evidence/p05-burst-diagnosis.json)) |
+| G3 (release) | **Open**: physical session, G2 report, release checklist, licence (ADR-012, owner decision) |
+
+## Tasks
+
+Verdicts from a card-by-card audit against each acceptance text (2026-10-18), updated for the work since.
+"Nested" means a nested KWin scenario; "unit" means unit/replay only. Physical clauses are open everywhere.
+
+| State | Tasks |
+|---|---|
+| Complete (nested evidence) | T00–T03, T05, T08, T13–T15, T18, T23, T25, T27 (6.7.5), T29, T30 |
+| Complete (unit/replay evidence) | T09, T11, T12, T17, T21 |
+| Closed as deferred | T31 (ADR-018) |
+| Superseded by G1 | T06, T07 (native spike; ADR-003) |
+| Partial | T04 (raw upstream samples not committed; below 5000 samples), T10 (no recorded-fixture replay directory), T16 (dialogs following parent visibility), T19 (resume/reconcile with missed events unit-only), T20 (no G2 report), T22 (no unload-in-monocle check), T24 (no per-send reflow count), T26 (rebinds across a package update), T28 (no live preview: ADR-019; settings dialog never clicked through), T32 (no version-to-version upgrade test), T33 (6.8 job red), T34 (no G2 protocol run; 6.8 RSS), T35 (no G3 checklist; licence), T36/T37 (experimental, ADR-014) |
+
+## Outstanding failures
+
+| Item | Where | State |
+|---|---|---|
+| `reload-Q09` and `persist-reload-cycles-Q09`: KWin RSS grows 26–28 MiB over 100 reloads (bound 16 MiB) and 12.6 MiB over 20 (bound 8 MiB) | KWin 6.8.0 only (6.7.5: +0.5 MiB) | Reproduced in two CI runs; absent at `ae4061a`, present from `81b57e2`. Bisect running on branch `ci/q09-bisect` |
+| `persist-no-qtcore-Q05`: the QtCore shadow does not take effect | KWin 6.8.0 Nix only | Test-environment issue (nixpkgs adds `NIXPKGS_QT6_QML_IMPORT_PATH` above the standard variables); the first fix did not find a wrapper; diagnostics running |
+
+## Measurements
+
+Nested only; none is a physical input-to-photon measurement.
+
+- Ratio command, dispatch to last frame request, 32 windows: p95 1.24 ms, p99 1.39 ms; pure solve p95 0.21 ms
+  ([perf-p03-nested](evidence/perf-p03-nested.json), 300 samples per cell: p99 indicative only).
+- Persistence save: 1.6–3.6 ms p50, up to 7.85 ms p99 per save, off the command path
+  ([persistence-t27-cost](evidence/persistence-t27-cost.json)).
+- Reload cycles on 6.7.5: steady connection and window counts, one shortcut per command, RSS +0.5 MiB over 100
+  cycles, no idle work (`reload-Q09`, `suspend-idle-C14`).
+
+## Next tasks
+
+1. Root-cause the KWin 6.8 RSS growth from the bisect; fix Q05's environment detection.
+2. Finish the windowed real-GPU runs (latency kit, chord delivery, panels with a real `plasmashell`, real
+   applications, idle) and record them as `nested-windowed-gpu`.
+3. G2 report from `wip/perf-g2` on a quiet machine.
+4. Remaining partial-task tests listed above; G3 checklist; physical runbook with the owner's consent.
 
 ## Conventions
 
-- `artifacts/<area>/<timestamp>/` holds raw local results (may contain private metadata). Never committed.
-- `docs/status/evidence/` holds redacted summaries and small reproducible raw files.
-- Every probe and scenario runs in its own disposable nested KWin through `tools/nested.py`; nothing connects to, replaces or restarts the user's compositor.
-- Build: `npm ci && npm run check` (typecheck, tests, bundle); `make -C fixtures/client`; `cmake -S tools/measure -B build/measure && cmake --build build/measure`; `make -C tools/input`; integration: `python3 tests/integration/run.py`.
+- `artifacts/` holds raw local results (may contain private metadata) and is never committed;
+  `docs/status/evidence/` holds redacted summaries.
+- Every probe and scenario runs in its own disposable nested KWin through `tools/nested.py`; nothing connects to,
+  replaces or restarts the user's compositor.
+- Build: `npm ci && npm run check`; `make -C fixtures/client && make -C fixtures/xclient && make -C tools/input`; integration:
+  `python3 tests/integration/run.py`.
