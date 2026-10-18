@@ -258,7 +258,10 @@ jobs:
 
       - name: Run nested integration scenarios
         run: |
-          sudo tools/sandbox/run.sh -- python3 tests/integration/run.py --markdown artifacts/integration-summary.md
+          # Expected SKIPs only (any other SKIP fails the job): QPainter compositing cannot run the GL
+          # tile-editor effect, and KWin normalizes output origins so a negative origin cannot occur.
+          sudo tools/sandbox/run.sh -- python3 tests/integration/run.py --markdown artifacts/integration-summary.md \
+            --expect-skips native-editor-toggle-L14,output-negative-origin-G02
 
       - name: Job summary
         if: always()
@@ -319,7 +322,9 @@ jobs:
       - name: Run nested integration scenarios (KWin 6.8)
         run: |
           tools/sandbox/nix/run.sh -- kwin_wayland --version
-          tools/sandbox/nix/run.sh -- python3 tests/integration/run.py --markdown artifacts/integration-kwin68-summary.md
+          # llvmpipe runs the tile-editor effect here; only the negative-origin scenario is an expected SKIP.
+          tools/sandbox/nix/run.sh -- python3 tests/integration/run.py --markdown artifacts/integration-kwin68-summary.md \
+            --expect-skips output-negative-origin-G02
 
       - name: Diagnostics on failure (device nodes, first KWin log)
         if: failure()

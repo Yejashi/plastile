@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Run Plastile integration scenarios in disposable nested KWin sessions.
 
-Usage: python3 tests/integration/run.py [--only NAME[,NAME]] [--list] [--fail-on-skip]
+Usage: python3 tests/integration/run.py [--only NAME[,NAME]] [--list] [--fail-on-skip] [--expect-skips NAME[,NAME]]
 Requires: npm run build, make -C fixtures/client.
 Writes artifacts/integration/<stamp>/{report.json,<scenario>/kwin.log,...}.
 Exit status is non-zero if any check fails. A scenario whose required capability is
@@ -35,6 +35,8 @@ def main() -> int:
     ap.add_argument("--only", default="")
     ap.add_argument("--list", action="store_true")
     ap.add_argument("--fail-on-skip", action="store_true", help="treat SKIP (missing capability) as failure")
+    ap.add_argument("--expect-skips", default=None,
+                    help="comma-separated scenarios allowed to SKIP; any other SKIP fails the run (CI allowlist)")
     ap.add_argument("--markdown", type=Path, help="also append a Markdown summary (e.g. $GITHUB_STEP_SUMMARY)")
     args = ap.parse_args()
     if args.list:
@@ -99,6 +101,15 @@ def main() -> int:
         print(f"     SKIP {name}: {why}")
     if args.markdown:
         write_markdown(args.markdown, report)
+    if args.expect_skips is not None:
+        allowed = {n for n in args.expect_skips.split(",") if n}
+        unexpected = sorted(set(skipped) - allowed)
+        report["summary"]["unexpectedSkips"] = unexpected
+        (out / "report.json").write_text(json.dumps(report, indent=1))
+        for name in unexpected:
+            print(f"     ✖ unexpected SKIP {name} (not in --expect-skips): {skipped[name]}")
+        if unexpected:
+            return 1
     return 1 if failed else 0
 
 
