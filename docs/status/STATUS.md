@@ -49,7 +49,7 @@ Verdicts from a card-by-card audit against each acceptance text (2026-10-18), up
 
 | Item | Where | State |
 |---|---|---|
-| `reload-Q09` and `persist-reload-cycles-Q09`: KWin RSS sometimes grows 20–35 MiB over 100 reloads (bound 16 MiB) | KWin 6.8.0 Nix only (6.7.5: +0.5 MiB) | **KWin 6.8's own allocation, not Plastile:** the same 100 reloads of an *empty* script grew KWin by 45–68 MiB in 3 of 6 reps; Plastile's worst of 6 interleaved reps was 34 MiB ([evidence](evidence/q09-kwin68-control.json)). A bisect over 9 commits found no regression. The bound is unchanged and the 6.8 job stays provisional |
+| `reload-Q09` and `persist-reload-cycles-Q09`: KWin RSS sometimes grows 20–35 MiB over 100 reloads (bound 16 MiB) | KWin 6.8.0 Nix only (6.7.5: +0.5 MiB) | **KWin 6.8's own allocation, not Plastile:** the same 100 reloads of an *empty* script grew KWin by 45–77 MiB in 7 of 14 reps; Plastile's worst of 14 interleaved reps was 40 MiB. The growth is heap (anonymous pages), not renderer buffers ([evidence](evidence/q09-kwin68-control.json)). A bisect over 9 commits found no regression. The bound is unchanged and the 6.8 job stays provisional |
 
 ## Fixed recently
 

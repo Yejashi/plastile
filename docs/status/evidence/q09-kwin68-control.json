@@ -1,30 +1,268 @@
 {
-  "what": "KWin 6.8.0 RSS over 100 script reloads: an empty script (control, probes/lifecycle/control.py --cycles 100 --package empty) vs Plastile (reload-Q09), 6 interleaved reps each",
-  "environment": "CI, Nix sandbox: KWin 6.8.0, Qt 6.11.2, KF 6.30.0, llvmpipe, virtual backend",
-  "run": "GitHub Actions run 39114268436 (branch ci/q09-bisect at 6cdccaf, scenario code as main aa9793a)",
-  "boundKiB": 16384,
-  "growthKiB": {
-    "control": [46040, -16, 70052, -16, 68196, -16],
-    "plastile": [34876, -1220, 26568, 2100, 4444, 7412]
+ "what": "KWin 6.8.0 RSS over 100 script reloads: an empty script (control, probes/lifecycle/control.py --cycles 100 --package empty) vs Plastile (reload-Q09), 6 interleaved reps each",
+ "environment": "CI, Nix sandbox: KWin 6.8.0, Qt 6.11.2, KF 6.30.0, llvmpipe, virtual backend",
+ "run": "GitHub Actions run 39114268436 (branch ci/q09-bisect at 6cdccaf, scenario code as main aa9793a)",
+ "boundKiB": 16384,
+ "growthKiB": {
+  "control": [
+   46040,
+   -16,
+   70052,
+   -16,
+   68196,
+   -16
+  ],
+  "plastile": [
+   34876,
+   -1220,
+   26568,
+   2100,
+   4444,
+   7412
+  ]
+ },
+ "rssKiBByCycle": {
+  "control": [
+   [
+    276920,
+    276920,
+    276920,
+    276900,
+    276904,
+    286420,
+    294804,
+    306328,
+    312608,
+    322960
+   ],
+   [
+    277344,
+    277344,
+    277344,
+    277324,
+    277328,
+    277328,
+    277328,
+    277328,
+    277328,
+    277328
+   ],
+   [
+    277532,
+    278428,
+    278428,
+    290340,
+    298460,
+    309912,
+    314536,
+    326944,
+    335280,
+    347584
+   ],
+   [
+    277544,
+    277544,
+    277544,
+    277524,
+    277528,
+    277528,
+    277528,
+    277528,
+    277528,
+    277528
+   ],
+   [
+    277000,
+    277000,
+    287584,
+    295964,
+    307880,
+    313420,
+    324636,
+    324636,
+    333488,
+    345196
+   ],
+   [
+    277344,
+    277344,
+    277344,
+    277324,
+    277328,
+    277328,
+    277328,
+    277328,
+    277328,
+    277328
+   ]
+  ],
+  "plastile": [
+   [
+    313696,
+    313952,
+    324744,
+    326928,
+    327680,
+    336540,
+    334292,
+    343060,
+    344012,
+    348572
+   ],
+   [
+    310104,
+    307668,
+    310056,
+    309692,
+    310024,
+    309928,
+    309272,
+    310812,
+    309468,
+    308884
+   ],
+   [
+    319184,
+    319400,
+    327576,
+    327576,
+    339152,
+    339372,
+    343708,
+    345440,
+    346016,
+    345752
+   ],
+   [
+    307916,
+    310008,
+    307696,
+    310268,
+    310204,
+    310736,
+    310204,
+    310268,
+    310972,
+    310016
+   ],
+   [
+    312252,
+    318024,
+    315732,
+    317980,
+    317980,
+    317656,
+    317276,
+    317856,
+    316824,
+    316696
+   ],
+   [
+    310428,
+    310232,
+    310172,
+    309952,
+    310504,
+    310280,
+    309820,
+    310016,
+    316052,
+    317840
+   ]
+  ]
+ },
+ "conclusion": "KWin 6.8.0 grows by up to 68 MiB over 100 reloads of an empty script (3 of 6 reps over the bound); Plastile's worst rep is 34 MiB. The 16 MiB bound cannot separate Plastile from KWin 6.8's own allocation on this environment. The bound is unchanged; the 6.8 job stays provisional. On KWin 6.7.5 the same scenario grows 0.5 MiB.",
+ "alsoInRun": "persist-no-qtcore-Q05 PASS on 6.8 with the exec-chain fix (shadow first in NIXPKGS_QT6_QML_IMPORT_PATH, QML_IMPORT_PATH and QML2_IMPORT_PATH)",
+ "rssParts": {
+  "run": "GitHub Actions run 39127496009 (branch ci/rss-parts at 7bb2592, main 7a9c4a1), 8 interleaved reps each",
+  "hypothesis": "the growth is shared memory mapped by llvmpipe or the udmabuf shim, not heap",
+  "result": "refuted: the growth is anonymous memory (RssAnon); RssShmem is flat in the control and a constant +2172 KiB for Plastile",
+  "deltaKiBFirstToLast": {
+   "control": [
+    {
+     "RssAnon": 36124,
+     "RssFile": 196,
+     "RssShmem": 0
+    },
+    {
+     "RssAnon": -16,
+     "RssFile": 196,
+     "RssShmem": 0
+    },
+    {
+     "RssAnon": -16,
+     "RssFile": 196,
+     "RssShmem": 0
+    },
+    {
+     "RssAnon": 76820,
+     "RssFile": 196,
+     "RssShmem": 0
+    },
+    {
+     "RssAnon": 76648,
+     "RssFile": 196,
+     "RssShmem": 0
+    },
+    {
+     "RssAnon": -16,
+     "RssFile": 196,
+     "RssShmem": 0
+    },
+    {
+     "RssAnon": -16,
+     "RssFile": 196,
+     "RssShmem": 0
+    },
+    {
+     "RssAnon": 76732,
+     "RssFile": 196,
+     "RssShmem": 0
+    }
+   ],
+   "plastile": [
+    {
+     "RssAnon": 7620,
+     "RssFile": 0,
+     "RssShmem": 2172
+    },
+    {
+     "RssAnon": 5936,
+     "RssFile": 0,
+     "RssShmem": 2172
+    },
+    {
+     "RssAnon": 4184,
+     "RssFile": 0,
+     "RssShmem": 2172
+    },
+    {
+     "RssAnon": 40096,
+     "RssFile": 0,
+     "RssShmem": 2172
+    },
+    {
+     "RssAnon": 1736,
+     "RssFile": 0,
+     "RssShmem": 2172
+    },
+    {
+     "RssAnon": 23312,
+     "RssFile": 0,
+     "RssShmem": 2172
+    },
+    {
+     "RssAnon": 1652,
+     "RssFile": 0,
+     "RssShmem": 2172
+    },
+    {
+     "RssAnon": 39620,
+     "RssFile": 0,
+     "RssShmem": 2172
+    }
+   ]
   },
-  "rssKiBByCycle": {
-    "control": [
-      [276920, 276920, 276920, 276900, 276904, 286420, 294804, 306328, 312608, 322960],
-      [277344, 277344, 277344, 277324, 277328, 277328, 277328, 277328, 277328, 277328],
-      [277532, 278428, 278428, 290340, 298460, 309912, 314536, 326944, 335280, 347584],
-      [277544, 277544, 277544, 277524, 277528, 277528, 277528, 277528, 277528, 277528],
-      [277000, 277000, 287584, 295964, 307880, 313420, 324636, 324636, 333488, 345196],
-      [277344, 277344, 277344, 277324, 277328, 277328, 277328, 277328, 277328, 277328]
-    ],
-    "plastile": [
-      [313696, 313952, 324744, 326928, 327680, 336540, 334292, 343060, 344012, 348572],
-      [310104, 307668, 310056, 309692, 310024, 309928, 309272, 310812, 309468, 308884],
-      [319184, 319400, 327576, 327576, 339152, 339372, 343708, 345440, 346016, 345752],
-      [307916, 310008, 307696, 310268, 310204, 310736, 310204, 310268, 310972, 310016],
-      [312252, 318024, 315732, 317980, 317980, 317656, 317276, 317856, 316824, 316696],
-      [310428, 310232, 310172, 309952, 310504, 310280, 309820, 310016, 316052, 317840]
-    ]
-  },
-  "conclusion": "KWin 6.8.0 grows by up to 68 MiB over 100 reloads of an empty script (3 of 6 reps over the bound); Plastile's worst rep is 34 MiB. The 16 MiB bound cannot separate Plastile from KWin 6.8's own allocation on this environment. The bound is unchanged; the 6.8 job stays provisional. On KWin 6.7.5 the same scenario grows 0.5 MiB.",
-  "alsoInRun": "persist-no-qtcore-Q05 PASS on 6.8 with the exec-chain fix (shadow first in NIXPKGS_QT6_QML_IMPORT_PATH, QML_IMPORT_PATH and QML2_IMPORT_PATH)"
+  "conclusion": "KWin 6.8.0 here grows its heap by up to 76.8 MiB over 100 reloads of an empty script (4 of 8 reps), bimodally; Plastile's worst rep is 40 MiB. Neither total nor anonymous RSS separates Plastile from KWin on this environment; the leak signals that do (connection, window, shortcut and script-object counts) stay flat. Bound unchanged; job provisional."
+ }
 }
