@@ -14,4 +14,4 @@ cmake --build build/measure
 ```
 
 Measured call overhead inside KWin 6.7.5 / Qt 6.12 (nested): mean about 0.32 µs per `nowNs()`
-call, p99 0.55 µs (see `docs/status/evidence/timing-reversal.json`, field `scriptClock`).
+call, p99 0.35 µs, mean 0.31 µs (see `docs/status/evidence/timing-reversal.json`, field `scriptClock.callDiffNs`; the nested baseline `baseline-nested-p01-p02.json` measured p99 0.51–0.59 µs in a different session).
