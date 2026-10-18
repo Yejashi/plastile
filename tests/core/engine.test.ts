@@ -661,3 +661,72 @@ test("L08/L13: toggle-float on a window that cannot tile is a no-op without side
   assert.equal(e2.execute("plastile.window.toggle-float").status, "noop");
   assert.equal(e2.explain("y")!.userMode, null);
 });
+
+function onActivities(activities: string[]) {
+  return { membership: { output: "O1", desktops: ["D1"], onAllDesktops: false, activities } };
+}
+
+/** Activity part of every context key that has members. */
+function memberActivities(e: ReturnType<MockHost["start"]>): string[] {
+  return [...new Set(e.contextSummary().filter((c) => c.members > 0).map((c) => c.id.split("␟")[2]))].sort();
+}
+
+test("E08: adding and removing a second activity keeps single-activity windows tiling with new windows", () => {
+  const h = new MockHost();
+  h.activity = "A";
+  const e = h.start();
+  h.open("a", onActivities(["A"]));
+  h.open("b", onActivities(["A"]));
+  h.drain();
+  h.activities = 2; // the user creates activity B: KWin emits only Workspace.activitiesChanged
+  e.topologyChanged();
+  h.drain();
+  h.open("c", onActivities(["A"]));
+  h.drain();
+  assertTiling(tiledFrames(h, ["a", "b", "c"]), AREA);
+  assert.deepEqual(memberActivities(e), ["A"]);
+  const onA = tiledFrames(h, ["a", "b", "c"]);
+  h.activity = "B";
+  e.visibilityChanged();
+  h.open("d", onActivities(["B"]));
+  h.drain();
+  assert.ok(rectNear(h.windows.get("d")!.frame, rect(8, 8, 1264, 784)), "a window on B tiles alone");
+  h.activity = "A";
+  e.visibilityChanged();
+  h.drain();
+  assert.deepEqual(tiledFrames(h, ["a", "b", "c"]), onA, "activity A layout unchanged");
+  h.close("d");
+  h.activities = 1; // B removed again
+  e.topologyChanged();
+  h.drain();
+  h.open("f", onActivities(["A"]));
+  h.drain();
+  assertTiling(tiledFrames(h, ["a", "b", "c", "f"]), AREA);
+  assert.equal(e.membersOf({ output: "O1", desktop: "D1", activity: "A" }).length, 4);
+});
+
+test("E08: a late activity service re-keys adopted windows; all-activity windows float once a second activity exists", () => {
+  const h = new MockHost(); // no service yet: one placeholder activity, current "default"
+  const e = h.start();
+  for (const id of ["a", "b", "c"]) h.open(id); // activities [] (all activities)
+  h.drain();
+  h.activity = "A"; // the service starts: KWin emits currentActivityChanged only (still one activity)
+  e.visibilityChanged();
+  h.drain();
+  assertTiling(tiledFrames(h, ["a", "b", "c"]), AREA);
+  assert.deepEqual(memberActivities(e), ["A"]);
+  h.activities = 2;
+  e.topologyChanged();
+  h.drain();
+  for (const id of ["a", "b", "c"]) assert.equal(e.modeOf(id), "floating", `${id} is on every activity (ADR-009)`);
+  assert.deepEqual(memberActivities(e), []);
+  const writes = h.writes.filter((w) => ["a", "b", "c"].includes(w.id)).length;
+  h.open("d", onActivities(["A"]));
+  h.drain();
+  assert.ok(rectNear(h.windows.get("d")!.frame, rect(8, 8, 1264, 784)), "a new window on A tiles");
+  assert.equal(h.writes.filter((w) => ["a", "b", "c"].includes(w.id)).length, writes, "floating windows not written");
+  h.activities = 1; // back to one activity: they are single-context again
+  e.topologyChanged();
+  h.drain();
+  assertTiling(tiledFrames(h, ["a", "b", "c", "d"]), AREA);
+});

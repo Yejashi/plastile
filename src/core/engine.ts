@@ -18,7 +18,7 @@ import { masterStack } from "./layouts/masterStack.ts";
 import { bsp, reinsert as bspReinsert } from "./layouts/bsp.ts";
 import { monocle, floating } from "./layouts/monocle.ts";
 import {
-  contextId, sameContext, type Constraints, type ContextId, type ContextKey, type ContextSettings, type Decision,
+  contextId, sameContext, type ActivityId, type Constraints, type ContextId, type ContextKey, type ContextSettings, type Decision,
   type LayoutKind, type Membership, type OutputId, type PlacementMode, type Suspension, type WindowId, type WindowMeta,
   type WindowStates,
 } from "./types.ts";
@@ -143,6 +143,9 @@ export class Engine {
   private revision = 0;
   private alive = true;
   private suspended = false;
+  /** Activity count and current activity the context keys were derived from. */
+  private actCount = 0;
+  private actCurrent = "";
 
   /** Stable identity so Qt.callLater coalesces repeated scheduling. */
   private readonly flushFn = (): void => this.flush();
@@ -160,6 +163,8 @@ export class Engine {
   /** Adopt existing windows: classify once, seed order, one solve per visible context. */
   start(initial: readonly WindowSnapshot[]): void {
     this.refreshScales();
+    this.actCount = this.host.activityCount();
+    this.actCurrent = this.host.currentActivity();
     for (const s of initial) this.add(s, false);
     this.markVisibleDirty();
     this.flushNow();
@@ -404,6 +409,7 @@ export class Engine {
   visibilityChanged(): void {
     if (!this.alive) return;
     this.trace.record(this.svc.now(), "visibility");
+    this.syncActivities();
     this.markVisibleDirty(true);
     this.ensureFlush();
   }
@@ -413,6 +419,7 @@ export class Engine {
     if (!this.alive) return;
     this.trace.record(this.svc.now(), "topology");
     this.refreshScales();
+    this.syncActivities();
     for (const c of this.contexts.values()) { c.settings = null; this.markDirty(c.key); }
     this.ensureFlush();
   }
@@ -434,11 +441,48 @@ export class Engine {
 
   private singleContextKey(m: Membership): ContextKey | null {
     if (m.output === null || m.onAllDesktops || m.desktops.length !== 1) return null;
-    let activity: string;
-    if (this.host.activityCount() <= 1) activity = "default";
-    else if (m.activities.length === 1) activity = m.activities[0];
-    else return null;
-    return { output: m.output, desktop: m.desktops[0], activity };
+    const activity = this.activityKey(m);
+    return activity === null ? null : { output: m.output, desktop: m.desktops[0], activity };
+  }
+
+  /**
+   * Activity part of a context key (ADR-009). With at most one activity (also without
+   * the activity service: one placeholder) every window belongs to the current activity
+   * whatever its own list says; with several, only a window on exactly one activity has
+   * a single context. Keys always name a real (or the placeholder) activity, so a
+   * context never outlives a change in the number of activities unnoticed.
+   */
+  private activityKey(m: Membership): ActivityId | null {
+    if (this.host.activityCount() <= 1) return this.host.currentActivity();
+    return m.activities.length === 1 ? m.activities[0] : null;
+  }
+
+  /**
+   * Re-key windows whose context depends on global activity state. Adding or removing
+   * an activity emits only Workspace.activitiesChanged, and an activity service starting
+   * late only currentActivityChanged (measured, KWin 6.7.5): no window signal follows.
+   * Keys depend on global state only while at most one activity exists, so switching
+   * among several activities re-keys nothing.
+   */
+  private syncActivities(): void {
+    const n = this.host.activityCount(), cur = this.host.currentActivity();
+    if (n === this.actCount && cur === this.actCurrent) return;
+    const rekey = n <= 1 || this.actCount <= 1;
+    this.actCount = n;
+    this.actCurrent = cur;
+    if (!rekey) return;
+    this.trace.record(this.svc.now(), "activities", undefined, { count: n });
+    // Members in context order first: windows moving together keep their relative order.
+    const order: Rec[] = [];
+    const seen = new Set<WindowId>();
+    for (const c of this.contexts.values()) {
+      for (const id of c.members) {
+        const r = this.recs.get(id);
+        if (r && !seen.has(id)) { seen.add(id); order.push(r); }
+      }
+    }
+    for (const r of this.recs.values()) if (!seen.has(r.id)) order.push(r);
+    for (const r of order) if (r.mode !== "pending") this.reclassify(r, "activities");
   }
 
   private effectiveConstraints(r: Rec): Constraints {
@@ -617,6 +661,7 @@ export class Engine {
     this.flushScheduled = false;
     this.counters.flushes++;
     try {
+      this.syncActivities();
       const queued = this.queued;
       this.queued = [];
       for (const q of queued) this.execute(q.id, q.arg);
@@ -660,9 +705,7 @@ export class Engine {
   }
 
   private isVisible(key: ContextKey): boolean {
-    if (this.host.visibleDesktop(key.output) !== key.desktop) return false;
-    if (this.host.activityCount() > 1 && this.host.currentActivity() !== key.activity) return false;
-    return true;
+    return this.host.visibleDesktop(key.output) === key.desktop && this.host.currentActivity() === key.activity;
   }
 
   // ----------------------------------------------------------- solve / apply
@@ -924,8 +967,7 @@ export class Engine {
     if (out === null) return null;
     const desk = this.host.visibleDesktop(out);
     if (desk === null) return null;
-    const act = this.host.activityCount() <= 1 ? "default" : this.host.currentActivity();
-    return this.ctxFor({ output: out, desktop: desk, activity: act });
+    return this.ctxFor({ output: out, desktop: desk, activity: this.host.currentActivity() });
   }
 
   private solveNow(c: Ctx): void {
