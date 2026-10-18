@@ -21,7 +21,7 @@ agent; this file is the short status.
 
 Expected SKIPs: `output-negative-origin-G02` (KWin normalizes output origins, so a negative origin cannot
 occur); `native-editor-toggle-L14` only where compositing is QPainter (the tile editor is GL-only);
-`plasmashell-panels-O07` in CI (no plasmashell in the sandbox images; it runs on the reference host).
+`plasmashell-panels-O07` and `settings-dialog-T28` in CI (no plasmashell or kcmshell6 in the sandbox images; both run on the reference host).
 
 ## Gates
 
@@ -39,18 +39,22 @@ Verdicts from a card-by-card audit against each acceptance text (2026-10-18), up
 
 | State | Tasks |
 |---|---|
-| Complete (nested evidence) | T00–T03, T05, T08, T10, T13–T16, T18, T22, T23, T25, T27 (6.7.5), T29, T30 |
+| Complete (nested evidence) | T00–T03, T05, T08, T10, T13–T16, T18, T22–T25, T28 (no live preview: ADR-019), T29, T30 |
 | Complete (unit/replay evidence) | T09, T11, T12, T17, T21 |
 | Closed as deferred | T31 (ADR-018) |
 | Superseded by G1 | T06, T07 (native spike; ADR-003) |
-| Partial | T04 (raw upstream samples not committed; below 5000 samples), T19 (floats across resume), T20 (no G2 report), T24 (multi-context windows, sends during an activity switch), T26 and T32 (no release-to-release upgrade yet: the old side is a past commit relabelled), T27 (saves block the compositor thread; moving them to a helper, see below), T28 (ADR-019; real settings dialog never driven), T33 (6.8 job red), T34 (no G2 protocol run; 6.8 RSS), T35 (no G3 checklist; licence), T36/T37 (experimental, ADR-014) |
+| Partial | T04 (raw upstream samples not committed; below 5000 samples), T19 (a float the user moves while Plastile is disabled jumps back to its saved rectangle on re-enable), T20 (no G2 report), T26 and T32 (no release-to-release upgrade yet: the old side is a past commit relabelled), T27 (saves block the compositor thread; moving them to a helper, see below), T33 (6.8 job red), T34 (no G2 protocol run; 6.8 RSS), T35 (no G3 checklist; licence), T36/T37 (experimental, ADR-014) |
 
 Recent nested evidence (KWin 6.7.5, each with mutation checks): dialogs follow their parent through minimize,
 desktop moves and close, matching KWin without Plastile (`scenarios_transients.py`); unload and reload in
 monocle leave no state behind (`monocle-unload-T22`); resume and re-enable adopt events missed while suspended,
 re-placing a window that drifted in place (`scenarios_recovery.py`); a send solves each affected context once;
 recorded replay fixtures (`tests/fixtures/replay/`); a version upgrade keeps user rebindings and config
-(`package-upgrade-bindings-T26-T32`).
+(`package-upgrade-bindings-T26-T32`); KWin's real settings dialog (`kcmshell6 kcm_kwin_scripts`, *Configure…*)
+driven with real input: Apply writes the runtime's vocabulary, Cancel writes and reloads nothing
+(`settings-dialog-T28`; SKIPs in CI, which has no `kcmshell6`); windows on several desktops or activities never get
+two targets, checked against KWin's frames (`scenarios_membership.py`); X11 dialogs behave like KWin without
+Plastile; user floats survive suspend/resume and re-enable.
 
 **Upgrade finding (documented in [INSTALL](../user/INSTALL.md)):** after a package upgrade, disabling and
 re-enabling the script runs the *old* code again, because KWin keeps every declarative script's QML in one
