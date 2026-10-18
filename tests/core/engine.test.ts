@@ -26,6 +26,7 @@ test("adoption: existing windows tile with one solve per visible context", () =>
   const h = new MockHost();
   const snaps = ["a", "b", "c"].map((id) => h.snapshot(h.make(id)));
   const e = h.start({}, snaps);
+  h.drain(); // the clients commit their configures on the next turn
   assert.equal(e.counters.solves, 1);
   assertTiling(tiledFrames(h, ["a", "b", "c"]), AREA);
   assert.deepEqual(e.check(), []);
@@ -78,14 +79,22 @@ test("C05: two grow commands both apply", () => {
 });
 
 test("C06: geometry signals during a write do not re-solve recursively", () => {
-  const { h, e } = setup(["a", "b", "c"]);
-  const solves = e.counters.solves;
-  h.active = "a";
-  e.execute("plastile.swap.master"); // moves windows: synchronous observations inside writes
-  assert.ok(e.counters.observationsDuringApply > 0);
-  assert.equal(e.counters.solves, solves + 1);
-  h.drain();
-  assert.equal(e.counters.solves, solves + 1, "observations must not trigger solves");
+  // Wayland: only a position-only write (two equal stack tiles swapping) is observed inside the
+  // setter; X11 clients are moved and resized synchronously, so every write is.
+  for (const x11 of [false, true]) {
+    const { h, e } = setup(["a", "b", "c"], x11 ? { a: { x11 }, b: { x11 }, c: { x11 } } : {});
+    const solves = e.counters.solves, during = e.counters.observationsDuringApply;
+    const slots = tiledFrames(h, ["a", "b", "c"]);
+    h.active = x11 ? "a" : "b";
+    e.execute(x11 ? "plastile.swap.master" : "plastile.swap.next");
+    assert.ok(e.counters.observationsDuringApply > during, `x11=${x11}: observed inside the write`);
+    assert.equal(e.counters.solves, solves + 1);
+    h.drain();
+    assert.equal(e.counters.solves, solves + 1, `x11=${x11}: observations must not trigger solves`);
+    const [p, q] = x11 ? ["a", "b"] : ["b", "c"];
+    assert.ok(rectNear(h.windows.get(p)!.frame, slots.get(q)!) && rectNear(h.windows.get(q)!.frame, slots.get(p)!), `x11=${x11}: swapped`);
+    assert.equal(e.outstandingCount(), 0, `x11=${x11}: the observations settled the requests`);
+  }
 });
 
 test("C07: removal during apply is preserved and peers are still applied", () => {
@@ -404,6 +413,7 @@ test("layout switching preserves order; monocle raises the focused member", () =
   h.active = "b";
   e.execute("plastile.layout.monocle");
   assert.deepEqual(h.raises.slice(-1), ["b"]);
+  h.drain();
   for (const id of ["a", "b", "c"]) assert.ok(rectNear(h.windows.get(id)!.frame, rect(8, 8, 1264, 784)));
   e.execute("plastile.focus.next");
   assert.equal(h.active, "c");
