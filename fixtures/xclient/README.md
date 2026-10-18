@@ -46,6 +46,7 @@ its own size except on the `resize` command.
 | Command | Effect |
 |---|---|
 | `resize W H` | `ConfigureWindow` width/height on the main window (a client-initiated resize request). |
+| `close-main` | Destroy the main window only and keep running; with `--dialog` the dialog stays mapped, its `WM_TRANSIENT_FOR` and `WM_CLIENT_LEADER` still naming the destroyed window (an application that closes its main window and keeps a dialog). Logged as `main_destroyed`. |
 | `quit` | Exit cleanly. End of stdin is logged and otherwise ignored. |
 
 A close request (`WM_DELETE_WINDOW`) on the main window exits; on the dialog it destroys the dialog only.
@@ -64,7 +65,7 @@ Every record has `t_ns` (CLOCK_MONOTONIC nanoseconds) and `ev`. Window records c
 | `configure` | `x`, `y` (relative to the parent, i.e. inside KWin's frame after reparenting), `w`, `h`, `border`, `resized`, `synthetic`, running count `n` |
 | `expose` | exposed rectangle and count |
 | `property` | property atom name changed on the window (e.g. `_NET_WM_STATE`, `_NET_FRAME_EXTENTS`) |
-| `command`, `resize_request`, `close_requested`, `stdin_eof` | input handling |
+| `command`, `resize_request`, `close_requested`, `main_destroyed`, `dialog_destroyed`, `stdin_eof` | input handling |
 | `error` | X errors and usage problems |
 | `exit` | reason (`quit`, `close`, `exit-after`, `display-error`), code, configure count |
 

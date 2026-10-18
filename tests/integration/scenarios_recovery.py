@@ -1,4 +1,4 @@
-"""Recovery scenarios: resume and re-adoption after missed events (T19), per-send reflow (T24).
+"""Recovery scenarios: resume and re-adoption after missed events and with user floats (T19), per-send reflow (T24).
 
 Two real paths lose Plastile's view of incremental changes:
 
@@ -17,7 +17,8 @@ import json
 import time
 from pathlib import Path
 
-from harness import Session, delta, near, steady_connections, tiling_errors, trace, trace_since, last_trace_t
+from harness import (Session, delta, explain, near, steady_connections, tiling_errors, trace, trace_since, last_trace_t,
+                     window_info)
 from scenarios import Checks, scenario, script_objects
 from scenarios_contexts import PerOutputSession, full, per_screen
 
@@ -537,4 +538,255 @@ def send_stale_close(out: Path, c: Checks):
               {"errors": per_output_errors(s), "frames": {f["caption"]: f["frame"] for f in fl}})
             errs = s.log_lines(ERRORS, off)
             c(f"{case}: no Plastile errors or JS exceptions", not errs, errs[:3])
+    c("facts (recorded, always passes)", True, facts)
+
+
+# ---------------------------------------------------------------- T19 user floats across resume / re-enable
+FLOAT_INFO = ("({id: String(w.internalId), tile: w.tile !== null, minimized: w.minimized,"
+              " frame: {x: w.frameGeometry.x, y: w.frameGeometry.y, width: w.frameGeometry.width,"
+              " height: w.frameGeometry.height}})")
+
+
+def info(s: Session, caption: str) -> dict | None:
+    return window_info(s, caption, FLOAT_INFO)
+
+
+def decision(s: Session, caption: str) -> dict:
+    e = explain(s, caption)
+    return {"mode": e.get("mode"), "userMode": e.get("userMode"), "nativeTile": e.get("nativeTile"),
+            "reason": (e.get("decision") or {}).get("reason")}
+
+
+def place(s: Session, caption: str, rect: dict) -> bool:
+    """The user puts a window at `rect` (a plain-script move, as the end of a drag would)."""
+    s.act(caption, f"w.frameGeometry = {json.dumps(rect)}")
+    return until(lambda: near(info(s, caption)["frame"], rect, 0.5), 3.0)
+
+
+def user_float(s: Session, caption: str, rect: dict) -> bool:
+    """Toggle floating on a tiled window, then place it where the user wants it."""
+    s.act(caption, "workspace.activeWindow = w")
+    t0 = last_trace_t(s)
+    s.cmd("window.toggle-float")
+    wait_command(s, "window.toggle-float", t0)
+    s.settle()
+    ok = place(s, caption, rect)
+    s.settle()
+    return ok
+
+
+def quick_tile_left(s: Session, caption: str) -> bool:
+    """KWin's own quick tile (Meta+Left): an explicit native placement that Plastile yields to (BEHAVIOR §9)."""
+    s.act(caption, "workspace.activeWindow = w; workspace.slotWindowQuickTileLeft()")
+    return until(lambda: info(s, caption)["tile"], 3.0)
+
+
+def tiles(s: Session, captions: tuple[str, ...]) -> list[dict]:
+    return [{"caption": k, "frame": info(s, k)["frame"]} for k in captions]
+
+
+def covered(frames_: list[dict], area: dict) -> float:
+    """Share of the gap-inset area the tiles cover (a ghost slot shows as a large drop)."""
+    f = full(area)
+    return sum(x["frame"]["width"] * x["frame"]["height"] for x in frames_) / (f["width"] * f["height"])
+
+
+def writes_by(recs: list[dict], wid: dict[str, str]) -> dict[str, int]:
+    w = writes_in(recs)
+    return {cap: w[i] for cap, i in wid.items() if w.get(i)}
+
+
+def close_inspector(s: Session, caption: str) -> None:
+    """explain opens Plastile's inspector (an excluded window); activating another window closes it."""
+    s.act(caption, "workspace.activeWindow = w")
+    until(lambda: window_info(s, "Plastile inspector", "1") is None, 3.0)
+
+
+@scenario("resume-floats-T19")
+def resume_floats(out: Path, c: Checks):
+    """User floats survive a suspend: floated before it, moved while suspended, or made while suspended.
+
+    Fixtures 2 and 4 are floated and placed by the user, then tiling is suspended. While suspended, 3
+    closes and 6 opens (so the peers must re-tile), the user moves the float 4, quick-tiles 5 with KWin
+    (an explicit native float exception, BEHAVIOR §9) and presses Toggle floating on 1, which is rejected
+    with `tiling suspended` (docs/user/SHORTCUTS.md). Resume must keep 2 at its rectangle, 4 where the
+    user moved it and 5 at KWin's quick tile, each with its float state, write none of them, and re-tile
+    the peers 1 and 6 over the whole area in one solve. Geometry by the oracle; decisions by explain;
+    work by the trace."""
+    facts: dict = {}
+    u2 = {"x": 150, "y": 110, "width": 520, "height": 380}
+    u4 = {"x": 640, "y": 300, "width": 460, "height": 340}
+    u4_moved = {"x": 420, "y": 210, "width": 500, "height": 360}
+    with Session(out, config={"traceCapacity": 8192}) as s:
+        off = s.kw.mark()
+        for i in (1, 2, 3, 4, 5):
+            s.spawn(i)
+        s.load(); s.settle()
+        area = s.area()
+        placed = user_float(s, fx(2), u2) and user_float(s, fx(4), u4)
+        d0 = {i: decision(s, fx(i)) for i in (2, 4)}
+        close_inspector(s, fx(1))
+        c("setup: 2 and 4 floated by the user at their rectangles (oracle, explain); 1, 3, 5 tile (oracle, gaps>=8)",
+          placed and all(d0[i]["mode"] == "floating" and d0[i]["userMode"] == "floating" for i in (2, 4))
+          and near(info(s, fx(2))["frame"], u2, 0.5) and near(info(s, fx(4))["frame"], u4, 0.5)
+          and not tiling_errors(tiles(s, (fx(1), fx(3), fx(5))), area, GAP),
+          {"explain": d0, "errors": tiling_errors(tiles(s, (fx(1), fx(3), fx(5))), area, GAP)})
+        wid = ids(s)
+
+        c("suspend: accepted", toggle_suspend(s) and is_suspended(s))
+        t_sus = last_trace_t(s)
+        c("suspend: the floats stay where the user put them (oracle)",
+          near(info(s, fx(2))["frame"], u2, 0.5) and near(info(s, fx(4))["frame"], u4, 0.5),
+          {"2": info(s, fx(2))["frame"], "4": info(s, fx(4))["frame"]})
+        # While suspended.
+        s.act(fx(1), "workspace.activeWindow = w")
+        t0 = last_trace_t(s)
+        s.cmd("window.toggle-float")
+        wait_command(s, "window.toggle-float", t0)
+        rec = [r for r in trace_since(trace(s), t0) if r.get("kind") == "command"
+               and (r.get("data") or {}).get("id") == "plastile.window.toggle-float"]
+        c("suspended: Toggle floating on 1 is rejected with `tiling suspended`, as documented (trace)",
+          len(rec) == 1 and rec[0]["data"].get("reason") == "tiling suspended", [r.get("data") for r in rec])
+        s.kill(3)
+        s.spawn(6)
+        moved = place(s, fx(4), u4_moved)
+        quick = quick_tile_left(s, fx(5))
+        q5 = info(s, fx(5))["frame"]
+        time.sleep(0.5)  # give a (wrong) write a chance to land
+        recs = trace_since(trace(s), t_sus)
+        c("suspended: the user's move of 4 and KWin's quick tile of 5 land; Plastile writes nothing (oracle + trace)",
+          moved and quick and not writes_in(recs) and near(info(s, fx(4))["frame"], u4_moved, 0.5),
+          {"moved": moved, "quickTile": quick, "q5": q5, "writes": readable(writes_in(recs))})
+        wid = {**wid, **ids(s)}
+
+        a = s.counters()
+        t_res = last_trace_t(s)
+        c("resume: accepted", toggle_suspend(s) and not is_suspended(s))
+        b = s.settle()
+        recs = trace_since(trace(s), t_res)
+        live = len(s.frames_list())
+        f = {k: info(s, k) for k in (fx(1), fx(2), fx(4), fx(5), fx(6))}
+        dec = {i: decision(s, fx(i)) for i in (1, 2, 4, 5, 6)}
+        close_inspector(s, fx(1))
+        facts["resume"] = {"writes": writes_by(recs, wid), "solves": readable(solves_in(recs)), "delta": delta(a, b),
+                           "explain": dec, "frames": {k: v["frame"] for k, v in f.items()}}
+        c("resume: 2, floated before the suspend, still floats at the user's rectangle (oracle, explain)",
+          near(f[fx(2)]["frame"], u2, 0.5) and dec[2]["mode"] == "floating" and dec[2]["userMode"] == "floating",
+          {"frame": f[fx(2)]["frame"], "want": u2, "explain": dec[2]})
+        c("resume: 4 floats where the user moved it while suspended, not at its older rectangle (oracle, explain)",
+          near(f[fx(4)]["frame"], u4_moved, 0.5) and dec[4]["mode"] == "floating" and dec[4]["userMode"] == "floating",
+          {"frame": f[fx(4)]["frame"], "want": u4_moved, "older": u4, "explain": dec[4]})
+        c("resume: 5, quick-tiled while suspended, keeps KWin's tile; Plastile yields it (oracle, explain mode native)",
+          near(f[fx(5)]["frame"], q5, 0.5) and f[fx(5)]["tile"] and dec[5]["mode"] == "native",
+          {"frame": f[fx(5)]["frame"], "quickTile": q5, "explain": dec[5]})
+        peers = tiles(s, (fx(1), fx(6)))
+        c("resume: the peers 1 and 6 (opened while suspended) re-tile the whole area; 1, whose Toggle floating was "
+          "rejected, is tiled (oracle, gaps>=8, coverage, explain)",
+          not tiling_errors(peers, area, GAP) and covered(peers, area) >= 0.97
+          and dec[1]["mode"] == "tiled" and dec[6]["mode"] == "tiled",
+          {"frames": {x["caption"]: x["frame"] for x in peers}, "errors": tiling_errors(peers, area, GAP),
+           "coverage": round(covered(peers, area), 4), "explain": {1: dec[1], 6: dec[6]}})
+        wr = writes_by(recs, wid)
+        c("resume: no float and no yielded window written; only the peers that had to move (trace)",
+          not ({fx(2), fx(4), fx(5)} & set(wr)) and set(wr) <= {fx(1), fx(6)} and wr.get(fx(6)) == 1, wr)
+        sv = solves_in(recs)
+        c("resume: one solve for the one visible context (trace)", sum(sv.values()) == 1, readable(sv))
+        c("resume: the closed window is not revived: Plastile tracks the 5 live windows (counters)",
+          b["windows"] == live == 5, {"windows": b["windows"], "live": live})
+
+        # Ordinary user floats afterwards: Toggle floating tiles 4, and again floats it where the user last put it.
+        s.act(fx(4), "workspace.activeWindow = w")
+        s.cmd("window.toggle-float"); time.sleep(0.2); s.settle()
+        three = tiles(s, (fx(1), fx(4), fx(6)))
+        tiled4 = not tiling_errors(three, area, GAP) and covered(three, area) >= 0.97
+        s.cmd("window.toggle-float"); time.sleep(0.2); s.settle()
+        c("after resume: Toggle floating tiles 4 with the peers, and again floats it at the user's latest rectangle "
+          "(oracle)", tiled4 and near(info(s, fx(4))["frame"], u4_moved, 0.5),
+          {"tiled": tiled4, "frame": info(s, fx(4))["frame"], "want": u4_moved})
+        s.act(fx(5), "workspace.activeWindow = w")
+        s.cmd("window.adopt-native"); time.sleep(0.2); s.settle()
+        three = tiles(s, (fx(1), fx(5), fx(6)))
+        c("after resume: adopting 5 explicitly takes it back into the layout (oracle, explain)",
+          not tiling_errors(three, area, GAP) and decision(s, fx(5))["mode"] == "tiled" and not info(s, fx(5))["tile"],
+          {"errors": tiling_errors(three, area, GAP), "tile": info(s, fx(5))["tile"]})
+        errs = s.log_lines(ERRORS, off)
+        c("no Plastile errors or JS exceptions", not errs, errs[:3])
+    c("facts (recorded, always passes)", True, facts)
+
+
+@scenario("reenable-floats-T19")
+def reenable_floats(out: Path, c: Checks):
+    """User floats survive a disable/re-enable (unload/load). The new runtime has only the live inventory and
+    the saved preferences (T27), so a float comes back when its application has one window open (the
+    documented rule, docs/user/TROUBLESHOOTING.md; Q06).
+
+    Fixtures 9 and 10 (applications of their own) are floated and placed; 2 is quick-tiled by KWin; 1 is
+    floated but shares its application with 2 and 3. Disabled: 3 closes, 4 opens and the user moves 10.
+    Re-enable: 9 floats at its rectangle unwritten; 2 stays KWin's; the peers tile; 1 is re-tiled (its
+    float is withheld as ambiguous, as documented); where 10 ends up is recorded."""
+    from scenarios_persist import spawn_app
+    facts: dict = {}
+    ua = {"x": 150, "y": 110, "width": 520, "height": 380}
+    ub = {"x": 640, "y": 300, "width": 460, "height": 340}
+    ub_moved = {"x": 420, "y": 210, "width": 500, "height": 360}
+    u1 = {"x": 300, "y": 200, "width": 480, "height": 360}
+    with Session(out, config={"traceCapacity": 8192, "diagnostics": "debug"}) as s:
+        off = s.kw.mark()
+        for i in (1, 2, 3):
+            s.spawn(i)
+        spawn_app(s, 9, "plastile-float-a"); spawn_app(s, 10, "plastile-float-b")
+        s.load(); s.settle()
+        area = s.area()
+        placed = user_float(s, fx(9), ua) and user_float(s, fx(10), ub) and user_float(s, fx(1), u1)
+        quick = quick_tile_left(s, fx(2))
+        s.settle()
+        q2 = info(s, fx(2))["frame"]
+        d0 = {i: decision(s, fx(i)) for i in (1, 2, 9, 10)}
+        c("setup: 9, 10 and 1 floated by the user at their rectangles; 2 quick-tiled by KWin and yielded (oracle, "
+          "explain)", placed and quick and all(d0[i]["userMode"] == "floating" for i in (1, 9, 10)) and d0[2]["mode"] == "native"
+          and near(info(s, fx(9))["frame"], ua, 0.5) and near(info(s, fx(10))["frame"], ub, 0.5),
+          {"explain": d0, "q2": q2})
+
+        s.unload()
+        saves = s.log_lines(r"plastile debug state saved .*\"reason\":\"unload\"", off)
+        s.kill(3)
+        s.spawn(4)
+        moved = place(s, fx(10), ub_moved)
+        c("disabled: Plastile saved its preferences at unload (log); 3 closed, 4 opened, the user moved 10 (oracle)",
+          len(saves) == 1 and moved and info(s, fx(3)) is None, {"saves": saves[-1:], "moved": moved})
+        wid = {k: info(s, k)["id"] for k in (fx(1), fx(2), fx(4), fx(9), fx(10))}
+
+        s.load()
+        cc = s.settle()
+        recs = trace(s)  # a fresh runtime: its whole trace is the adoption
+        f = {k: info(s, k) for k in wid}
+        dec = {i: decision(s, fx(i)) for i in (1, 2, 4, 9, 10)}
+        wr = writes_by(recs, wid)
+        restore = {k: cc["counters"][k] for k in ("restored", "restoreAmbiguous")}
+        facts["adopt"] = {"writes": wr, "solves": readable(solves_in(recs)), "counters": restore, "explain": dec,
+                          "frames": {k: v["frame"] for k, v in f.items()}}
+        c("re-enable: 9 floats at the user's rectangle and is not written (oracle, explain, trace)",
+          near(f[fx(9)]["frame"], ua, 0.5) and dec[9]["mode"] == "floating" and dec[9]["userMode"] == "floating"
+          and fx(9) not in wr, {"frame": f[fx(9)]["frame"], "want": ua, "explain": dec[9], "writes": wr})
+        facts["movedWhileDisabled"] = {"frame": f[fx(10)]["frame"], "saved": ub, "moved": ub_moved,
+                                       "keptLive": near(f[fx(10)]["frame"], ub_moved, 0.5),
+                                       "restoredSaved": near(f[fx(10)]["frame"], ub, 0.5), "writes": wr.get(fx(10), 0)}
+        c("re-enable: 10, moved while Plastile was disabled, floats again (explain); its position is recorded (facts)",
+          dec[10]["mode"] == "floating" and dec[10]["userMode"] == "floating", facts["movedWhileDisabled"])
+        c("re-enable: 2 keeps KWin's quick tile; Plastile yields it again and does not write it (oracle, explain, trace)",
+          near(f[fx(2)]["frame"], q2, 0.5) and f[fx(2)]["tile"] and dec[2]["mode"] == "native" and fx(2) not in wr,
+          {"frame": f[fx(2)]["frame"], "quickTile": q2, "explain": dec[2]})
+        peers = tiles(s, (fx(1), fx(4)))
+        c("re-enable: 1's float is withheld (its application has three windows open: documented, Q06) and 1 re-tiles "
+          "with 4 over the whole area (oracle, gaps>=8, coverage, explain, counters)",
+          not tiling_errors(peers, area, GAP) and covered(peers, area) >= 0.97 and dec[1]["mode"] == "tiled"
+          and dec[4]["mode"] == "tiled" and restore["restoreAmbiguous"] >= 1,
+          {"frames": {x["caption"]: x["frame"] for x in peers}, "errors": tiling_errors(peers, area, GAP),
+           "explain": {1: dec[1], 4: dec[4]}, "counters": restore})
+        c("re-enable: two floats restored from the saved preferences, 9 and 10 (counters)", restore["restored"] == 2, restore)
+        close_inspector(s, fx(4))
+        n = s.settle()["windows"]
+        c("re-enable: Plastile tracks the 5 live windows, not the closed 3 (counters)", n == 5, n)
+        errs = s.log_lines(ERRORS, off)
+        c("no Plastile errors or JS exceptions", not errs, errs[:3])
     c("facts (recorded, always passes)", True, facts)
