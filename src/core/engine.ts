@@ -360,6 +360,20 @@ export class Engine {
     this.corrections.delete(r.id);
     this.endedInteractions.delete(r.id);
     this.recs.delete(r.id);
+    if (r.userMode === "floating") this.releaseFloat(r);
+  }
+
+  /**
+   * A user-floated window closed: its application's float preference waits for the next window of
+   * that application again, as a restored one does (same matching, Q06).
+   */
+  private releaseFloat(r: Rec): void {
+    const key = identityKey(r.meta);
+    const p = key === null ? undefined : this.floatPrefs.get(key);
+    if (!p || key === null) return;
+    this.floatPrefs.delete(key);
+    this.pendingFloats.delete(key);
+    this.pendingFloats.set(key, p);
   }
 
   private live(id: WindowId, gen: number): Rec | null {

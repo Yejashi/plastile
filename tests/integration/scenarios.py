@@ -503,7 +503,9 @@ def reload(out: Path, c: Checks):
         errors = []
         for i in range(cycles):
             s.act("plastile-fixture 1", "workspace.activeWindow = w")
-            s.cmd("resize.grow")  # pending work at unload (fixture 3 delays commits)
+            # Pending work at unload (fixture 3 delays commits). The ratio is saved across reloads (T27), so
+            # alternate: 100 grows in a row would reach the ratio limit and make the final grow a no-op.
+            s.cmd("resize.grow" if i % 2 == 0 else "resize.shrink")
             s.unload()
             s.load()
             cc = s.settle()

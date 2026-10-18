@@ -395,6 +395,14 @@ def persist_ambiguous(out: Path, c: Checks):
         c("positive control: with one window again the float is restored (oracle)",
           near(frame_of(s, 9) or {}, saved, 1) and explain(s, fx(9))["mode"] == "floating" and cc["counters"]["restored"] == 1,
           {"want": saved, "got": frame_of(s, 9), "counters": cc["counters"]})
+        s.kill(9, wait=False)
+        s.wait_for(lambda: frame_of(s, 9) is None, 5, "unmap fixture 9")
+        spawn_app(s, 11)  # the application opened again in the same session
+        time.sleep(0.3)
+        s.settle()
+        c("same session: the application's next window floats at the saved rectangle (oracle)",
+          near(frame_of(s, 11) or {}, saved, 1) and explain(s, fx(11))["mode"] == "floating",
+          {"want": saved, "got": frame_of(s, 11)})
         c("no errors or JS exceptions logged", not unexpected(s), unexpected(s)[:5])
 
 

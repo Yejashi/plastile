@@ -178,6 +178,28 @@ test("T27/Q06: restored floats apply to the one live window of their application
   }
 });
 
+test("T27: a floated window closed and opened again in the same session floats where it was (one window only)", () => {
+  const h = new MockHost();
+  const e = h.start();
+  h.open("a"); h.open("solo");
+  h.drain();
+  h.active = "solo";
+  e.execute("plastile.window.toggle-float");
+  h.drain();
+  h.userSetFrame("solo", rect(120, 90, 420, 330));
+  h.close("solo");
+  h.drain();
+  assert.deepEqual(e.floatPreferences().map((p) => p.app.appId), ["solo"], "still saved after the window closed");
+  h.open("solo2", { meta: meta("solo") });
+  h.drain();
+  assert.equal(e.modeOf("solo2"), "floating");
+  assert.ok(rectNear(h.windows.get("solo2")!.frame, rect(120, 90, 420, 330)), JSON.stringify(h.windows.get("solo2")!.frame));
+  // A second instance while the first is open does not take the position: the first one holds it.
+  h.open("solo3", { meta: meta("solo") });
+  h.drain();
+  assert.equal(e.modeOf("solo3"), "tiled");
+});
+
 test("T27: floating a window records its application's preference; tiling it again forgets it", () => {
   const h = new MockHost();
   const e = h.start();
