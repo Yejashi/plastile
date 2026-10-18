@@ -75,6 +75,7 @@ exec /usr/bin/env -i \
   LANG=C.UTF-8 HOME="${HOME:-/root}" TERM="${TERM:-dumb}" \
   PATH="$ENV_PATH/bin:$ENV_PATH/libexec" \
   PLASTILE_NIX_ENV="$ENV_PATH" \
+  PLASTILE_STATE_HELPER="$ENV_PATH/libexec/plastile-state" \
   QT_PLUGIN_PATH="$ENV_PATH/lib/qt-6/plugins" \
   QML_IMPORT_PATH="$ENV_PATH/lib/qt-6/qml" \
   QML2_IMPORT_PATH="$ENV_PATH/lib/qt-6/qml" \

@@ -4,6 +4,8 @@
 
 **Where it lives.** Everything is in `~/.config/kwinrc` under `[Script-plastile]`, written by the settings dialog or by hand ([INSTALL](INSTALL.md#4-settings-dialog)).
 
+**Not configuration: saved layout preferences.** Layouts, ratios and float positions you change with commands are state, kept in `~/.local/state/plastile/` by the separate persistence helper ([saved preferences](README.md#saved-layout-preferences), [installing the helper](INSTALL.md#persistence-helper)). Nothing in this file turns persistence on or off: with the helper installed it is used, without it preferences stay in memory. Configuration never depends on the helper.
+
 **When changes take effect.** After *Plastile: Reload configuration*, which asks KWin to re-read `kwinrc`; after any other KWin reconfigure (`qdbus6 org.kde.KWin /KWin reconfigure`); or when the script is (re)enabled. The dialog's Apply alone does **not** reach the running script ([measured, see INSTALL](INSTALL.md#applying-settings-changes)). An activation re-evaluates only what changed: a settings change (gaps, ratios, layout, overrides) re-arranges only the screens and desktops whose resolved settings differ and re-classifies no window, except where `enabled` flipped; a rule change re-classifies every window and re-arranges only where a window joined or left the layout; a diagnostics-only change touches no window.
 
 ## Flat keys

@@ -75,10 +75,24 @@ let
         *) echo "plastile-env: /dev/udmabuf emulated by libplastile-udmabuf-shim (no render node, no kernel udmabuf)" >&2 ;;
       esac
     fi
-    # PLASTILE_KWIN_EXEC: run another binary after the decision above (persist-no-qtcore-Q05 runs
-    # the one behind nixpkgs' Qt wrapper so its own QML import path can come first).
-    exec "''${PLASTILE_KWIN_EXEC:-${kde.kwin}/bin/kwin_wayland}" "$@"
+    exec ${kde.kwin}/bin/kwin_wayland "$@"
   '';
+  # Plastile's persistence helper (helper/, ADR-020), built against this environment's Qt.
+  # tests/integration installs its activation file per nested session (harness.py), so the one
+  # CMake installs is removed: a service file in this environment's share/ would be visible to
+  # every nested bus through XDG_DATA_DIRS, and persist-no-helper-Q05 needs a bus without it.
+  plastileState = pkgs.stdenv.mkDerivation {
+    pname = "plastile-state";
+    version = "0.1.0";
+    src = ../../../helper;
+    nativeBuildInputs = [
+      pkgs.cmake
+      pkgs.ninja
+    ];
+    buildInputs = [ kde.qtbase ];
+    dontWrapQtApps = true; # Qt Core and DBus only: no plugins to find
+    postInstall = "rm -rf $out/share/dbus-1";
+  };
 in
 pkgs.buildEnv {
   name = "plastile-kwin68-env";
@@ -97,6 +111,7 @@ pkgs.buildEnv {
     kde.qtwayland # wayland QPA for Qt clients such as kscreen-doctor
     pkgs.xwayland
     (pkgs.lib.hiPrio dbusDaemon) # dbus-daemon --session without host /etc (see above)
+    plastileState # libexec/plastile-state; run.sh exports PLASTILE_STATE_HELPER
     pkgs.dbus # dbus-send, dbus-monitor; service activation directories
     pkgs.systemdMinimal # busctl
     pkgs.dejavu_fonts

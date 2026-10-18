@@ -1,11 +1,13 @@
-"""Float rectangles across outputs (D6) and persisted session preferences (T27, ADR-013).
+"""Float rectangles across outputs (D6) and persisted session preferences (T27; ADR-013, write path ADR-020).
 
-TEST_MATRIX IDs: L08 (float restore), O04/O05 (output changes), Q05 (persistence unavailable),
+TEST_MATRIX IDs: L08 (float restore), O04/O05 (output changes), Q05 (helper absent, stopped, slow, killed),
 Q06 (ambiguous restore), Q07 (partial/invalid state file), Q09 (reload cycles).
 
-Geometry is judged by the oracle (one-shot KWin scripts reading real window state). The state
-files are read from the nested session's private XDG_STATE_HOME; Plastile's counters and log
-lines are used for amounts of work and its own diagnostics only.
+Persistence goes through the plastile-state helper (helper/, org.kde.plastile.State): the harness installs
+its activation file on each session's private bus, which starts it on Plastile's first request. Geometry is
+judged by the oracle (one-shot KWin scripts reading real window state). The state files are read from the
+nested session's private XDG_STATE_HOME; Plastile's counters and log lines are used for amounts of work and
+its own diagnostics only.
 """
 from __future__ import annotations
 
@@ -14,14 +16,15 @@ import re
 import json
 import os
 import select
-import shutil
+import signal
+import stat
 import struct
 import threading
 import time
 from pathlib import Path
 
-from harness import ROOT, Session, delta, explain, near, tiling_errors, window_info, steady_connections
-from scenarios import Checks, script_objects, scenario
+from harness import ROOT, STATE_SERVICE, Session, delta, explain, near, tiling_errors, window_info, steady_connections
+from scenarios import Checks, Skipped, script_objects, scenario
 
 GAP = 8
 ERRORS = r"plastile (error|warn)|TypeError|ReferenceError"
@@ -184,53 +187,9 @@ def xdg(base: Path) -> dict:
     return {"XDG_STATE_HOME": str(base / "state"), "XDG_CONFIG_HOME": str(base / "config")}
 
 
-_EXEC_RX = re.compile(rb'exec\s+(?:-a\s+\S+\s+)?"?(?:\$\{[A-Z_]+:-)?(/[^\s"}$]+)')
-
-
-def nix_qt_wrapper() -> dict:
-    """Follow kwin_wayland's chain of exec wrappers (shell scripts) to a nixpkgs wrapQtAppsHook wrapper.
-
-    Returns {"chain": [...], "wrapped": path or None, "override": bool}. "wrapped" is the binary behind the
-    Qt wrapper (`.kwin_wayland-wrapped`); "override" says the first hop is the Nix sandbox's own script,
-    which runs PLASTILE_KWIN_EXEC instead of its target after its udmabuf decision (tools/sandbox/nix/env.nix).
-    Distribution packages: no chain beyond the binary, wrapped None."""
-    found = shutil.which("kwin_wayland")
-    out: dict = {"chain": [], "wrapped": None, "override": False}
-    cur = Path(found).resolve() if found else None
-    for hop in range(6):
-        if cur is None or not cur.exists():
-            break
-        out["chain"].append(str(cur))
-        try:
-            data = cur.read_bytes()
-        except OSError:
-            break
-        if hop == 0 and b"PLASTILE_KWIN_EXEC" in data:
-            out["override"] = True
-        wrapped = cur.parent / f".{cur.name}-wrapped"
-        if b"NIXPKGS_QT6_QML_IMPORT_PATH" in data and wrapped.exists():
-            out["wrapped"] = str(wrapped)
-            break
-        if not data.startswith(b"#!"):
-            break  # a binary: the end of the chain
-        m = _EXEC_RX.search(data)
-        cur = Path(m.group(1).decode()).resolve() if m else None
-    return out
-
-
-def proc_env(pid: int | None, names: tuple[str, ...]) -> dict | str:
-    """Selected variables from a process's environment, or why they cannot be read."""
-    if pid is None:
-        return "no pid"
-    try:
-        raw = Path(f"/proc/{pid}/environ").read_bytes().split(b"\0")
-    except OSError as e:
-        return f"unreadable: {e.strerror}"
-    env = dict(x.decode(errors="replace").split("=", 1) for x in raw if b"=" in x)
-    return {k: env.get(k) for k in names}
-
-
 def psession(out: Path, base: Path, extra_env: dict | None = None, **kw) -> Session:
+    """A session on the private XDG state/config directories `base` (kept across sessions); the helper's
+    activation file is installed unless helper=False; helper_env passes test knobs to the helper only."""
     s = Session(out, extra_env={**xdg(base), **(extra_env or {})}, **kw)
     rc = base / "config/kwinrc"
     if not rc.exists():
@@ -239,38 +198,13 @@ def psession(out: Path, base: Path, extra_env: dict | None = None, **kw) -> Sess
 
 
 def slot_path(base: Path, slot: int) -> Path:
-    return base / f"state/plastile/state-{slot}.ini"
-
-
-def ini_unescape(v: str) -> str:
-    out, i = [], 0
-    while i < len(v):
-        ch = v[i]
-        if ch == "\\" and i + 1 < len(v):
-            nxt = v[i + 1]
-            out.append({"n": "\n", "t": "\t", "r": "\r", "0": "\0"}.get(nxt, nxt))
-            i += 2
-            continue
-        out.append(ch)
-        i += 1
-    return "".join(out)
+    return base / f"state/plastile/state-{slot}.json"
 
 
 def slot_text(base: Path, slot: int) -> str | None:
-    """The `snapshot` value of the [plastile] group (QSettings keeps unrelated groups, such as garbage, as they are)."""
+    """A slot file's text exactly as the helper stores it (Plastile's snapshot JSON)."""
     p = slot_path(base, slot)
-    if not p.exists():
-        return None
-    group = None
-    for line in p.read_text(errors="replace").splitlines():
-        if line.startswith("[") and line.endswith("]"):
-            group = line[1:-1]
-        elif group == "plastile" and line.startswith("snapshot="):
-            v = line[len("snapshot="):]
-            if len(v) >= 2 and v[0] == '"' and v[-1] == '"':
-                v = v[1:-1]
-            return ini_unescape(v)
-    return None
+    return p.read_text(errors="replace") if p.exists() else None
 
 
 def slot_json(base: Path, slot: int) -> dict | None:
@@ -292,7 +226,85 @@ def generation(base: Path) -> int | None:
 
 
 def write_slot(base: Path, slot: int, text: str) -> None:
-    slot_path(base, slot).write_text('[plastile]\nsnapshot="' + text.replace("\\", "\\\\").replace('"', '\\"') + '"\n')
+    slot_path(base, slot).write_text(text)
+
+
+def wait_generation(s: Session, base: Path, want: int, timeout: float = 5.0) -> int | None:
+    """Wait until the newest slot has generation >= want (the helper writes after Plastile's request)."""
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        g = generation(base)
+        if g is not None and g >= want:
+            return g
+        time.sleep(0.03)
+    return generation(base)
+
+
+LOADED = r"plastile (info|warn) (saved state|no saved state|persistence unavailable)"
+
+
+def pload(s: Session, timeout: float = 10.0) -> str:
+    """Load Plastile and wait for the persistence outcome (the helper's reply or its absence); returns that line."""
+    off = s.kw.mark()
+    s.load()
+    return s.kw.wait_log(LOADED, timeout, off)[-1]
+
+
+def helper_pid(s: Session) -> int | None:
+    return s.kw.bus_pid(STATE_SERVICE)
+
+
+def kwin_round_trips(s: Session, n: int = 30, seconds: float | None = None) -> list[float]:
+    """KWin main-thread responsiveness: round trips (ms) of org.kde.kwin.Scripting.isScriptLoaded, a method that
+    KWin's main thread executes, over a persistent connection to the private bus. n samples 10 ms apart, or, with
+    `seconds`, samples 10 ms apart for that long (a stall anywhere in the window shows as one long round trip)."""
+    conn = s.kw._bus_connection()
+    m = conn.get_object("org.kde.KWin", "/Scripting").get_dbus_method("isScriptLoaded", "org.kde.kwin.Scripting")
+    out: list[float] = []
+    end = time.monotonic() + seconds if seconds is not None else None
+    while (len(out) < n) if end is None else (time.monotonic() < end):
+        t = time.monotonic()
+        m("plastile")
+        out.append(round((time.monotonic() - t) * 1000, 3))
+        time.sleep(0.01)
+    return out
+
+
+def stall_control(s: Session, ms: int = 400) -> dict:
+    """Positive control for kwin_round_trips: a one-shot KWin script busy-loops `ms` on KWin's main thread while a
+    second bus connection, in a thread, samples the same round trip. The probe must see that stall, or a quiet
+    result while the helper is stopped would prove nothing."""
+    import dbus
+    conn = dbus.bus.BusConnection(s.kw.bus_address)
+    m = conn.get_object("org.kde.KWin", "/Scripting").get_dbus_method("isScriptLoaded", "org.kde.kwin.Scripting")
+    samples: list[float] = []
+    stop = threading.Event()
+
+    def sample() -> None:
+        while not stop.is_set():
+            t = time.monotonic()
+            m("plastile")
+            samples.append(round((time.monotonic() - t) * 1000, 3))
+            time.sleep(0.01)
+    th = threading.Thread(target=sample, daemon=True)
+    th.start()
+    time.sleep(0.2)
+    s.js(f"const t0 = Date.now(); while (Date.now() - t0 < {ms}) {{}}")
+    time.sleep(0.2)
+    stop.set()
+    th.join(3)
+    conn.close()
+    return q(samples)
+
+
+def q(xs: list[float]) -> dict:
+    v = sorted(xs)
+    return {"n": len(v), "p50": v[len(v) // 2], "p95": v[min(len(v) - 1, int(len(v) * 0.95))], "max": v[-1]} if v else {}
+
+
+def perms(base: Path) -> dict:
+    d = base / "state/plastile"
+    return {p.name: oct(stat.S_IMODE(p.stat().st_mode)) for p in [d, *sorted(d.iterdir())]}
 
 
 def spawn_app(s: Session, ident: int, app: str = SOLO) -> None:
@@ -318,12 +330,13 @@ def unexpected(s: Session, allowed: str | None = None) -> list[str]:
 def persist_reload_restart(out: Path, c: Checks):
     """Layout preferences and a float survive an unload/reload and a nested KWin restart with the same private XDG
     state and config directories. The state directory is watched with inotify: no file access happens while commands
-    run, and one save follows about 2 s after the last change."""
+    run, and one save follows about 2 s after the last change, written by the helper. After a restart tiling starts
+    with defaults and the saved state applies once the helper's reply arrives (ADR-020)."""
     base = out / "xdg"
     facts: dict = {}
     with psession(out / "first", base) as s:
         s.spawn(1); s.spawn(2); s.spawn(3); spawn_app(s, 9)
-        s.load(); s.settle()
+        pload(s); s.settle()
         area = s.area()
         w0 = s.frames()[fx(1)]["frame"]["width"]
         watch = Inotify(base / "state/plastile")
@@ -350,10 +363,15 @@ def persist_reload_restart(out: Path, c: Checks):
           not early, describe(early, t_first))
         c("one save after the quiet period: first write event 1.5-4 s after the last change (inotify)",
           first is not None and 1.5 <= first <= 4.0, {"secondsAfterLastChange": first})
-        c("the save is atomic: written to an unnamed temporary file, which then appears as state-0.ini; never written in "
-          "place (QSaveFile; inotify)", atomic(writes, "state-0.ini"), describe(writes, t_last))
-        c("only the slot being saved, its lock file and unnamed temporary files are touched",
-          all(n.startswith("state-0.ini") or n.startswith("#") for _, _, n in writes), sorted({n for _, _, n in writes}))
+        c("the save is atomic: written to an unnamed temporary file, which then appears as state-0.json; never written in "
+          "place (the helper's QSaveFile; inotify)", atomic(writes, "state-0.json"), describe(writes, t_last))
+        # The directory's own entry ("") changes mode once: the helper makes the directory this test created 0700.
+        c("only the slot being saved and unnamed temporary files are touched (no lock file)",
+          all(n == "state-0.json" or n.startswith("#") or (n == "" and m & IN_ATTRIB and not m & ~(IN_ATTRIB | 0x40000000))
+              for _, m, n in writes), sorted({n for _, _, n in writes}))
+        facts["permissions"] = perms(base)
+        c("the state directory is 0700 and the slot 0600 (helper)",
+          facts["permissions"] == {"plastile": "0o700", "state-0.json": "0o600"}, facts["permissions"])
         snap = newest(base)
         ctx = [x for x in (snap or {}).get("contexts", []) if x["outputKey"] == "Virtual-0"]
         fl = [x for x in (snap or {}).get("floats", []) if x["appId"] == SOLO]
@@ -371,7 +389,7 @@ def persist_reload_restart(out: Path, c: Checks):
         try:
             s.unload()
             t_reload = time.monotonic()
-            s.load()
+            pload(s)
             cc = s.settle()
             time.sleep(2.8)  # past the debounce: an unchanged snapshot must not be rewritten
         finally:
@@ -384,18 +402,21 @@ def persist_reload_restart(out: Path, c: Checks):
           and cc["counters"]["restoreAmbiguous"] == 0, cc["counters"])
         c("reload without changes writes nothing: unload had nothing dirty, the restored content is unchanged (inotify)",
           not watch.writes(), describe(watch.writes(), t_reload))
-        c("Settings never used its default location (no kde.org/kwin.conf in the private config directory)",
-          not (base / "config/kde.org").exists(), sorted(p.name for p in (base / "config").iterdir()))
         c("no errors or JS exceptions logged (first session)", not unexpected(s), unexpected(s)[:5])
         facts["persistence"] = s.counters()["persistence"]
     # A KWin restart: a new compositor process, the same XDG state and config directories.
     with psession(out / "second", base) as s:
         s.spawn(1); s.spawn(2); s.spawn(3)
-        s.load(); s.settle()
-        c("restart: saved state loaded once (log)", len(s.log_lines(r"plastile info saved state loaded")) == 1,
-          s.log_lines(r"plastile info saved state"))
-        c("restart: the master column has the saved ratio from the first solve (oracle)",
-          near(s.frames()[fx(1)]["frame"], master, 1), {"want": master, "got": s.frames()[fx(1)]["frame"]})
+        pload(s); s.settle()
+        loaded = s.log_lines(r"plastile info saved state loaded")
+        c("restart: saved state loaded once (log)", len(loaded) == 1, s.log_lines(r"plastile info saved state"))
+        started = s.log_lines(r"plastile info started ")
+        stamp = lambda ln: float(ln.split()[0])  # noqa: E731  QT_MESSAGE_PATTERN %{time boot}, seconds
+        if loaded and started:
+            facts["restartReplyAfterStartMs"] = round((stamp(loaded[0]) - stamp(started[0])) * 1000, 1)
+        c("restart: the master column has the saved ratio once the helper replied (oracle)",
+          near(s.frames()[fx(1)]["frame"], master, 1), {"want": master, "got": s.frames()[fx(1)]["frame"],
+                                                        "replyAfterStartMs": facts.get("restartReplyAfterStartMs")})
         spawn_app(s, 9)  # the application starts after Plastile: restored when it maps
         time.sleep(0.3)
         s.settle()
@@ -408,6 +429,68 @@ def persist_reload_restart(out: Path, c: Checks):
     c("facts (recorded, always passes)", True, facts)
 
 
+# ------------------------------------------------------------- T27: KWin exits
+def master_ratio(snap: dict | None) -> float | None:
+    return next((x["masterStack"]["ratio"] for x in (snap or {}).get("contexts", []) if x["outputKey"] == "Virtual-0"
+                 and x.get("masterStack")), None)
+
+
+@scenario("persist-kwin-exit-T27")
+def persist_kwin_exit(out: Path, c: Checks):
+    """KWin itself exits (SIGTERM, the signal a session manager sends at logout) while a change is still inside the
+    2 s debounce: Plastile's teardown sends the final Write and the helper stores it after KWin is gone. Three times
+    with the helper running, three times with the helper exited for idleness (test knob PLASTILE_STATE_TEST_IDLE_MS),
+    so that the final Write has to activate a new helper while KWin exits. A nested approximation of a logout: the
+    private bus stays up, which a real session's bus and service manager need not do."""
+    trials = []
+    for mode in ("running", "idle-exited"):
+        for i in range(3):
+            base = out / f"{mode}-{i}/xdg"
+            env = {"PLASTILE_STATE_TEST_IDLE_MS": "300"} if mode == "idle-exited" else None
+            s = psession(out / f"{mode}-{i}/s", base, helper_env=env)
+            with s:
+                s.spawn(1); s.spawn(2)
+                pload(s); s.settle()
+                s.act(fx(1), "workspace.activeWindow = w")
+                s.cmd("resize.grow")  # 0.55 -> 0.6, saved by the deadline
+                g1 = wait_generation(s, base, 1, 6)
+                if mode == "idle-exited":
+                    s.wait_for(lambda: helper_pid(s) is None, 5, "the helper exits for idleness")
+                had_helper = helper_pid(s) is not None
+                t_cmd = time.monotonic()
+                s.cmd("resize.grow")  # 0.6 -> 0.65, still inside the debounce at exit
+                time.sleep(0.15)
+                t_term = time.monotonic()
+                rc = s.kw.terminate_kwin()
+                s.loaded = False  # KWin is gone: nothing to unload
+                for f in s.fixtures.values():  # the clients lost their compositor; drop their pipes quietly
+                    try:
+                        f.proc.stdin.close()
+                    except OSError:
+                        pass
+                s.fixtures.clear()
+                g2 = wait_generation(s, base, 2, 5)
+                stops = [float(ln.split()[0]) for ln in s.log_lines(r"plastile info stopped")]
+                trials.append({"mode": mode, "helperRunningAtExit": had_helper, "firstSave": g1, "kwinExit": rc,
+                               "termAfterCommandS": round(t_term - t_cmd, 3),
+                               # QT_MESSAGE_PATTERN %{time boot} is CLOCK_MONOTONIC, as time.monotonic()
+                               "teardownAfterCommandS": [round(t - t_cmd, 3) for t in stops],
+                               "generationAfterExit": g2, "ratio": master_ratio(newest(base)),
+                               "errors": unexpected(s)[:3]})
+    for mode in ("running", "idle-exited"):
+        ts = [t for t in trials if t["mode"] == mode]
+        c(f"precondition ({mode}): the first save landed; the helper was {'running' if mode == 'running' else 'gone'} "
+          "at exit", all(t["firstSave"] == 1 and t["helperRunningAtExit"] == (mode == "running") for t in ts), ts)
+        c(f"KWin exit ({mode}): Plastile's teardown ran before the 2 s deadline could fire (log, under 1.5 s after the "
+          "change)", all(len(t["teardownAfterCommandS"]) == 1 and t["teardownAfterCommandS"][0] < 1.5 for t in ts),
+          [t["teardownAfterCommandS"] for t in ts])
+        c(f"KWin exit ({mode}): 3 of 3 final Writes reached the helper after KWin exited (generation 2, ratio 0.65; "
+          "file)", all(t["generationAfterExit"] == 2 and t["ratio"] is not None and abs(t["ratio"] - 0.65) < 1e-9
+                       for t in ts), [(t["generationAfterExit"], t["ratio"]) for t in ts])
+    c("no errors or JS exceptions logged", not any(t["errors"] for t in trials), [t["errors"] for t in trials])
+    c("facts (recorded, always passes)", True, trials)
+
+
 # --------------------------------------------------------------------- Q06
 @scenario("persist-ambiguous-Q06")
 def persist_ambiguous(out: Path, c: Checks):
@@ -416,7 +499,7 @@ def persist_ambiguous(out: Path, c: Checks):
     base = out / "xdg"
     with psession(out / "s", base) as s:
         s.spawn(1); spawn_app(s, 9)
-        s.load(); s.settle()
+        pload(s); s.settle()
         s.act(fx(9), "workspace.activeWindow = w")
         s.cmd("window.toggle-float")
         time.sleep(0.2); s.settle()
@@ -427,7 +510,7 @@ def persist_ambiguous(out: Path, c: Checks):
         c("precondition: the float is saved (file)", bool(snap) and any(f["appId"] == SOLO for f in snap["floats"]), snap)
         s.unload()
         spawn_app(s, 10)  # a second instance of the same application
-        s.load(); cc = s.settle()
+        pload(s); cc = s.settle()
         modes = {i: explain(s, fx(i))["mode"] for i in (9, 10)}
         frames = [{"caption": fx(i), "frame": frame_of(s, i)} for i in (1, 9, 10)]
         c("Q06: two live windows of the application: neither gets the saved float, both tile (explain + oracle)",
@@ -440,7 +523,7 @@ def persist_ambiguous(out: Path, c: Checks):
           any(f["appId"] == SOLO for f in (newest(base) or {}).get("floats", [])), newest(base))
         s.kill(10, wait=False)
         s.wait_for(lambda: frame_of(s, 10) is None, 5, "unmap fixture 10")
-        s.load(); cc = s.settle()
+        pload(s); cc = s.settle()
         c("positive control: with one window again the float is restored (oracle)",
           near(frame_of(s, 9) or {}, saved, 1) and explain(s, fx(9))["mode"] == "floating" and cc["counters"]["restored"] == 1,
           {"want": saved, "got": frame_of(s, 9), "counters": cc["counters"]})
@@ -461,30 +544,31 @@ def persist_damaged(out: Path, c: Checks):
     """Damaged, torn and newer-schema state files: defaults (or the other valid slot) and exactly one diagnostic."""
     partial = (FIXTURES / "partial.json").read_text()
     facts: dict = {}
-    # (a) garbage in slot 0 (QSettings finds no Plastile value in it: absent) and an invalid snapshot in slot 1:
-    # defaults; the next save goes into slot 0.
+    # (a) binary garbage in slot 0 (the helper hands it over with U+FFFD for the bytes that are not UTF-8) and an
+    # invalid snapshot in slot 1: defaults; the next save goes into slot 0.
     base = out / "a"
     xdg(base)
-    slot_path(base, 0).write_bytes(b"\x00\xff\xfe garbage [plastile\nsnapshot=\"{oops\n")
+    slot_path(base, 0).write_bytes(b"\x00\xff\xfe garbage {\"schemaVersion\": 1, oops\n")
     write_slot(base, 1, (FIXTURES / "invalid.json").read_text().strip())
     with psession(out / "a/s", base) as s:
         s.spawn(1); s.spawn(2)
-        s.load(); s.settle()
+        pload(s); s.settle()
         area = s.area()
         diag = s.log_lines(r"plastile warn saved state rejected")
         w = s.frames()[fx(1)]["frame"]["width"]
         facts["a.diagnostic"] = diag
         c("Q07 garbage + invalid: defaults (master column at the default ratio, oracle)",
           abs(w - default_master_width(area, 0.55)) <= 1 and not tiling_errors(s.frames_list(), area, GAP), w)
-        c("Q07 garbage + invalid: exactly one diagnostic, naming the invalid field, and no other warning",
-          len(diag) == 1 and "slot 1: contexts[0].masterStack.ratio" in diag[0] and "using defaults" in diag[0]
+        c("Q07 garbage + invalid: exactly one diagnostic, naming the damaged slot, the invalid field, and no other warning",
+          len(diag) == 1 and "slot 0: not valid JSON" in diag[0] and "slot 1: contexts[0].masterStack.ratio" in diag[0]
+          and "using defaults" in diag[0]
           and not unexpected(s, r"saved state rejected"), {"diag": diag, "other": unexpected(s, r"saved state rejected")})
         s.act(fx(1), "workspace.activeWindow = w")
         s.cmd("resize.grow")
         time.sleep(2.8)
         snap0 = slot_json(base, 0)
         c("Q07: the next save writes a valid snapshot into slot 0 (file)", bool(snap0) and snap0["generation"] == 1, snap0)
-        s.unload(); s.load(); s.settle()
+        s.unload(); pload(s); s.settle()
         c("Q07: after that save the next load uses it (ratio 0.6, oracle) and reports slot 1 only",
           abs(s.frames()[fx(1)]["frame"]["width"] - default_master_width(area, 0.6)) <= 1
           and "using slot 0 (generation 1)" in (s.log_lines(r"plastile warn saved state rejected") or [""])[-1],
@@ -496,7 +580,7 @@ def persist_damaged(out: Path, c: Checks):
     write_slot(base, 1, partial)
     with psession(out / "b/s", base) as s:
         s.spawn(1); s.spawn(2)
-        s.load(); s.settle()
+        pload(s); s.settle()
         area = s.area()
         diag = s.log_lines(r"plastile warn saved state rejected")
         w = s.frames()[fx(1)]["frame"]["width"]
@@ -512,7 +596,7 @@ def persist_damaged(out: Path, c: Checks):
     before = slot_path(base, 0).read_bytes()
     with psession(out / "c/s", base) as s:
         s.spawn(1); s.spawn(2)
-        s.load(); s.settle()
+        pload(s); s.settle()
         area = s.area()
         diag = s.log_lines(r"plastile warn saved state rejected")
         w = s.frames()[fx(1)]["frame"]["width"]
@@ -531,48 +615,30 @@ def persist_damaged(out: Path, c: Checks):
 
 
 # --------------------------------------------------------------------- Q05
-@scenario("persist-no-qtcore-Q05")
-def persist_no_qtcore(out: Path, c: Checks):
-    """QtCore Settings unavailable: Plastile tiles, reports once, and writes nothing.
+def master_width(s: Session, output: str) -> float | None:
+    """Width of the leftmost tiled fixture on `output` (the master column in master/stack; oracle)."""
+    fs = [f for f in s.frames_list() if f["output"] == output]
+    return min(fs, key=lambda f: f["frame"]["x"])["frame"]["width"] if fs else None
 
-    The failure is induced with a QtCore module first on QML2_IMPORT_PATH and QML_IMPORT_PATH (which take precedence) whose Settings type names
-    a missing file, so creating Settings throws in KWin's engine. Hiding the real module does not work here: a qmldir
-    whose plugin is missing still resolves Settings, because QtCore's types are already registered in the process
-    (measured in nested KWin 6.7.5, Qt 6.11.2), so this is the closest reproducible stand-in for a missing module."""
-    shadow = out / "qml-shadow/QtCore"
-    shadow.mkdir(parents=True, exist_ok=True)
-    (shadow / "qmldir").write_text("module QtCore\nSettings 6.0 Missing.qml\n")
+
+@scenario("persist-no-helper-Q05")
+def persist_no_helper(out: Path, c: Checks):
+    """Script-only install: no helper activation file on the bus. Plastile tiles at once, reports once, keeps its
+    preferences in memory and writes nothing; the bus answers ServiceUnknown and nothing is asked again."""
+    # The private bus also reads the system's service directories: a helper installed system-wide would answer.
+    dirs = {*os.environ.get("XDG_DATA_DIRS", "").split(":"), "/usr/local/share", "/usr/share"} - {""}
+    system = [str(p) for d in sorted(dirs) if (p := Path(d) / "dbus-1/services" / f"{STATE_SERVICE}.service").exists()]
+    if system:
+        raise Skipped(f"Q05: the helper is installed system-wide here ({system[0]}), so no bus lacks it")
     base = out / "xdg"
-    # Qt searches QML2_IMPORT_PATH before QML_IMPORT_PATH (qqmltypeloader.cpp, "5. $QML2_IMPORT_PATH
-    # 6. $QML_IMPORT_PATH"), and some environments (the Nix KWin 6.8 sandbox) set both, so the shadow
-    # goes first on both or the real QtCore is still found.
-    paths = {v: os.pathsep.join([str(shadow.parent)] + ([os.environ[v]] if os.environ.get(v) else []))
-             for v in ("QML2_IMPORT_PATH", "QML_IMPORT_PATH")}
-    nix = nix_qt_wrapper()
-    kwin_bin = "kwin_wayland"
-    if nix["wrapped"] is not None:
-        # nixpkgs' qtdeclarative adds NIXPKGS_QT6_QML_IMPORT_PATH after both (highest priority), and
-        # wrapQtAppsHook's wrapper prefixes it with qtdeclarative's qml directory, so no environment
-        # reaches before the real QtCore through that wrapper: run the binary behind it, with the shadow
-        # first on that variable too (run.sh's environment carries the plugin and QML paths). The Nix
-        # sandbox's own script keeps its udmabuf decision and only changes what it runs.
-        paths["NIXPKGS_QT6_QML_IMPORT_PATH"] = os.pathsep.join(
-            [str(shadow.parent)] + [p for p in (os.environ.get("QML2_IMPORT_PATH"),) if p])
-        if nix["override"]:
-            paths["PLASTILE_KWIN_EXEC"] = nix["wrapped"]
-        else:
-            kwin_bin = nix["wrapped"]
-    with psession(out / "s", base, extra_env=paths, kwin_bin=kwin_bin) as s:
+    with psession(out / "s", base, helper=False) as s:
         s.spawn(1); s.spawn(2); s.spawn(3)
-        s.load(); s.settle()
+        pload(s); s.settle()
         area = s.area()
         diag = s.log_lines(r"plastile warn persistence unavailable")
         c("Q05: tiles without persistence (oracle)", not tiling_errors(s.frames_list(), area, GAP),
           tiling_errors(s.frames_list(), area, GAP))
-        c("Q05: one diagnostic naming the QtCore failure", len(diag) == 1 and "QtCore" in diag[0],
-          {"diagnostics": diag, "kwin": kwin_bin, "nix": nix,
-           "kwinEnv": proc_env(getattr(s.kw._kwin, "pid", None), ("NIXPKGS_QT6_QML_IMPORT_PATH", "QML2_IMPORT_PATH",
-                                                                    "QML_IMPORT_PATH", "PLASTILE_KWIN_EXEC"))})
+        c("Q05: one diagnostic naming the missing helper", len(diag) == 1 and STATE_SERVICE in diag[0], diag)
         w0 = s.frames()[fx(1)]["frame"]["width"]
         s.act(fx(1), "workspace.activeWindow = w")
         a = s.counters()
@@ -581,13 +647,184 @@ def persist_no_qtcore(out: Path, c: Checks):
         b = s.settle()
         c("Q05: commands work (one grow step moves the master edge, oracle)", s.frames()[fx(1)]["frame"]["width"] > w0
           and delta(a, b).get("commands", 0) == 1, {"before": w0, "after": s.frames()[fx(1)]["frame"]["width"]})
-        c("Q05: persistence reports in-memory operation (counters)", b["persistence"]["state"] == "memory", b["persistence"])
+        c("Q05: persistence reports in-memory operation, no write issued (counters)",
+          b["persistence"]["state"] == "memory" and b["persistence"]["issued"] == 0, b["persistence"])
         time.sleep(2.6)
         s.unload()
         files = sorted(p.name for p in (base / "state/plastile").iterdir())
         c("Q05: nothing written to the state directory, also at unload (file)", files == [], files)
         c("Q05: no other warning or JS exception", not unexpected(s, r"persistence unavailable"),
           unexpected(s, r"persistence unavailable")[:5])
+
+
+@scenario("persist-helper-stopped-Q05")
+def persist_helper_stopped(out: Path, c: Checks):
+    """The helper is stopped (SIGSTOP) while saves come due: KWin's main thread keeps answering at its normal
+    latency, commands complete, one Write waits in flight and nothing else is sent, and the saves land after
+    SIGCONT. Then the helper is killed: the next save starts a new one through D-Bus activation (Q05: helper dies,
+    runtime continues). Before ADR-020 a save blocked the compositor thread for 30 s on a held lock."""
+    base = out / "xdg"
+    facts: dict = {}
+    with psession(out / "s", base) as s:
+        s.spawn(1); s.spawn(2); s.spawn(3)
+        pload(s); s.settle()
+        area = s.area()
+        s.act(fx(1), "workspace.activeWindow = w")
+        s.cmd("resize.grow")  # 0.55 -> 0.6
+        g1 = wait_generation(s, base, 1, 6)
+        pid = helper_pid(s)
+        c("precondition: a first save landed and the helper owns its bus name", g1 == 1 and pid is not None,
+          {"generation": g1, "pid": pid})
+        facts["baselineRoundTripMs"] = q(kwin_round_trips(s))
+        facts["controlStallRoundTripMs"] = stall_control(s, 400)
+        c("control: the round-trip probe sees a 400 ms stall of KWin's main thread (a busy one-shot script; max >= 300 ms)",
+          facts["controlStallRoundTripMs"].get("max", 0) >= 300, facts["controlStallRoundTripMs"])
+        watch = Inotify(base / "state/plastile")
+        os.kill(pid, signal.SIGSTOP)
+        t_stop = time.monotonic()
+        try:
+            s.cmd("resize.grow")  # 0.6 -> 0.65: its save comes due 2 s later and waits for the stopped helper
+            # Sampled continuously across the moment the save is issued (2 s after the change): a save that
+            # blocked KWin's thread, even briefly, would show here as one long round trip.
+            due_rt = kwin_round_trips(s, seconds=2.6)
+            inflight = s.counters()["persistence"]
+            stopped_rt = kwin_round_trips(s)
+            widths = []
+            prev = master_width(s, "Virtual-0")
+            for cmd in ("resize.shrink", "resize.grow", "resize.grow"):  # 0.6, 0.65, 0.7
+                t = time.monotonic()
+                s.cmd(cmd)
+                s.wait_for(lambda: master_width(s, "Virtual-0") != prev, 3, f"{cmd} visible while the helper is stopped")
+                prev = master_width(s, "Virtual-0")
+                widths.append(prev)
+                facts.setdefault("commandToOracleMs", []).append(round((time.monotonic() - t) * 1000, 1))
+            time.sleep(2.6)  # the later changes' quiet period passes too
+            still = s.counters()["persistence"]
+            stopped_for = time.monotonic() - t_stop
+            early = watch.writes()
+        finally:
+            os.kill(pid, signal.SIGCONT)
+        t_cont = time.monotonic()
+        g3 = wait_generation(s, base, 3, 6)
+        time.sleep(0.3)
+        watch.close()
+        facts.update({"dueRoundTripMs": q(due_rt), "stoppedRoundTripMs": q(stopped_rt), "stoppedSeconds": round(stopped_for, 1), "inflight": inflight,
+                      "afterLaterChanges": still, "widths": widths, "events": describe(watch.events, t_cont)})
+        bq, sq, dq = facts["baselineRoundTripMs"], facts["stoppedRoundTripMs"], facts["dueRoundTripMs"]
+        c("Q05: KWin's main thread keeps answering while the save to the stopped helper comes due and is issued "
+          "(round trips every 10 ms for 2.6 s: p50 within baseline + 5 ms, max < 250 ms)",
+          dq.get("n", 0) >= 50 and dq["p50"] <= bq["p50"] + 5 and dq["max"] < 250, {"baseline": bq, "acrossDue": dq})
+        c("Q05: KWin's main thread answers at its normal latency while the helper is stopped (D-Bus round trip p50 within "
+          "baseline + 5 ms, max < 250 ms)", sq["p50"] <= bq["p50"] + 5 and sq["max"] < 250, {"baseline": bq, "stopped": sq})
+        c("Q05: commands complete while the helper is stopped (each grow/shrink visible in the oracle within 3 s)",
+          len(widths) == 3 and all(abs(w - default_master_width(area, r)) <= 1 for w, r in zip(widths, (0.6, 0.65, 0.7))),
+          {"widths": widths, "ms": facts.get("commandToOracleMs")})
+        c("Q05: the due save is one Write in flight; later changes send nothing more while it waits (counters)",
+          inflight["inflight"] and inflight["issued"] == 2 and still["inflight"] and still["issued"] == 2
+          and still["writes"] == 1, {"first": inflight, "later": still})
+        c("Q05: nothing reaches the state directory while the helper is stopped (inotify)", not early,
+          describe(early, t_stop))
+        snap = newest(base)
+        ratio = next((x["masterStack"]["ratio"] for x in (snap or {}).get("contexts", []) if x["outputKey"] == "Virtual-0"),
+                     None)
+        c("Q05: after SIGCONT the waiting save lands, then one more with the later changes (generation 3, ratio 0.7)",
+          g3 == 3 and ratio is not None and abs(ratio - 0.7) < 1e-9, {"generation": g3, "ratio": ratio})
+        # The helper dies: the next save starts a new one.
+        os.kill(pid, signal.SIGKILL)
+        s.wait_for(lambda: helper_pid(s) is None, 5, "the killed helper's bus name released")
+        s.cmd("resize.shrink")  # 0.7 -> 0.65
+        g4 = wait_generation(s, base, 4, 6)
+        pid2 = helper_pid(s)
+        snap = newest(base)
+        ratio = next((x["masterStack"]["ratio"] for x in (snap or {}).get("contexts", []) if x["outputKey"] == "Virtual-0"),
+                     None)
+        c("Q05: after the helper was killed the next save activates a new helper and lands (generation 4, ratio 0.65)",
+          g4 == 4 and pid2 is not None and pid2 != pid and ratio is not None and abs(ratio - 0.65) < 1e-9,
+          {"generation": g4, "pid": [pid, pid2], "ratio": ratio})
+        c("no errors or JS exceptions logged", not unexpected(s), unexpected(s)[:5])
+        facts["persistence"] = s.counters()["persistence"]
+    c("facts (recorded, always passes)", True, facts)
+
+
+def seed(base: Path, generation: int, ratios: dict[str, float]) -> None:
+    xdg(base)
+    write_slot(base, 0, json.dumps({
+        "schemaVersion": 1, "generation": generation, "savedAt": "2026-10-18T00:00:00.000Z",
+        "contexts": [{"outputKey": o, "desktopId": DESKTOP_ID, "activity": "default", "layout": None,
+                      "masterStack": {"ratio": r, "masterCount": 1}} for o, r in ratios.items()],
+        "floats": []}, separators=(",", ":")))
+
+
+@scenario("persist-helper-delayed-Q05")
+def persist_helper_delayed(out: Path, c: Checks):
+    """A slow helper (test knob PLASTILE_STATE_TEST_DELAY_MS=4000: every request waits 4 s). Load: tiling starts with
+    defaults at once, the saved preferences apply once when the reply arrives, and a change the user made before it
+    wins. Saves: the delayed Write replies do not slow KWin's main thread or commands, and the files end up with the
+    latest preferences."""
+    base = out / "xdg"
+    seed(base, 4, {"Virtual-0": 0.65, "Virtual-1": 0.7})
+    facts: dict = {}
+    with psession(out / "s", base, outputs=2, helper_env={"PLASTILE_STATE_TEST_DELAY_MS": "4000"}) as s:
+        for i in (1, 2, 3, 4):
+            s.spawn(i)
+        for i in (3, 4):
+            s.act(fx(i), "workspace.sendClientToScreen(w, workspace.screens[1])")
+        a0, a1 = s.area(0), s.area(1)
+        off = s.kw.mark()
+        s.load()
+        t_start = time.monotonic()
+        s.settle()
+        early = {"Virtual-0": master_width(s, "Virtual-0"), "Virtual-1": master_width(s, "Virtual-1")}
+        before_reply = not s.log_lines(LOADED, off)
+        c("load: tiling starts with defaults before the slow reply (ratio 0.55 on both outputs, oracle)",
+          before_reply and abs(early["Virtual-0"] - default_master_width(a0, 0.55)) <= 1
+          and abs(early["Virtual-1"] - default_master_width(a1, 0.55)) <= 1,
+          {"widths": early, "replyAlreadyIn": not before_reply, "secondsSinceStart": round(time.monotonic() - t_start, 2)})
+        s.act(fx(3), "workspace.activeWindow = w")
+        s.cmd("resize.grow")  # the user's change on Virtual-1 before the reply: 0.55 -> 0.6
+        s.wait_for(lambda: abs(master_width(s, "Virtual-1") - default_master_width(a1, 0.6)) <= 1, 3, "grow on Virtual-1")
+        c("precondition: the user's change was made before the reply arrived",
+          not s.log_lines(LOADED, off), {"secondsSinceStart": round(time.monotonic() - t_start, 2)})
+        pending_rt = kwin_round_trips(s, 20)
+        line = s.kw.wait_log(LOADED, 10, off)
+        t_reply = time.monotonic()
+        s.settle()
+        facts.update({"replyAfterStartS": round(t_reply - t_start, 2), "loadPendingRoundTripMs": q(pending_rt),
+                      "reply": line})
+        c("load: the saved state arrives once, about 4 s after the start (log)",
+          len(line) == 1 and "saved state loaded" in line[0] and t_reply - t_start >= 3.0,
+          {"lines": line, "seconds": facts["replyAfterStartS"]})
+        late = {"Virtual-0": master_width(s, "Virtual-0"), "Virtual-1": master_width(s, "Virtual-1")}
+        c("load: the saved ratio applies to the untouched output (Virtual-0 0.65, oracle)",
+          abs(late["Virtual-0"] - default_master_width(a0, 0.65)) <= 1, late)
+        c("load: the user's change made before the reply wins (Virtual-1 stays 0.6, not the saved 0.7, oracle)",
+          abs(late["Virtual-1"] - default_master_width(a1, 0.6)) <= 1, late)
+        c("load: both outputs still tile correctly (oracle)",
+          not tiling_errors([f for f in s.frames_list() if f["output"] == "Virtual-0"], a0, GAP)
+          and not tiling_errors([f for f in s.frames_list() if f["output"] == "Virtual-1"], a1, GAP),
+          [tiling_errors([f for f in s.frames_list() if f["output"] == o], a, GAP) for o, a in (("Virtual-0", a0), ("Virtual-1", a1))])
+        # The user's earlier change is saved after the reply (a quiet period after it); its reply takes 4 s more.
+        s.wait_for(lambda: s.counters()["persistence"]["inflight"], 5, "the first save in flight")
+        t_issue = time.monotonic()
+        saving_rt = kwin_round_trips(s, 20)
+        s.act(fx(3), "workspace.activeWindow = w")
+        t = time.monotonic()
+        s.cmd("resize.grow")  # 0.6 -> 0.65 while the first save waits
+        s.wait_for(lambda: abs(master_width(s, "Virtual-1") - default_master_width(a1, 0.65)) <= 1, 3, "grow while saving")
+        cmd_ms = round((time.monotonic() - t) * 1000, 1)
+        g = wait_generation(s, base, 6, 16)
+        facts.update({"savingRoundTripMs": q(saving_rt), "commandToOracleMsWhileSaving": cmd_ms,
+                      "secondsIssueToGeneration6": round(time.monotonic() - t_issue, 1)})
+        snap = newest(base)
+        ratios = {x["outputKey"]: x["masterStack"]["ratio"] for x in (snap or {}).get("contexts", []) if x["masterStack"]}
+        c("saves: the delayed writes land in order, the last one with the latest preferences (generation 6: Virtual-0 "
+          "0.65, Virtual-1 0.65; file)", g == 6 and abs(ratios.get("Virtual-0", 0) - 0.65) < 1e-9
+          and abs(ratios.get("Virtual-1", 0) - 0.65) < 1e-9, {"generation": g, "ratios": ratios})
+        lq, sq = facts["loadPendingRoundTripMs"], facts["savingRoundTripMs"]
+        c("KWin's main thread answers normally while a load or a save waits for the slow helper (D-Bus round trip max "
+          "< 250 ms)", lq["max"] < 250 and sq["max"] < 250, {"loadPending": lq, "saving": sq})
+        c("no errors or JS exceptions logged", not unexpected(s), unexpected(s)[:5])
+    c("facts (recorded, always passes)", True, facts)
 
 
 # --------------------------------------------------------------------- Q09
@@ -609,7 +846,7 @@ def persist_reload_cycles(out: Path, c: Checks):
     facts: dict = {}
     with psession(out / "s", base) as s:
         s.spawn(1); s.spawn(2); s.spawn(3)
-        s.load(); first = s.settle()
+        pload(s); first = s.settle()
         fds, rss, gens, errors = [], [], [], []
         parts = [s.kw.kwin_rss_parts_kib()]
         g0 = generation(base) or 0
@@ -619,8 +856,9 @@ def persist_reload_cycles(out: Path, c: Checks):
             s.cmd("resize.grow" if i % 2 == 0 else "resize.shrink")  # unsaved at unload (the debounce is 2 s)
             time.sleep(0.15)
             s.unload()
-            gens.append(generation(base))
-            s.load()
+            # The final Write is sent while the script unloads; the helper stores it a moment later.
+            gens.append(wait_generation(s, base, g0 + i + 1, 5.0))
+            pload(s)
             cc = s.settle()
             if steady_connections(cc) != steady_connections(first) or cc["windows"] != first["windows"]:
                 errors.append((i, cc["connections"], cc.get("transientConnections"), cc["windows"],
@@ -636,10 +874,11 @@ def persist_reload_cycles(out: Path, c: Checks):
         facts.update({"generations": gens, "fds": fds, "rssKiB": rss, "scriptObjects": objects,
                       "firstSaveEvents": describe(writes[:12])})
         c("Q09: every save replaces its slot atomically, also when overwriting (no in-place write; inotify)",
-          atomic(writes, "state-0.ini") and atomic(writes, "state-1.ini")
+          atomic(writes, "state-0.json") and atomic(writes, "state-1.json")
           and sum(1 for _, m, n in writes if m & IN_MOVED_TO and n.startswith("state-")) >= cycles - 2,
           describe(writes)[:20])
-        c(f"Q09: each of {cycles} unloads saved exactly once (generation +1 per cycle, file)",
+        c(f"Q09: each of {cycles} unloads saved exactly once: the Write sent during unload is delivered (generation +1 "
+          "per cycle, file)",
           gens == list(range(g0 + 1, g0 + cycles + 1)), gens)
         c("Q09: no late save from an unloaded runtime's timer (generation unchanged 2.8 s after the last reload)",
           g_end == gens[-1], {"last": gens[-1], "after": g_end})

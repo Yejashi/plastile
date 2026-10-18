@@ -99,7 +99,8 @@ Item {
     }
     // ---- end zones overlay ----
 
-    // ---- persistence (T27, ADR-013): state slots and their one-shot maintenance timer ----
+    // ---- persistence (T27, ADR-020): asynchronous calls to the plastile-state helper and the
+    // one-shot maintenance timer; no file I/O in KWin ----
     Persistence { id: persistence }
     // ---- end T27 ----
 

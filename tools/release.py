@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
-"""Build the distributable KWin script package: dist/plastile-<version>.kwinscript.
+"""Build the distributable KWin script package, dist/plastile-<version>.kwinscript, and the
+persistence helper's source tarball, dist/plastile-state-<version>.tar.gz (ADR-020).
 
-The output is a plain zip that `kpackagetool6 --type KWin/Script --install` accepts:
-`metadata.json` at the zip root plus `contents/...`. It is built deterministically:
+The .kwinscript is script-only: a plain zip that `kpackagetool6 --type KWin/Script --install`
+accepts, `metadata.json` at the zip root plus `contents/...`, nothing else (checked). With it
+alone Plastile works and keeps its preferences in memory. The helper is built from the tarball
+(or the repository) with CMake; tools/install.sh install-helper does that. The zip is built
+deterministically:
 
 - entries sorted by path, directories omitted;
 - every entry's mtime is 1980-01-01 00:00:00 (the zip epoch), or the value of
@@ -12,15 +16,19 @@ The output is a plain zip that `kpackagetool6 --type KWin/Script --install` acce
 
 The version is read from package/metadata.json (KPlugin.Version). Required entries
 are verified before writing and the file's SHA-256 is printed. Running it twice
-yields identical bytes. --check proves it against a perturbed rebuild: a copy of the
-package with different file mtimes and modes, built in a separate process with a
-different umask and time zone, must produce the same bytes.
+yields identical bytes. The tarball follows the same rules: sorted ustar entries under
+plastile-state-<version>/, the same mtime, uid/gid 0, mode 0644, gzip level 9 with no file
+name and mtime in its header. --check proves both against a perturbed rebuild: copies of the
+package and the helper sources with different file mtimes and modes, built in a separate
+process with a different umask and time zone, must produce the same bytes.
 
-Usage: python3 tools/release.py [--out DIR] [--check] [--json] [--package DIR]
+Usage: python3 tools/release.py [--out DIR] [--check] [--json] [--package DIR] [--helper DIR]
 """
 from __future__ import annotations
 
 import argparse
+import calendar
+import gzip
 import hashlib
 import io
 import json
@@ -28,6 +36,7 @@ import os
 import shutil
 import subprocess
 import sys
+import tarfile
 import tempfile
 import time
 import zipfile
@@ -35,6 +44,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 PACKAGE = ROOT / "package"
+HELPER = ROOT / "helper"
+# The helper sources a build needs (helper/CMakeLists.txt lists them); the tarball holds exactly these.
+HELPER_FILES = ("CMakeLists.txt", "README.md", "main.cpp", "org.kde.plastile.State.service.in", "stateservice.cpp", "stateservice.h")
 REQUIRED = (
     "metadata.json",
     "contents/ui/main.qml",
@@ -125,6 +137,10 @@ def verify_zip(data: bytes) -> list[str]:
         for required in REQUIRED:
             if required not in names:
                 raise ReleaseError(f"archive is missing {required}")
+        # Script-only: the helper is never inside the KWin package (ADR-020).
+        stray = [n for n in names if n != "metadata.json" and not n.startswith("contents/")]
+        if stray:
+            raise ReleaseError(f"archive holds entries outside contents/: {', '.join(stray[:5])}")
         if names != sorted(names):
             raise ReleaseError("archive entries are not sorted")
         for info in zf.infolist():
@@ -136,42 +152,79 @@ def verify_zip(data: bytes) -> list[str]:
         return names
 
 
-def build(out_dir: Path, package: Path = PACKAGE) -> dict:
+def helper_tarball_bytes(helper: Path, version: str, date_time: tuple) -> bytes:
+    """The helper's source tarball, deterministic like the zip."""
+    missing = [f for f in HELPER_FILES if not (helper / f).is_file()]
+    if missing:
+        raise ReleaseError("helper sources missing: " + ", ".join(missing))
+    stamp = calendar.timegm(date_time + (0, 0, 0))
+    prefix = f"plastile-state-{version}"
+    raw = io.BytesIO()
+    with tarfile.open(fileobj=raw, mode="w", format=tarfile.USTAR_FORMAT) as tar:
+        for name in sorted(HELPER_FILES):
+            data = (helper / name).read_bytes()
+            info = tarfile.TarInfo(f"{prefix}/{name}")
+            info.size, info.mtime, info.mode = len(data), stamp, 0o644
+            info.uid = info.gid = 0
+            info.uname = info.gname = ""
+            tar.addfile(info, io.BytesIO(data))
+    out = io.BytesIO()
+    with gzip.GzipFile(filename="", mode="wb", fileobj=out, compresslevel=9, mtime=0) as gz:
+        gz.write(raw.getvalue())
+    return out.getvalue()
+
+
+def write_atomic(path: Path, data: bytes) -> None:
+    tmp = path.with_name(path.name + ".tmp")
+    tmp.write_bytes(data)
+    os.replace(tmp, path)
+
+
+def build(out_dir: Path, package: Path = PACKAGE, helper: Path = HELPER) -> dict:
     version = read_version(package / "metadata.json")
     entries = collect_entries(package)
-    data = build_bytes(entries, source_date())
+    date = source_date()
+    data = build_bytes(entries, date)
     names = verify_zip(data)
+    tarball = helper_tarball_bytes(helper, version, date)
     out_dir.mkdir(parents=True, exist_ok=True)
     out = out_dir / f"plastile-{version}.kwinscript"
-    tmp = out.with_name(out.name + ".tmp")
-    tmp.write_bytes(data)
-    os.replace(tmp, out)
+    write_atomic(out, data)
+    tar_out = out_dir / f"plastile-state-{version}.tar.gz"
+    write_atomic(tar_out, tarball)
     return {
         "path": str(out),
         "version": version,
         "entries": names,
         "bytes": len(data),
         "sha256": hashlib.sha256(data).hexdigest(),
+        "helperTarball": {"path": str(tar_out), "bytes": len(tarball), "sha256": hashlib.sha256(tarball).hexdigest(),
+                          "files": sorted(HELPER_FILES)},
     }
 
 
-def perturbed_rebuild_sha256(package: Path = PACKAGE) -> str:
-    """Build a copy of `package` whose metadata differs in everything the archive must not
-    depend on (mtimes, permission bits, umask, time zone), in a separate interpreter."""
+def perturbed_rebuild_sha256(package: Path = PACKAGE, helper: Path = HELPER) -> tuple[str, str]:
+    """Build copies of `package` and `helper` whose metadata differs in everything the archives
+    must not depend on (mtimes, permission bits, umask, time zone), in a separate interpreter.
+    Returns the zip's and the tarball's SHA-256."""
     with tempfile.TemporaryDirectory(prefix="plastile-release-check-") as tmp:
-        copy = Path(tmp) / "package"
+        copy, hcopy = Path(tmp) / "package", Path(tmp) / "helper"
         shutil.copytree(package, copy)
-        for i, path in enumerate(sorted(p for p in copy.rglob("*") if p.is_file())):
+        shutil.copytree(helper, hcopy)
+        files = sorted(p for p in copy.rglob("*") if p.is_file()) + sorted(p for p in hcopy.rglob("*") if p.is_file())
+        for i, path in enumerate(files):
             os.chmod(path, 0o755 if i % 2 else 0o600)
             stamp = 1_000_000_000 + 7919 * i  # 2001, distinct per file
             os.utime(path, (stamp, stamp))
         env = {**os.environ, "TZ": "Pacific/Kiritimati"}
         r = subprocess.run(
-            [sys.executable, str(Path(__file__).resolve()), "--package", str(copy), "--out", str(Path(tmp) / "out"),
-             "--json"], env=env, capture_output=True, text=True, preexec_fn=lambda: os.umask(0o077))
+            [sys.executable, str(Path(__file__).resolve()), "--package", str(copy), "--helper", str(hcopy),
+             "--out", str(Path(tmp) / "out"), "--json"], env=env, capture_output=True, text=True,
+            preexec_fn=lambda: os.umask(0o077))
         if r.returncode != 0:
             raise ReleaseError(f"perturbed rebuild failed: {r.stderr.strip()}")
-        return json.loads(r.stdout)["sha256"]
+        res = json.loads(r.stdout)
+        return res["sha256"], res["helperTarball"]["sha256"]
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -181,11 +234,13 @@ def main(argv: list[str] | None = None) -> int:
                     help="also build a perturbed copy in a separate process and fail unless the bytes match")
     ap.add_argument("--json", action="store_true", help="print the result as JSON")
     ap.add_argument("--package", default=str(PACKAGE), help=argparse.SUPPRESS)
+    ap.add_argument("--helper", default=str(HELPER), help=argparse.SUPPRESS)
     args = ap.parse_args(argv)
     try:
-        result = build(Path(args.out), Path(args.package))
+        result = build(Path(args.out), Path(args.package), Path(args.helper))
         if args.check:
-            result["reproducible"] = perturbed_rebuild_sha256(Path(args.package)) == result["sha256"]
+            zip_sha, tar_sha = perturbed_rebuild_sha256(Path(args.package), Path(args.helper))
+            result["reproducible"] = zip_sha == result["sha256"] and tar_sha == result["helperTarball"]["sha256"]
             if not result["reproducible"]:
                 raise ReleaseError("a rebuild with different mtimes, modes, umask and time zone produced different bytes")
     except ReleaseError as exc:
@@ -196,6 +251,9 @@ def main(argv: list[str] | None = None) -> int:
     else:
         print(f"{result['path']}  ({result['bytes']} bytes, {len(result['entries'])} entries)")
         print(f"sha256 {result['sha256']}")
+        t = result["helperTarball"]
+        print(f"{t['path']}  ({t['bytes']} bytes, {len(t['files'])} files)")
+        print(f"sha256 {t['sha256']}")
         if args.check:
             print("reproducible: identical bytes from a rebuild with different mtimes, modes, umask and time zone")
     return 0

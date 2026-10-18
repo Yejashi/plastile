@@ -14,7 +14,11 @@ channel release by URL and hash and builds a single `buildEnv`:
 
 It also carries Breeze (decoration plugin), kpackagetool6, kwriteconfig6, kscreen-doctor,
 kactivitymanagerd, qdbus, dbus-daemon, busctl (systemd-minimal), Python 3 with dbus-python, git and
-the coreutils the harness and `tools/install.sh` call. The exact versions of a build are written to
+the coreutils the harness and `tools/install.sh` call, and Plastile's persistence helper
+(`libexec/plastile-state`, built from [helper/](../../../helper/README.md) against this Qt; `run.sh`
+exports its path as `PLASTILE_STATE_HELPER`, and the nested sessions install its activation file on their
+private buses). The environment has no compiler, so `package-helper-install-T32`
+(`tools/install.sh install-helper`) reports SKIP here. The exact versions of a build are written to
 `plastile/versions` inside the environment.
 
 Every test still starts its own `kwin_wayland --virtual` on a private D-Bus through

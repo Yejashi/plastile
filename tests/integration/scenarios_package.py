@@ -18,7 +18,7 @@ import time
 import zipfile
 from pathlib import Path
 
-from scenarios import scenario, Checks, three  # noqa: F401
+from scenarios import scenario, Checks, Skipped, three  # noqa: F401
 from harness import Session, delta, evidence_file, near, tiling_errors, Input, centre, ROOT, PLUGIN  # noqa: F401
 
 sys.path.insert(0, str(ROOT / "tools"))
@@ -362,3 +362,58 @@ def package_post_start_discovery(out: Path, c: Checks):
         c("post-start: remove rc 0 and directory gone", rm["rc"] == 0 and not installed_dir(kw).exists(), rm)
     ev["checks"] = c.items
     merge_evidence("postStartDiscovery", ev)
+
+
+@scenario("package-helper-install-T32")
+def package_helper_install(out: Path, c: Checks):
+    """tools/install.sh install-helper builds the persistence helper (ADR-020) and installs it and its D-Bus activation
+    file into a private prefix and the nested session's data home; the session's bus then starts it for Plastile and a
+    save lands. remove-helper removes both. Nothing is written outside the session and this scenario's directory."""
+    if not shutil.which("cmake") or not (shutil.which("c++") or shutil.which("g++") or shutil.which("clang++")):
+        raise Skipped("T32: cmake or a C++ compiler is not available here (the helper is built from source)")
+    from scenarios_persist import newest, wait_generation, xdg
+    base = out / "xdg"
+    xdg(base)
+    with Session(out / "s", helper=False, extra_env={"XDG_STATE_HOME": str(base / "state")}) as s:
+        kw = s.kw
+        prefix = kw.root / "prefix"
+        env = {**kw.env(), "PLASTILE_HELPER_PREFIX": str(prefix), "PLASTILE_HELPER_BUILD": str(out / "helper-build")}
+
+        def run(*args: str) -> dict:
+            r = subprocess.run(["sh", str(INSTALL), *args], env=env, capture_output=True, text=True, timeout=600)
+            return {"argv": ["tools/install.sh", *args], "rc": r.returncode, "stdout": redact(r.stdout, kw),
+                    "stderr": redact(r.stderr, kw)}
+        service = kw.root / "data/dbus-1/services/org.kde.plastile.State.service"
+        exe = prefix / "libexec/plastile-state"
+        before = run("status")
+        c("status before: helper not installed", before["rc"] == 0 and "helper    : not installed" in before["stdout"], before)
+        inst = run("install-helper")
+        text = service.read_text() if service.exists() else ""
+        c("install-helper: rc 0, the binary in the private prefix and the activation file in the session's data home "
+          "naming it", inst["rc"] == 0 and os.access(exe, os.X_OK) and f"Exec={exe}\n" in text
+          and "Name=org.kde.plastile.State" in text, {"result": inst, "service": redact(text, kw)})
+        c("install-helper asked the session's own bus to re-read its service files",
+          "re-read its service files" in inst["stdout"], inst["stdout"][-400:])
+        status = run("status")
+        c("status after install: helper installed", "helper    : installed" in status["stdout"], status["stdout"][-600:])
+        s.spawn(1); s.spawn(2)
+        off = kw.mark()
+        s.load()
+        line = kw.wait_log(r"plastile (info|warn) (saved state|no saved state|persistence unavailable)", 10, off)[-1]
+        c("Plastile reaches the installed helper through D-Bus activation (no saved state yet, no diagnostic)",
+          "no saved state" in line, line)
+        s.settle()
+        s.act("plastile-fixture 1", "workspace.activeWindow = w")
+        s.cmd("resize.grow")
+        g = wait_generation(s, base, 1, 6)
+        c("a save lands through the installed helper (generation 1 in the state directory)", g == 1, {"generation": g})
+        s.unload()
+        rm = run("remove-helper")
+        c("remove-helper: rc 0, the activation file and the binary are gone, the saved state is kept",
+          rm["rc"] == 0 and not service.exists() and not exe.exists() and newest(base) is not None, rm)
+        after = run("status")
+        c("status after remove: helper not installed", "helper    : not installed" in after["stdout"], after["stdout"][-600:])
+        again = run("remove-helper")
+        c("remove-helper again: refuses with rc 2 (nothing installed)", again["rc"] == 2, again)
+        leftovers = sorted(str(p.relative_to(prefix)) for p in prefix.rglob("*") if p.is_file()) if prefix.exists() else []
+        c("nothing else was installed into the prefix", leftovers == [], leftovers)

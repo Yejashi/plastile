@@ -19,6 +19,10 @@ sys.path.insert(0, str(ROOT / "tools"))
 from nested import NestedKwin, NestedError  # noqa: E402
 
 FIXTURE = ROOT / "fixtures/client/build/plastile-fixture"
+# The persistence helper (helper/, ADR-020): `cmake -S helper -B build/helper && cmake --build build/helper`,
+# or PLASTILE_STATE_HELPER (the Nix environment builds its own).
+STATE_HELPER = Path(os.environ.get("PLASTILE_STATE_HELPER") or ROOT / "build/helper/plastile-state")
+STATE_SERVICE = "org.kde.plastile.State"
 PACKAGE_QML = ROOT / "package/contents/ui/main.qml"
 PLUGIN = "plastile"
 COUNTERS = re.compile(r"plastile counters (\{.*\})$")
@@ -37,6 +41,15 @@ def evidence_file(name: str) -> Path:
                    else "artifacts/evidence")
     base.mkdir(parents=True, exist_ok=True)
     return base / name
+
+
+def state_service_file(exe: Path = STATE_HELPER, env: dict | None = None) -> dict[str, str]:
+    """The helper's D-Bus activation file for a nested session's private bus ({file name: text}).
+
+    `env` adds variables to the helper's command line through env(1) (test-only knobs such as
+    PLASTILE_STATE_TEST_DELAY_MS); otherwise the helper inherits the private bus's environment."""
+    prefix = "/usr/bin/env " + " ".join(f"{k}={v}" for k, v in (env or {}).items()) + " " if env else ""
+    return {f"{STATE_SERVICE}.service": f"[D-BUS Service]\nName={STATE_SERVICE}\nExec={prefix}{exe}\n"}
 
 
 def near(a, b, tol=TOL):
@@ -112,15 +125,20 @@ class Session:
 
     def __init__(self, out: Path, outputs: int = 1, config: dict | None = None, width=1280, height=800,
                  extra_env: dict | None = None, qml: Path = PACKAGE_QML, xwayland: bool = False, kwinrc_extra: str = "",
-                 kwin_bin: str = "kwin_wayland"):
+                 kwin_bin: str = "kwin_wayland", helper: bool = True, helper_env: dict | None = None):
         self.out = out
         out.mkdir(parents=True, exist_ok=True)
         self.config = {"diagnostics": "info", **(config or {})}
         # Extra kwinrc groups (e.g. [MouseBindings]) for scenarios that pin KWin defaults across versions.
         self.kwinrc_extra = kwinrc_extra
         self.qml = qml
+        # The persistence helper is installed as on a full install (its activation file on the private
+        # bus); helper=False is the script-only install, where Plastile keeps preferences in memory.
+        if helper and not STATE_HELPER.exists():
+            raise NestedError(f"missing {STATE_HELPER}: build it with `cmake -S helper -B build/helper && cmake --build build/helper`")
+        services = state_service_file(env=helper_env) if helper else {}
         self.kw = NestedKwin(out, outputs=outputs, width=width, height=height, kwinrc=self.kwinrc(), extra_env=extra_env,
-                             xwayland=xwayland, kwin_bin=kwin_bin)
+                             xwayland=xwayland, kwin_bin=kwin_bin, dbus_services=services)
         self.fixtures: dict[int, Fixture] = {}
         self.loaded = False
 

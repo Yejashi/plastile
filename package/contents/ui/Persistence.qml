@@ -1,15 +1,19 @@
-// Saved session preferences (T27, ADR-013): two QtCore Settings files ("slots") under
-// $XDG_STATE_HOME/plastile/ and the one-shot maintenance Timer that writes them. Policy lives
-// in src/runtime/persistence.ts; this file only does the I/O it is asked for.
+// Saved session preferences (T27, ADR-020): a thin asynchronous store over KWin's DBusCall
+// (org.kde.kwin 3.0) and the one-shot maintenance Timer. The plastile-state helper
+// (org.kde.plastile.State, D-Bus activated, installed separately) owns the two slot files under
+// $XDG_STATE_HOME/plastile/; nothing here touches a file. Policy lives in
+// src/runtime/persistence.ts; this file only sends what it is asked to.
 //
-// QtCore is optional. It is imported only inside Qt.createQmlObject, so without the module
-// open() returns the error and Plastile keeps its preferences in memory. Settings always gets
-// an explicit location: its default would write KWin's own kde.org/kwin.conf.
+// One DBusCall per request, destroyed with its reply. call() sends the message at once
+// (QDBusConnection::asyncCall), so a Write issued while the script unloads is still delivered;
+// requests still pending at unload are destroyed with this item, and their replies are dropped.
+// Without the helper the bus answers ServiceUnknown: failed(), and Plastile keeps its
+// preferences in memory.
 import QtQuick
+import org.kde.kwin
 
 Item {
     id: persistence
-    property var slots: []
     property var due: null
 
     Timer {
@@ -18,31 +22,34 @@ Item {
         onTriggered: { var f = persistence.due; persistence.due = null; if (f) f(); }
     }
 
-    function open() {
-        if (slots.length > 0) return "";
-        var made = [];
-        try {
-            for (var i = 0; i < 2; ++i) {
-                made.push(Qt.createQmlObject("import QtCore\nSettings {\n"
-                    + "  location: StandardPaths.writableLocation(StandardPaths.GenericStateLocation) + \"/plastile/state-" + i + ".ini\"\n"
-                    + "  category: \"plastile\"\n}\n", persistence, "plastile-state-" + i));
-            }
-        } catch (e) {
-            for (var j = 0; j < made.length; ++j) made[j].destroy();
-            var why = e && e.qmlErrors && e.qmlErrors.length ? e.qmlErrors[0].message : String(e);
-            return why || "Settings could not be created";
+    Component {
+        id: request
+        DBusCall {
+            service: "org.kde.plastile.State"
+            path: "/State"
+            dbusInterface: "org.kde.plastile.State"
+            property var done: null
+            property var fail: null
+            onFinished: function (reply) { var f = done; done = null; fail = null; destroy(); if (f) f(reply); }
+            onFailed: { var f = fail; done = null; fail = null; destroy(); if (f) f(); }
         }
-        slots = made;
-        return "";
     }
-    function location() { return slots.length > 0 ? String(slots[0].location) : ""; }
-    function read(slot) {
-        var v = slots[slot].value("snapshot", "");
-        return v === undefined || v === null ? "" : String(v);
+
+    function send(method, args, done, fail) {
+        var c = request.createObject(persistence, { method: method, arguments: args, done: done, fail: fail });
+        c.call();
     }
-    function write(slot, text) {
-        slots[slot].setValue("snapshot", text);
-        slots[slot].sync();
+    // done(texts): the reply's single "as" argument, an array-like of two strings.
+    function read(done, fail) {
+        send("Read", [], function (reply) {
+            if (reply && reply.length > 0) done(reply[0]); else fail();
+        }, fail);
+    }
+    // done(ok): true once the helper stored the slot. `slot | 0` keeps the D-Bus type an int ("i").
+    function write(slot, text, done) {
+        send("Write", [slot | 0, String(text)], function (reply) {
+            done(!!(reply && reply.length > 0 && reply[0] === true));
+        }, function () { done(false); });
     }
     function schedule(ms, fn) {
         due = fn;
