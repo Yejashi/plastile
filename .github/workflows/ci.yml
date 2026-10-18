@@ -4,10 +4,10 @@
 #   - It runs the pure/replay TypeScript tests, the type check, the bundle build,
 #     the documentation integrity check, the release-zip reproducibility check and
 #     the native test-tool builds.
-#   - It CANNOT run KWin. The nested-KWin integration scenarios
-#     (python3 tests/integration/run.py) need kwin_wayland 6.7+ and the
-#     physical-session checks need a real Plasma desktop. Neither exists on a hosted
-#     runner, so those layers are reported as NOT RUN, never as passed.
+#   - It does not yet run the nested-KWin integration scenarios
+#     (python3 tests/integration/run.py; locally via tools/sandbox/), and it CANNOT
+#     run physical-session checks. Those layers are reported as NOT RUN, never as
+#     passed.
 #
 # Nothing here publishes, installs into a home directory, or touches a compositor.
 
@@ -133,19 +133,14 @@ jobs:
       - name: Install libei (input injector)
         id: libei_install
         # Ubuntu 24.04 (ubuntu-latest) ships libei-dev 1.2.1; the injector is developed
-        # against libei 1.6.0. Every libei symbol it uses is declared in the 1.2.1
-        # public header and the source type-checks against it (-fsyntax-only, measured
-        # 2026-10-17), but it has not been linked on the runner yet, so this stays
-        # non-fatal until seen green. The outcome is in the job summary.
-        continue-on-error: true
+        # against libei 1.6.0. It built and linked against 1.2.1 on the runner
+        # (run 39087511435, 2026-10-18), so the step is required.
         run: |
           sudo apt-get install -y --no-install-recommends libei-dev
           pkg-config --modversion libei-1.0
 
       - name: Build tools/input (plastile-input)
         id: input_build
-        continue-on-error: true
-        if: steps.libei_install.outcome == 'success'
         run: |
           make -C tools/input
           test -x build/input/plastile-input
@@ -161,9 +156,8 @@ jobs:
             echo "| Check | Result |"
             echo "|---|---|"
             echo "| Node ${NODE_MAJOR} type check, tests/core (pure + replay), bundle, docs check, release --check, fixture builds | required: job status ${{ job.status }} |"
-            echo "| libei-dev install (optional) | ${{ steps.libei_install.outcome }} |"
-            echo "| tools/input build (optional) | ${{ steps.input_build.outcome }} |"
-            echo "| Nested KWin integration scenarios (${SCENARIO_COUNT:-?} registered) | **NOT RUN**: requires kwin_wayland; run locally with \`python3 tests/integration/run.py\` |"
+            echo "| libei-dev install + tools/input build | ${{ steps.input_build.outcome }} |"
+            echo "| Nested KWin integration scenarios (${SCENARIO_COUNT:-?} registered) | **NOT RUN** in CI: run locally with \`sudo tools/sandbox/run.sh -- python3 tests/integration/run.py\` |"
             echo "| Physical-session checks | **NOT RUN**: requires a live Plasma Wayland desktop |"
             echo
             echo "See docs/status/CI.md for the TEST_MATRIX coverage split."
@@ -189,11 +183,9 @@ jobs:
     # tools/settings-check needs Qt6 UiTools plus KF6Config/KF6ConfigWidgets.
     # Ubuntu 24.04 (ubuntu-latest) has Qt 6.4.2 and no KF6 packages, so this job uses
     # the ubuntu-26.04 image (label listed in actions/runner-images; Qt 6.10, KF 6.24).
-    # Package names were checked on packages.ubuntu.com for "resolute", not on a live
-    # runner, so the job is non-fatal until it has been seen green.
-    name: Native test tools (Qt6/KF6, optional)
+    # Seen green on the runner (run 39087511435, 2026-10-18), so the job is required.
+    name: Native test tools (Qt6/KF6)
     runs-on: ubuntu-26.04
-    continue-on-error: true
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
@@ -222,9 +214,8 @@ jobs:
         if: always()
         run: |
           {
-            echo "## Plastile CI: native test tools (optional job)"
+            echo "## Plastile CI: native test tools"
             echo
-            echo "Status: ${{ job.status }}. This job is continue-on-error; a failure here does"
-            echo "not fail the workflow but is recorded here. The settings-check binary is only"
-            echo "built, not run (it needs a display)."
+            echo "Status: ${{ job.status }}. The settings-check binary is only built, not run"
+            echo "(it needs a display)."
           } >> "$GITHUB_STEP_SUMMARY"
