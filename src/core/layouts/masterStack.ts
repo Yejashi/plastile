@@ -91,31 +91,36 @@ export function fitMaxima(slots: Map<WindowId, Rect>, input: SolveInput, notes: 
   }
 }
 
-/** Shared overflow loop: drop the newest participant until the layout fits (float-new). */
+/**
+ * Shared overflow policy, float-new (BEHAVIOR §11): existing windows keep their tiles and
+ * a window that cannot fit next to them floats. When everything does not fit, windows
+ * are admitted in insertion order and each one that would make the layout infeasible
+ * overflows, with the failure it caused. A window that cannot fit at all (its minimum
+ * exceeds the area even alone) is therefore floated itself, instead of every newer
+ * window being floated ahead of it. Attempts keep context order.
+ */
 export function solveWithOverflow(ids: readonly WindowId[], input: SolveInput,
   tryIds: (ids: readonly WindowId[]) => Attempt): SolveResult {
-  let current = ids.slice();
-  const overflow: WindowId[] = [];
-  const notes: string[] = [];
-  for (let guard = 0; guard <= ids.length; ++guard) {
-    const r = tryIds(current);
-    if (r.failure === null) {
-      notes.push(...r.notes);
-      fitMaxima(r.slots, input, notes);
-      return { slots: r.slots, overflow, notes, raise: [] };
-    }
-    if (current.length === 0) break;
-    let victim = current[current.length - 1];
-    let newest = -Infinity;
-    for (const id of current) {
-      const t = input.insertedAt.get(id) ?? 0;
-      if (t > newest) { newest = t; victim = id; }
-    }
-    overflow.push(victim);
-    notes.push(`${victim}: does not fit (${r.failure}); overflow float-new`);
-    current = current.filter((id) => id !== victim);
+  const done = (r: Attempt, overflow: WindowId[], notes: string[]): SolveResult => {
+    notes.push(...r.notes);
+    fitMaxima(r.slots, input, notes);
+    return { slots: r.slots, overflow, notes, raise: [] };
+  };
+  const all = tryIds(ids);
+  if (all.failure === null) return done(all, [], []);
+  const seq = (id: WindowId) => input.insertedAt.get(id) ?? 0;
+  const byAge = ids.slice().sort((a, b) => seq(a) - seq(b)); // stable: ties keep context order
+  const kept = new Set<WindowId>();
+  const failed = new Map<WindowId, string>();
+  let fits = tryIds([]);
+  for (const id of byAge) {
+    const r = tryIds(ids.filter((x) => kept.has(x) || x === id));
+    if (r.failure === null) { kept.add(id); fits = r; } else failed.set(id, r.failure);
   }
-  return { slots: new Map(), overflow, notes, raise: [] };
+  // Report newest first, the order in which float-new gives windows up.
+  const overflow = [...failed.keys()].sort((a, b) => seq(b) - seq(a));
+  const notes = overflow.map((id) => `${id}: does not fit (${failed.get(id)}); overflow float-new`);
+  return done(fits, overflow, notes);
 }
 
 export type { Attempt };

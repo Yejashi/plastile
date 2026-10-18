@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { inset, rect, shareCuts, type Rect } from "../../src/core/geometry.ts";
 import { allocate } from "../../src/core/layouts/allocate.ts";
 import { masterStack } from "../../src/core/layouts/masterStack.ts";
+import { monocle } from "../../src/core/layouts/monocle.ts";
 import type { Constraints, WindowId } from "../../src/core/types.ts";
 import { assertTiling, input, minC, prng, settings } from "./helpers.ts";
 
@@ -222,6 +223,54 @@ test("infeasible minima float the newest window (G08 float-new)", () => {
   assert.deepEqual(r.overflow, ["c"]);
   assert.equal(r.slots.size, 2);
   assert.ok(r.notes.some((n) => n.startsWith("c: does not fit")));
+});
+
+test("overflow floats the window that cannot fit, not newer windows that do (BEHAVIOR §11)", () => {
+  // An old window whose minimum exceeds the output (work-area shrink, learned minimum).
+  const ids = ["old", "n1", "n2", "n3"];
+  const huge = new Map([["old", minC(2500, 100)]]);
+  const r = masterStack.solve(masterStack.initial(S), input(ids, { constraints: huge }));
+  assert.deepEqual(r.overflow, ["old"]);
+  assert.deepEqual([...r.slots.keys()], ["n1", "n2", "n3"]);
+  assertTiling(r.slots, rect(0, 0, 1920, 1080));
+  assert.ok(r.notes.some((n) => n.startsWith("old: does not fit") && n.includes("2500")), r.notes.join("; "));
+  const m = monocle.solve(monocle.initial(S), input(ids, { constraints: huge }));
+  assert.deepEqual(m.overflow, ["old"], "monocle: peers are independent");
+  assert.equal(m.slots.size, 3);
+  assert.ok(m.notes.some((n) => n.startsWith("old: does not fit") && n.includes("old needs 2500")), m.notes.join("; "));
+  // n1 cannot share the area with old; n2 and n3 can and keep their tiles.
+  const wide = new Map([["old", minC(1000, 0)], ["n1", minC(1000, 0)]]);
+  const w = masterStack.solve(masterStack.initial(S), input(ids, { constraints: wide }));
+  assert.deepEqual(w.overflow, ["n1"]);
+  assert.deepEqual([...w.slots.keys()], ["old", "n2", "n3"]);
+});
+
+test("randomized: overflow follows float-new against the feasibility definition", () => {
+  const rnd = prng(911);
+  let overflowed = 0;
+  for (let iter = 0; iter < 600; ++iter) {
+    const n = 2 + Math.floor(rnd() * 6);
+    const ids = Array.from({ length: n }, (_, i) => `w${i}`);
+    const area = rect(0, 0, 800 + Math.floor(rnd() * 1200), 600 + Math.floor(rnd() * 600));
+    const inner = inset(area, S.gaps.outer);
+    const constraints = new Map(ids.filter(() => rnd() < 0.5)
+      .map((id) => [id, minC(Math.floor(rnd() * area.width * 0.8), Math.floor(rnd() * area.height * 0.6))] as const));
+    const order = ids.slice(); // insertion order differs from context order
+    for (let i = n - 1; i > 0; --i) { const j = Math.floor(rnd() * (i + 1)); [order[i], order[j]] = [order[j], order[i]]; }
+    const inp = { ...input(ids, { area, constraints }), insertedAt: new Map(order.map((id, i) => [id, i] as const)) };
+    const masterCount = Math.floor(rnd() * 3);
+    const r = masterStack.solve({ ratio: 0.05 + rnd() * 0.9, masterCount, weights: {} }, inp);
+    const kept = ids.filter((id) => r.slots.has(id));
+    assert.equal(kept.length + r.overflow.length, n);
+    assert.ok(msFeasible(kept, masterCount, inner, S.gaps.inner, constraints), "kept windows fit");
+    for (const w of r.overflow) {
+      // w could not join the windows inserted before it that kept their tiles.
+      const before = ids.filter((id) => id === w || (r.slots.has(id) && order.indexOf(id) < order.indexOf(w)));
+      assert.ok(!msFeasible(before, masterCount, inner, S.gaps.inner, constraints), `${w} floated although it fits`);
+    }
+    if (r.overflow.length) ++overflowed;
+  }
+  assert.ok(overflowed > 100, `only ${overflowed} overflow samples`);
 });
 
 test("max-size windows are centred in their slot, not stretched (G09)", () => {

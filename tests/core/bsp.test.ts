@@ -311,6 +311,51 @@ test("infeasible minima float the newest participant, repeatedly (G08 float-new)
   assert.deepEqual(h.slots.get("a"), rect(8, 8, 1904, 1064));
 });
 
+test("overflow floats the window that cannot fit, not newer ones (BEHAVIOR §11)", () => {
+  const st = grow(["old", "n1", "n2", "n3"]);
+  const constraints = new Map([["old", minC(2500, 100)]]);
+  const r = bsp.solve(st, input(["old", "n1", "n2", "n3"], { constraints }));
+  assert.deepEqual(r.overflow, ["old"]);
+  assert.equal(r.slots.size, 3);
+  assertGaps(r.slots, rect(8, 8, 1904, 1064), 8);
+  assert.ok(r.notes.some((n) => n.startsWith("old: does not fit") && n.includes("2500")), r.notes.join("; "));
+
+  // Property: kept windows fit (BEHAVIOR §5 aggregation) and each floated window could
+  // not join the older windows that kept their tiles.
+  const rnd = prng(2500);
+  let overflowed = 0;
+  for (let iter = 0; iter < 400; ++iter) {
+    const n = 2 + Math.floor(rnd() * 6);
+    const ids = Array.from({ length: n }, (_, i) => `w${i}`);
+    const area = rect(0, 0, 800 + Math.floor(rnd() * 1200), 600 + Math.floor(rnd() * 600));
+    const inner = inset(area, S.gaps.outer);
+    let tree = bsp.initial(S);
+    for (const id of ids) {
+      const ls = leaves(tree);
+      tree = bsp.insert(tree, id, ls.length ? ls[Math.floor(rnd() * ls.length)] : null, input(ls, { area }));
+    }
+    const constraints = new Map(ids.filter(() => rnd() < 0.5)
+      .map((id) => [id, minC(Math.floor(rnd() * area.width * 0.8), Math.floor(rnd() * area.height * 0.8))] as const));
+    const order = ids.slice();
+    for (let i = n - 1; i > 0; --i) { const j = Math.floor(rnd() * (i + 1)); [order[i], order[j]] = [order[j], order[i]]; }
+    const inp = { ...input(ids, { area, constraints }), insertedAt: new Map(order.map((id, i) => [id, i] as const)) };
+    const r = bsp.solve(tree, inp);
+    const fits = (live: WindowId[]) => {
+      const need = needOf(tree.root!, new Set(live), constraints, S.gaps.inner);
+      return need === null || (need.width <= inner.width && need.height <= inner.height);
+    };
+    const kept = ids.filter((id) => r.slots.has(id));
+    assert.equal(kept.length + r.overflow.length, n);
+    assert.ok(fits(kept), "kept windows fit");
+    for (const w of r.overflow) {
+      const before = ids.filter((id) => id === w || (r.slots.has(id) && order.indexOf(id) < order.indexOf(w)));
+      assert.ok(!fits(before), `${w} floated although it fits`);
+    }
+    if (r.overflow.length) ++overflowed;
+  }
+  assert.ok(overflowed > 50, `only ${overflowed} overflow samples`);
+});
+
 test("max-size windows are centred in their slot (G09)", () => {
   const constraints = new Map<WindowId, Constraints>([["a", { minFrame: { width: 0, height: 0 }, maxFrame: { width: 500, height: 400 }, fixed: false }]]);
   const r = bsp.solve(ABC, input(["a", "b", "c"], { constraints }));
