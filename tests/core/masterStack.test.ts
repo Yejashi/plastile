@@ -318,3 +318,108 @@ test("resize-boundary moves the divider and row weights", () => {
   const none = masterStack.command(st, { kind: "resize-boundary", id: "a", edge: "left", delta: 10 }, inp);
   assert.equal(none.changed, false);
 });
+
+/** True when any slot moved or resized by at least half a pixel (what the user can see). */
+function moved(a: Map<WindowId, Rect>, b: Map<WindowId, Rect>): boolean {
+  if (a.size !== b.size) return true;
+  for (const [id, r] of a) {
+    const q = b.get(id);
+    if (!q || Math.abs(r.x - q.x) >= 0.5 || Math.abs(r.y - q.y) >= 0.5 || Math.abs(r.width - q.width) >= 0.5 ||
+      Math.abs(r.height - q.height) >= 0.5) return true;
+  }
+  return false;
+}
+
+test("dragging a stack window's left edge moves the divider with the edge", () => {
+  const st = masterStack.initial(S);
+  const inp = input(["a", "b", "c"]);
+  const before = masterStack.solve(st, inp).slots;
+  // The engine reports edge movement as frame - slot: negative is a move to the left.
+  for (const delta of [-100, 100]) {
+    const o = masterStack.command(st, { kind: "resize-boundary", id: "b", edge: "left", delta }, inp);
+    assert.ok(o.changed);
+    const after = masterStack.solve(o.state, inp).slots;
+    for (const id of ["b", "c"]) {
+      assert.ok(Math.abs(after.get(id)!.x - before.get(id)!.x - delta) <= 1, `${id} left edge follows the drag (${delta})`);
+      assert.ok(Math.abs(after.get(id)!.width - before.get(id)!.width + delta) <= 1, `${id} width (${delta})`);
+    }
+    assert.ok(Math.abs(after.get("a")!.width - before.get("a")!.width - delta) <= 1, `master width (${delta})`);
+  }
+});
+
+test("divider commands start from the divider that minima hold, not the stored ratio (L02)", () => {
+  // A stored ratio of 0.3 under a master whose minimum is 800 px: the master shows 800 px.
+  const mins = new Map([["a", minC(800, 0)]]);
+  const inp = input(["a", "b"], { constraints: mins });
+  let st = { ratio: 0.3, masterCount: 1, weights: {} };
+  const width = () => masterStack.solve(st, inp).slots.get("a")!.width;
+  assert.equal(width(), 800);
+  const shrink = masterStack.command(st, { kind: "ratio", delta: -0.05 }, inp);
+  assert.equal(shrink.changed, false);
+  assert.equal(shrink.reason, "ratio clamped by minimum sizes");
+  for (let i = 0; i < 3; ++i) {
+    const w0 = width();
+    const o = masterStack.command(st, { kind: "ratio", delta: 0.05 }, inp);
+    assert.ok(o.changed, `grow ${i}: ${o.reason}`);
+    st = o.state;
+    assert.ok(Math.abs(width() - w0 - 0.05 * 1896) <= 1, `grow ${i} moves the divider one step`);
+  }
+  for (let i = 0; i < 3; ++i) st = masterStack.command(st, { kind: "ratio", delta: -0.05 }, inp).state;
+  assert.equal(width(), 800, "shrinking back reaches the minimum without a dead zone");
+
+  // Mouse: master minimum 1400 at the default ratio. Dragging its right edge 200 px right
+  // lands the divider where it was dropped instead of snapping back to 1400.
+  const big = input(["a", "b"], { constraints: new Map([["a", minC(1400, 0)]]) });
+  const s0 = masterStack.initial(S);
+  assert.equal(masterStack.solve(s0, big).slots.get("a")!.width, 1400);
+  const drag = masterStack.command(s0, { kind: "resize-boundary", id: "a", edge: "right", delta: 200 }, big);
+  assert.ok(drag.changed);
+  assert.ok(Math.abs(masterStack.solve(drag.state, big).slots.get("a")!.width - 1600) <= 1);
+});
+
+test("ratio without a visible divider is a no-op with a reason (BEHAVIOR §4)", () => {
+  const one = input(["a"]);
+  let st = masterStack.initial(S);
+  for (let i = 0; i < 20; ++i) {
+    const o = masterStack.command(st, { kind: "ratio", delta: 0.05 }, one);
+    assert.equal(o.changed, false);
+    assert.equal(o.reason, "no divider");
+    st = o.state;
+  }
+  const two = input(["a", "b"]);
+  assert.deepEqual([...masterStack.solve(st, two).slots], [...masterStack.solve(masterStack.initial(S), two).slots],
+    "presses without a divider leave no hidden ratio behind");
+  const allMasters = masterStack.command({ ratio: 0.55, masterCount: 2, weights: {} }, { kind: "ratio", delta: 0.05 }, two);
+  assert.equal(allMasters.reason, "no divider");
+  // A suspended second window (absent from ids) leaves one column too.
+  assert.equal(masterStack.command(st, { kind: "ratio", delta: 0.05 }, input(["a"], { members: ["a", "b"] })).reason, "no divider");
+});
+
+test("randomized: divider commands report a change exactly when the layout moves", () => {
+  const rnd = prng(800);
+  let changed = 0;
+  for (let iter = 0; iter < 1500; ++iter) {
+    const n = 1 + Math.floor(rnd() * 5);
+    const ids = Array.from({ length: n }, (_, i) => `w${i}`);
+    const area = rect(0, 0, 900 + Math.floor(rnd() * 2000), 600 + Math.floor(rnd() * 800));
+    const constraints = new Map(ids.filter(() => rnd() < 0.5)
+      .map((id) => [id, minC(Math.floor(rnd() * area.width * 0.6), 0)] as const));
+    const inp = input(ids, { area, constraints });
+    const st = { ratio: 0.05 + rnd() * 0.9, masterCount: Math.floor(rnd() * 3), weights: {} };
+    const before = masterStack.solve(st, inp);
+    if (before.overflow.length) continue;
+    const id = ids[Math.floor(rnd() * n)];
+    const delta = (rnd() < 0.5 ? -1 : 1) * (1 + Math.floor(rnd() * 400));
+    const cmd = rnd() < 0.5 ? { kind: "ratio" as const, delta: delta > 0 ? 0.05 : -0.05 }
+      : { kind: "resize-boundary" as const, id, edge: rnd() < 0.5 ? "left" as const : "right" as const, delta };
+    const o = masterStack.command(st, cmd, inp);
+    const after = masterStack.solve(o.state, inp).slots;
+    assert.equal(o.changed, moved(before.slots, after), `${JSON.stringify(cmd)} ${JSON.stringify(st)}: ${o.reason}`);
+    if (!o.changed) { assert.equal(o.state, st); assert.ok(o.reason); continue; }
+    ++changed;
+    // The master grows with a positive ratio step or a right-moving divider edge.
+    const grew = after.get(ids[0])!.width - before.slots.get(ids[0])!.width;
+    assert.ok(Math.sign(grew) === Math.sign(cmd.delta), `master width moved ${grew} for ${JSON.stringify(cmd)}`);
+  }
+  assert.ok(changed > 300, `only ${changed} changes`);
+});

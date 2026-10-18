@@ -517,6 +517,102 @@ test("resize-boundary moves the touching divider by pixels", () => {
   assert.equal(br(dRight.state.root).ratio, br(deeper.root).ratio, "d's right edge is the inner divider");
 });
 
+/** True when any slot moved or resized by at least half a pixel (what the user can see). */
+function moved(a: Map<WindowId, Rect>, b: Map<WindowId, Rect>): boolean {
+  if (a.size !== b.size) return true;
+  for (const [id, r] of a) {
+    const q = b.get(id);
+    if (!q || Math.abs(r.x - q.x) >= 0.5 || Math.abs(r.y - q.y) >= 0.5 || Math.abs(r.width - q.width) >= 0.5 ||
+      Math.abs(r.height - q.height) >= 0.5) return true;
+  }
+  return false;
+}
+
+test("divider commands start from the divider that minima hold, not the stored ratio (L02)", () => {
+  const ab = grow(["a", "b"]);
+  // a's minimum holds the divider at 1400 px although the stored ratio is 0.5.
+  const big = input(["a", "b"], { constraints: new Map([["a", minC(1400, 0)]]), focused: "a" });
+  assert.equal(bsp.solve(ab, big).slots.get("a")!.width, 1400);
+  const drag = cmd(ab, { kind: "resize-boundary", id: "a", edge: "right", delta: 200 }, big);
+  assert.ok(drag.changed);
+  assert.ok(Math.abs(bsp.solve(drag.state, big).slots.get("a")!.width - 1600) <= 1, "dropped where released, no snap back");
+  // b's minimum holds a at 1904 - 8 - 1300 = 596 px: growing a is a no-op, shrinking a moves.
+  const wide = input(["a", "b"], { constraints: new Map([["b", minC(1300, 0)]]), focused: "a" });
+  const w0 = bsp.solve(ab, wide).slots.get("a")!.width;
+  assert.equal(w0, 596);
+  const up = cmd(ab, { kind: "ratio", delta: 0.05 }, wide);
+  assert.equal(up.changed, false);
+  assert.equal(up.reason, "ratio clamped by minimum sizes");
+  const down = cmd(ab, { kind: "ratio", delta: -0.05 }, wide);
+  assert.ok(down.changed);
+  assert.ok(Math.abs(bsp.solve(down.state, wide).slots.get("a")!.width - (w0 - 0.05 * 1888)) <= 1, "one step from the shown divider");
+});
+
+test("ratio uses the nearest visible divider; a collapsed sibling has none (BEHAVIOR §4)", () => {
+  // a and b with b minimized: a fills the area, there is no divider to move.
+  const ab = grow(["a", "b"]);
+  const alone = input(["a"], { members: ["a", "b"], focused: "a" });
+  const o = cmd(ab, { kind: "ratio", delta: 0.05 }, alone);
+  assert.equal(o.changed, false);
+  assert.equal(o.reason, "no divider");
+  // [a | (b / c)] with c minimized: b's own divider is collapsed, so b grows against a.
+  const sus = input(["a", "b"], { members: ["a", "b", "c"], focused: "b" });
+  const before = bsp.solve(ABC, sus).slots;
+  const g = cmd(ABC, { kind: "ratio", delta: 0.05 }, sus);
+  assert.ok(g.changed);
+  const after = bsp.solve(g.state, sus).slots;
+  assert.ok(Math.abs(after.get("b")!.width - before.get("b")!.width - 0.05 * 1896) <= 1, "b grows by one step");
+  assert.equal(br(br(g.state.root).b).ratio, 0.5, "the collapsed branch keeps its ratio");
+  // A focused window that does not participate has no tile to grow.
+  assert.equal(cmd(ABC, { kind: "ratio", delta: 0.05 }, input(["a", "b"], { members: ["a", "b", "c"], focused: "c" })).reason,
+    "no focused tile");
+});
+
+test("randomized: divider commands report a change exactly when the layout moves", () => {
+  const rnd = prng(1888);
+  const sides = ["left", "right", "top", "bottom"] as const;
+  let changed = 0;
+  for (let iter = 0; iter < 1200; ++iter) {
+    const n = 1 + Math.floor(rnd() * 6);
+    const ids = Array.from({ length: n }, (_, i) => `w${i}`);
+    const area = rect(0, 0, 900 + Math.floor(rnd() * 2000), 600 + Math.floor(rnd() * 1200));
+    let st = bsp.initial(S);
+    for (const id of ids) {
+      const ls = leaves(st);
+      st = bsp.insert(st, id, ls.length ? ls[Math.floor(rnd() * ls.length)] : null, input(ls, { area }));
+    }
+    for (let k = 0; k < 3; ++k) {
+      const ls = leaves(st);
+      st = cmd(st, { kind: "ratio", delta: (rnd() - 0.5) * 0.6 }, input(ls, { area, focused: ls[Math.floor(rnd() * ls.length)] })).state;
+    }
+    const live = ids.filter(() => rnd() < 0.8);
+    if (!live.length) continue;
+    const constraints = new Map(live.filter(() => rnd() < 0.5)
+      .map((id) => [id, minC(Math.floor(rnd() * area.width * 0.4), Math.floor(rnd() * area.height * 0.4))] as const));
+    const focused = live[Math.floor(rnd() * live.length)];
+    const inp = input(live, { area, constraints, members: ids, focused });
+    const before = bsp.solve(st, inp);
+    if (before.overflow.length) continue;
+    const delta = (rnd() < 0.5 ? -1 : 1) * (1 + Math.floor(rnd() * 400));
+    const c: LayoutCommand = rnd() < 0.5 ? { kind: "ratio", delta: delta > 0 ? 0.05 : -0.05 }
+      : { kind: "resize-boundary", id: focused, edge: sides[Math.floor(rnd() * 4)], delta };
+    const o = cmd(st, c, inp);
+    const after = bsp.solve(o.state, inp).slots;
+    assert.equal(o.changed, moved(before.slots, after), `${JSON.stringify(c)}: ${o.reason}`);
+    if (!o.changed) { assert.equal(o.state, st); assert.ok(o.reason); continue; }
+    ++changed;
+    const b = before.slots.get(focused)!, a = after.get(focused)!;
+    if (c.kind === "ratio") {
+      assert.ok(Math.sign(a.width * a.height - b.width * b.height) === Math.sign(c.delta), `focused tile area for ${JSON.stringify(c)}`);
+    } else {
+      // The dragged edge moves the way the pointer moved.
+      const edge = (r: Rect) => c.edge === "left" ? r.x : c.edge === "right" ? r.x + r.width : c.edge === "top" ? r.y : r.y + r.height;
+      assert.ok(Math.sign(edge(a) - edge(b)) === Math.sign(c.delta), `${c.edge} edge moved ${edge(a) - edge(b)} for ${c.delta}`);
+    }
+  }
+  assert.ok(changed > 300, `only ${changed} changes`);
+});
+
 test("unsupported commands report a reason", () => {
   const o = cmd(ABC, { kind: "master-count", delta: 1 }, input(["a", "b", "c"]));
   assert.equal(o.changed, false);

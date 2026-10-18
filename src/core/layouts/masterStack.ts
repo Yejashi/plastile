@@ -154,18 +154,10 @@ export const masterStack: Layout<MasterStackState> = {
   command(state: MasterStackState, cmd: LayoutCommand, input: SolveInput): CommandOutcome<MasterStackState> {
     switch (cmd.kind) {
       case "ratio": {
-        const next = clampRatio(state.ratio + cmd.delta);
-        if (next === state.ratio) return { state, changed: false, reason: "ratio at limit" };
-        const nextState = { ratio: next, masterCount: state.masterCount, weights: state.weights };
-        // Feasibility without solving: column minima bound the achievable ratio. If both
-        // the current and the next ratio clamp to the same boundary, nothing would move.
+        // One column (a single window, or every window a master) has no divider (BEHAVIOR §4).
         const range = feasibleRatio(state, input);
-        if (range !== null) {
-          const now = Math.min(range.hi, Math.max(range.lo, state.ratio));
-          const then = Math.min(range.hi, Math.max(range.lo, next));
-          if (Math.abs(then - now) * range.usable < 0.5) return { state, changed: false, reason: "ratio clamped by minimum sizes" };
-        }
-        return { state: nextState, changed: true };
+        if (range === null) return { state, changed: false, reason: "no divider" };
+        return moveDivider(state, range, cmd.delta);
       }
       case "master-count": {
         const next = Math.max(0, Math.min(MASTER_COUNT_MAX, state.masterCount + cmd.delta));
@@ -199,6 +191,24 @@ function feasibleRatio(state: MasterStackState, input: SolveInput): { lo: number
   return { lo: minMaster / usable, hi: 1 - minStack / usable, usable };
 }
 
+/**
+ * Move the divider by `delta` (ratio units) from where it is shown. Column minima can hold
+ * the divider away from the stored ratio; stepping the stored value would move it inside
+ * that hidden range (grow stuck below the minimum, a drag snapping back). The shown result,
+ * clamped to the feasible range, becomes the stored ratio (BEHAVIOR §4, §8).
+ */
+function moveDivider(state: MasterStackState, range: { lo: number; hi: number; usable: number },
+  delta: number): CommandOutcome<MasterStackState> {
+  const shown = (r: number) => Math.min(range.hi, Math.max(range.lo, r));
+  const base = shown(state.ratio);
+  const free = clampRatio(base + delta);
+  const next = clampRatio(shown(free));
+  if (Math.abs(shown(next) - base) * range.usable < 0.5) {
+    return { state, changed: false, reason: free === clampRatio(base) ? "ratio at limit" : "ratio clamped by minimum sizes" };
+  }
+  return { state: { ratio: next, masterCount: state.masterCount, weights: state.weights }, changed: true };
+}
+
 /** Convert an accepted boundary movement (pixels) into ratio/weight changes. */
 function resizeBoundary(state: MasterStackState, cmd: Extract<LayoutCommand, { kind: "resize-boundary" }>,
   input: SolveInput): CommandOutcome<MasterStackState> {
@@ -208,15 +218,14 @@ function resizeBoundary(state: MasterStackState, cmd: Extract<LayoutCommand, { k
   const m = Math.max(0, Math.min(state.masterCount, ids.length));
   const isMaster = idx < m;
   const a = outerArea(input, ids.length);
-  const usable = a.width - input.settings.gaps.inner;
   if ((cmd.edge === "left" || cmd.edge === "right")) {
-    if (m === 0 || m >= ids.length || usable <= 0) return { state, changed: false, reason: "no vertical divider" };
-    // Master is on the left: its right edge, or the stack's left edge, is the divider.
-    const toward = (isMaster && cmd.edge === "right") ? cmd.delta : (!isMaster && cmd.edge === "left") ? -cmd.delta : 0;
-    if (toward === 0) return { state, changed: false, reason: "edge is not the divider" };
-    const next = clampRatio(state.ratio + toward / usable);
-    if (next === state.ratio) return { state, changed: false, reason: "ratio at limit" };
-    return { state: { ratio: next, masterCount: state.masterCount, weights: state.weights }, changed: true };
+    const range = feasibleRatio(state, input);
+    if (range === null) return { state, changed: false, reason: "no vertical divider" };
+    // Master is on the left: its right edge, or the stack's left edge, is the divider. A
+    // positive delta moves an edge right (engine: frame - slot), which grows the master
+    // from either side.
+    if (cmd.edge !== (isMaster ? "right" : "left")) return { state, changed: false, reason: "edge is not the divider" };
+    return moveDivider(state, range, cmd.delta / range.usable);
   }
   // Horizontal divider inside a column: move weight between neighbours.
   const col = isMaster ? ids.slice(0, m) : ids.slice(m);
