@@ -116,7 +116,8 @@ export function createRuntime(env: RuntimeEnv): Runtime {
   engine.start(initial);
   log("info", `started ${VERSION}`, { windows: initial.length, configRevision: snapshot!.revision });
 
-  // Settings dialog "Apply" triggers KWin's reconfigure, which emits configChanged.
+  // KWin emits configChanged after every reconfigure (its own, the reload command's, other
+  // settings pages'), once after a script loads; the settings dialog's Apply alone emits nothing.
   const optionConns: Array<{ signal: KSignal; fn: () => void }> = [];
   const onConfig = (): void => {
     if (!engine.isAlive()) return;

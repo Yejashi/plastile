@@ -14,7 +14,7 @@ Window {
 
     title: view.windowTitle
     flags: Qt.Popup | Qt.FramelessWindowHint
-    color: palette.window
+    color: sys.window
     width: 560
     height: Math.min(body.implicitHeight + 2 * pad, view.area ? view.area.height - 80 : 600)
     x: view.area ? Math.round(view.area.x + (view.area.width - width) / 2) : 100
@@ -24,12 +24,12 @@ Window {
 
     onVisibleChanged: if (!visible) win.dismissed()
 
-    SystemPalette { id: palette; colorGroup: SystemPalette.Active }
+    SystemPalette { id: sys; colorGroup: SystemPalette.Active }
 
     Rectangle {
         anchors.fill: parent
         color: "transparent"
-        border.color: palette.mid
+        border.color: sys.mid
         border.width: 1
     }
 
@@ -52,7 +52,7 @@ Window {
                 text: win.view.heading
                 font.bold: true
                 font.pixelSize: 16
-                color: palette.windowText
+                color: sys.windowText
                 elide: Text.ElideRight
             }
 
@@ -66,13 +66,13 @@ Window {
                         visible: text !== ""
                         text: modelData.label
                         font.bold: true
-                        color: palette.windowText
+                        color: sys.windowText
                     }
                     Text {
                         width: parent.width
                         text: modelData.text
                         wrapMode: Text.Wrap
-                        color: palette.windowText
+                        color: sys.windowText
                     }
                 }
             }
@@ -80,7 +80,7 @@ Window {
             Text {
                 visible: win.view.details.length > 0
                 text: win.details ? "Hide details" : "Show details"
-                color: palette.highlight
+                color: sys.highlight
                 font.underline: true
                 MouseArea {
                     anchors.fill: parent
@@ -98,7 +98,7 @@ Window {
                     wrapMode: Text.WrapAnywhere
                     font.family: "monospace"
                     font.pixelSize: 11
-                    color: palette.windowText
+                    color: sys.windowText
                 }
             }
 
@@ -107,7 +107,7 @@ Window {
                 text: "Escape, a click elsewhere, or “Explain active window” again closes this."
                 wrapMode: Text.Wrap
                 font.pixelSize: 11
-                color: palette.mid
+                color: sys.mid
             }
         }
     }

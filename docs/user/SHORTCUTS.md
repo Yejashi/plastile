@@ -122,7 +122,7 @@ When Plastile starts, it asks KGlobalAccel (over D-Bus, on a later event-loop tu
 
 Without conflicts the log says `plastile info shortcut check: no conflicts`. *Reload configuration* runs the check again, for example after you rebound something.
 
-**Plastile never changes a binding.** It only reads them. Measured in nested KWin 6.7.5 (scenario `shortcuts-conflict-Q08`): with KWin's *Maximize Window* bound to `Meta+Shift+H` by the user before Plastile loaded, KGlobalAccel still gave *Focus left* the same key (it accepts duplicates without complaint), the report named both, the user's binding stayed in `kglobalshortcutsrc`, and pressing `Meta+Shift+H` maximized the window without reaching Plastile.
+**Plastile never changes a binding.** It only reads them. Measured in nested KWin 6.7.5 and 6.8.0 (scenario `shortcuts-conflict-Q08`): with KWin's *Maximize Window* bound to `Meta+Shift+H` by the user before Plastile loaded, KGlobalAccel still gave *Focus left* the same key (it accepts duplicates without complaint), the report named both, the user's binding stayed in `kglobalshortcutsrc`, and pressing `Meta+Shift+H` maximized the window without reaching Plastile.
 
 Limits:
 

@@ -112,7 +112,7 @@ An emulation of the dialog's save path (`tools/settings-check`, the same KConfig
 
 **So, after Apply, press Plastile: Reload configuration** (unbound by default; bind it in the shortcut settings, or run it from a terminal with `qdbus6 org.kde.kglobalaccel /component/kwin org.kde.kglobalaccel.Component.invokeShortcut plastile.runtime.reload-config`). The command asks KWin to reconfigure, through the same asynchronous D-Bus call that `qdbus6 org.kde.KWin /KWin reconfigure` makes. KWin re-reads `kwinrc` about 200 ms later (its own reconfigure timer), and Plastile activates the new values when KWin reports them. Like the other KDE settings pages' Apply, this makes KWin re-read all of its settings, not only Plastile's.
 
-Measured in nested KWin 6.7.5 (scenario `reload-config-D9-Q04`), with the package installed and enabled, after `kwriteconfig6` changed `gapInner` without a change notification:
+Measured in nested KWin 6.7.5 and 6.8.0 (scenario `reload-config-D9-Q04`; the timings below are from 6.7.5, 6.8.0 gave the same results), with the package installed and enabled, after `kwriteconfig6` changed `gapInner` without a change notification:
 
 | You... | Result |
 |---|---|

@@ -249,7 +249,8 @@ test("T28: the view speaks behaviour; internal ids appear only in details", () =
   const v = describeWindow(EXPLAIN, { desktopNameOf: (id) => (id === "5c2a-uuid" ? "Writing" : ""), shortcuts: null, area: null });
   const rows = Object.fromEntries(v.rows.map((r) => [r.label, r.text]));
   assert.match(rows.Placement, /^Floating/);
-  assert.match(rows.Rules, /Matching: kate-min\. Applied: minimum size at least 900x0 \(from kate-min\)/);
+  assert.match(rows.Rules, /Matching: kate-min\. Applied: tile at least 900 px wide \(from kate-min\)/);
+  assert.equal(rows.Why, "It would be tiled (normal resizable window), but there is not enough room (see Problem).");
   assert.equal(rows.Where, "Output DP-1, desktop “Writing”.");
   assert.match(rows.Paused, /minimized/);
   assert.match(rows.Size, /at least 900×200.*no less than 549×242/);

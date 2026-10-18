@@ -96,16 +96,23 @@ function why(d: Obj | null): string {
   }
 }
 
+/** "900x0" (explain's minSize) as words. */
+function minSizeText(v: string): string {
+  const m = /^(\d+)x(\d+)$/.exec(v);
+  if (!m) return `minimum size ${v}`;
+  const w = Number(m[1]), h = Number(m[2]);
+  return h === 0 ? `at least ${w} px wide` : w === 0 ? `at least ${h} px tall` : `at least ${w}×${h}`;
+}
+
 function ruleText(r: Obj | null): string {
   if (!r) return "No rule matches this window.";
   const ids = Array.isArray(r.ids) ? (r.ids as unknown[]).map(s) : [];
   const actions = obj(r.actions) ?? {}, reasons = obj(r.reasons) ?? {};
   const applied: string[] = [];
   for (const k of Object.keys(actions)) {
-    const value = k === "minSize" ? `at least ${s(actions[k])}` : s(actions[k]);
+    const what = k === "minSize" ? `tile ${minSizeText(s(actions[k]))}` : `${k} ${s(actions[k])}`;
     const from = s(reasons[k]);
-    const label = k === "minSize" ? "minimum size" : k;
-    applied.push(`${label} ${value}${from.indexOf("rule ") === 0 ? ` (from ${from.slice(5)})` : ""}`);
+    applied.push(`${what}${from.indexOf("rule ") === 0 ? ` (from ${from.slice(5)})` : ""}`);
   }
   const blocked = Object.keys(reasons).filter((k) => s(reasons[k]).indexOf("ignored") >= 0);
   let text = `Matching: ${list(ids)}.`;
@@ -164,7 +171,17 @@ export function describeWindow(x: Obj | null, ctx: InspectContext): InspectorVie
   const mode = s(x.mode), layout = s(x.layout);
   const decision = obj(x.decision), context = obj(x.context);
   const rows: InspectorRow[] = [{ label: "Placement", text: placement(mode, layout) }];
-  rows.push({ label: "Why", text: why(decision) });
+  let reason = why(decision);
+  if (decision && s(decision.mode) === "tiled" && mode !== "tiled" && mode !== "pending") {
+    // Classified for tiling, but something after the classification keeps it out of the layout.
+    const because = x.userMode === "floating" ? "you floated it"
+      : mode === "native" ? "KWin's own tiling holds it"
+      : s(x.exception).indexOf("overflow") === 0 ? "there is not enough room (see Problem)"
+      : x.exception ? "Plastile gave up on it (see Problem)"
+      : "tiling is turned off where it is (enabled: false)";
+    reason = `It would be tiled (${s(decision.reason)}), but ${because}.`;
+  }
+  rows.push({ label: "Why", text: reason });
   if (x.userMode) rows.push({ label: "Your choice", text: `You chose ${s(x.userMode)} with “Toggle floating”; that lasts until the window closes.` });
   rows.push({ label: "Rules", text: ruleText(obj(x.rules)) });
   if (context) {

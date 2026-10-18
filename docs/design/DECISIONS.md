@@ -216,7 +216,7 @@ QV4 array-like sequences, not Arrays (measured), so parsing accepts array-likes.
 
 **Context.** BEHAVIOR §1 excludes Plastile's own UI from tiling, but the adapter had no way to recognise it
 (`meta.own` was always false). A QML window created by a declarative script is a KWin internal window: no
-application id, `pid` -1, on all desktops (measured, nested KWin 6.7.5). KWin delivers no keyboard input to an
+application id, `pid` -1, on all desktops (measured, nested KWin 6.7.5; the scenario also passes on 6.8.0). KWin delivers no keyboard input to an
 ordinary internal window; a `Qt.Popup` internal window takes a popup grab instead, receives keys while open,
 and is closed by KWin on a click elsewhere or when a window is activated (observed source:
 `popup_input_filter.cpp`, `internalwindow.cpp`). Setting `visible` did not map such a window in a script;
