@@ -4,8 +4,11 @@
  * Split [start, start+length) into intervals proportional to `weights`, separated
  * by `gap`, such that interval i is at least `mins[i]` long. Items that would fall
  * below their minimum are pinned at the minimum and the remainder is redistributed
- * (at most n passes). Every interval is at least 1 px. Cut positions are rounded cumulatively so the intervals cover
- * the span exactly. Returns null when sum(mins) + gaps exceeds the span.
+ * (at most n passes). Every interval is at least 1 px. The span's own ends are kept
+ * exact and inner cuts are shared, so the intervals cover the span exactly. Returns
+ * null when sum(mins) + gaps exceeds the span; any other span yields a layout, also
+ * when the span or the minima are fractional (fractional scaling: 2560 px at 150 %
+ * is a 1706.667 px logical work area).
  */
 export function allocate(start: number, length: number, weights: readonly number[], minsIn: readonly number[],
   gap: number): Array<[number, number]> | null {
@@ -42,20 +45,30 @@ export function allocate(start: number, length: number, weights: readonly number
     if (!violated) break;
   }
 
-  // Cumulative rounding: each cut is rounded once; minima stay satisfied because
-  // pinned sizes are integers in practice (frame minima) and rounding moves a cut
-  // by at most 0.5 px, so ceil the minima when rounding would violate them.
+  // Cumulative rounding: each inner cut is rounded once to a whole pixel, then clamped
+  // between the minimum of its own interval and the room every later interval needs
+  // (`tail`), so rounding can never starve the last interval on a fractional span.
+  // When no whole pixel lies in that range (under a pixel of slack), the cut stays at
+  // its clamped fractional position: feasibility is the same as the check above.
+  const end = start + length;
+  const tail = new Array<number>(n).fill(0);
+  for (let i = n - 2; i >= 0; --i) tail[i] = tail[i + 1] + gap + mins[i + 1];
   const out: Array<[number, number]> = [];
   let acc = 0;
   let begin = start;
   for (let i = 0; i < n; ++i) {
     acc += size[i];
-    let end = i === n - 1 ? start + length : Math.round(start + acc + gap * i);
-    if (i < n - 1 && end - begin < mins[i]) end = begin + Math.ceil(mins[i]);
-    out.push([begin, end]);
-    begin = end + gap;
+    let cut = end;
+    if (i < n - 1) {
+      const want = start + acc + gap * i;
+      const lo = begin + mins[i];
+      const hi = end - tail[i];
+      const ilo = Math.ceil(lo), ihi = Math.floor(hi);
+      cut = ilo <= ihi ? Math.min(ihi, Math.max(ilo, Math.round(want))) : Math.min(hi, Math.max(lo, want));
+    }
+    out.push([begin, cut]);
+    begin = cut + gap;
   }
-  if (out[n - 1][1] - out[n - 1][0] < mins[n - 1] - 1e-9) return null;
   return out;
 }
 

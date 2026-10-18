@@ -21,7 +21,6 @@ Committed summary: python3 tests/integration/scenarios_realapps.py --evidence ar
 """
 from __future__ import annotations
 
-import glob
 import json
 import os
 import re
@@ -77,14 +76,8 @@ def labelled(ws: list[dict]) -> list[dict]:
 
 
 def x_display(s: Session) -> str:
-    """The nested KWin's X11 display: the lock file whose owner PID is our KWin (XWayland sessions only)."""
-    for lock in glob.glob("/tmp/.X*-lock"):
-        try:
-            if int(Path(lock).read_text().strip()) == s.kw.kwin_pid:
-                return ":" + re.search(r"\.X(\d+)-lock", lock).group(1)
-        except (OSError, ValueError, AttributeError):
-            continue
-    raise NestedError("no X display owned by the nested KWin")
+    """The nested KWin's public X11 display (XWayland sessions only); see NestedKwin.x_display."""
+    return s.kw.x_display()
 
 
 def x11_hints(env: dict, app_id: str) -> dict | None:

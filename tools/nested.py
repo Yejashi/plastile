@@ -19,13 +19,16 @@ CLI use (manual experiments):
 from __future__ import annotations
 
 import argparse
+import glob
 import json
 import os
 import re
 import shutil
 import signal
+import stat
 import subprocess
 import sys
+import tempfile
 import time
 from pathlib import Path
 
@@ -37,6 +40,21 @@ SHORT_BASE = Path(os.environ.get("PLASTILE_NESTED_BASE", f"/tmp/plastile-{os.get
 
 class NestedError(RuntimeError):
     pass
+
+
+def session_base() -> Path:
+    """The private parent of all session roots: a real directory owned by us, mode 0700.
+
+    /tmp/plastile-<uid> is predictable, so refuse anything another user could have
+    planted (a symlink, a foreign owner) instead of deleting or writing through it.
+    """
+    os.makedirs(SHORT_BASE, mode=0o700, exist_ok=True)
+    st = os.lstat(SHORT_BASE)
+    if not stat.S_ISDIR(st.st_mode) or st.st_uid != os.getuid():
+        raise NestedError(f"{SHORT_BASE} is not a directory owned by uid {os.getuid()}; refusing to use it")
+    if st.st_mode & 0o077:
+        os.chmod(SHORT_BASE, 0o700)
+    return SHORT_BASE
 
 
 def _monotonic_ns() -> int:
@@ -114,8 +132,18 @@ class NestedKwin:
 
     # ------------------------------------------------------------- lifecycle
     def start(self, timeout: float = 15.0) -> "NestedKwin":
-        if self.root.exists():
-            shutil.rmtree(self.root)
+        # A failed start must not leak the private dbus-daemon or KWin: `with` does not
+        # call __exit__ when __enter__ raises. stop() also copies the logs out.
+        try:
+            return self._start(timeout)
+        except BaseException:
+            self.stop()
+            raise
+
+    def _start(self, timeout: float) -> "NestedKwin":
+        # A fresh, unpredictable root per session: concurrent sessions with the same
+        # name never share or delete each other's tree.
+        self.root = Path(tempfile.mkdtemp(prefix=f"{self.name}-", dir=session_base()))
         for sub in ("run", "config", "data", "cache", "state"):
             (self.root / sub).mkdir(parents=True)
         self.run_dir.chmod(0o700)
@@ -195,6 +223,43 @@ class NestedKwin:
     @property
     def kwin_pid(self) -> int | None:
         return self._kwin.pid if self._kwin else None
+
+    def x_display(self, timeout: float = 10.0) -> str:
+        """The nested KWin's public X display (XWayland sessions only), never the user's.
+
+        Once Xwayland runs, its argv names the display. Before that (KWin starts Xwayland
+        on the first X connection) the lock files owned by this KWin decide. KWin 6.8 owns
+        two: the public display and an init display reserved for its Xwayland startup
+        scripts, created second (KWin v6.8.0 src/xwayland/xwaylandlauncher.cpp,
+        XwaylandLauncher::enable; displays are taken lowest-free-first), so the lowest
+        number is the public one. A client on the init display is never served.
+        """
+        pid = self.kwin_pid
+        deadline = time.monotonic() + timeout
+        while True:
+            for proc in Path("/proc").iterdir():
+                if not proc.name.isdigit():
+                    continue
+                try:
+                    if int((proc / "stat").read_text().rsplit(")", 1)[1].split()[1]) != pid:
+                        continue
+                    argv = (proc / "cmdline").read_bytes().split(b"\0")
+                    if argv[0].endswith(b"Xwayland") and len(argv) > 1 and re.fullmatch(rb":\d+", argv[1]):
+                        return argv[1].decode()
+                except (OSError, ValueError, IndexError):
+                    continue
+            owned = []
+            for lock in glob.glob("/tmp/.X*-lock"):
+                try:
+                    if int(Path(lock).read_text().strip()) == pid:
+                        owned.append(int(re.search(r"\.X(\d+)-lock$", lock).group(1)))
+                except (OSError, ValueError, AttributeError):
+                    continue
+            if owned:
+                return f":{min(owned)}"
+            if time.monotonic() > deadline:
+                raise NestedError("no X display owned by the nested KWin")
+            time.sleep(0.05)
 
     # ----------------------------------------------------------------- D-Bus
     def compositing_type(self) -> str | None:

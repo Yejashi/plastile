@@ -1,9 +1,11 @@
 // Value rectangles in logical compositor coordinates, and shared-cut allocation.
 //
 // KWin geometry is floating point even at scale 1 (M0: 466.666…, 400.00000000000006),
-// so comparisons use an explicit tolerance. Layout output is integral: cut positions
-// are rounded once and adjacent slots are derived from shared cuts, which preserves
-// total coverage for odd sizes.
+// so comparisons use an explicit tolerance. Inner cut positions are rounded once to
+// whole pixels and adjacent slots are derived from shared cuts, which preserves total
+// coverage for odd sizes. Area edges are kept exact, so a fractional work area
+// (fractional scaling) gives fractional outer edges; a cut stays fractional only when
+// no whole pixel satisfies the minima on both sides.
 
 export interface Rect {
   readonly x: number;

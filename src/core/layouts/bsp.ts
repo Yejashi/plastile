@@ -247,8 +247,9 @@ const NO_MIN: Size = { width: 0, height: 0 };
 
 function leafMin(input: SolveInput, window: WindowId, useMinima: boolean): Size {
   const m = useMinima ? input.constraints.get(window)?.minFrame ?? NO_MIN : NO_MIN;
-  // allocate() never yields a slot below 1 px; ceil keeps aggregation integral.
-  return { width: Math.max(1, Math.ceil(m.width)), height: Math.max(1, Math.ceil(m.height)) };
+  // allocate() never yields a slot below 1 px. Minima stay exact (frame minima are
+  // fractional at fractional scales); allocate() places cuts for fractional minima.
+  return { width: Math.max(1, m.width), height: Math.max(1, m.height) };
 }
 
 /** Bottom-up minima. Subtrees without participants are absent (virtually collapsed). */
@@ -290,7 +291,8 @@ function layOut(root: BspNode | null, ids: readonly WindowId[], input: SolveInpu
   const g = input.settings.gaps;
   const area = participants === 1 && !input.settings.singleWindowGaps ? input.area : inset(input.area, g.outer);
   const need = minima.get(root)!;
-  if (need.width > area.width || need.height > area.height) {
+  // Same slack as allocate(): fractional minima sum with rounding noise.
+  if (need.width > area.width + 1e-9 || need.height > area.height + 1e-9) {
     return done(`tree needs ${need.width}x${need.height} px, has ${area.width}x${area.height}`);
   }
 
@@ -395,6 +397,39 @@ function edgeAxis(edge: BspSide): BspAxis {
   return edge === "left" || edge === "right" ? "horizontal" : "vertical";
 }
 
+/** A branch with a collapsed side (no participants) has no visible divider. */
+function hasDivider(br: BspBranch, laid: Laid): boolean {
+  return laid.minima.has(br.a) && laid.minima.has(br.b);
+}
+
+/**
+ * Move the divider of `path[i]` by `delta` (ratio units, or pixels when `pixels`) from
+ * where it is shown. Aggregated minima can hold a divider away from the stored ratio;
+ * stepping the stored value would move it inside that hidden range (a drag snapping
+ * back, a grow that does nothing). The shown result, clamped to the feasible range,
+ * becomes the stored ratio (BEHAVIOR §5, §8).
+ */
+function moveDivider(state: BspState, path: readonly Step[], i: number, laid: Laid, input: SolveInput,
+  delta: number, pixels: boolean): CommandOutcome<BspState> {
+  const br = path[i].branch;
+  const horizontal = br.axis === "horizontal";
+  const r = laid.rects.get(br);
+  const usable = (r ? (horizontal ? r.width : r.height) : 0) - input.settings.gaps.inner;
+  if (usable <= 0) return { state, changed: false, reason: "no space" };
+  const ma = laid.minima.get(br.a)!, mb = laid.minima.get(br.b)!;
+  const lo = (horizontal ? ma.width : ma.height) / usable;
+  const hi = 1 - (horizontal ? mb.width : mb.height) / usable;
+  const shown = (x: number) => Math.min(hi, Math.max(lo, x));
+  const base = shown(br.ratio);
+  const free = clampRatio(base + (pixels ? delta / usable : delta));
+  const next = clampRatio(shown(free));
+  if (Math.abs(shown(next) - base) * usable < 0.5) {
+    return { state, changed: false, reason: free === clampRatio(base) ? "ratio at limit" : "ratio clamped by minimum sizes" };
+  }
+  const nb = branch(br.id, br.axis, next, br.a, br.b);
+  return { state: { root: replaceAt(path.slice(0, i), nb), nextId: state.nextId }, changed: true };
+}
+
 function resizeBoundary(state: BspState, cmd: Extract<LayoutCommand, { kind: "resize-boundary" }>,
   input: SolveInput): CommandOutcome<BspState> {
   const loc = findWindow(state.root, cmd.id);
@@ -404,18 +439,12 @@ function resizeBoundary(state: BspState, cmd: Extract<LayoutCommand, { kind: "re
   const needSide = cmd.edge === "right" || cmd.edge === "bottom" ? "a" : "b";
   for (let i = loc.path.length - 1; i >= 0; --i) {
     const { branch: br, side } = loc.path[i];
-    // A branch with a collapsed side has no visible divider; its edges are the parent's.
-    if (!laid.minima.has(br.a) || !laid.minima.has(br.b)) continue;
+    // A collapsed branch's edges are the parent's.
+    if (!hasDivider(br, laid)) continue;
     if (br.axis !== axis || side !== needSide) continue;
-    const r = laid.rects.get(br);
-    const usable = (r ? (axis === "horizontal" ? r.width : r.height) : 0) - input.settings.gaps.inner;
-    if (usable <= 0) return { state, changed: false, reason: "no space" };
     // Positive delta moves the edge right/down; on either side that moves the divider
     // right/down, which grows side a.
-    const next = clampRatio(br.ratio + cmd.delta / usable);
-    if (next === br.ratio) return { state, changed: false, reason: "ratio at limit" };
-    const nb = branch(br.id, br.axis, next, br.a, br.b);
-    return { state: { root: replaceAt(loc.path.slice(0, i), nb), nextId: state.nextId }, changed: true };
+    return moveDivider(state, loc.path, i, laid, input, cmd.delta, true);
   }
   return { state, changed: false, reason: "no divider on that edge" };
 }
@@ -470,14 +499,16 @@ export const bsp: Layout<BspState> = {
   command(state: BspState, cmd: LayoutCommand, input: SolveInput): CommandOutcome<BspState> {
     switch (cmd.kind) {
       case "ratio": {
-        const loc = input.focused === null ? null : findWindow(state.root, input.focused);
+        const focused = input.focused;
+        const loc = focused === null || input.ids.indexOf(focused) < 0 ? null : findWindow(state.root, focused);
         if (!loc) return { state, changed: false, reason: "no focused tile" };
-        if (loc.path.length === 0) return { state, changed: false, reason: "no divider" };
-        const { branch: br, side } = loc.path[loc.path.length - 1];
-        const next = clampRatio(br.ratio + (side === "a" ? cmd.delta : -cmd.delta));
-        if (next === br.ratio) return { state, changed: false, reason: "ratio at limit" };
-        const nb = branch(br.id, br.axis, next, br.a, br.b);
-        return { state: { root: replaceAt(loc.path.slice(0, -1), nb), nextId: state.nextId }, changed: true };
+        // The nearest visible divider: skip ancestors whose other side is collapsed.
+        const laid = currentRects(state.root!, input.ids, input);
+        for (let i = loc.path.length - 1; i >= 0; --i) {
+          const { branch: br, side } = loc.path[i];
+          if (hasDivider(br, laid)) return moveDivider(state, loc.path, i, laid, input, side === "a" ? cmd.delta : -cmd.delta, false);
+        }
+        return { state, changed: false, reason: "no divider" };
       }
       case "equalize":
         return transform(state, (br) => br.ratio === 0.5 ? br : branch(br.id, br.axis, 0.5, br.a, br.b), "already equal");
