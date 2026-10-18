@@ -24,6 +24,29 @@ Run the unit tests anywhere (no desktop needed): `python3 -m unittest discover -
 
 Nested dry-run results are summarized in [evidence/physical-kit-nested-dryrun.json](../status/evidence/physical-kit-nested-dryrun.json) (Ubuntu 26.10 sandbox, KWin 6.7.5, QPainter, synthetic 60 Hz timeline). The protocol-scale run (P02-quicktile and P03-ratio, 3 windows, 5 runs × 1000 samples each in randomized order) completed all 10,000 samples successfully; the summarizer reported p99 because each workload reached 5000 samples, produced a `pass` verdict, and Plastile's counters showed one write per window per command and no corrections. That exercises the whole pipeline end to end; as a nested measurement it says nothing about physical latency. A six-workload run (2 runs × 40 samples) covered every workload (all 480 samples successful; the P03-focus blocks issued zero solves and zero writes), and the key-delivery check is described in the table above.
 
+**Windowed nested runs on the reference machine's GPU (2026-10-18, layer `nested-windowed-gpu`).** With
+`PLASTILE_NESTED_HOST_DISPLAY=$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY`, `tools/nested.py` starts the nested KWin with its
+wayland backend: each nested output is a window on the running desktop, composited with OpenGL on the real GPU, and
+presented at the host output's rate (144 Hz on the reference machine); the bus, configuration and XDG directories stay
+private and the live KWin is never touched. This is still not a physical session: presentation is the nested KWin's
+timeline driven by the host compositor's frame callbacks, not scanout, and input comes through the nested KWin's EIS
+socket, not the kernel. Results:
+
+- Latency kit (P6 workloads, 4 windows, 5 runs × 1000 samples each, 30,000 taps, all successful): every Plastile
+  workload `pass` against its matched baseline and the controls. Median input-to-first-present: P03-ratio 10.27 ms and
+  P03-swap 10.11 ms against P02-quicktile 13.22 ms; P03-focus 14.03 ms against P00-switch 13.72 ms. One P03-focus block
+  issued one solve and zero writes (a `CHECK:` line; the cause was not captured, the trace having rolled over).
+  [evidence](../status/evidence/latency-windowed-gpu-20261018T042052.json)
+- Key delivery (P7, default bindings): 19 of 19 bound chords reached Plastile.
+  [evidence](../status/evidence/keys-windowed-gpu-20261018T041604.json)
+- Scenarios (P3/P5 and GL-only checks): real applications (Dolphin, System Settings, GNOME Calculator on Wayland and
+  X11, Alacritty, Firefox, Chromium, xmessage, zenity), panels from a real `plasmashell` (`plasmashell-panels-O07`),
+  the GL tile editor (`native-editor-toggle-L14`), drags, resizes and idle passed.
+  [evidence](../status/evidence/integration-windowed-gpu-20261018.json)
+- Not coverable this way: fractional scale (the wayland backend reports scale 1 even with `--scale`, and ignores
+  kscreen-doctor scale changes), real monitors and refresh rates, cable unplug, system suspend, and the user's own
+  panels, activities, keymap and applications.
+
 A uinput device cannot reach a nested virtual-backend KWin: kernel input goes to the compositor of the physical seat. That is why the uinput backend refuses to start when the compositor serving `WAYLAND_DISPLAY` runs with `--virtual`, `--wayland-display` or `--x11-display`, and why the nested dry run substitutes the libei backend.
 
 ## 2. Prerequisites

@@ -1,0 +1,241 @@
+{
+ "results": [
+  {
+   "action": "plastile.focus.down",
+   "sequence": "Meta+Shift+J",
+   "mods": [
+    125,
+    42
+   ],
+   "key": 36,
+   "tInputNs": 53894606326295,
+   "delivered": true,
+   "countersUnavailable": null
+  },
+  {
+   "action": "plastile.focus.left",
+   "sequence": "Meta+Shift+H",
+   "mods": [
+    125,
+    42
+   ],
+   "key": 35,
+   "tInputNs": 53895049140997,
+   "delivered": true,
+   "countersUnavailable": null
+  },
+  {
+   "action": "plastile.focus.next",
+   "sequence": "Meta+Shift+N",
+   "mods": [
+    125,
+    42
+   ],
+   "key": 49,
+   "tInputNs": 53895492136868,
+   "delivered": true,
+   "countersUnavailable": null
+  },
+  {
+   "action": "plastile.focus.previous",
+   "sequence": "Meta+Shift+P",
+   "mods": [
+    125,
+    42
+   ],
+   "key": 25,
+   "tInputNs": 53895934925410,
+   "delivered": true,
+   "countersUnavailable": null
+  },
+  {
+   "action": "plastile.focus.right",
+   "sequence": "Meta+Shift+L",
+   "mods": [
+    125,
+    42
+   ],
+   "key": 38,
+   "tInputNs": 53896377864722,
+   "delivered": true,
+   "countersUnavailable": null
+  },
+  {
+   "action": "plastile.focus.up",
+   "sequence": "Meta+Shift+K",
+   "mods": [
+    125,
+    42
+   ],
+   "key": 37,
+   "tInputNs": 53896820788755,
+   "delivered": true,
+   "countersUnavailable": null
+  },
+  {
+   "action": "plastile.layout.monocle",
+   "sequence": "Meta+Shift+M",
+   "mods": [
+    125,
+    42
+   ],
+   "key": 50,
+   "tInputNs": 53897263697938,
+   "delivered": true,
+   "countersUnavailable": null
+  },
+  {
+   "action": "plastile.layout.next",
+   "sequence": "Meta+Shift+Space",
+   "mods": [
+    125,
+    42
+   ],
+   "key": 57,
+   "tInputNs": 53897706196981,
+   "delivered": true,
+   "countersUnavailable": null
+  },
+  {
+   "action": "plastile.master.decrease",
+   "sequence": "Meta+Shift+D",
+   "mods": [
+    125,
+    42
+   ],
+   "key": 32,
+   "tInputNs": 53898149087954,
+   "delivered": true,
+   "countersUnavailable": null
+  },
+  {
+   "action": "plastile.master.increase",
+   "sequence": "Meta+Shift+I",
+   "mods": [
+    125,
+    42
+   ],
+   "key": 23,
+   "tInputNs": 53898592012298,
+   "delivered": true,
+   "countersUnavailable": null
+  },
+  {
+   "action": "plastile.move.output-next",
+   "sequence": "Meta+Shift+O",
+   "mods": [
+    125,
+    42
+   ],
+   "key": 24,
+   "tInputNs": 53899034819792,
+   "delivered": true,
+   "countersUnavailable": null
+  },
+  {
+   "action": "plastile.resize.grow",
+   "sequence": "Meta+Ctrl+=",
+   "mods": [
+    125,
+    29
+   ],
+   "key": 13,
+   "tInputNs": 53899477538716,
+   "delivered": true,
+   "countersUnavailable": null
+  },
+  {
+   "action": "plastile.resize.shrink",
+   "sequence": "Meta+Ctrl+-",
+   "mods": [
+    125,
+    29
+   ],
+   "key": 12,
+   "tInputNs": 53899920394900,
+   "delivered": true,
+   "countersUnavailable": null
+  },
+  {
+   "action": "plastile.swap.down",
+   "sequence": "Meta+Ctrl+J",
+   "mods": [
+    125,
+    29
+   ],
+   "key": 36,
+   "tInputNs": 53900363437415,
+   "delivered": true,
+   "countersUnavailable": null
+  },
+  {
+   "action": "plastile.swap.left",
+   "sequence": "Meta+Ctrl+H",
+   "mods": [
+    125,
+    29
+   ],
+   "key": 35,
+   "tInputNs": 53900806410790,
+   "delivered": true,
+   "countersUnavailable": null
+  },
+  {
+   "action": "plastile.swap.master",
+   "sequence": "Meta+Shift+Return",
+   "mods": [
+    125,
+    42
+   ],
+   "key": 28,
+   "tInputNs": 53901249236074,
+   "delivered": true,
+   "countersUnavailable": null
+  },
+  {
+   "action": "plastile.swap.right",
+   "sequence": "Meta+Ctrl+L",
+   "mods": [
+    125,
+    29
+   ],
+   "key": 38,
+   "tInputNs": 53901692229450,
+   "delivered": true,
+   "countersUnavailable": null
+  },
+  {
+   "action": "plastile.swap.up",
+   "sequence": "Meta+Ctrl+K",
+   "mods": [
+    125,
+    29
+   ],
+   "key": 37,
+   "tInputNs": 53902134937985,
+   "delivered": true,
+   "countersUnavailable": null
+  },
+  {
+   "action": "plastile.window.toggle-float",
+   "sequence": "Meta+Shift+F",
+   "mods": [
+    125,
+    42
+   ],
+   "key": 33,
+   "tInputNs": 53902577920311,
+   "delivered": true,
+   "countersUnavailable": null
+  }
+ ],
+ "skipped": [
+  {
+   "action": "plastile.runtime.toggle-suspend",
+   "sequence": "Meta+Ctrl+S",
+   "reason": "excluded: test by hand"
+  }
+ ],
+ "notDelivered": [],
+ "unknown": []
+}

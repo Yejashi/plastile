@@ -1,0 +1,2441 @@
+{
+ "definitions": {
+  "quantile": "nearest-rank",
+  "ci": "percentile bootstrap over runs (blocks)",
+  "bootstrapResamples": 500,
+  "seed": 60,
+  "p99MinSamples": 5000,
+  "minRuns": 5,
+  "verdictRule": "PERFORMANCE section 4: median diff < 1 interval and p95 diff <= 1 interval vs matched baseline"
+ },
+ "groups": [
+  {
+   "layer": "nested-windowed-gpu",
+   "workload": "P00-maximize",
+   "condition": "none",
+   "outputName": "WL-0",
+   "refreshHzDeclared": 143.99899291992188,
+   "windowCount": 4,
+   "samples": 5000,
+   "successes": 5000,
+   "successRate": 1.0,
+   "runs": 5,
+   "failures": {},
+   "refreshNsObservedMedian": 6944492,
+   "metrics": {
+    "inputToFirstPresentNs": {
+     "pooled": {
+      "n": 5000,
+      "median": 12983875,
+      "p95": 16108256,
+      "p99": 16904449,
+      "max": 22381574,
+      "min": 8509996
+     },
+     "ci95ByRun": {
+      "median": [
+       12637381,
+       13146930
+      ],
+      "p95": [
+       15991174,
+       16211692
+      ],
+      "p99": [
+       16262521,
+       17090250
+      ]
+     },
+     "perRun": {
+      "run1": {
+       "n": 1000,
+       "median": 13274281,
+       "p95": 16284375,
+       "p99": null,
+       "max": 22381574,
+       "min": 8509996,
+       "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+      },
+      "run2": {
+       "n": 1000,
+       "median": 13071550,
+       "p95": 16171162,
+       "p99": null,
+       "max": 17276359,
+       "min": 9350485,
+       "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+      },
+      "run3": {
+       "n": 1000,
+       "median": 13031011,
+       "p95": 16113823,
+       "p99": null,
+       "max": 22364667,
+       "min": 8721268,
+       "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+      },
+      "run4": {
+       "n": 1000,
+       "median": 12863608,
+       "p95": 15939777,
+       "p99": null,
+       "max": 16293041,
+       "min": 8535983,
+       "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+      },
+      "run5": {
+       "n": 1000,
+       "median": 12516888,
+       "p95": 15970971,
+       "p99": null,
+       "max": 21362582,
+       "min": 8529681,
+       "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+      }
+     }
+    },
+    "inputToSettledNs": {
+     "pooled": {
+      "n": 5000,
+      "median": 12983875,
+      "p95": 16108256,
+      "p99": 16904449,
+      "max": 22381574,
+      "min": 8509996
+     },
+     "ci95ByRun": {
+      "median": [
+       12691512,
+       13163515
+      ],
+      "p95": [
+       15991174,
+       16211692
+      ],
+      "p99": [
+       16262521,
+       17087787
+      ]
+     },
+     "perRun": {
+      "run1": {
+       "n": 1000,
+       "median": 13274281,
+       "p95": 16284375,
+       "p99": null,
+       "max": 22381574,
+       "min": 8509996,
+       "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+      },
+      "run2": {
+       "n": 1000,
+       "median": 13071550,
+       "p95": 16171162,
+       "p99": null,
+       "max": 17276359,
+       "min": 9350485,
+       "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+      },
+      "run3": {
+       "n": 1000,
+       "median": 13031011,
+       "p95": 16113823,
+       "p99": null,
+       "max": 22364667,
+       "min": 8721268,
+       "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+      },
+      "run4": {
+       "n": 1000,
+       "median": 12863608,
+       "p95": 15939777,
+       "p99": null,
+       "max": 16293041,
+       "min": 8535983,
+       "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+      },
+      "run5": {
+       "n": 1000,
+       "median": 12516888,
+       "p95": 15970971,
+       "p99": null,
+       "max": 21362582,
+       "min": 8529681,
+       "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+      }
+     }
+    }
+   },
+   "protocol": {
+    "runs": 5,
+    "minRuns": 5,
+    "pooledSuccesses": 5000,
+    "minSamplesForP99": 5000,
+    "met": true
+   }
+  },
+  {
+   "layer": "nested-windowed-gpu",
+   "workload": "P00-switch",
+   "condition": "none",
+   "outputName": "WL-0",
+   "refreshHzDeclared": 143.99899291992188,
+   "windowCount": 4,
+   "samples": 5000,
+   "successes": 5000,
+   "successRate": 1.0,
+   "runs": 5,
+   "failures": {},
+   "refreshNsObservedMedian": 6944492,
+   "metrics": {
+    "inputToFirstPresentNs": {
+     "pooled": {
+      "n": 5000,
+      "median": 13723417,
+      "p95": 16988468,
+      "p99": 17734089,
+      "max": 22877375,
+      "min": 9169208
+     },
+     "ci95ByRun": {
+      "median": [
+       13620869,
+       13840992
+      ],
+      "p95": [
+       16974742,
+       17010458
+      ],
+      "p99": [
+       17668010,
+       17769348
+      ]
+     },
+     "perRun": {
+      "run1": {
+       "n": 1000,
+       "median": 13678358,
+       "p95": 16993590,
+       "p99": null,
+       "max": 21621097,
+       "min": 9721193,
+       "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+      },
+      "run2": {
+       "n": 1000,
+       "median": 13917188,
+       "p95": 17019372,
+       "p99": null,
+       "max": 18095991,
+       "min": 9592390,
+       "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+      },
+      "run3": {
+       "n": 1000,
+       "median": 13849121,
+       "p95": 16973382,
+       "p99": null,
+       "max": 18441187,
+       "min": 9249890,
+       "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+      },
+      "run4": {
+       "n": 1000,
+       "median": 13532910,
+       "p95": 16974735,
+       "p99": null,
+       "max": 22877375,
+       "min": 9298303,
+       "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+      },
+      "run5": {
+       "n": 1000,
+       "median": 13618591,
+       "p95": 16993402,
+       "p99": null,
+       "max": 22439956,
+       "min": 9169208,
+       "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+      }
+     }
+    },
+    "inputToSettledNs": {
+     "pooled": {
+      "n": 5000,
+      "median": 13773182,
+      "p95": 17034954,
+      "p99": 17800139,
+      "max": 22877375,
+      "min": 9234551
+     },
+     "ci95ByRun": {
+      "median": [
+       13669834,
+       13888665
+      ],
+      "p95": [
+       17007077,
+       17053293
+      ],
+      "p99": [
+       17758271,
+       17862993
+      ]
+     },
+     "perRun": {
+      "run1": {
+       "n": 1000,
+       "median": 13746888,
+       "p95": 17027237,
+       "p99": null,
+       "max": 21621097,
+       "min": 9721193,
+       "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+      },
+      "run2": {
+       "n": 1000,
+       "median": 13973204,
+       "p95": 17081536,
+       "p99": null,
+       "max": 18095991,
+       "min": 9592390,
+       "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+      },
+      "run3": {
+       "n": 1000,
+       "median": 13903282,
+       "p95": 16998230,
+       "p99": null,
+       "max": 18441187,
+       "min": 9249890,
+       "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+      },
+      "run4": {
+       "n": 1000,
+       "median": 13609210,
+       "p95": 16994005,
+       "p99": null,
+       "max": 22877375,
+       "min": 9298303,
+       "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+      },
+      "run5": {
+       "n": 1000,
+       "median": 13682009,
+       "p95": 17045168,
+       "p99": null,
+       "max": 22439956,
+       "min": 9234551,
+       "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+      }
+     }
+    }
+   },
+   "protocol": {
+    "runs": 5,
+    "minRuns": 5,
+    "pooledSuccesses": 5000,
+    "minSamplesForP99": 5000,
+    "met": true
+   }
+  },
+  {
+   "layer": "nested-windowed-gpu",
+   "workload": "P02-quicktile",
+   "condition": "none",
+   "outputName": "WL-0",
+   "refreshHzDeclared": 143.99899291992188,
+   "windowCount": 4,
+   "samples": 5000,
+   "successes": 5000,
+   "successRate": 1.0,
+   "runs": 5,
+   "failures": {},
+   "refreshNsObservedMedian": 6944492,
+   "metrics": {
+    "inputToFirstPresentNs": {
+     "pooled": {
+      "n": 5000,
+      "median": 13221015,
+      "p95": 18355027,
+      "p99": 19777871,
+      "max": 24216150,
+      "min": 3263342
+     },
+     "ci95ByRun": {
+      "median": [
+       13122306,
+       13356499
+      ],
+      "p95": [
+       18176825,
+       18693365
+      ],
+      "p99": [
+       19424457,
+       20070041
+      ]
+     },
+     "perRun": {
+      "run1": {
+       "n": 1000,
+       "median": 13870268,
+       "p95": 18094906,
+       "p99": null,
+       "max": 24216150,
+       "min": 3263342,
+       "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+      },
+      "run2": {
+       "n": 1000,
+       "median": 13340887,
+       "p95": 18170837,
+       "p99": null,
+       "max": 22627352,
+       "min": 3800273,
+       "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+      },
+      "run3": {
+       "n": 1000,
+       "median": 13142005,
+       "p95": 18674510,
+       "p99": null,
+       "max": 20932409,
+       "min": 5071138,
+       "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+      },
+      "run4": {
+       "n": 1000,
+       "median": 13142812,
+       "p95": 18738594,
+       "p99": null,
+       "max": 22835205,
+       "min": 4986719,
+       "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+      },
+      "run5": {
+       "n": 1000,
+       "median": 13037937,
+       "p95": 18334088,
+       "p99": null,
+       "max": 22276100,
+       "min": 5002141,
+       "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+      }
+     }
+    },
+    "inputToSettledNs": {
+     "pooled": {
+      "n": 5000,
+      "median": 13221015,
+      "p95": 18355027,
+      "p99": 19777871,
+      "max": 24216150,
+      "min": 3263342
+     },
+     "ci95ByRun": {
+      "median": [
+       13131768,
+       13332873
+      ],
+      "p95": [
+       18157453,
+       18674510
+      ],
+      "p99": [
+       19424457,
+       20089221
+      ]
+     },
+     "perRun": {
+      "run1": {
+       "n": 1000,
+       "median": 13870268,
+       "p95": 18094906,
+       "p99": null,
+       "max": 24216150,
+       "min": 3263342,
+       "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+      },
+      "run2": {
+       "n": 1000,
+       "median": 13340887,
+       "p95": 18170837,
+       "p99": null,
+       "max": 22627352,
+       "min": 3800273,
+       "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+      },
+      "run3": {
+       "n": 1000,
+       "median": 13142005,
+       "p95": 18674510,
+       "p99": null,
+       "max": 20932409,
+       "min": 5071138,
+       "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+      },
+      "run4": {
+       "n": 1000,
+       "median": 13142812,
+       "p95": 18738594,
+       "p99": null,
+       "max": 22835205,
+       "min": 4986719,
+       "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+      },
+      "run5": {
+       "n": 1000,
+       "median": 13037937,
+       "p95": 18334088,
+       "p99": null,
+       "max": 22276100,
+       "min": 5002141,
+       "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+      }
+     }
+    }
+   },
+   "protocol": {
+    "runs": 5,
+    "minRuns": 5,
+    "pooledSuccesses": 5000,
+    "minSamplesForP99": 5000,
+    "met": true
+   }
+  },
+  {
+   "layer": "nested-windowed-gpu",
+   "workload": "P03-focus",
+   "condition": "plastile",
+   "outputName": "WL-0",
+   "refreshHzDeclared": 143.99899291992188,
+   "windowCount": 4,
+   "samples": 5000,
+   "successes": 5000,
+   "successRate": 1.0,
+   "runs": 5,
+   "failures": {},
+   "refreshNsObservedMedian": 6944492,
+   "metrics": {
+    "inputToFirstPresentNs": {
+     "pooled": {
+      "n": 5000,
+      "median": 14025056,
+      "p95": 17284895,
+      "p99": 18670351,
+      "max": 62885923,
+      "min": 9246856
+     },
+     "ci95ByRun": {
+      "median": [
+       13909637,
+       14134114
+      ],
+      "p95": [
+       17185161,
+       17520741
+      ],
+      "p99": [
+       18069961,
+       20665166
+      ]
+     },
+     "perRun": {
+      "run1": {
+       "n": 1000,
+       "median": 14043350,
+       "p95": 17185161,
+       "p99": null,
+       "max": 19598010,
+       "min": 9815921,
+       "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+      },
+      "run2": {
+       "n": 1000,
+       "median": 14194109,
+       "p95": 17805881,
+       "p99": null,
+       "max": 62885923,
+       "min": 9955323,
+       "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+      },
+      "run3": {
+       "n": 1000,
+       "median": 13950215,
+       "p95": 17180804,
+       "p99": null,
+       "max": 19270255,
+       "min": 9564309,
+       "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+      },
+      "run4": {
+       "n": 1000,
+       "median": 14114860,
+       "p95": 17253843,
+       "p99": null,
+       "max": 23287233,
+       "min": 9252908,
+       "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+      },
+      "run5": {
+       "n": 1000,
+       "median": 13767114,
+       "p95": 17182669,
+       "p99": null,
+       "max": 23295248,
+       "min": 9246856,
+       "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+      }
+     }
+    },
+    "inputToSettledNs": {
+     "pooled": {
+      "n": 5000,
+      "median": 14094392,
+      "p95": 17388338,
+      "p99": 18670351,
+      "max": 62885923,
+      "min": 9246856
+     },
+     "ci95ByRun": {
+      "median": [
+       13950511,
+       14210622
+      ],
+      "p95": [
+       17282315,
+       17681589
+      ],
+      "p99": [
+       18094099,
+       20211089
+      ]
+     },
+     "perRun": {
+      "run1": {
+       "n": 1000,
+       "median": 14089078,
+       "p95": 17292603,
+       "p99": null,
+       "max": 19598010,
+       "min": 9815921,
+       "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+      },
+      "run2": {
+       "n": 1000,
+       "median": 14230247,
+       "p95": 17926112,
+       "p99": null,
+       "max": 62885923,
+       "min": 9955323,
+       "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+      },
+      "run3": {
+       "n": 1000,
+       "median": 14025056,
+       "p95": 17322597,
+       "p99": null,
+       "max": 19270255,
+       "min": 9564309,
+       "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+      },
+      "run4": {
+       "n": 1000,
+       "median": 14217277,
+       "p95": 17374870,
+       "p99": null,
+       "max": 23287233,
+       "min": 9865861,
+       "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+      },
+      "run5": {
+       "n": 1000,
+       "median": 13857090,
+       "p95": 17247709,
+       "p99": null,
+       "max": 23295248,
+       "min": 9246856,
+       "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+      }
+     }
+    }
+   },
+   "protocol": {
+    "runs": 5,
+    "minRuns": 5,
+    "pooledSuccesses": 5000,
+    "minSamplesForP99": 5000,
+    "met": true
+   }
+  },
+  {
+   "layer": "nested-windowed-gpu",
+   "workload": "P03-ratio",
+   "condition": "plastile",
+   "outputName": "WL-0",
+   "refreshHzDeclared": 143.99899291992188,
+   "windowCount": 4,
+   "samples": 5000,
+   "successes": 5000,
+   "successRate": 1.0,
+   "runs": 5,
+   "failures": {},
+   "refreshNsObservedMedian": 6944492,
+   "metrics": {
+    "inputToFirstPresentNs": {
+     "pooled": {
+      "n": 5000,
+      "median": 10267569,
+      "p95": 14197383,
+      "p99": 15243628,
+      "max": 116777381,
+      "min": 2524130
+     },
+     "ci95ByRun": {
+      "median": [
+       10137531,
+       10432302
+      ],
+      "p95": [
+       14146189,
+       14272736
+      ],
+      "p99": [
+       14572250,
+       16065321
+      ]
+     },
+     "perRun": {
+      "run1": {
+       "n": 1000,
+       "median": 9923481,
+       "p95": 14124647,
+       "p99": null,
+       "max": 19868254,
+       "min": 2524130,
+       "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+      },
+      "run2": {
+       "n": 1000,
+       "median": 10352367,
+       "p95": 14438956,
+       "p99": null,
+       "max": 21167113,
+       "min": 3919205,
+       "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+      },
+      "run3": {
+       "n": 1000,
+       "median": 10268750,
+       "p95": 14137889,
+       "p99": null,
+       "max": 23379068,
+       "min": 4032088,
+       "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+      },
+      "run4": {
+       "n": 1000,
+       "median": 10330711,
+       "p95": 14227804,
+       "p99": null,
+       "max": 116777381,
+       "min": 4260269,
+       "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+      },
+      "run5": {
+       "n": 1000,
+       "median": 10746713,
+       "p95": 14200457,
+       "p99": null,
+       "max": 20015619,
+       "min": 4427861,
+       "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+      }
+     }
+    },
+    "inputToSettledNs": {
+     "pooled": {
+      "n": 5000,
+      "median": 14238678,
+      "p95": 19621737,
+      "p99": 21030954,
+      "max": 116777381,
+      "min": 5057210
+     },
+     "ci95ByRun": {
+      "median": [
+       14164012,
+       14356218
+      ],
+      "p95": [
+       19239448,
+       19801648
+      ],
+      "p99": [
+       20895725,
+       21078857
+      ]
+     },
+     "perRun": {
+      "run1": {
+       "n": 1000,
+       "median": 14302107,
+       "p95": 19139274,
+       "p99": null,
+       "max": 22167678,
+       "min": 5057210,
+       "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+      },
+      "run2": {
+       "n": 1000,
+       "median": 14640197,
+       "p95": 19891579,
+       "p99": null,
+       "max": 21494656,
+       "min": 6724277,
+       "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+      },
+      "run3": {
+       "n": 1000,
+       "median": 14121229,
+       "p95": 19702126,
+       "p99": null,
+       "max": 24150941,
+       "min": 6924673,
+       "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+      },
+      "run4": {
+       "n": 1000,
+       "median": 14290961,
+       "p95": 19788410,
+       "p99": null,
+       "max": 116777381,
+       "min": 6917120,
+       "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+      },
+      "run5": {
+       "n": 1000,
+       "median": 14154900,
+       "p95": 19576445,
+       "p99": null,
+       "max": 24088377,
+       "min": 6625473,
+       "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+      }
+     }
+    }
+   },
+   "protocol": {
+    "runs": 5,
+    "minRuns": 5,
+    "pooledSuccesses": 5000,
+    "minSamplesForP99": 5000,
+    "met": true
+   }
+  },
+  {
+   "layer": "nested-windowed-gpu",
+   "workload": "P03-swap",
+   "condition": "plastile",
+   "outputName": "WL-0",
+   "refreshHzDeclared": 143.99899291992188,
+   "windowCount": 4,
+   "samples": 5000,
+   "successes": 5000,
+   "successRate": 1.0,
+   "runs": 5,
+   "failures": {},
+   "refreshNsObservedMedian": 6944492,
+   "metrics": {
+    "inputToFirstPresentNs": {
+     "pooled": {
+      "n": 5000,
+      "median": 10112721,
+      "p95": 14146905,
+      "p99": 14429445,
+      "max": 20189680,
+      "min": 2163038
+     },
+     "ci95ByRun": {
+      "median": [
+       9750145,
+       10264433
+      ],
+      "p95": [
+       14136830,
+       14162455
+      ],
+      "p99": [
+       14353569,
+       14506174
+      ]
+     },
+     "perRun": {
+      "run1": {
+       "n": 1000,
+       "median": 9343375,
+       "p95": 14115877,
+       "p99": null,
+       "max": 15706643,
+       "min": 3171105,
+       "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+      },
+      "run2": {
+       "n": 1000,
+       "median": 9701753,
+       "p95": 14144602,
+       "p99": null,
+       "max": 20189680,
+       "min": 2163038,
+       "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+      },
+      "run3": {
+       "n": 1000,
+       "median": 10219601,
+       "p95": 14143271,
+       "p99": null,
+       "max": 15543643,
+       "min": 4085210,
+       "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+      },
+      "run4": {
+       "n": 1000,
+       "median": 10206805,
+       "p95": 14154828,
+       "p99": null,
+       "max": 16970180,
+       "min": 4084981,
+       "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+      },
+      "run5": {
+       "n": 1000,
+       "median": 10320764,
+       "p95": 14163002,
+       "p99": null,
+       "max": 15876803,
+       "min": 4263186,
+       "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+      }
+     }
+    },
+    "inputToSettledNs": {
+     "pooled": {
+      "n": 5000,
+      "median": 13359061,
+      "p95": 19050346,
+      "p99": 20172415,
+      "max": 23914180,
+      "min": 4215410
+     },
+     "ci95ByRun": {
+      "median": [
+       13215899,
+       13855145
+      ],
+      "p95": [
+       18983023,
+       19112160
+      ],
+      "p99": [
+       20117331,
+       20263426
+      ]
+     },
+     "perRun": {
+      "run1": {
+       "n": 1000,
+       "median": 13660329,
+       "p95": 19055456,
+       "p99": null,
+       "max": 21890549,
+       "min": 4215410,
+       "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+      },
+      "run2": {
+       "n": 1000,
+       "median": 14070832,
+       "p95": 19065589,
+       "p99": null,
+       "max": 21070176,
+       "min": 5177449,
+       "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+      },
+      "run3": {
+       "n": 1000,
+       "median": 13190739,
+       "p95": 19051059,
+       "p99": null,
+       "max": 20487747,
+       "min": 5576440,
+       "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+      },
+      "run4": {
+       "n": 1000,
+       "median": 13347666,
+       "p95": 18859878,
+       "p99": null,
+       "max": 23914180,
+       "min": 5887865,
+       "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+      },
+      "run5": {
+       "n": 1000,
+       "median": 13221165,
+       "p95": 19141033,
+       "p99": null,
+       "max": 22819803,
+       "min": 5782719,
+       "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+      }
+     }
+    }
+   },
+   "protocol": {
+    "runs": 5,
+    "minRuns": 5,
+    "pooledSuccesses": 5000,
+    "minSamplesForP99": 5000,
+    "met": true
+   }
+  }
+ ],
+ "comparisons": [
+  {
+   "candidate": "P03-swap",
+   "baseline": "P00-maximize",
+   "layer": "nested-windowed-gpu",
+   "outputName": "WL-0",
+   "refreshHzDeclared": 143.99899291992188,
+   "windowCount": 4,
+   "metric": "inputToFirstPresentNs",
+   "thresholdNs": 6944492,
+   "matchedBaseline": false,
+   "medianDiffNs": -2871154,
+   "medianDiffCi95": [
+    -3273481,
+    -2555327
+   ],
+   "p95DiffNs": -1961351,
+   "p95DiffCi95": [
+    -2063394,
+    -1848125
+   ],
+   "protocolMet": true,
+   "medianRule": "pass",
+   "p95Rule": "pass",
+   "verdict": "pass"
+  },
+  {
+   "candidate": "P03-swap",
+   "baseline": "P02-quicktile",
+   "layer": "nested-windowed-gpu",
+   "outputName": "WL-0",
+   "refreshHzDeclared": 143.99899291992188,
+   "windowCount": 4,
+   "metric": "inputToFirstPresentNs",
+   "thresholdNs": 6944492,
+   "matchedBaseline": true,
+   "medianDiffNs": -3108294,
+   "medianDiffCi95": [
+    -3480706,
+    -2931144
+   ],
+   "p95DiffNs": -4208122,
+   "p95DiffCi95": [
+    -4556995,
+    -4038397
+   ],
+   "protocolMet": true,
+   "medianRule": "pass",
+   "p95Rule": "pass",
+   "verdict": "pass"
+  },
+  {
+   "candidate": "P03-swap",
+   "baseline": "P00-switch",
+   "layer": "nested-windowed-gpu",
+   "outputName": "WL-0",
+   "refreshHzDeclared": 143.99899291992188,
+   "windowCount": 4,
+   "metric": "inputToFirstPresentNs",
+   "thresholdNs": 6944492,
+   "matchedBaseline": false,
+   "medianDiffNs": -3610696,
+   "medianDiffCi95": [
+    -3930866,
+    -3437611
+   ],
+   "p95DiffNs": -2841563,
+   "p95DiffCi95": [
+    -2863410,
+    -2818985
+   ],
+   "protocolMet": true,
+   "medianRule": "pass",
+   "p95Rule": "pass",
+   "verdict": "pass"
+  },
+  {
+   "candidate": "P03-ratio",
+   "baseline": "P00-maximize",
+   "layer": "nested-windowed-gpu",
+   "outputName": "WL-0",
+   "refreshHzDeclared": 143.99899291992188,
+   "windowCount": 4,
+   "metric": "inputToFirstPresentNs",
+   "thresholdNs": 6944492,
+   "matchedBaseline": false,
+   "medianDiffNs": -2716306,
+   "medianDiffCi95": [
+    -2946673,
+    -2367775
+   ],
+   "p95DiffNs": -1910873,
+   "p95DiffCi95": [
+    -2036618,
+    -1765428
+   ],
+   "protocolMet": true,
+   "medianRule": "pass",
+   "p95Rule": "pass",
+   "verdict": "pass"
+  },
+  {
+   "candidate": "P03-ratio",
+   "baseline": "P02-quicktile",
+   "layer": "nested-windowed-gpu",
+   "outputName": "WL-0",
+   "refreshHzDeclared": 143.99899291992188,
+   "windowCount": 4,
+   "metric": "inputToFirstPresentNs",
+   "thresholdNs": 6944492,
+   "matchedBaseline": true,
+   "medianDiffNs": -2953446,
+   "medianDiffCi95": [
+    -3130585,
+    -2754005
+   ],
+   "p95DiffNs": -4157644,
+   "p95DiffCi95": [
+    -4494565,
+    -3973038
+   ],
+   "protocolMet": true,
+   "medianRule": "pass",
+   "p95Rule": "pass",
+   "verdict": "pass"
+  },
+  {
+   "candidate": "P03-ratio",
+   "baseline": "P00-switch",
+   "layer": "nested-windowed-gpu",
+   "outputName": "WL-0",
+   "refreshHzDeclared": 143.99899291992188,
+   "windowCount": 4,
+   "metric": "inputToFirstPresentNs",
+   "thresholdNs": 6944492,
+   "matchedBaseline": false,
+   "medianDiffNs": -3455848,
+   "medianDiffCi95": [
+    -3650125,
+    -3235351
+   ],
+   "p95DiffNs": -2791085,
+   "p95DiffCi95": [
+    -2847401,
+    -2716367
+   ],
+   "protocolMet": true,
+   "medianRule": "pass",
+   "p95Rule": "pass",
+   "verdict": "pass"
+  },
+  {
+   "candidate": "P03-focus",
+   "baseline": "P00-maximize",
+   "layer": "nested-windowed-gpu",
+   "outputName": "WL-0",
+   "refreshHzDeclared": 143.99899291992188,
+   "windowCount": 4,
+   "metric": "inputToFirstPresentNs",
+   "thresholdNs": 6944492,
+   "matchedBaseline": false,
+   "medianDiffNs": 1041181,
+   "medianDiffCi95": [
+    814756,
+    1373282
+   ],
+   "p95DiffNs": 1176639,
+   "p95DiffCi95": [
+    1011859,
+    1495204
+   ],
+   "protocolMet": true,
+   "medianRule": "pass",
+   "p95Rule": "pass",
+   "verdict": "pass"
+  },
+  {
+   "candidate": "P03-focus",
+   "baseline": "P02-quicktile",
+   "layer": "nested-windowed-gpu",
+   "outputName": "WL-0",
+   "refreshHzDeclared": 143.99899291992188,
+   "windowCount": 4,
+   "metric": "inputToFirstPresentNs",
+   "thresholdNs": 6944492,
+   "matchedBaseline": false,
+   "medianDiffNs": 804041,
+   "medianDiffCi95": [
+    624493,
+    957170
+   ],
+   "p95DiffNs": -1070132,
+   "p95DiffCi95": [
+    -1457695,
+    -765186
+   ],
+   "protocolMet": true,
+   "medianRule": "pass",
+   "p95Rule": "pass",
+   "verdict": "pass"
+  },
+  {
+   "candidate": "P03-focus",
+   "baseline": "P00-switch",
+   "layer": "nested-windowed-gpu",
+   "outputName": "WL-0",
+   "refreshHzDeclared": 143.99899291992188,
+   "windowCount": 4,
+   "metric": "inputToFirstPresentNs",
+   "thresholdNs": 6944492,
+   "matchedBaseline": true,
+   "medianDiffNs": 301639,
+   "medianDiffCi95": [
+    126559,
+    452105
+   ],
+   "p95DiffNs": 296427,
+   "p95DiffCi95": [
+    186507,
+    560720
+   ],
+   "protocolMet": true,
+   "medianRule": "pass",
+   "p95Rule": "pass",
+   "verdict": "pass"
+  }
+ ],
+ "warmup": [
+  {
+   "layer": "nested-windowed-gpu",
+   "workload": "P03-swap",
+   "condition": "plastile",
+   "outputName": "WL-0",
+   "refreshHzDeclared": 143.99899291992188,
+   "windowCount": 4,
+   "samples": 250,
+   "successes": 250,
+   "inputToFirstPresentNs": {
+    "n": 250,
+    "median": 9292083,
+    "p95": 13298264,
+    "p99": null,
+    "max": 14340333,
+    "min": 3336162,
+    "p99WithheldReason": "n=250 < 5000 (PERFORMANCE section 6.5)"
+   }
+  },
+  {
+   "layer": "nested-windowed-gpu",
+   "workload": "P00-maximize",
+   "condition": "none",
+   "outputName": "WL-0",
+   "refreshHzDeclared": 143.99899291992188,
+   "windowCount": 4,
+   "samples": 250,
+   "successes": 250,
+   "inputToFirstPresentNs": {
+    "n": 250,
+    "median": 13616876,
+    "p95": 17178221,
+    "p99": null,
+    "max": 19028704,
+    "min": 7958016,
+    "p99WithheldReason": "n=250 < 5000 (PERFORMANCE section 6.5)"
+   }
+  },
+  {
+   "layer": "nested-windowed-gpu",
+   "workload": "P03-ratio",
+   "condition": "plastile",
+   "outputName": "WL-0",
+   "refreshHzDeclared": 143.99899291992188,
+   "windowCount": 4,
+   "samples": 250,
+   "successes": 250,
+   "inputToFirstPresentNs": {
+    "n": 250,
+    "median": 10286909,
+    "p95": 15302379,
+    "p99": null,
+    "max": 22239258,
+    "min": 3065723,
+    "p99WithheldReason": "n=250 < 5000 (PERFORMANCE section 6.5)"
+   }
+  },
+  {
+   "layer": "nested-windowed-gpu",
+   "workload": "P02-quicktile",
+   "condition": "none",
+   "outputName": "WL-0",
+   "refreshHzDeclared": 143.99899291992188,
+   "windowCount": 4,
+   "samples": 250,
+   "successes": 250,
+   "inputToFirstPresentNs": {
+    "n": 250,
+    "median": 14239589,
+    "p95": 19570121,
+    "p99": null,
+    "max": 23236236,
+    "min": 4018914,
+    "p99WithheldReason": "n=250 < 5000 (PERFORMANCE section 6.5)"
+   }
+  },
+  {
+   "layer": "nested-windowed-gpu",
+   "workload": "P03-focus",
+   "condition": "plastile",
+   "outputName": "WL-0",
+   "refreshHzDeclared": 143.99899291992188,
+   "windowCount": 4,
+   "samples": 250,
+   "successes": 250,
+   "inputToFirstPresentNs": {
+    "n": 250,
+    "median": 15188217,
+    "p95": 19044861,
+    "p99": null,
+    "max": 21851692,
+    "min": 10150875,
+    "p99WithheldReason": "n=250 < 5000 (PERFORMANCE section 6.5)"
+   }
+  },
+  {
+   "layer": "nested-windowed-gpu",
+   "workload": "P00-switch",
+   "condition": "none",
+   "outputName": "WL-0",
+   "refreshHzDeclared": 143.99899291992188,
+   "windowCount": 4,
+   "samples": 250,
+   "successes": 250,
+   "inputToFirstPresentNs": {
+    "n": 250,
+    "median": 15148099,
+    "p95": 18204915,
+    "p99": null,
+    "max": 19157533,
+    "min": 9208786,
+    "p99WithheldReason": "n=250 < 5000 (PERFORMANCE section 6.5)"
+   }
+  }
+ ],
+ "context": {
+  "layer": "nested-windowed-gpu",
+  "inputSource": "libei (the nested KWin's EIS socket) via plastile-keytap-ei",
+  "environmentId": "nested-windowed-kwin",
+  "outputName": "WL-0",
+  "refreshHzDeclared": 143.99899291992188,
+  "implementationCommit": "73947ed295281c67efd923c59a2d9ab868b01ba3",
+  "implementationDirty": false,
+  "clockResolutionNs": 1
+ },
+ "blocks": [
+  {
+   "index": 0,
+   "round": 0,
+   "workload": "P03-swap",
+   "condition": "plastile",
+   "windowCount": 4,
+   "outcome": "completed",
+   "taps": 1050,
+   "refreshNsObservedAtStart": 6944492,
+   "countersDelta": {
+    "solves": 1050,
+    "flushes": 0,
+    "commands": 1050,
+    "commandsQueued": 0,
+    "writes": 2100,
+    "corrections": 0,
+    "skipOutstanding": 0,
+    "skipNoop": 2100,
+    "skipDiverged": 0,
+    "observations": 2100,
+    "observationsDuringApply": 0,
+    "settled": 2100,
+    "stale": 0,
+    "superseded": 0,
+    "partial": 0,
+    "external": 0,
+    "learned": 0,
+    "accepted": 0,
+    "diverged": 0,
+    "deadlines": 0,
+    "overflow": 0,
+    "reclassified": 0,
+    "adopted": 0,
+    "removed": 0,
+    "staleEvents": 0,
+    "errors": 0,
+    "raises": 0,
+    "activations": 0,
+    "liveSolves": 0,
+    "restored": 0,
+    "restoreAmbiguous": 0,
+    "reparks": 0,
+    "invalidSlots": 0
+   },
+   "presentGrid": {
+    "intervals": 1528,
+    "aligned": 1528,
+    "alignedFraction": 1.0,
+    "residualP95Ns": 3016,
+    "residualMaxNs": 4096,
+    "refreshNs": 6944492
+   }
+  },
+  {
+   "index": 1,
+   "round": 0,
+   "workload": "P00-maximize",
+   "condition": "none",
+   "windowCount": 4,
+   "outcome": "completed",
+   "taps": 1050,
+   "refreshNsObservedAtStart": 6944492,
+   "countersDelta": null,
+   "presentGrid": {
+    "intervals": 1050,
+    "aligned": 1050,
+    "alignedFraction": 1.0,
+    "residualP95Ns": 3080,
+    "residualMaxNs": 4592,
+    "refreshNs": 6944492
+   }
+  },
+  {
+   "index": 2,
+   "round": 0,
+   "workload": "P03-ratio",
+   "condition": "plastile",
+   "windowCount": 4,
+   "outcome": "completed",
+   "taps": 1050,
+   "refreshNsObservedAtStart": 6944492,
+   "countersDelta": {
+    "solves": 1050,
+    "flushes": 0,
+    "commands": 1050,
+    "commandsQueued": 0,
+    "writes": 4200,
+    "corrections": 0,
+    "skipOutstanding": 0,
+    "skipNoop": 0,
+    "skipDiverged": 0,
+    "observations": 4200,
+    "observationsDuringApply": 0,
+    "settled": 4200,
+    "stale": 0,
+    "superseded": 0,
+    "partial": 0,
+    "external": 0,
+    "learned": 0,
+    "accepted": 0,
+    "diverged": 0,
+    "deadlines": 0,
+    "overflow": 0,
+    "reclassified": 0,
+    "adopted": 0,
+    "removed": 0,
+    "staleEvents": 0,
+    "errors": 0,
+    "raises": 0,
+    "activations": 0,
+    "liveSolves": 0,
+    "restored": 0,
+    "restoreAmbiguous": 0,
+    "reparks": 0,
+    "invalidSlots": 0
+   },
+   "presentGrid": {
+    "intervals": 1587,
+    "aligned": 1587,
+    "alignedFraction": 1.0,
+    "residualP95Ns": 3016,
+    "residualMaxNs": 4080,
+    "refreshNs": 6944492
+   }
+  },
+  {
+   "index": 3,
+   "round": 0,
+   "workload": "P02-quicktile",
+   "condition": "none",
+   "windowCount": 4,
+   "outcome": "completed",
+   "taps": 1051,
+   "refreshNsObservedAtStart": 6944492,
+   "countersDelta": null,
+   "presentGrid": {
+    "intervals": 1051,
+    "aligned": 1051,
+    "alignedFraction": 1.0,
+    "residualP95Ns": 3080,
+    "residualMaxNs": 4096,
+    "refreshNs": 6944492
+   }
+  },
+  {
+   "index": 4,
+   "round": 0,
+   "workload": "P03-focus",
+   "condition": "plastile",
+   "windowCount": 4,
+   "outcome": "completed",
+   "taps": 1050,
+   "refreshNsObservedAtStart": 6944492,
+   "countersDelta": {
+    "solves": 0,
+    "flushes": 0,
+    "commands": 1050,
+    "commandsQueued": 0,
+    "writes": 0,
+    "corrections": 0,
+    "skipOutstanding": 0,
+    "skipNoop": 0,
+    "skipDiverged": 0,
+    "observations": 0,
+    "observationsDuringApply": 0,
+    "settled": 0,
+    "stale": 0,
+    "superseded": 0,
+    "partial": 0,
+    "external": 0,
+    "learned": 0,
+    "accepted": 0,
+    "diverged": 0,
+    "deadlines": 0,
+    "overflow": 0,
+    "reclassified": 0,
+    "adopted": 0,
+    "removed": 0,
+    "staleEvents": 0,
+    "errors": 0,
+    "raises": 0,
+    "activations": 1050,
+    "liveSolves": 0,
+    "restored": 0,
+    "restoreAmbiguous": 0,
+    "reparks": 0,
+    "invalidSlots": 0
+   },
+   "presentGrid": {
+    "intervals": 1061,
+    "aligned": 1061,
+    "alignedFraction": 1.0,
+    "residualP95Ns": 3080,
+    "residualMaxNs": 4080,
+    "refreshNs": 6944492
+   }
+  },
+  {
+   "index": 5,
+   "round": 0,
+   "workload": "P00-switch",
+   "condition": "none",
+   "windowCount": 4,
+   "outcome": "completed",
+   "taps": 1050,
+   "refreshNsObservedAtStart": 6944492,
+   "countersDelta": null,
+   "presentGrid": {
+    "intervals": 1058,
+    "aligned": 1058,
+    "alignedFraction": 1.0,
+    "residualP95Ns": 2920,
+    "residualMaxNs": 4096,
+    "refreshNs": 6944492
+   }
+  },
+  {
+   "index": 6,
+   "round": 1,
+   "workload": "P02-quicktile",
+   "condition": "none",
+   "windowCount": 4,
+   "outcome": "completed",
+   "taps": 1051,
+   "refreshNsObservedAtStart": 6944492,
+   "countersDelta": null,
+   "presentGrid": {
+    "intervals": 1051,
+    "aligned": 1051,
+    "alignedFraction": 1.0,
+    "residualP95Ns": 3064,
+    "residualMaxNs": 4064,
+    "refreshNs": 6944492
+   }
+  },
+  {
+   "index": 7,
+   "round": 1,
+   "workload": "P03-swap",
+   "condition": "plastile",
+   "windowCount": 4,
+   "outcome": "completed",
+   "taps": 1050,
+   "refreshNsObservedAtStart": 6944492,
+   "countersDelta": {
+    "solves": 1050,
+    "flushes": 0,
+    "commands": 1050,
+    "commandsQueued": 0,
+    "writes": 2100,
+    "corrections": 0,
+    "skipOutstanding": 0,
+    "skipNoop": 2100,
+    "skipDiverged": 0,
+    "observations": 2100,
+    "observationsDuringApply": 0,
+    "settled": 2100,
+    "stale": 0,
+    "superseded": 0,
+    "partial": 0,
+    "external": 0,
+    "learned": 0,
+    "accepted": 0,
+    "diverged": 0,
+    "deadlines": 0,
+    "overflow": 0,
+    "reclassified": 0,
+    "adopted": 0,
+    "removed": 0,
+    "staleEvents": 0,
+    "errors": 0,
+    "raises": 0,
+    "activations": 0,
+    "liveSolves": 0,
+    "restored": 0,
+    "restoreAmbiguous": 0,
+    "reparks": 0,
+    "invalidSlots": 0
+   },
+   "presentGrid": {
+    "intervals": 1511,
+    "aligned": 1511,
+    "alignedFraction": 1.0,
+    "residualP95Ns": 3016,
+    "residualMaxNs": 4080,
+    "refreshNs": 6944492
+   }
+  },
+  {
+   "index": 8,
+   "round": 1,
+   "workload": "P00-maximize",
+   "condition": "none",
+   "windowCount": 4,
+   "outcome": "completed",
+   "taps": 1050,
+   "refreshNsObservedAtStart": 6944492,
+   "countersDelta": null,
+   "presentGrid": {
+    "intervals": 1050,
+    "aligned": 1050,
+    "alignedFraction": 1.0,
+    "residualP95Ns": 3096,
+    "residualMaxNs": 4096,
+    "refreshNs": 6944492
+   }
+  },
+  {
+   "index": 9,
+   "round": 1,
+   "workload": "P00-switch",
+   "condition": "none",
+   "windowCount": 4,
+   "outcome": "completed",
+   "taps": 1050,
+   "refreshNsObservedAtStart": 6944492,
+   "countersDelta": null,
+   "presentGrid": {
+    "intervals": 1059,
+    "aligned": 1059,
+    "alignedFraction": 1.0,
+    "residualP95Ns": 3064,
+    "residualMaxNs": 4572,
+    "refreshNs": 6944492
+   }
+  },
+  {
+   "index": 10,
+   "round": 1,
+   "workload": "P03-focus",
+   "condition": "plastile",
+   "windowCount": 4,
+   "outcome": "completed",
+   "taps": 1050,
+   "refreshNsObservedAtStart": 6944492,
+   "countersDelta": {
+    "solves": 1,
+    "flushes": 1,
+    "commands": 1050,
+    "commandsQueued": 0,
+    "writes": 0,
+    "corrections": 0,
+    "skipOutstanding": 0,
+    "skipNoop": 4,
+    "skipDiverged": 0,
+    "observations": 0,
+    "observationsDuringApply": 0,
+    "settled": 0,
+    "stale": 0,
+    "superseded": 0,
+    "partial": 0,
+    "external": 0,
+    "learned": 0,
+    "accepted": 0,
+    "diverged": 0,
+    "deadlines": 0,
+    "overflow": 0,
+    "reclassified": 0,
+    "adopted": 0,
+    "removed": 0,
+    "staleEvents": 0,
+    "errors": 0,
+    "raises": 0,
+    "activations": 1050,
+    "liveSolves": 0,
+    "restored": 0,
+    "restoreAmbiguous": 0,
+    "reparks": 0,
+    "invalidSlots": 0
+   },
+   "presentGrid": {
+    "intervals": 1061,
+    "aligned": 1061,
+    "alignedFraction": 1.0,
+    "residualP95Ns": 3064,
+    "residualMaxNs": 4096,
+    "refreshNs": 6944492
+   }
+  },
+  {
+   "index": 11,
+   "round": 1,
+   "workload": "P03-ratio",
+   "condition": "plastile",
+   "windowCount": 4,
+   "outcome": "completed",
+   "taps": 1050,
+   "refreshNsObservedAtStart": 6944492,
+   "countersDelta": {
+    "solves": 1050,
+    "flushes": 0,
+    "commands": 1050,
+    "commandsQueued": 0,
+    "writes": 4200,
+    "corrections": 0,
+    "skipOutstanding": 0,
+    "skipNoop": 0,
+    "skipDiverged": 0,
+    "observations": 4200,
+    "observationsDuringApply": 0,
+    "settled": 4200,
+    "stale": 0,
+    "superseded": 0,
+    "partial": 0,
+    "external": 0,
+    "learned": 0,
+    "accepted": 0,
+    "diverged": 0,
+    "deadlines": 0,
+    "overflow": 0,
+    "reclassified": 0,
+    "adopted": 0,
+    "removed": 0,
+    "staleEvents": 0,
+    "errors": 0,
+    "raises": 0,
+    "activations": 0,
+    "liveSolves": 0,
+    "restored": 0,
+    "restoreAmbiguous": 0,
+    "reparks": 0,
+    "invalidSlots": 0
+   },
+   "presentGrid": {
+    "intervals": 1553,
+    "aligned": 1553,
+    "alignedFraction": 1.0,
+    "residualP95Ns": 3080,
+    "residualMaxNs": 4588,
+    "refreshNs": 6944492
+   }
+  },
+  {
+   "index": 12,
+   "round": 2,
+   "workload": "P00-switch",
+   "condition": "none",
+   "windowCount": 4,
+   "outcome": "completed",
+   "taps": 1050,
+   "refreshNsObservedAtStart": 6944492,
+   "countersDelta": null,
+   "presentGrid": {
+    "intervals": 1056,
+    "aligned": 1056,
+    "alignedFraction": 1.0,
+    "residualP95Ns": 2936,
+    "residualMaxNs": 4080,
+    "refreshNs": 6944492
+   }
+  },
+  {
+   "index": 13,
+   "round": 2,
+   "workload": "P00-maximize",
+   "condition": "none",
+   "windowCount": 4,
+   "outcome": "completed",
+   "taps": 1050,
+   "refreshNsObservedAtStart": 6944492,
+   "countersDelta": null,
+   "presentGrid": {
+    "intervals": 1050,
+    "aligned": 1050,
+    "alignedFraction": 1.0,
+    "residualP95Ns": 3080,
+    "residualMaxNs": 4096,
+    "refreshNs": 6944492
+   }
+  },
+  {
+   "index": 14,
+   "round": 2,
+   "workload": "P03-ratio",
+   "condition": "plastile",
+   "windowCount": 4,
+   "outcome": "completed",
+   "taps": 1050,
+   "refreshNsObservedAtStart": 6944492,
+   "countersDelta": {
+    "solves": 1050,
+    "flushes": 0,
+    "commands": 1050,
+    "commandsQueued": 0,
+    "writes": 4200,
+    "corrections": 0,
+    "skipOutstanding": 0,
+    "skipNoop": 0,
+    "skipDiverged": 0,
+    "observations": 4200,
+    "observationsDuringApply": 0,
+    "settled": 4200,
+    "stale": 0,
+    "superseded": 0,
+    "partial": 0,
+    "external": 0,
+    "learned": 0,
+    "accepted": 0,
+    "diverged": 0,
+    "deadlines": 0,
+    "overflow": 0,
+    "reclassified": 0,
+    "adopted": 0,
+    "removed": 0,
+    "staleEvents": 0,
+    "errors": 0,
+    "raises": 0,
+    "activations": 0,
+    "liveSolves": 0,
+    "restored": 0,
+    "restoreAmbiguous": 0,
+    "reparks": 0,
+    "invalidSlots": 0
+   },
+   "presentGrid": {
+    "intervals": 1521,
+    "aligned": 1521,
+    "alignedFraction": 1.0,
+    "residualP95Ns": 3080,
+    "residualMaxNs": 4064,
+    "refreshNs": 6944492
+   }
+  },
+  {
+   "index": 15,
+   "round": 2,
+   "workload": "P03-swap",
+   "condition": "plastile",
+   "windowCount": 4,
+   "outcome": "completed",
+   "taps": 1050,
+   "refreshNsObservedAtStart": 6944492,
+   "countersDelta": {
+    "solves": 1050,
+    "flushes": 0,
+    "commands": 1050,
+    "commandsQueued": 0,
+    "writes": 2100,
+    "corrections": 0,
+    "skipOutstanding": 0,
+    "skipNoop": 2100,
+    "skipDiverged": 0,
+    "observations": 2100,
+    "observationsDuringApply": 0,
+    "settled": 2100,
+    "stale": 0,
+    "superseded": 0,
+    "partial": 0,
+    "external": 0,
+    "learned": 0,
+    "accepted": 0,
+    "diverged": 0,
+    "deadlines": 0,
+    "overflow": 0,
+    "reclassified": 0,
+    "adopted": 0,
+    "removed": 0,
+    "staleEvents": 0,
+    "errors": 0,
+    "raises": 0,
+    "activations": 0,
+    "liveSolves": 0,
+    "restored": 0,
+    "restoreAmbiguous": 0,
+    "reparks": 0,
+    "invalidSlots": 0
+   },
+   "presentGrid": {
+    "intervals": 1433,
+    "aligned": 1433,
+    "alignedFraction": 1.0,
+    "residualP95Ns": 3080,
+    "residualMaxNs": 4096,
+    "refreshNs": 6944492
+   }
+  },
+  {
+   "index": 16,
+   "round": 2,
+   "workload": "P02-quicktile",
+   "condition": "none",
+   "windowCount": 4,
+   "outcome": "completed",
+   "taps": 1051,
+   "refreshNsObservedAtStart": 6944492,
+   "countersDelta": null,
+   "presentGrid": {
+    "intervals": 1052,
+    "aligned": 1052,
+    "alignedFraction": 1.0,
+    "residualP95Ns": 3096,
+    "residualMaxNs": 4096,
+    "refreshNs": 6944492
+   }
+  },
+  {
+   "index": 17,
+   "round": 2,
+   "workload": "P03-focus",
+   "condition": "plastile",
+   "windowCount": 4,
+   "outcome": "completed",
+   "taps": 1050,
+   "refreshNsObservedAtStart": 6944492,
+   "countersDelta": {
+    "solves": 0,
+    "flushes": 0,
+    "commands": 1050,
+    "commandsQueued": 0,
+    "writes": 0,
+    "corrections": 0,
+    "skipOutstanding": 0,
+    "skipNoop": 0,
+    "skipDiverged": 0,
+    "observations": 0,
+    "observationsDuringApply": 0,
+    "settled": 0,
+    "stale": 0,
+    "superseded": 0,
+    "partial": 0,
+    "external": 0,
+    "learned": 0,
+    "accepted": 0,
+    "diverged": 0,
+    "deadlines": 0,
+    "overflow": 0,
+    "reclassified": 0,
+    "adopted": 0,
+    "removed": 0,
+    "staleEvents": 0,
+    "errors": 0,
+    "raises": 0,
+    "activations": 1050,
+    "liveSolves": 0,
+    "restored": 0,
+    "restoreAmbiguous": 0,
+    "reparks": 0,
+    "invalidSlots": 0
+   },
+   "presentGrid": {
+    "intervals": 1063,
+    "aligned": 1063,
+    "alignedFraction": 1.0,
+    "residualP95Ns": 2920,
+    "residualMaxNs": 4096,
+    "refreshNs": 6944492
+   }
+  },
+  {
+   "index": 18,
+   "round": 3,
+   "workload": "P03-focus",
+   "condition": "plastile",
+   "windowCount": 4,
+   "outcome": "completed",
+   "taps": 1050,
+   "refreshNsObservedAtStart": 6944492,
+   "countersDelta": {
+    "solves": 0,
+    "flushes": 0,
+    "commands": 1050,
+    "commandsQueued": 0,
+    "writes": 0,
+    "corrections": 0,
+    "skipOutstanding": 0,
+    "skipNoop": 0,
+    "skipDiverged": 0,
+    "observations": 0,
+    "observationsDuringApply": 0,
+    "settled": 0,
+    "stale": 0,
+    "superseded": 0,
+    "partial": 0,
+    "external": 0,
+    "learned": 0,
+    "accepted": 0,
+    "diverged": 0,
+    "deadlines": 0,
+    "overflow": 0,
+    "reclassified": 0,
+    "adopted": 0,
+    "removed": 0,
+    "staleEvents": 0,
+    "errors": 0,
+    "raises": 0,
+    "activations": 1050,
+    "liveSolves": 0,
+    "restored": 0,
+    "restoreAmbiguous": 0,
+    "reparks": 0,
+    "invalidSlots": 0
+   },
+   "presentGrid": {
+    "intervals": 1065,
+    "aligned": 1065,
+    "alignedFraction": 1.0,
+    "residualP95Ns": 3080,
+    "residualMaxNs": 4096,
+    "refreshNs": 6944492
+   }
+  },
+  {
+   "index": 19,
+   "round": 3,
+   "workload": "P03-swap",
+   "condition": "plastile",
+   "windowCount": 4,
+   "outcome": "completed",
+   "taps": 1050,
+   "refreshNsObservedAtStart": 6944492,
+   "countersDelta": {
+    "solves": 1050,
+    "flushes": 0,
+    "commands": 1050,
+    "commandsQueued": 0,
+    "writes": 2100,
+    "corrections": 0,
+    "skipOutstanding": 0,
+    "skipNoop": 2100,
+    "skipDiverged": 0,
+    "observations": 2100,
+    "observationsDuringApply": 0,
+    "settled": 2100,
+    "stale": 0,
+    "superseded": 0,
+    "partial": 0,
+    "external": 0,
+    "learned": 0,
+    "accepted": 0,
+    "diverged": 0,
+    "deadlines": 0,
+    "overflow": 0,
+    "reclassified": 0,
+    "adopted": 0,
+    "removed": 0,
+    "staleEvents": 0,
+    "errors": 0,
+    "raises": 0,
+    "activations": 0,
+    "liveSolves": 0,
+    "restored": 0,
+    "restoreAmbiguous": 0,
+    "reparks": 0,
+    "invalidSlots": 0
+   },
+   "presentGrid": {
+    "intervals": 1444,
+    "aligned": 1444,
+    "alignedFraction": 1.0,
+    "residualP95Ns": 3064,
+    "residualMaxNs": 4096,
+    "refreshNs": 6944492
+   }
+  },
+  {
+   "index": 20,
+   "round": 3,
+   "workload": "P00-switch",
+   "condition": "none",
+   "windowCount": 4,
+   "outcome": "completed",
+   "taps": 1050,
+   "refreshNsObservedAtStart": 6944492,
+   "countersDelta": null,
+   "presentGrid": {
+    "intervals": 1058,
+    "aligned": 1058,
+    "alignedFraction": 1.0,
+    "residualP95Ns": 3064,
+    "residualMaxNs": 4572,
+    "refreshNs": 6944492
+   }
+  },
+  {
+   "index": 21,
+   "round": 3,
+   "workload": "P03-ratio",
+   "condition": "plastile",
+   "windowCount": 4,
+   "outcome": "completed",
+   "taps": 1050,
+   "refreshNsObservedAtStart": 6944492,
+   "countersDelta": {
+    "solves": 1050,
+    "flushes": 0,
+    "commands": 1050,
+    "commandsQueued": 0,
+    "writes": 4200,
+    "corrections": 0,
+    "skipOutstanding": 0,
+    "skipNoop": 0,
+    "skipDiverged": 0,
+    "observations": 4200,
+    "observationsDuringApply": 0,
+    "settled": 4200,
+    "stale": 0,
+    "superseded": 0,
+    "partial": 0,
+    "external": 0,
+    "learned": 0,
+    "accepted": 0,
+    "diverged": 0,
+    "deadlines": 0,
+    "overflow": 0,
+    "reclassified": 0,
+    "adopted": 0,
+    "removed": 0,
+    "staleEvents": 0,
+    "errors": 0,
+    "raises": 0,
+    "activations": 0,
+    "liveSolves": 0,
+    "restored": 0,
+    "restoreAmbiguous": 0,
+    "reparks": 0,
+    "invalidSlots": 0
+   },
+   "presentGrid": {
+    "intervals": 1547,
+    "aligned": 1547,
+    "alignedFraction": 1.0,
+    "residualP95Ns": 3064,
+    "residualMaxNs": 4096,
+    "refreshNs": 6944492
+   }
+  },
+  {
+   "index": 22,
+   "round": 3,
+   "workload": "P00-maximize",
+   "condition": "none",
+   "windowCount": 4,
+   "outcome": "completed",
+   "taps": 1050,
+   "refreshNsObservedAtStart": 6944492,
+   "countersDelta": null,
+   "presentGrid": {
+    "intervals": 1050,
+    "aligned": 1050,
+    "alignedFraction": 1.0,
+    "residualP95Ns": 3080,
+    "residualMaxNs": 4096,
+    "refreshNs": 6944492
+   }
+  },
+  {
+   "index": 23,
+   "round": 3,
+   "workload": "P02-quicktile",
+   "condition": "none",
+   "windowCount": 4,
+   "outcome": "completed",
+   "taps": 1051,
+   "refreshNsObservedAtStart": 6944492,
+   "countersDelta": null,
+   "presentGrid": {
+    "intervals": 1051,
+    "aligned": 1051,
+    "alignedFraction": 1.0,
+    "residualP95Ns": 3080,
+    "residualMaxNs": 4096,
+    "refreshNs": 6944492
+   }
+  },
+  {
+   "index": 24,
+   "round": 4,
+   "workload": "P03-ratio",
+   "condition": "plastile",
+   "windowCount": 4,
+   "outcome": "completed",
+   "taps": 1050,
+   "refreshNsObservedAtStart": 6944492,
+   "countersDelta": {
+    "solves": 1050,
+    "flushes": 0,
+    "commands": 1050,
+    "commandsQueued": 0,
+    "writes": 4200,
+    "corrections": 0,
+    "skipOutstanding": 0,
+    "skipNoop": 0,
+    "skipDiverged": 0,
+    "observations": 4200,
+    "observationsDuringApply": 0,
+    "settled": 4200,
+    "stale": 0,
+    "superseded": 0,
+    "partial": 0,
+    "external": 0,
+    "learned": 0,
+    "accepted": 0,
+    "diverged": 0,
+    "deadlines": 0,
+    "overflow": 0,
+    "reclassified": 0,
+    "adopted": 0,
+    "removed": 0,
+    "staleEvents": 0,
+    "errors": 0,
+    "raises": 0,
+    "activations": 0,
+    "liveSolves": 0,
+    "restored": 0,
+    "restoreAmbiguous": 0,
+    "reparks": 0,
+    "invalidSlots": 0
+   },
+   "presentGrid": {
+    "intervals": 1516,
+    "aligned": 1516,
+    "alignedFraction": 1.0,
+    "residualP95Ns": 3080,
+    "residualMaxNs": 4096,
+    "refreshNs": 6944492
+   }
+  },
+  {
+   "index": 25,
+   "round": 4,
+   "workload": "P00-maximize",
+   "condition": "none",
+   "windowCount": 4,
+   "outcome": "completed",
+   "taps": 1050,
+   "refreshNsObservedAtStart": 6944492,
+   "countersDelta": null,
+   "presentGrid": {
+    "intervals": 1050,
+    "aligned": 1050,
+    "alignedFraction": 1.0,
+    "residualP95Ns": 3080,
+    "residualMaxNs": 4080,
+    "refreshNs": 6944492
+   }
+  },
+  {
+   "index": 26,
+   "round": 4,
+   "workload": "P03-swap",
+   "condition": "plastile",
+   "windowCount": 4,
+   "outcome": "completed",
+   "taps": 1050,
+   "refreshNsObservedAtStart": 6944492,
+   "countersDelta": {
+    "solves": 1050,
+    "flushes": 0,
+    "commands": 1050,
+    "commandsQueued": 0,
+    "writes": 2100,
+    "corrections": 0,
+    "skipOutstanding": 0,
+    "skipNoop": 2100,
+    "skipDiverged": 0,
+    "observations": 2100,
+    "observationsDuringApply": 0,
+    "settled": 2100,
+    "stale": 0,
+    "superseded": 0,
+    "partial": 0,
+    "external": 0,
+    "learned": 0,
+    "accepted": 0,
+    "diverged": 0,
+    "deadlines": 0,
+    "overflow": 0,
+    "reclassified": 0,
+    "adopted": 0,
+    "removed": 0,
+    "staleEvents": 0,
+    "errors": 0,
+    "raises": 0,
+    "activations": 0,
+    "liveSolves": 0,
+    "restored": 0,
+    "restoreAmbiguous": 0,
+    "reparks": 0,
+    "invalidSlots": 0
+   },
+   "presentGrid": {
+    "intervals": 1419,
+    "aligned": 1419,
+    "alignedFraction": 1.0,
+    "residualP95Ns": 3080,
+    "residualMaxNs": 3920,
+    "refreshNs": 6944492
+   }
+  },
+  {
+   "index": 27,
+   "round": 4,
+   "workload": "P03-focus",
+   "condition": "plastile",
+   "windowCount": 4,
+   "outcome": "completed",
+   "taps": 1050,
+   "refreshNsObservedAtStart": 6944492,
+   "countersDelta": {
+    "solves": 0,
+    "flushes": 0,
+    "commands": 1050,
+    "commandsQueued": 0,
+    "writes": 0,
+    "corrections": 0,
+    "skipOutstanding": 0,
+    "skipNoop": 0,
+    "skipDiverged": 0,
+    "observations": 0,
+    "observationsDuringApply": 0,
+    "settled": 0,
+    "stale": 0,
+    "superseded": 0,
+    "partial": 0,
+    "external": 0,
+    "learned": 0,
+    "accepted": 0,
+    "diverged": 0,
+    "deadlines": 0,
+    "overflow": 0,
+    "reclassified": 0,
+    "adopted": 0,
+    "removed": 0,
+    "staleEvents": 0,
+    "errors": 0,
+    "raises": 0,
+    "activations": 1050,
+    "liveSolves": 0,
+    "restored": 0,
+    "restoreAmbiguous": 0,
+    "reparks": 0,
+    "invalidSlots": 0
+   },
+   "presentGrid": {
+    "intervals": 1064,
+    "aligned": 1064,
+    "alignedFraction": 1.0,
+    "residualP95Ns": 2904,
+    "residualMaxNs": 4064,
+    "refreshNs": 6944492
+   }
+  },
+  {
+   "index": 28,
+   "round": 4,
+   "workload": "P00-switch",
+   "condition": "none",
+   "windowCount": 4,
+   "outcome": "completed",
+   "taps": 1050,
+   "refreshNsObservedAtStart": 6944492,
+   "countersDelta": null,
+   "presentGrid": {
+    "intervals": 1062,
+    "aligned": 1062,
+    "alignedFraction": 1.0,
+    "residualP95Ns": 3064,
+    "residualMaxNs": 4096,
+    "refreshNs": 6944492
+   }
+  },
+  {
+   "index": 29,
+   "round": 4,
+   "workload": "P02-quicktile",
+   "condition": "none",
+   "windowCount": 4,
+   "outcome": "completed",
+   "taps": 1051,
+   "refreshNsObservedAtStart": 6944492,
+   "countersDelta": null,
+   "presentGrid": {
+    "intervals": 1052,
+    "aligned": 1052,
+    "alignedFraction": 1.0,
+    "residualP95Ns": 3080,
+    "residualMaxNs": 4080,
+    "refreshNs": 6944492
+   }
+  }
+ ],
+ "blockChecks": [
+  "block 10 P03-focus n=4: focus-only workload issued 1 solves / 0 writes (PERFORMANCE section 4 requires zero)"
+ ]
+}

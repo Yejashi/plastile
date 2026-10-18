@@ -1,0 +1,89 @@
+{
+ "layer": "nested-windowed-gpu: nested kwin_wayland --wayland-display on the reference host's live compositor (real GPU, OpenGL compositing: kwin_scene_opengl); private bus, config and XDG dirs; never physical",
+ "kwin": "kwin 6.7.5",
+ "implementationCommit": "aa9793ab41f49090ab1d1bb1b88d26238dbe41e9",
+ "implementationDirty": false,
+ "summary": {
+  "scenarios": 18,
+  "failedScenarios": 1,
+  "checks": 269,
+  "passedChecks": 265
+ },
+ "scenarios": {
+  "suspend-idle-C14": {
+   "pass": true,
+   "checks": 5
+  },
+  "fractional-scale-G03": {
+   "pass": false,
+   "checks": 8,
+   "note": "failed here on hard-coded Virtual-N output names (harness); after 4afc10e it SKIPs in windowed mode: the wayland backend reports scale 1 even with --scale and ignores kscreen-doctor scale changes (measured)"
+  },
+  "drag-I01-I02": {
+   "pass": true,
+   "checks": 7
+  },
+  "resize-I03": {
+   "pass": true,
+   "checks": 4
+  },
+  "native-editor-toggle-L14": {
+   "pass": true,
+   "checks": 7
+  },
+  "realapps-dolphin": {
+   "pass": true,
+   "checks": 18
+  },
+  "realapps-systemsettings": {
+   "pass": true,
+   "checks": 17
+  },
+  "realapps-systemsettings-tall": {
+   "pass": true,
+   "checks": 18
+  },
+  "realapps-gnome-calculator": {
+   "pass": true,
+   "checks": 17
+  },
+  "realapps-gnome-calculator-tall": {
+   "pass": true,
+   "checks": 18
+  },
+  "realapps-gnome-calculator-x11-tall": {
+   "pass": true,
+   "checks": 18
+  },
+  "realapps-alacritty": {
+   "pass": true,
+   "checks": 18
+  },
+  "realapps-firefox": {
+   "pass": true,
+   "checks": 18
+  },
+  "realapps-chromium": {
+   "pass": true,
+   "checks": 18
+  },
+  "realapps-xmessage": {
+   "pass": true,
+   "checks": 18
+  },
+  "realapps-zenity-info": {
+   "pass": true,
+   "checks": 17
+  },
+  "realapps-zenity-info-x11": {
+   "pass": true,
+   "checks": 17
+  },
+  "plasmashell-panels-O07": {
+   "pass": true,
+   "checks": 26
+  }
+ },
+ "latency": "evidence/latency-windowed-gpu-20261018T042052.json (5 runs x 1000 samples per workload, 144 Hz host output)",
+ "keys": "evidence/keys-windowed-gpu-20261018T041604.json (19/19 bound chords delivered)"
+}
