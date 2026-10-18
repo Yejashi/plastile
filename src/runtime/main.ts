@@ -6,6 +6,7 @@ import { COMMANDS, type CommandResult } from "../core/commands.ts";
 import type { RuntimeServices } from "../core/ports.ts";
 import type { ContextKey } from "../core/types.ts";
 import { compileConfig, FLAT_KEYS, formatError, resolveContext, resolveWindow, type ConfigSnapshot } from "../config/index.ts";
+import { diffConfig } from "../config/diff.ts";
 import { KwinAdapter } from "../adapters/kwin/adapter.ts";
 import type { KKWin, KOptions, KQt, KSignal, KWorkspace } from "../adapters/kwin/kwinTypes.ts";
 
@@ -95,12 +96,15 @@ export function createRuntime(env: RuntimeEnv): Runtime {
 
   const adapter = new KwinAdapter(env.workspace, env.qt);
   const options = (snap: ConfigSnapshot): EngineOptions => ({
+    // Context keys carry the output's identity key (E16); overrides match its connector name.
     settingsFor: (key: ContextKey) => resolveContext(snap, {
-      outputName: key.output, desktopId: key.desktop, desktopName: adapter.desktopNameOf(key.desktop), activityId: key.activity,
+      outputName: adapter.outputNameOf(key.output), desktopId: key.desktop, desktopName: adapter.desktopNameOf(key.desktop),
+      activityId: key.activity,
     }).settings,
     rulesFor: (meta, key) => {
       const r = resolveWindow(snap, meta, key ? {
-        outputName: key.output, desktopId: key.desktop, desktopName: adapter.desktopNameOf(key.desktop), activityId: key.activity,
+        outputName: adapter.outputNameOf(key.output), desktopId: key.desktop, desktopName: adapter.desktopNameOf(key.desktop),
+        activityId: key.activity,
       } : null);
       if (r.ruleIds.length === 0) return null;
       return { mode: r.actions.mode, border: r.actions.border, insert: r.actions.insert, ruleIds: r.ruleIds, reasons: r.reasons };
@@ -120,11 +124,14 @@ export function createRuntime(env: RuntimeEnv): Runtime {
   const optionConns: Array<{ signal: KSignal; fn: () => void }> = [];
   const onConfig = (): void => {
     if (!engine.isAlive()) return;
+    const prev = snapshot;
     if (loadConfig()) {
       // Caption watching follows the active rules; on activation the current titles are read
       // before the engine re-classifies.
       adapter.setWatchTitles(snapshot!.usesTitleRules);
-      engine.configure(options(snapshot!));
+      // Only what changed is re-evaluated (T26): a gap-only change reclassifies nothing.
+      const d = diffConfig(prev, snapshot!);
+      engine.configure({ ...options(snapshot!), changes: { rules: d.rules, settings: d.settings } });
       log("info", "configuration activated", { revision: snapshot!.revision });
     }
   };

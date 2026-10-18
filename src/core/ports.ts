@@ -17,11 +17,17 @@ export interface WindowSnapshot {
   readonly nativeTile: boolean;
 }
 
+/** How an output's id was derived: EDID triple, connector name, or EDID plus connector for identical monitors. */
+export type OutputIdentity = "edid" | "connector" | "ambiguous";
+
 export interface OutputInfo {
+  /** Stable identity key (context keys use it); independent of enumeration order (E16). */
   readonly id: OutputId;
+  /** Connector name, for user-facing matching (overrides' outputName) and messages. */
   readonly name: string;
   readonly geometry: Rect;
   readonly scale: number;
+  readonly identity?: OutputIdentity;
 }
 
 export interface FrameWrite {
@@ -44,6 +50,8 @@ export interface HostPort {
   /** Send to another output/desktop (membership change arrives later as an event). */
   sendToOutput(id: WindowId, gen: number, output: OutputId): boolean;
   sendToDesktop(id: WindowId, gen: number, desktop: DesktopId): boolean;
+  /** Show a desktop on an output (follow on send); without per-output desktops KWin switches every output. */
+  showDesktop(output: OutputId, desktop: DesktopId): boolean;
   activeWindow(): WindowId | null;
   activeOutput(): OutputId | null;
   outputs(): readonly OutputInfo[];

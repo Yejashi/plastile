@@ -74,6 +74,14 @@ export class FakeWorkspace {
   }
 
   currentDesktopForScreen(o: FakeOutput): FakeDesktop | null { return this.current.get(o.name) ?? null; }
+  /** KWin's PerOutputVirtualDesktops: off switches every output (VirtualDesktopManager::setCurrent). */
+  perOutputDesktops = false;
+  setCurrentDesktopForScreen(d: FakeDesktop, o: FakeOutput): void {
+    if (this.current.get(o.name) === d) return;
+    if (this.perOutputDesktops) this.current.set(o.name, d);
+    else for (const s of this.screens) this.current.set(s.name, d);
+    this.currentDesktopChanged.emit();
+  }
   clientArea(_opt: number, o: FakeOutput, _d: FakeDesktop): R {
     this.clientAreaCalls++;
     const a = this.areas.get(o.name) ?? o.geometry;
@@ -109,6 +117,8 @@ export class FakeWorkspace {
       ...o,
     };
     for (const s of WINDOW_SIGNALS) w[s] = new Sig();
+    let desks = w.desktops;
+    Object.defineProperty(w, "desktops", { get: () => desks, set: (v: FakeDesktop[]) => { desks = v; w.desktopsChanged.emit(); } });
     let fg: R = { ...frame };
     let margin = o.noBorder === true || !ssd ? 0 : TITLEBAR;
     let noBorder = !!o.noBorder;

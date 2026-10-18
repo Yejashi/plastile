@@ -122,6 +122,8 @@ export interface KWorkspace {
   readonly activeScreen: KOutput | null;
   readonly MaximizeArea: number;
   currentDesktopForScreen(o: KOutput): KDesktop | null;
+  /** Q_INVOKABLE in 6.7.5 and 6.8.0; switches every output unless desktops are per output (exercised by O08). */
+  setCurrentDesktopForScreen(d: KDesktop, o: KOutput): void;
   clientArea(option: number, output: KOutput, desktop: KDesktop): KRect;
   raiseWindow(w: KWindow): void;
   sendClientToScreen(w: KWindow, o: KOutput): void;

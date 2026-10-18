@@ -7,7 +7,7 @@
 // nested KWin 6.7.5 where noted below.
 
 import { rectOf, type Rect, type Size } from "../../core/geometry.ts";
-import type { FrameWrite, HostPort, OutputInfo, WindowSnapshot } from "../../core/ports.ts";
+import type { FrameWrite, HostPort, OutputIdentity, OutputInfo, WindowSnapshot } from "../../core/ports.ts";
 import type { Engine } from "../../core/engine.ts";
 import type { Constraints, Membership, WindowKind, WindowMeta, WindowStates } from "../../core/types.ts";
 import type { KDesktop, KOutput, KQt, KSignal, KWindow, KWorkspace } from "./kwinTypes.ts";
@@ -84,14 +84,48 @@ export function metaOf(w: KWindow): WindowMeta {
   };
 }
 
-export function membershipOf(w: KWindow): Membership {
+export function membershipOf(w: KWindow, keyOf: (o: KOutput) => string = (o) => o.name): Membership {
   const desks: string[] = [];
   const ds = w.desktops;
   for (let i = 0; i < ds.length; ++i) desks.push(String(ds[i].id));
   const acts: string[] = [];
   const as = w.activities;
   for (let i = 0; i < as.length; ++i) acts.push(String(as[i]));
-  return { output: w.output ? w.output.name : null, desktops: desks, onAllDesktops: !!w.onAllDesktops, activities: acts };
+  return { output: w.output ? keyOf(w.output) : null, desktops: desks, onAllDesktops: !!w.onAllDesktops, activities: acts };
+}
+
+export interface OutputKey {
+  readonly key: string;
+  readonly identity: OutputIdentity;
+}
+
+type OutputFacts = Pick<KOutput, "name" | "manufacturer" | "model" | "serialNumber">;
+
+/**
+ * Output identity keys (API_PROFILE E16: KWin exposes no output UUID to scripts). An output
+ * whose EDID manufacturer or model is known is keyed by manufacturer/model/serial, so the same
+ * monitor keeps its key on another connector (O05). Without them (the virtual backend) the
+ * connector name is the key. Identical monitors (same triple, e.g. an empty serial) cannot be
+ * told apart by EDID: their keys add the connector and are reported as ambiguous, a
+ * deterministic fallback rather than a silent reuse of one identity. Keyed by connector name.
+ */
+export function outputKeys(outs: ArrayLike<OutputFacts>): Map<string, OutputKey> {
+  const triples: string[] = [];
+  const count = new Map<string, number>();
+  for (let i = 0; i < outs.length; ++i) {
+    const o = outs[i];
+    const t = o.manufacturer || o.model ? `edid:${o.manufacturer}/${o.model}/${o.serialNumber}` : "";
+    triples.push(t);
+    if (t) count.set(t, (count.get(t) ?? 0) + 1);
+  }
+  const out = new Map<string, OutputKey>();
+  for (let i = 0; i < outs.length; ++i) {
+    const t = triples[i], name = outs[i].name;
+    if (!t) out.set(name, { key: name, identity: "connector" });
+    else if (count.get(t)! > 1) out.set(name, { key: `${t}@${name}`, identity: "ambiguous" });
+    else out.set(name, { key: t, identity: "edid" });
+  }
+  return out;
 }
 
 export function statesOf(w: KWindow): WindowStates {
@@ -134,8 +168,11 @@ export class KwinAdapter implements HostPort {
   private engine: Engine | null = null;
   private watchTitles = false;
   private alive = true;
-  /** Last usable area (MaximizeArea) per output name; KWin keeps one per output, not per desktop. */
+  /** Last usable area (MaximizeArea) per output key; KWin keeps one per output, not per desktop. */
   private areas = new Map<string, Rect>();
+  /** Output identity per connector name for the current screen list (rebuilt when it changes). */
+  private keys = new Map<string, OutputKey>();
+  private readonly keyFn = (o: KOutput): string => this.keyOf(o);
   private topologyPending = false;
   /** Deferred work-area checks still allowed for the current panel event (0: none pending). */
   private areaChecks = 0;
@@ -256,6 +293,33 @@ export class KwinAdapter implements HostPort {
     this.disconnectAll(this.outputConns);
     const outs = this.ws.screens;
     for (let i = 0; i < outs.length; ++i) this.own(outs[i].geometryChanged, () => this.scheduleTopology(), this.outputConns);
+    this.updateKeys();
+  }
+
+  /**
+   * Rebuild the output keys from the current screen list. A connected output whose key changed
+   * (an identical monitor came or went, so the connector now tells them apart or no longer
+   * needs to) is re-keyed in the engine at once, before any window event uses the new key.
+   */
+  private updateKeys(): void {
+    const prev = this.keys;
+    this.keys = outputKeys(this.ws.screens);
+    const renames = new Map<string, string>();
+    for (const [name, k] of this.keys) {
+      const p = prev.get(name);
+      if (p && p.key !== k.key) renames.set(p.key, k.key);
+    }
+    if (renames.size > 0 && this.alive && this.engine) this.engine.outputsRekeyed(renames);
+  }
+
+  /** Identity key of a live output (its connector name until the screen list includes it). */
+  private keyOf(o: KOutput): string {
+    let k = this.keys.get(o.name);
+    if (!k) {
+      this.updateKeys(); // a window reported an output before screensChanged did
+      k = this.keys.get(o.name);
+    }
+    return k ? k.key : o.name;
   }
 
   /** Desktop names feed configuration matchers; KWin's desktopsChanged does not cover a rename. */
@@ -292,10 +356,11 @@ export class KwinAdapter implements HostPort {
       const d = this.ws.currentDesktopForScreen(o) ?? (this.ws.desktops.length ? this.ws.desktops[0] : null);
       if (!d) continue;
       const a = rectOf(this.ws.clientArea(this.ws.MaximizeArea, o, d));
-      const prev = this.areas.get(o.name);
+      const key = this.keyOf(o);
+      const prev = this.areas.get(key);
       if (prev && sameRect(prev, a)) continue;
-      this.areas.set(o.name, a);
-      changed.push(o.name);
+      this.areas.set(key, a);
+      changed.push(key);
     }
     return changed;
   }
@@ -354,12 +419,27 @@ export class KwinAdapter implements HostPort {
       // hints) applied a constraint Plastile may not know. Re-read once per request.
       if (!sameSize(f, q.to)) this.refreshConstraints(e);
     }, e.conns);
-    const states = () => { const g = eng(); if (g) g.statesChanged(id, gen, statesOf(w)); };
+    let fullscreen = !!w.fullScreen;
+    const states = () => {
+      const g = eng();
+      if (!g) return;
+      const st = statesOf(w);
+      g.statesChanged(id, gen, st);
+      const left = fullscreen && !st.fullscreen;
+      fullscreen = st.fullscreen;
+      // KWin reports a window as not resizable while fullscreen is requested, so metadata
+      // sampled then (a window mapped fullscreen) is re-read once the request is gone.
+      if (left && e.meta.resizeable !== !!w.resizeable) {
+        e.meta = metaOf(w);
+        g.metadataChanged(id, gen, e.meta);
+        g.constraintsChanged(id, gen, constraintsOf(w));
+      }
+    };
     for (const s of [w.minimizedChanged, w.fullScreenChanged, w.maximizedChanged, w.moveResizedChanged,
                      w.interactiveMoveResizeStarted, w.interactiveMoveResizeFinished, w.hiddenChanged]) {
       this.own(s, states, e.conns);
     }
-    const membership = () => { const g = eng(); if (g) g.membershipChanged(id, gen, membershipOf(w)); };
+    const membership = () => { const g = eng(); if (g) g.membershipChanged(id, gen, membershipOf(w, this.keyFn)); };
     for (const s of [w.outputChanged, w.desktopsChanged, w.activitiesChanged]) this.own(s, membership, e.conns);
     this.own(w.tileChanged, () => { const g = eng(); if (g) g.nativeTileChanged(id, gen, w.tile !== null); }, e.conns);
     const metadata = () => {
@@ -435,7 +515,7 @@ export class KwinAdapter implements HostPort {
   private snapshot(e: Entry): WindowSnapshot {
     const w = e.w;
     return {
-      id: e.id, gen: e.gen, meta: e.meta, membership: membershipOf(w), states: statesOf(w),
+      id: e.id, gen: e.gen, meta: e.meta, membership: membershipOf(w, this.keyFn), states: statesOf(w),
       constraints: constraintsOf(w), frame: rectOf(w.frameGeometry), nativeTile: w.tile !== null,
     };
   }
@@ -547,7 +627,7 @@ export class KwinAdapter implements HostPort {
 
   sendToOutput(id: string, gen: number, output: string): boolean {
     const w = this.get(id, gen);
-    const o = this.outputByName(output);
+    const o = this.outputByKey(output);
     if (!w || !o) return false;
     this.ws.sendClientToScreen(w, o);
     return true;
@@ -561,6 +641,14 @@ export class KwinAdapter implements HostPort {
     return true;
   }
 
+  showDesktop(output: string, desktop: string): boolean {
+    const o = this.outputByKey(output);
+    const d = this.desktopById(desktop);
+    if (!o || !d) return false;
+    this.ws.setCurrentDesktopForScreen(d, o);
+    return true;
+  }
+
   activeWindow(): string | null {
     const w = this.ws.activeWindow;
     return w ? this.idOf(w) : null;
@@ -568,14 +656,16 @@ export class KwinAdapter implements HostPort {
 
   activeOutput(): string | null {
     const o = this.ws.activeScreen;
-    return o ? o.name : null;
+    return o ? this.keyOf(o) : null;
   }
 
   outputs(): readonly OutputInfo[] {
     const out: OutputInfo[] = [];
     const s = this.ws.screens;
     for (let i = 0; i < s.length; ++i) {
-      out.push({ id: s[i].name, name: s[i].name, geometry: rectOf(s[i].geometry), scale: s[i].devicePixelRatio });
+      const id = this.keyOf(s[i]);
+      out.push({ id, name: s[i].name, geometry: rectOf(s[i].geometry), scale: s[i].devicePixelRatio,
+                 identity: this.keys.get(s[i].name)?.identity ?? "connector" });
     }
     // Deterministic topology order: left-to-right, then top-to-bottom (not enumeration index).
     out.sort((a, b) => a.geometry.x - b.geometry.x || a.geometry.y - b.geometry.y || (a.id < b.id ? -1 : 1));
@@ -583,14 +673,14 @@ export class KwinAdapter implements HostPort {
   }
 
   workArea(output: string, desktop: string): Rect | null {
-    const o = this.outputByName(output);
+    const o = this.outputByKey(output);
     const d = this.desktopById(desktop);
     if (!o || !d) return null;
     return rectOf(this.ws.clientArea(this.ws.MaximizeArea, o, d));
   }
 
   visibleDesktop(output: string): string | null {
-    const o = this.outputByName(output);
+    const o = this.outputByKey(output);
     if (!o) return null;
     const d = this.ws.currentDesktopForScreen(o);
     return d ? String(d.id) : null;
@@ -607,9 +697,9 @@ export class KwinAdapter implements HostPort {
 
   activityCount(): number { return this.ws.activities.length; }
 
-  private outputByName(name: string): KOutput | null {
+  private outputByKey(key: string): KOutput | null {
     const s = this.ws.screens;
-    for (let i = 0; i < s.length; ++i) if (s[i].name === name) return s[i];
+    for (let i = 0; i < s.length; ++i) if (this.keyOf(s[i]) === key) return s[i];
     return null;
   }
 
@@ -619,7 +709,7 @@ export class KwinAdapter implements HostPort {
     return null;
   }
 
-  /** Context names for configuration matching. */
-  outputNameOf(id: string): string { return id; }
+  /** Context names for configuration matching: the connector name of an output key. */
+  outputNameOf(id: string): string { return this.outputByKey(id)?.name ?? id; }
   desktopNameOf(id: string): string { return this.desktopById(id)?.name ?? ""; }
 }

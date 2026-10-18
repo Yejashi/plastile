@@ -687,6 +687,61 @@ def unplug(out: Path, c: Checks):
         c("O05 replug: no errors", not s.log_lines(r"plastile (error|warn)|TypeError", off))
 
 
+def area_of(s: Session, name: str) -> dict:
+    """Usable area of the output with this connector name (enumeration order may change on replug)."""
+    out = s.js(f"for (const o of workspace.screens) if (o.name === {json.dumps(name)}) {{ const a = workspace.clientArea("
+               f"workspace.MaximizeArea, o, workspace.currentDesktopForScreen(o)); emit({{x: a.x, y: a.y, width: a.width, height: a.height}}); }}")
+    return json.loads(out[0])
+
+
+@scenario("replug-identity-O05")
+def replug_identity(out: Path, c: Checks):
+    """T30: an unplugged output's context is dropped (the model stays bounded) and its layout
+    preference returns with the output. The virtual backend reports no EDID, so the identity key
+    is the connector name here; EDID keys on another connector are covered by
+    tests/core/outputs.test.ts."""
+    with Session(out, outputs=2) as s:
+        three(s); s.spawn(4)
+        s.load(); s.settle()
+        for cap in ("plastile-fixture 3", "plastile-fixture 4"):
+            s.act(cap, "workspace.activeWindow = w")
+            s.cmd("move.output-next"); s.settle()
+        s.act("plastile-fixture 4", "workspace.activeWindow = w")
+        s.cmd("layout.monocle"); s.settle()
+
+        def monocle_on_1() -> tuple[bool, list]:
+            a = area_of(s, "Virtual-1")
+            full = {"x": a["x"] + 8, "y": a["y"] + 8, "width": a["width"] - 16, "height": a["height"] - 16}
+            f = on_output(s, "Virtual-1")
+            return len(f) == 2 and all(near(x["frame"], full, 1.0) for x in f), [(x["caption"], x["frame"]) for x in f]
+
+        ok, detail = monocle_on_1()
+        c("setup: monocle on Virtual-1 with two windows", ok, detail)
+        off = s.kw.mark()
+        kscreen(s, "output.Virtual-1.disable")
+        time.sleep(1.5)
+        cnt = s.settle()
+        f = s.frames_list()
+        c("O04: all windows on the surviving output, tiled", all(x["output"] == "Virtual-0" for x in f) and len(f) == 4
+          and not tiling_errors(f, area_of(s, "Virtual-0"), 8), [(x["caption"], x["output"]) for x in f])
+        ids = [x["id"] for x in cnt["contexts"]]
+        c("T30: the unplugged output's emptied context is dropped", not any(i.startswith("Virtual-1␟") for i in ids), ids)
+        kscreen(s, "output.Virtual-1.enable")
+        time.sleep(1.0); s.settle()
+        moved_back = sorted(x["caption"] for x in on_output(s, "Virtual-1"))
+        for cap in ("plastile-fixture 3", "plastile-fixture 4"):
+            if not any(x["caption"] == cap for x in on_output(s, "Virtual-1")):
+                s.act(cap, "workspace.activeWindow = w")
+                s.cmd("move.output-next"); s.settle()
+        ok, detail = monocle_on_1()
+        c("O05: the context's layout came back with the output (monocle)", ok, {"movedBackByKWin": moved_back, "frames": detail})
+        rest = on_output(s, "Virtual-0")
+        c("O05: the other output is tiled", len(rest) == 2 and not tiling_errors(rest, area_of(s, "Virtual-0"), 8),
+          tiling_errors(rest, area_of(s, "Virtual-0"), 8))
+        errs = s.log_lines(r"plastile (error|warn)|TypeError|ReferenceError", off)
+        c("O05: no errors", not errs, errs[:3])
+
+
 @scenario("reconcile")
 def reconcile(out: Path, c: Checks):
     with Session(out) as s:
