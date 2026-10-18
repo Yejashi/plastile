@@ -77,6 +77,7 @@ class NestedKwin:
         kwin_bin: str = "kwin_wayland",
         host_display: str | None = None,
         scale: float | None = None,
+        dbus_services: dict[str, str] | None = None,
     ) -> None:
         self.name = name or f"s{os.getpid()}-{_monotonic_ns() % 10**8}"
         self.root = SHORT_BASE / self.name
@@ -99,6 +100,9 @@ class NestedKwin:
         # scale 1, and ignores kscreen-doctor scale changes, so fractional scaling is a virtual-backend
         # (fractional-scale-G03) and physical check only.
         self.scale = scale
+        # D-Bus activation files ({file name: text}) for the private bus, written to
+        # <data home>/dbus-1/services before the bus starts (e.g. the plastile-state helper).
+        self.dbus_services = dict(dbus_services or {})
         self.socket = "wl-0"
         self._dbus: subprocess.Popen | None = None
         self._kwin: subprocess.Popen | None = None
@@ -161,6 +165,13 @@ class NestedKwin:
         for sub in ("run", "config", "data", "cache", "state"):
             (self.root / sub).mkdir(parents=True)
         self.run_dir.chmod(0o700)
+        # The private bus reads activation files from $XDG_DATA_HOME/dbus-1/services (the session
+        # configuration's standard directories, taken from its environment). The directory exists
+        # before the bus starts so that files added later are found too.
+        services = self.root / "data/dbus-1/services"
+        services.mkdir(parents=True)
+        for name, text in self.dbus_services.items():
+            (services / name).write_text(text)
         # Without an explicit decoration library the isolated config draws no
         # server-side decoration (frame == client); use Breeze so frame/client
         # geometry differ as they do on real desktops. Callers may override.
@@ -449,6 +460,15 @@ class NestedKwin:
                                 stdin=stdin, stderr=subprocess.STDOUT if stdout else subprocess.DEVNULL)
         self._clients.append(proc)
         return proc
+
+    def bus_pid(self, name: str) -> int | None:
+        """The process that owns `name` on the private bus (None when nobody does)."""
+        try:
+            out = self.call("/org/freedesktop/DBus", "org.freedesktop.DBus", "GetConnectionUnixProcessID", "s", name,
+                            service="org.freedesktop.DBus")
+        except NestedError:
+            return None
+        return int(out[0]) if out else None
 
     def kwin_rss_kib(self) -> int | None:
         if not self._kwin:

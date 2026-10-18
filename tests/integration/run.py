@@ -2,7 +2,8 @@
 """Run Plastile integration scenarios in disposable nested KWin sessions.
 
 Usage: python3 tests/integration/run.py [--only NAME[,NAME]] [--list] [--fail-on-skip] [--expect-skips NAME[,NAME]]
-Requires: npm run build, make -C fixtures/client.
+Requires: npm run build, make -C fixtures/client, the persistence helper (cmake -S helper -B build/helper &&
+cmake --build build/helper, or PLASTILE_STATE_HELPER).
 Writes artifacts/integration/<stamp>/{report.json,<scenario>/kwin.log,...}.
 Exit status is non-zero if any check fails. A scenario whose required capability is
 absent here (e.g. no activity service, no OpenGL compositing) is reported as SKIP
@@ -21,7 +22,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
-from harness import FIXTURE, PACKAGE_QML, ROOT  # noqa: E402
+from harness import FIXTURE, PACKAGE_QML, ROOT, STATE_HELPER  # noqa: E402
 import importlib  # noqa: E402
 from scenarios import SCENARIOS, Checks, Skipped  # noqa: E402
 
@@ -42,9 +43,10 @@ def main() -> int:
     if args.list:
         print("\n".join(SCENARIOS))
         return 0
-    for need in (FIXTURE, PACKAGE_QML.parent.parent / "code/plastile.mjs"):
+    for need in (FIXTURE, PACKAGE_QML.parent.parent / "code/plastile.mjs", STATE_HELPER):
         if not need.exists():
-            sys.exit(f"missing {need}: run `make -C fixtures/client` and `npm run build`")
+            sys.exit(f"missing {need}: run `make -C fixtures/client`, `npm run build` and "
+                     "`cmake -S helper -B build/helper && cmake --build build/helper`")
     names = [n for n in args.only.split(",") if n] or list(SCENARIOS)
     stamp = time.strftime("%Y%m%dT%H%M%S")
     out = ROOT / "artifacts/integration" / stamp
