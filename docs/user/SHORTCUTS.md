@@ -10,7 +10,7 @@ Every Plastile command is one KWin global shortcut. All of them are registered u
 
 | Command id | Label in System Settings (after `Plastile:`) | Default | Behaviour |
 |---|---|---|---|
-| `plastile.focus.left` | Focus left | `Meta+Shift+H` | Activates the tiled neighbour to the left of the focused tile, on the same screen and desktop. Candidates lying fully beyond the facing edge win over others. Among them, one that overlaps vertically wins, then the nearest facing edge, then the larger overlap, then stable order. A centre-based fallback covers irregular arrangements. No wrap-around, no screen change, no geometry change. If the active window is not tiled here, the most recently focused tile of the context is activated instead. |
+| `plastile.focus.left` | Focus left | `Meta+Shift+H` | Activates the tiled neighbour to the left of the focused tile, on the same screen and desktop. Candidates lying fully beyond the facing edge win over others. Among them, one that overlaps vertically wins, then the nearest facing edge, then the larger overlap, then stable order. When nothing lies fully beyond the edge (irregular or overlapping frames, such as a size-limited window centred in its tile), a tile that reaches past the edge with its centre on that side is used; a tile beside the focused one never is. No wrap-around, no screen change, no geometry change. If the active window is not tiled here, the most recently focused tile of the context is activated instead. |
 | `plastile.focus.down` | Focus down | `Meta+Shift+J` | Same as *Focus left*, downwards. |
 | `plastile.focus.up` | Focus up | `Meta+Shift+K` | Same as *Focus left*, upwards. |
 | `plastile.focus.right` | Focus right | `Meta+Shift+L` | Same as *Focus left*, to the right. |
