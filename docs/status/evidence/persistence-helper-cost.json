@@ -1,0 +1,575 @@
+{
+ "experiment": "Compositor-thread cost of persistence through the plastile-state helper (ADR-020)",
+ "layer": "nested KWin virtual backend (not physical)",
+ "measuredAt": "2026-10-18T09:44:16",
+ "implementationCommit": "5ad6b6337e4c683bef7bf0b913490c041939aadd",
+ "implementationDirty": false,
+ "kwin": "kwin 6.7.5",
+ "qtbase": "qt6-base 6.12.0-2",
+ "helper": "build/helper/plastile-state",
+ "cpus": 12,
+ "clock": "CLOCK_MONOTONIC via tools/measure (inside KWin) and time.monotonic (harness, inotify)",
+ "note": "Other agents' nested-KWin suites may have been running on this machine; tails include that noise.",
+ "store": {
+  "stateFilesystem": "ext4 /dev/nvme0n1p3 rw,noatime",
+  "loads": {
+   "firstWithActivation": {
+    "kind": "load",
+    "callNs": 75800,
+    "replyNs": 6476202,
+    "chars": 0,
+    "clockResolutionNs": 1
+   },
+   "reloadsWith64KiBSlots": {
+    "callUs": {
+     "n": 20,
+     "min": 50.2,
+     "p50": 54.7,
+     "p95": 73.9,
+     "p99": 73.9,
+     "max": 83.9,
+     "mean": 58.5
+    },
+    "replyUs": {
+     "n": 20,
+     "min": 1233.1,
+     "p50": 1513.0,
+     "p95": 1740.6,
+     "p99": 1740.6,
+     "max": 1765.0,
+     "mean": 1485.0
+    },
+    "chars": 131072
+   }
+  },
+  "writes": {
+   "1KiB": {
+    "chars": 1024,
+    "callUs": {
+     "n": 250,
+     "min": 47.9,
+     "p50": 60.5,
+     "p95": 89.3,
+     "p99": 102.2,
+     "max": 115.0,
+     "mean": 63.9
+    },
+    "replyUs": {
+     "n": 250,
+     "min": 2012.6,
+     "p50": 2256.8,
+     "p95": 2549.4,
+     "p99": 2713.2,
+     "max": 4316.3,
+     "mean": 2293.2
+    },
+    "callsOver1ms": 0,
+    "failed": 0
+   },
+   "16KiB": {
+    "chars": 16384,
+    "callUs": {
+     "n": 250,
+     "min": 63.6,
+     "p50": 81.4,
+     "p95": 120.7,
+     "p99": 136.5,
+     "max": 151.0,
+     "mean": 85.7
+    },
+    "replyUs": {
+     "n": 250,
+     "min": 2129.6,
+     "p50": 2315.5,
+     "p95": 2591.0,
+     "p99": 2870.5,
+     "max": 6228.5,
+     "mean": 2366.9
+    },
+    "callsOver1ms": 0,
+    "failed": 0
+   },
+   "64KiB": {
+    "chars": 65536,
+    "callUs": {
+     "n": 250,
+     "min": 168.0,
+     "p50": 203.0,
+     "p95": 279.0,
+     "p99": 302.3,
+     "max": 342.9,
+     "mean": 209.7
+    },
+    "replyUs": {
+     "n": 250,
+     "min": 2571.5,
+     "p50": 2972.8,
+     "p95": 3245.0,
+     "p99": 3328.8,
+     "max": 3387.1,
+     "mean": 2959.4
+    },
+    "callsOver1ms": 0,
+    "failed": 0
+   }
+  },
+  "warmupWrites": [
+   {
+    "kb": 1,
+    "callUs": 81.9,
+    "replyUs": 19724.8
+   },
+   {
+    "kb": 1,
+    "callUs": 84.8,
+    "replyUs": 2146.1
+   },
+   {
+    "kb": 1,
+    "callUs": 126.6,
+    "replyUs": 2240.6
+   },
+   {
+    "kb": 1,
+    "callUs": 71.0,
+    "replyUs": 2178.4
+   },
+   {
+    "kb": 1,
+    "callUs": 87.5,
+    "replyUs": 2225.0
+   },
+   {
+    "kb": 1,
+    "callUs": 52.3,
+    "replyUs": 2169.1
+   },
+   {
+    "kb": 1,
+    "callUs": 66.3,
+    "replyUs": 2102.9
+   },
+   {
+    "kb": 1,
+    "callUs": 53.0,
+    "replyUs": 2098.4
+   },
+   {
+    "kb": 1,
+    "callUs": 48.1,
+    "replyUs": 2066.5
+   },
+   {
+    "kb": 1,
+    "callUs": 73.6,
+    "replyUs": 2165.4
+   },
+   {
+    "kb": 16,
+    "callUs": 79.3,
+    "replyUs": 2291.6
+   },
+   {
+    "kb": 16,
+    "callUs": 82.8,
+    "replyUs": 2291.5
+   },
+   {
+    "kb": 16,
+    "callUs": 80.1,
+    "replyUs": 2249.3
+   },
+   {
+    "kb": 16,
+    "callUs": 71.9,
+    "replyUs": 2309.7
+   },
+   {
+    "kb": 16,
+    "callUs": 73.3,
+    "replyUs": 2299.2
+   },
+   {
+    "kb": 16,
+    "callUs": 74.1,
+    "replyUs": 2184.3
+   },
+   {
+    "kb": 16,
+    "callUs": 81.9,
+    "replyUs": 2534.8
+   },
+   {
+    "kb": 16,
+    "callUs": 72.6,
+    "replyUs": 2239.9
+   },
+   {
+    "kb": 16,
+    "callUs": 90.9,
+    "replyUs": 2333.1
+   },
+   {
+    "kb": 16,
+    "callUs": 72.6,
+    "replyUs": 3541.9
+   },
+   {
+    "kb": 64,
+    "callUs": 180.2,
+    "replyUs": 2977.2
+   },
+   {
+    "kb": 64,
+    "callUs": 207.5,
+    "replyUs": 2703.4
+   },
+   {
+    "kb": 64,
+    "callUs": 176.0,
+    "replyUs": 2731.3
+   },
+   {
+    "kb": 64,
+    "callUs": 208.5,
+    "replyUs": 2822.1
+   },
+   {
+    "kb": 64,
+    "callUs": 308.4,
+    "replyUs": 2955.5
+   },
+   {
+    "kb": 64,
+    "callUs": 171.0,
+    "replyUs": 2745.7
+   },
+   {
+    "kb": 64,
+    "callUs": 207.0,
+    "replyUs": 2966.5
+   },
+   {
+    "kb": 64,
+    "callUs": 203.3,
+    "replyUs": 2768.7
+   },
+   {
+    "kb": 64,
+    "callUs": 267.4,
+    "replyUs": 2884.2
+   },
+   {
+    "kb": 64,
+    "callUs": 179.1,
+    "replyUs": 2729.7
+   }
+  ],
+  "slotFileBytesAfter": {
+   "state-0.json": 65536,
+   "state-1.json": 65536
+  }
+ },
+ "commands": {
+  "bursts": 3,
+  "commandsPerBurst": 40,
+  "commands": [
+   "resize.grow",
+   "resize.shrink",
+   "master.increase",
+   "master.decrease",
+   "layout.bsp",
+   "layout.master-stack"
+  ],
+  "commandHandlers": 123,
+  "accepted": 123,
+  "dispatchToReturnUs": {
+   "n": 123,
+   "min": 234.0,
+   "p50": 292.7,
+   "p95": 476.3,
+   "p99": 741.5,
+   "max": 959.1,
+   "mean": 325.2
+  },
+  "stateFileEvents": 22,
+  "eventsInsideCommandHandlers": 0,
+  "eventsWithin1500msAfterACommand": 0,
+  "saves": 3,
+  "savesIssued": [
+   {
+    "reason": "deadline",
+    "slot": 0,
+    "generation": 1,
+    "bytes": 277,
+    "issueNs": 184239,
+    "buildNs": 46410,
+    "serializeNs": 29190,
+    "callNs": 108639
+   },
+   {
+    "reason": "deadline",
+    "slot": 1,
+    "generation": 2,
+    "bytes": 277,
+    "issueNs": 185429,
+    "buildNs": 46220,
+    "serializeNs": 37980,
+    "callNs": 101229
+   },
+   {
+    "reason": "deadline",
+    "slot": 0,
+    "generation": 3,
+    "bytes": 277,
+    "issueNs": 208330,
+    "buildNs": 74200,
+    "serializeNs": 33540,
+    "callNs": 100590
+   }
+  ],
+  "issueUs": {
+   "n": 3,
+   "min": 184.2,
+   "p50": 185.4,
+   "p95": 185.4,
+   "p99": 185.4,
+   "max": 208.3,
+   "mean": 192.7
+  },
+  "issueBreakdownUs": {
+   "buildNs": {
+    "n": 3,
+    "min": 46.2,
+    "p50": 46.4,
+    "p95": 46.4,
+    "p99": 46.4,
+    "max": 74.2,
+    "mean": 55.6
+   },
+   "serializeNs": {
+    "n": 3,
+    "min": 29.2,
+    "p50": 33.5,
+    "p95": 33.5,
+    "p99": 33.5,
+    "max": 38.0,
+    "mean": 33.6
+   },
+   "callNs": {
+    "n": 3,
+    "min": 100.6,
+    "p50": 101.2,
+    "p95": 101.2,
+    "p99": 101.2,
+    "max": 108.6,
+    "mean": 103.5
+   }
+  },
+  "secondsFromBurstEndToSave": [
+   1.603,
+   1.763,
+   1.715
+  ],
+  "eventSample": [
+   "+0.000s attrib ",
+   "+0.000s open #28840876",
+   "+0.000s close_write #28840876",
+   "+0.000s open #28840876",
+   "+0.000s attrib #28840876",
+   "+0.000s modify #28840876",
+   "+0.005s create state-0.json",
+   "+0.005s close_write #28840876",
+   "+13.486s open #28840878",
+   "+13.486s close_write #28840878",
+   "+13.486s open #28840878",
+   "+13.486s attrib #28840878",
+   "+13.486s modify #28840878",
+   "+13.491s create state-1.json"
+  ],
+  "typicalSnapshot": {
+   "entries": {
+    "contexts": 2,
+    "floats": 2
+   },
+   "slotBytes": {
+    "state-0.json": 828,
+    "state-1.json": 999
+   },
+   "cycles": 20,
+   "loads": 20,
+   "loadSummaries": [
+    {
+     "generation": 1,
+     "contexts": 2,
+     "floats": 2,
+     "keptUserChanges": 0,
+     "applyNs": 288620,
+     "parseNs": 214220
+    },
+    {
+     "generation": 2,
+     "contexts": 3,
+     "floats": 2,
+     "keptUserChanges": 0,
+     "applyNs": 220080,
+     "parseNs": 108070
+    }
+   ],
+   "applyUs": {
+    "n": 20,
+    "min": 103.7,
+    "p50": 137.4,
+    "p95": 288.6,
+    "p99": 288.6,
+    "max": 293.7,
+    "mean": 164.7
+   },
+   "issueUs": {
+    "n": 20,
+    "min": 173.7,
+    "p50": 215.1,
+    "p95": 282.5,
+    "p99": 282.5,
+    "max": 689.6,
+    "mean": 245.6
+   },
+   "issueBreakdownUs": {
+    "buildNs": {
+     "n": 20,
+     "min": 41.7,
+     "p50": 52.5,
+     "p95": 115.0,
+     "p99": 115.0,
+     "max": 127.4,
+     "mean": 60.5
+    },
+    "serializeNs": {
+     "n": 20,
+     "min": 53.9,
+     "p50": 66.1,
+     "p95": 88.1,
+     "p99": 88.1,
+     "max": 100.7,
+     "mean": 69.7
+    },
+    "callNs": {
+     "n": 20,
+     "min": 78.2,
+     "p50": 89.8,
+     "p95": 105.8,
+     "p99": 105.8,
+     "max": 550.9,
+     "mean": 115.4
+    }
+   },
+   "parseUs": {
+    "n": 20,
+    "min": 73.0,
+    "p50": 91.6,
+    "p95": 214.2,
+    "p99": 214.2,
+    "max": 249.5,
+    "mean": 110.7
+   },
+   "issuedBytes": [
+    827,
+    828,
+    998,
+    999
+   ]
+  },
+  "fullSnapshot": {
+   "entries": {
+    "contexts": 64,
+    "floats": 64
+   },
+   "slotBytes": {
+    "state-0.json": 24408,
+    "state-1.json": 24579
+   },
+   "cycles": 20,
+   "loads": 20,
+   "loadSummaries": [
+    {
+     "generation": 1,
+     "contexts": 64,
+     "floats": 64,
+     "keptUserChanges": 0,
+     "applyNs": 1857428,
+     "parseNs": 1224419
+    },
+    {
+     "generation": 2,
+     "contexts": 64,
+     "floats": 64,
+     "keptUserChanges": 0,
+     "applyNs": 2837527,
+     "parseNs": 2317848
+    }
+   ],
+   "applyUs": {
+    "n": 20,
+    "min": 1857.4,
+    "p50": 2192.1,
+    "p95": 2837.5,
+    "p99": 2837.5,
+    "max": 3094.5,
+    "mean": 2270.6
+   },
+   "issueUs": {
+    "n": 20,
+    "min": 1057.2,
+    "p50": 1231.2,
+    "p95": 1589.1,
+    "p99": 1589.1,
+    "max": 1834.8,
+    "mean": 1283.1
+   },
+   "issueBreakdownUs": {
+    "buildNs": {
+     "n": 20,
+     "min": 181.4,
+     "p50": 253.6,
+     "p95": 319.8,
+     "p99": 319.8,
+     "max": 390.3,
+     "mean": 250.8
+    },
+    "serializeNs": {
+     "n": 20,
+     "min": 769.1,
+     "p50": 829.6,
+     "p95": 1026.1,
+     "p99": 1026.1,
+     "max": 1300.5,
+     "mean": 895.1
+    },
+    "callNs": {
+     "n": 20,
+     "min": 106.7,
+     "p50": 121.2,
+     "p95": 191.1,
+     "p99": 191.1,
+     "max": 214.4,
+     "mean": 137.2
+    }
+   },
+   "parseUs": {
+    "n": 20,
+    "min": 1224.4,
+    "p50": 1810.0,
+    "p95": 2317.8,
+    "p99": 2317.8,
+    "max": 2765.5,
+    "mean": 1894.8
+   },
+   "issuedBytes": [
+    24407,
+    24408,
+    24578,
+    24579
+   ]
+  }
+ }
+}

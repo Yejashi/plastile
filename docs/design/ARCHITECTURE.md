@@ -36,6 +36,8 @@ flowchart TD
 
 The arrows carry immutable values or normalized events. Live Qt objects remain behind the adapter. Presentation receives placement revisions but cannot alter the authoritative layout. Persistence receives snapshots and cannot mutate model state without an explicit versioned restore command.
 
+As implemented (T27, [ADR-020](DECISIONS.md#adr-020-persistence-goes-through-an-asynchronous-d-bus-helper)): persistence lives in a separate process, the `plastile-state` helper on the session bus, which owns the two state files. KWin's thread only builds a snapshot and hands it to KWin's asynchronous `DBusCall` (`package/contents/ui/Persistence.qml`); it never reads or writes the files and never waits for a reply. The saved state arrives after the first solve, as one reply, and is applied as a restore (context preferences and float preferences) that re-solves through the ordinary flush; user decisions made before it arrived win.
+
 ## 3. Suggested repository structure after implementation begins
 
 | Path | Responsibility |
@@ -153,7 +155,7 @@ Use three work classes:
 
 1. **Commands:** focus, swap, ratio step, toggle float, layout change. Immediate when safe.
 2. **Lifecycle convergence:** related window/state/topology notifications. Coalesce into one scheduled flush.
-3. **Maintenance:** persistence, UI refresh, diagnostic export, bounded settle/deadline checks. Off the response path.
+3. **Maintenance:** persistence, UI refresh, diagnostic export, bounded settle/deadline checks. Off the response path. Persistence is one debounced, asynchronous request to the helper process (ADR-020); its file I/O never runs on KWin's thread.
 
 Pseudocode:
 

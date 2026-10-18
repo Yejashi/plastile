@@ -27,9 +27,12 @@ npm test               # core unit tests in Node (no KWin involved)
 
 The build output is `package/contents/code/plastile.mjs`, which `package/contents/ui/main.qml` imports. The TypeScript is lowered to the language level KWin's QV4 engine accepts ([API profile](../status/API_PROFILE.md#javascript-language-level-in-kwins-qv4-qt-612)).
 
+**Persistence helper** (optional, needed to keep layout preferences across restarts; [section 2a](#persistence-helper)): CMake, a C++17 compiler and the Qt 6 Core and DBus development files (Arch `qt6-base`, Debian/Ubuntu `qt6-base-dev`).
+
 **Nested integration suite** (`python3 tests/integration/run.py`). It also needs:
 
 - the C fixture client (`make -C fixtures/client`)
+- the persistence helper (`cmake -S helper -B build/helper && cmake --build build/helper`); each nested session installs it on its private bus
 - `python-dbus`
 - a KWin installation
 
@@ -62,6 +65,20 @@ What was measured (nested KWin 6.7.5, kpackagetool6 2.0, package installed into 
 - **Install before KWin starts:** the package installs, is autoloaded when KWin starts with `[Plugins] plastileEnabled=true`, and tiles windows.
 - **Disable/enable and upgrade:** disabling and re-enabling through the `Plugins` key plus `org.kde.kwin.Scripting.start` works, as do upgrade and removal.
 - **Install while KWin runs:** the package was not found by `Scripting.start` immediately. In one run, five attempts over the first 16.5 s failed and the attempt at 20.6 s loaded it (a cached package listing is the likely cause, by inference). If Plastile does not appear in System Settings, or does not start after you enable it, wait half a minute and try again, or log out and back in. Do **not** run `kwin_wayland --replace`: on Wayland that ends your session.
+
+### Persistence helper
+
+Plastile keeps your layout preferences (layouts, master ratios, where you floated windows) across script reloads, KWin restarts and logins only when its helper, `plastile-state`, is installed. The KWin script package cannot hold it: it is a separate program that the session bus starts when Plastile first asks for it, and it writes the state files so that KWin never does file I/O for them ([ADR-020](../design/DECISIONS.md#adr-020-persistence-goes-through-an-asynchronous-d-bus-helper), [helper README](../../helper/README.md)).
+
+```sh
+tools/install.sh install-helper    # build and install the helper and its D-Bus activation file
+tools/install.sh status            # shows "helper    : installed (...)"
+tools/install.sh remove-helper     # uninstall it (the saved state is kept)
+```
+
+`install-helper` builds `helper/` with CMake in `build/helper-install`, installs the binary as `~/.local/libexec/plastile-state` (`PLASTILE_HELPER_PREFIX` changes `~/.local`), writes `~/.local/share/dbus-1/services/org.kde.plastile.State.service` (under `$XDG_DATA_HOME` if set), and asks the session bus to re-read its service files. Nothing starts until Plastile asks; the helper exits after a minute without requests. A Plastile that is already running without the helper notices it at its next start: disable and re-enable the script, or log out and in. A release also carries the helper's sources as `dist/plastile-state-<version>.tar.gz` (built by `tools/release.py`), which builds the same way with `cmake`.
+
+Without the helper Plastile tiles normally and logs `plastile warn persistence unavailable` once at start-up. Measured in nested sessions only: installation into a private prefix and data directory, D-Bus activation and saving (`package-helper-install-T32`). It has not been tried on a physical session bus.
 
 **Leftover shortcut entries.** While the script is loaded, it registers one global shortcut per command in `~/.config/kglobalshortcutsrc`. These entries stay after the script is disabled or removed (measured). They are inert without the script.
 
@@ -154,6 +171,7 @@ The `configJson` key holds the JSON document as a single KConfig string. The set
 1. Untick Plastile in KWin Scripts and Apply. This releases windows, borders and connections.
 2. Run `kpackagetool6 --type KWin/Script --remove plastile`.
 3. Optionally, delete the `[Script-plastile]` group and the `plastileEnabled` line from `~/.config/kwinrc`, and the `plastile.*` entries from `~/.config/kglobalshortcutsrc` (they are under the `[kwin]` group).
-4. Optionally, delete `~/.local/state/plastile/`, which holds saved layout preferences ([details](README.md#saved-layout-preferences)).
+4. Run `tools/install.sh remove-helper` if you installed the persistence helper (or delete `~/.local/libexec/plastile-state` and `~/.local/share/dbus-1/services/org.kde.plastile.State.service`). A helper that is running exits on its own within a minute.
+5. Optionally, delete `~/.local/state/plastile/`, which holds saved layout preferences ([details](README.md#saved-layout-preferences)).
 
 Windows keep the geometry they had at unload. Nothing is restored to a pre-Plastile arrangement, because no such arrangement is stored.

@@ -142,7 +142,11 @@ Research links and original design descriptions are not a decision to copy upstr
 
 ## ADR-013: Persist session preferences through QtCore Settings
 
-**Status:** accepted direction (2026-10-18); implementation is task T27.
+**Status:** accepted direction (2026-10-18); implementation is task T27. **The storage path is superseded by
+[ADR-020](#adr-020-persistence-goes-through-an-asynchronous-d-bus-helper) (2026-10-18):** the QtCore `Settings`
+store, its in-process load before the first solve and its synchronous saves are removed. The snapshot, its
+validation and migrations, the two generation-numbered slots, conservative float matching (Q06) and the debounced
+saves below still apply.
 
 **Context.** ADR-011 asked for persistence through a supported settings path or an optional helper, and the
 earlier status listed T27 as blocked because the script API offers only `readConfig`. Experiment E12 found
@@ -158,7 +162,8 @@ application identity. Store it as one JSON string under `$XDG_STATE_HOME/plastil
 and validate and migrate it there, falling back to ordinary defaults on anything invalid. Never key it by
 session window ids. The write is synchronous file I/O on the compositor thread, so it is maintenance work
 (ARCHITECTURE §7): debounced, only when the snapshot changed, never on the command path, and cancelled on
-unload.
+unload. *(Superseded by ADR-020: the write and the load go to the plastile-state helper over D-Bus, and the load
+is applied when the reply arrives, after the first solve.)*
 
 **Consequences.** No helper process and no D-Bus service. A missing QtCore module or an unwritable file
 leaves Plastile working in memory and reports one diagnostic. Configuration stays in KConfig (`readConfig`).
@@ -220,7 +225,8 @@ the save took 2.5 ms. With the lock held by a live process of the matching name,
 thread for **31.9 s**, QLockFile's 30 s stale-lock time (n=1).
 
 **Decision.** In-process saves stay (option A), with these costs on record. They exceed the 1 ms target the gap
-analysis proposed for this choice.
+analysis proposed for this choice. *(Superseded by ADR-020, which takes option B. The probe that produced this
+table was `probes/persistence/cost/run.py` at commit `7a27cf7`; that directory now measures the helper path.)*
 
 - A save stalls the compositor thread for about 2–8 ms, up to 20 ms observed. That is enough to miss a frame when
   it lands on a frame deadline.
@@ -368,6 +374,7 @@ No effect, timer or transform code exists.
 deliberate feature decision, a completed G2 report, and a physical session to judge the result. The
 acceptance criteria on the card then apply unchanged.
 
+
 ## ADR-019: No live settings preview; the settings form is KConfigXT, checked against the schema
 
 **Status:** accepted (2026-10-18); task T28 (deviation from [CONFIGURATION](CONFIGURATION.md) §5's live
@@ -392,3 +399,115 @@ any. A setting takes effect only after Apply and a reload, which [user CONFIGURA
 states. A preview would need a Plastile-owned settings surface that sends candidate revisions to the engine
 and restores the previous one on cancel, recomputing from current window state; it stays out of scope until
 there is a reason to build that surface.
+
+## ADR-020: Persistence goes through an asynchronous D-Bus helper
+
+**Status:** accepted (2026-10-18), the owner's decision; task T27. Supersedes the storage path of
+[ADR-013](#adr-013-persist-session-preferences-through-qtcore-settings) (QtCore `Settings`, in-process load and
+saves). ADR-013's snapshot, validation, migrations, two generation-numbered slots, Q06 matching and debounce stay.
+
+**Context.** ADR-013 saved on KWin's compositor thread: `Settings.sync()`, a `QSaveFile` commit with `fsync`
+behind a `QLockFile`. Its addendum measured 1.6–3.6 ms p50 and up to 7.85 ms p99 per save (19.5 ms observed),
+every one of 750 calls over 1 ms, and a 31.9 s stall when another live process held the lock
+([evidence](../status/evidence/persistence-t27-cost.json)). The owner judged that unacceptable: a save that is
+debounced and off the command path still drops frames, and a held lock freezes the desktop. Nothing in-process
+avoids it. A probe (`probes/persistence/worker/`, not committed) found that a `WorkerScript` cannot write files
+inside KWin: an XHR file `PUT` needs `QML_XHR_ALLOW_FILE_WRITE` in KWin's environment, and QML module imports are
+ignored in a worker. KWin scripts have no `writeConfig`. ADR-011 already allowed "an optional small helper with
+asynchronous versioned messages".
+
+**Decision.**
+
+- **A helper process,** `plastile-state` ([helper/](../../helper/README.md)): C++17, Qt 6 Core and DBus only.
+  It owns the session-bus name `org.kde.plastile.State` and serves `Read() -> as` and
+  `Write(i slot, s text) -> b` on `/State`. It stores the slots as `$XDG_STATE_HOME/plastile/state-0.json` and
+  `state-1.json` (directory 0700, files 0600) with `QSaveFile`, whose `fsync` now blocks only the helper. It refuses
+  a slot other than 0 or 1 and texts over 1 MiB, never interprets the text, answers in arrival order, and exits
+  after 60 s without a request. There is no lock file: owning the bus name makes it the only writer, and a second
+  instance exits. The session bus starts it on demand from its activation file.
+- **No persistence file I/O on KWin's thread.** `Persistence.qml` is a thin asynchronous store over KWin's
+  `DBusCall` (org.kde.kwin 3.0, as in ADR-015): one call object per request, destroyed with its reply, plus the
+  one-shot maintenance Timer for the debounce. The QtCore `Settings` path is removed.
+- **Asynchronous load.** The runtime sends one `Read` at start-up and tiles with defaults at once; it never waits
+  for the reply. The reply applies the newest valid slot by the same generation and slot rules, except what the user
+  changed since start-up: a context whose preferences changed keeps the user's values, and an application whose
+  float decision changed keeps it (the engine now says which context or application identity a preference change
+  touched). Saved floats are matched against the windows live at that moment (Q06 unchanged). Affected contexts
+  re-solve in the engine's next flush; the reply callback writes no geometry, and the single writer is unchanged.
+  A float restored to a window whose tile request is still in flight now waits for that request to settle: KWin
+  drops a write back to the committed size while a configure is outstanding (the ledger's E04 rule), so writing at
+  once left the window on its tile (found by `persist-reload-restart-T27`; unit test added).
+- **Saves.** Nothing is written before the load reply, or its failure, arrives; changes made meanwhile are saved a
+  quiet period after it. One `Write` is in flight at a time; changes made while it waits are saved after its reply.
+  Nothing is retried by itself: what a failed `Write` carried is saved with the next change or at unload, with one
+  diagnostic per run of failures. A failed or absent helper at load (`ServiceUnknown`, an error reply, a malformed
+  reply) gives state `memory`, one diagnostic and no further request. A clean unload sends one final `Write` if
+  dirty, after a `Write` still in flight and into the other slot. An unload while the load is pending writes
+  nothing: the slots' generations are not known yet.
+- **The interaction postponement is dropped.** ADR-013 postponed a save due during an interactive move or resize
+  because the save blocked the compositor thread for milliseconds, and capped the postponement at 30 s for a move
+  that never ends. Issuing a save now costs about as much as one command handler (below), so the postponement and
+  its cap are gone, with `Engine.isInteracting()`, which had no other user.
+- **Two QV4 costs found by the measurement were cut.** Validating a full snapshot built a path string for every
+  field: 2.3 ms of its 2.9 ms parse in QV4. Paths are now built only for reported errors: 0.34 ms, with identical
+  results on 8000 mutated inputs. The unchanged-content check stringified the snapshot a second time; the content is
+  now a slice of the serialized text (`contentOf`).
+
+**Evidence** (nested KWin 6.7.5, Qt 6.12.0, virtual backend, ext4 on NVMe; CLOCK_MONOTONIC from `tools/measure`
+inside KWin; other agents' nested suites shared the 12 CPUs; probe `probes/persistence/cost/run.py`,
+[evidence](../status/evidence/persistence-helper-cost.json)). Times on KWin's thread:
+
+| What | p50 | p95 | max | n |
+|---|---|---|---|---|
+| `write()` call (builds the `DBusCall`, sends), 1 KiB text | 0.06 ms | 0.09 ms | 0.12 ms | 250 |
+| `write()` call, 16 KiB | 0.08 ms | 0.12 ms | 0.15 ms | 250 |
+| `write()` call, 64 KiB | 0.20 ms | 0.28 ms | 0.34 ms | 250 |
+| `read()` call at start-up (first in the session / reloads) | 0.08 ms / 0.05 ms | 0.07 ms | 0.08 ms | 1 / 20 |
+| A save as Plastile issues it (snapshot build + serialize + call), 0.3 KB state after command bursts | 0.19 ms | | 0.21 ms | 3 |
+| Same, typical state (2 contexts, 2 floats, 0.8–1 KB) | 0.22 ms | 0.28 ms | 0.69 ms | 20 |
+| Same, largest state (64 contexts, 64 floats, 24 KB) | 1.23 ms | 1.59 ms | 1.83 ms | 20 |
+| Load reply callback (parse both slots + apply), typical state | 0.14 ms | 0.29 ms | 0.29 ms | 20 |
+| Load reply callback, largest state (two 24 KB slots) | 2.19 ms | 2.84 ms | 3.09 ms | 20 |
+| For comparison: a command handler (dispatch to return) | 0.29 ms | 0.48 ms | 0.96 ms | 123 |
+
+None of the 750 `write()` calls took 1 ms. The two cuts above are included; before them the largest state cost
+about 1.6 ms to issue and 5.4 ms in the load callback (same probe, earlier runs, n=6–8).
+
+Before (ADR-013): `sync()` alone was 1.6 ms p50 for 1 KiB and 3.6 ms for 64 KiB, and 31.9 s with a held lock. The
+`fsync` is still paid, in the helper: a `Write` reply arrived 2.3–3.0 ms p50 (max 6.2 ms, n=750) after the call, and the first `Read`, which starts the helper, 6.5 ms, which KWin's thread does not
+wait for.
+
+Nested scenarios (each passed twice, KWin 6.7.5):
+
+- `persist-helper-stopped-Q05`: the helper is stopped with SIGSTOP while a save comes due. KWin's main-thread
+  D-Bus round trip stays at its baseline (p50 0.16 and 0.25 ms stopped against 0.17 and 0.21 ms before the stop in the two runs, max under 0.5 ms, n=30 each), three resize commands appear in the oracle in 15–21 ms, one
+  `Write` waits in flight and nothing else is sent, no file changes, and both saves land after SIGCONT. After a
+  SIGKILL the next save activates a new helper.
+- `persist-helper-delayed-Q05` (every request delayed 4 s): tiling starts on defaults; the saved ratio applies to
+  the untouched output when the reply arrives, about 4 s later, while the output the user changed keeps the user's
+  ratio; the delayed writes land in order with the latest preferences.
+- `persist-reload-cycles-Q09`: each of 20 unloads saved exactly once, so a `Write` issued from
+  `Component.onDestruction` is delivered (`DBusCall::call()` sends with `asyncCall` before the object is destroyed;
+  observed source).
+- `persist-no-helper-Q05`: without the activation file Plastile tiles, logs one diagnostic and writes nothing.
+- Probe command phase: 123 commands, no state-file event inside a command handler or within 1.5 s after one, one
+  save per burst.
+
+**Consequences.**
+
+- Persistence needs the installed helper, a second artifact beside the `.kwinscript`: `tools/install.sh
+  install-helper` builds and installs it, and `tools/release.py` ships its source tarball
+  `dist/plastile-state-<version>.tar.gz`. The `.kwinscript` stays script-only; with it alone Plastile keeps its
+  preferences in memory and logs `plastile warn persistence unavailable` once.
+- Restore is asynchronous. The first solve uses defaults and the saved preferences apply one reply later, as a
+  re-solve: 5–10 ms after start in nested runs, helper activation included. A restored layout can therefore change
+  once, visibly, right after start-up. A newly opened window whose saved float arrives after its first tile write
+  floats one configure later.
+- Changes made before the load reply are lost if the script unloads before it arrives.
+- State files of earlier development builds (`state-N.ini`) are not read; no release used them.
+- Unverified: whether the final `Write` at KWin's own exit (logout) reaches the helper (only script unload was
+  measured); D-Bus activation on a physical session bus (dbus-broker under systemd); the CI jobs that build the
+  helper; any physical-session timing.
+
+**Revisit if** the start-up re-solve is visible as a hitch on a physical session, the load callback grows past a
+frame for real snapshots, or KWin gains a supported asynchronous file write for scripts.

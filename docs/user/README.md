@@ -33,7 +33,7 @@ The 23 core integration scenarios in `tests/integration/scenarios.py` passed: 10
 - Fullscreen, maximize and minimize are respected: KWin keeps ownership while the state lasts, peers reflow, and the window returns to its slot afterwards. Overlapping states are handled.
 - Native quick tiling (`Meta+arrow`) is kept and not snapped back. *Adopt natively tiled window* brings the window back into the layout.
 - Toggling a window floating and back to tiled; the last floating rectangle is restored, on the window's current screen when it moved to another one (two screens).
-- Saved layout preferences (a master ratio, a floated window's position) survive script reloads and a KWin restart; a damaged state file falls back to defaults with one log line (scenario files `scenarios_persist.py`, run separately from the 23 scenarios counted above).
+- Saved layout preferences (a master ratio, a floated window's position) survive script reloads and a KWin restart when the persistence helper is installed ([below](#saved-layout-preferences)); a damaged state file falls back to defaults with one log line (scenario files `scenarios_persist.py`, run separately from the 23 scenarios counted above).
 - Transient dialogs float; main windows tile.
 - Two outputs: send a window to the other output, output scale changes from 1.25 to 2, portrait rotation, unplugging an output with requests in flight, and replugging it. A layout chosen for a screen comes back when the screen is replugged. Screens are identified by the monitor's manufacturer, model and serial number when KWin reports them, so that also holds on another connector (unit-tested only: the nested virtual outputs report none and are identified by connector name). Two identical monitors are told apart by connector.
 - Sending a window to another desktop without following it; that desktop is tiled when it is first shown. With `followOnSend`, the desktop is shown on the window's screen and the window activated (two screens, per-screen desktops).
@@ -175,13 +175,15 @@ Plastile remembers some of what you change with its commands across script reloa
 
 Window order, BSP split structure, quick-tile and maximize states, and per-window choices for applications with several windows are not saved. Your configuration (gaps, rules, overrides) is not part of this state either. It stays in `kwinrc`.
 
-**Where:** `~/.local/state/plastile/state-0.ini` and `state-1.ini` (or under `$XDG_STATE_HOME`). The two files hold alternate saves, so an interrupted save leaves the previous one usable. A damaged file or a file from a newer Plastile is ignored with one `plastile warn saved state rejected` line in the log. A newer Plastile's file is left untouched.
+**Needs the persistence helper.** Saving and restoring go through `plastile-state`, a small helper program installed beside the script with `tools/install.sh install-helper` ([install guide](INSTALL.md#persistence-helper)). KWin itself never reads or writes the files; it sends the helper asynchronous D-Bus requests and does not wait for them ([ADR-020](../design/DECISIONS.md#adr-020-persistence-goes-through-an-asynchronous-d-bus-helper)). With only the KWin script installed, Plastile tiles normally, logs `plastile warn persistence unavailable` once, and keeps your changes until the script reloads or KWin restarts.
 
-**When:** about 2 seconds after your last change, and when the script stops cleanly. Never while a command runs or while you drag a window. Each save is a short synchronous file write inside KWin. It measured 2 to 8 ms in nested sessions, and up to 20 ms ([ADR-013](../design/DECISIONS.md#adr-013-persist-session-preferences-through-qtcore-settings)). Unchanged state is not rewritten.
+**Where:** `~/.local/state/plastile/state-0.json` and `state-1.json` (or under `$XDG_STATE_HOME`), readable only by you. The two files hold alternate saves, and each save replaces its file atomically, so an interrupted save leaves the previous one usable. A damaged file or a file from a newer Plastile is ignored with one `plastile warn saved state rejected` line in the log. A newer Plastile's file is left untouched.
+
+**When saved:** about 2 seconds after your last change, and when the script stops cleanly; never while a command runs. Unchanged state is not rewritten. In nested sessions handing a save to the helper took about 0.2 ms of KWin's time for a typical state and about 1.2 ms for the largest one (64 screen/desktop entries and 64 floated applications), and a stopped or slow helper did not slow KWin or its commands.
+
+**When restored:** Plastile starts tiling with its defaults at once and applies the saved preferences when the helper answers, a few milliseconds later, so the layout can change once right after start-up. A change you make before that answer arrives wins over the saved one.
 
 **Reset:** disable Plastile, delete `~/.local/state/plastile/`, and enable it again. Deleting the files while Plastile runs is not enough: the next change saves the in-memory state again.
-
-Saving needs Qt's `QtCore` QML module, which Plasma's own QML depends on. Without it Plastile tiles normally, logs `plastile warn persistence unavailable` once, and forgets your changes at the next reload.
 
 ## Where this project is going
 

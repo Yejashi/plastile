@@ -65,7 +65,7 @@ qdbus6 org.kde.kglobalaccel /component/kwin org.kde.kglobalaccel.Component.invok
 | `shortcuts` | The startup shortcut check: `state` (`pending`, `done` or `unavailable`) and the number of `conflicts` ([details](SHORTCUTS.md#conflict-report)). |
 | `inspectorOpen` | Whether the *Explain active window* inspector is open. |
 | `counters.restored`, `restoreAmbiguous` | Saved float positions given to the one open window of their application, and ones withheld because several windows of the application were open. |
-| `persistence` | Saved state: `state` (`active`; `memory` when `QtCore` is unavailable; `read-only` when a newer Plastile's file is present; `off`), the `generation` last loaded or saved, this load's `writes` and `skipped` (unchanged) saves, and whether a save is pending (`dirty`, `armed`). |
+| `persistence` | Saved state: `state` (`loading` until the helper answered; `active`; `memory` when the persistence helper is not installed or did not answer; `read-only` when a newer Plastile's file is present; `off`), the `generation` last loaded or saved, this load's confirmed `writes`, `issued` and `failed` saves, `skipped` (unchanged) saves, and whether a save is pending (`dirty`, `armed`, `inflight`: a request the helper has not answered yet). |
 
 A healthy idle session shows no change between two dumps taken a few seconds apart. Measured: 3 s of idle produced no flushes, deadlines or writes.
 
@@ -138,9 +138,11 @@ Check KWin's Window Rules and disable other tiling scripts. Then compare two cou
 
 ## Saved state
 
-- **Preferences not restored:** look for `plastile warn saved state rejected` (a damaged file, or one from a newer Plastile) or `plastile warn persistence unavailable` (Qt's `QtCore` QML module is missing; install your distribution's package for it, such as `qml6-module-qtcore` on Debian and Ubuntu). At `info`, `plastile info saved state loaded` reports what was read. A floated window's position is restored only when exactly one window of that application is open. *Log counters* shows `counters.restored` and `counters.restoreAmbiguous`, and `persistence.state`.
+- **Preferences not restored:** look for `plastile warn saved state rejected` (a damaged file, or one from a newer Plastile) or `plastile warn persistence unavailable` (the persistence helper is not installed or did not answer: run `tools/install.sh status`, install it with `tools/install.sh install-helper` ([guide](INSTALL.md#persistence-helper)), then disable and re-enable Plastile). At `info`, `plastile info saved state loaded` reports what was read. A floated window's position is restored only when exactly one window of that application is open. *Log counters* shows `counters.restored` and `counters.restoreAmbiguous`, and `persistence.state`.
+- **`plastile warn saving state failed`:** the helper could not store a file (a full disk, a read-only `~/.local/state`); its own warning (program `plastile-state`, category `plastile.state`) says why, in the session's log, for example `journalctl --user -t plastile-state` (not checked on a physical session). Preferences stay in memory and are saved with your next change. This warning appears once until a save succeeds again.
+- **Is the helper running?** `busctl --user status org.kde.plastile.State` shows it while it is; it exits after a minute without requests, and the session bus starts it again when Plastile asks. A stopped or hung helper delays only saving: KWin and Plastile's commands do not wait for it (measured in nested sessions with the helper stopped).
 - **Start over:** disable Plastile, delete `~/.local/state/plastile/`, enable it again.
-- **KWin froze for about 30 seconds after a layout change:** a save waits for the state file's lock. This can only happen when another live process holds `~/.local/state/plastile/state-N.ini.lock`, such as a second Plasma session or a stopped nested KWin using the same home directory and running Plastile (measured: 31.9 s with a held lock). Stop that process. A lock left behind by a crashed process is cleared at once.
+- **Files `state-0.ini`, `state-1.ini` or `*.lock` in `~/.local/state/plastile/`:** left by an earlier development build, which saved inside KWin. They are not read any more and can be deleted.
 
 ## Known limitations
 

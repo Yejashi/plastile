@@ -20,8 +20,9 @@ Plasma session yet.**
   - `src/config/`: schema, validation, compilation and rule matchers. Configuration is data; no user JS runs.
   - `src/adapters/kwin/`: the only module that touches KWin objects.
     [kwinTypes.ts](../../src/adapters/kwin/kwinTypes.ts) lists the script-visible API surface as measured.
-  - `src/persist/` and `src/runtime/persistence.ts`: T27 session persistence through QtCore `Settings`
-    (ADR-013).
+  - `src/persist/` and `src/runtime/persistence.ts`: T27 session persistence (ADR-013), stored by the
+    `plastile-state` helper over asynchronous D-Bus since ADR-020 (`helper/`; the QtCore `Settings` store is
+    gone).
   - `src/runtime/`: wiring, shortcuts, and the inspector/explain view.
 - `package/contents/ui/main.qml` is the entry point; there are also `Inspector.qml`, `Persistence.qml` and the
   KCM `config.ui`.
@@ -53,8 +54,10 @@ python3 tests/integration/run.py              # every nested scenario; report un
 python3 tests/integration/run.py --only persist-reload-restart-T27,reload-Q09   # exact names, comma-separated
 ```
 
-Nested scenarios need the fixture clients and the libei injector built for the machine that runs KWin:
-`make -B -C fixtures/client && make -B -C fixtures/xclient && make -B -C tools/input`. The packages the
+Nested scenarios need the fixture clients, the libei injector and the persistence helper built for the machine
+that runs KWin: `make -B -C fixtures/client && make -B -C fixtures/xclient && make -B -C tools/input` and
+`cmake -S helper -B build/helper && cmake --build build/helper` (each session installs the helper's activation
+file on its private bus; `PLASTILE_STATE_HELPER` selects another build). The packages the
 sandbox installs are listed in [tools/sandbox/packages.txt](../../tools/sandbox/packages.txt). Among them are
 `kwin-common`, `kactivitymanagerd`, `python3-dbus`, `libkscreen-bin` (`kscreen-doctor`), `libei-dev`, `xwayland` and the
 Wayland/X11 dev headers.
@@ -92,9 +95,11 @@ Beyond [AGENTS.md](../../AGENTS.md):
   otherwise `0.5`. This stops KWin's rounding from being learned as a constraint.
 - Corrections are bounded. Window and context generations, and tombstones, discard stale callbacks.
 - **No timers on the command path and no idle polling.** Persistence saves through one debounce, never during a
-  command or a drag. Its measured cost is 1.6–3.6 ms p50 and up to 7.85 ms p99 per save, plus a 31.9 s stall
-  if another live process holds the QSettings lock
-  ([evidence](evidence/persistence-t27-cost.json), ADR-013 addendum).
+  command. **KWin's thread does no persistence file I/O** (ADR-020): a save is one asynchronous `DBusCall` to the
+  `plastile-state` helper, about 0.2 ms of KWin's time for a typical state
+  ([evidence](evidence/persistence-helper-cost.json)); the old in-process QSettings saves cost 1.6–3.6 ms p50
+  and stalled 31.9 s on a held lock ([evidence](evidence/persistence-t27-cost.json)). Do not add file I/O back
+  to KWin's thread.
 - Every signal goes through the adapter's owned-connection registry. KWin keeps plain closures alive after
   unload; `reload-Q09` checks that across 100 cycles.
 - Plastile's own windows (the inspector, and the zones overlay on the WIP branch) are excluded from tiling, and
