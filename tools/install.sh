@@ -1,14 +1,25 @@
 #!/bin/sh
-# Plastile package installer: a thin, non-invasive wrapper around kpackagetool6.
+# Plastile package installer: a thin, non-invasive wrapper around kpackagetool6, plus the
+# persistence helper (helper/, ADR-020), which is built from source with CMake.
 #
 #   tools/install.sh install [SOURCE]   install the package (default SOURCE: package/)
 #   tools/install.sh upgrade [SOURCE]   replace an installed package in place
 #   tools/install.sh remove             uninstall the package
+#   tools/install.sh install-helper     build and install the persistence helper and its
+#                                       D-Bus activation file (also replaces an older one)
+#   tools/install.sh remove-helper      uninstall the persistence helper
 #   tools/install.sh status             show what is installed and whether it is enabled
 #
 # SOURCE is the repository's package/ directory or a dist/plastile-<version>.kwinscript
 # zip built by tools/release.py. install/upgrade refuse to run unless the runtime
-# bundle (contents/code/plastile.mjs) is present in SOURCE.
+# bundle (contents/code/plastile.mjs) is present in SOURCE. Without the helper Plastile
+# works and keeps its layout preferences in memory only.
+#
+# The helper goes to $PLASTILE_HELPER_PREFIX/libexec/plastile-state (default ~/.local)
+# and its activation file to $XDG_DATA_HOME/dbus-1/services (default ~/.local/share),
+# where the session bus finds it. Building needs cmake, a C++17 compiler and the Qt 6
+# Core and DBus development files; the build directory is $PLASTILE_HELPER_BUILD
+# (default build/helper-install).
 #
 # This script never starts, stops, restarts, reloads or reconfigures the compositor
 # and never writes kwinrc. It only prints how to enable the script afterwards.
@@ -24,9 +35,15 @@ DEFAULT_SOURCE=$ROOT/package
 DATA_HOME=${XDG_DATA_HOME:-$HOME/.local/share}
 TARGET=$DATA_HOME/kwin/scripts/$PLUGIN
 KPT=${KPACKAGETOOL6:-kpackagetool6}
+HELPER_SOURCE=$ROOT/helper
+HELPER_PREFIX=${PLASTILE_HELPER_PREFIX:-$HOME/.local}
+HELPER_BUILD=${PLASTILE_HELPER_BUILD:-$ROOT/build/helper-install}
+SERVICE_NAME=org.kde.plastile.State
+SERVICE_FILE=$DATA_HOME/dbus-1/services/$SERVICE_NAME.service
+STATE_DIR=${XDG_STATE_HOME:-$HOME/.local/state}/plastile
 
 usage() {
-    sed -n '2,16p' "$0" | sed 's/^# \{0,1\}//'
+    sed -n '2,27p' "$0" | sed 's/^# \{0,1\}//'
 }
 
 die() {
@@ -77,6 +94,72 @@ or, from a terminal in the same session:
 
 To disable later, set the same key to false and run the same Scripting.start command.
 This script prints these commands; it does not execute them.
+
+Layout preferences (layouts, ratios, floated windows) are kept across restarts only with
+the persistence helper: tools/install.sh install-helper. Without it they last until
+KWin restarts or the script reloads.
+EOF
+}
+
+# The executable a D-Bus activation file starts (empty when there is no file).
+service_exec() {
+    [ -f "$1" ] && sed -n 's/^Exec=//p' "$1" | head -n 1 || true
+}
+
+# Ask the session bus to re-read its service files (org.freedesktop.DBus.ReloadConfig), for a
+# bus that does not notice a new file by itself. Only the bus is asked; nothing is restarted.
+reload_bus() {
+    if [ -z "${DBUS_SESSION_BUS_ADDRESS:-}" ]; then
+        printf 'No session bus in this environment: the activation file is read at the next login.\n'
+    elif command -v dbus-send >/dev/null 2>&1 \
+        && dbus-send --session --print-reply --dest=org.freedesktop.DBus /org/freedesktop/DBus \
+            org.freedesktop.DBus.ReloadConfig >/dev/null 2>&1; then
+        printf 'The session bus re-read its service files.\n'
+    else
+        printf 'Could not ask the session bus to re-read its service files: log out and in if Plastile\nreports the helper as unavailable.\n'
+    fi
+}
+
+cmd_install_helper() {
+    for tool in cmake; do
+        command -v "$tool" >/dev/null 2>&1 || die "$tool not found (building the helper needs cmake, a C++17 compiler and the Qt 6 Core and DBus development files)" 127
+    done
+    [ -f "$HELPER_SOURCE/CMakeLists.txt" ] || die "$HELPER_SOURCE/CMakeLists.txt is missing"
+    cmake -S "$HELPER_SOURCE" -B "$HELPER_BUILD" -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_INSTALL_PREFIX="$HELPER_PREFIX" -DCMAKE_INSTALL_LIBEXECDIR=libexec \
+        -DPLASTILE_DBUS_SERVICE_DIR="$DATA_HOME/dbus-1/services" >/dev/null \
+        || die "configuring the helper failed (are the Qt 6 Core and DBus development files installed?)"
+    cmake --build "$HELPER_BUILD" >/dev/null || die "building the helper failed"
+    cmake --install "$HELPER_BUILD" >/dev/null || die "installing the helper failed"
+    exe=$(service_exec "$SERVICE_FILE")
+    [ -x "$exe" ] || die "installed, but $SERVICE_FILE does not name an executable helper ($exe)"
+    reload_bus
+    cat <<EOF
+
+Installed: $exe
+Activation file: $SERVICE_FILE
+The session bus starts the helper when Plastile first asks for it (when the script starts
+or reloads); nothing is running now. A Plastile that already runs without it keeps its
+preferences in memory until the script is reloaded or KWin restarts.
+Saved state: $STATE_DIR
+EOF
+}
+
+cmd_remove_helper() {
+    [ -f "$SERVICE_FILE" ] || die "$SERVICE_FILE is not installed" 2
+    exe=$(service_exec "$SERVICE_FILE")
+    rm -f "$SERVICE_FILE"
+    case "$exe" in
+        */plastile-state) rm -f "$exe" ;;
+        *) printf 'install.sh: %s named %s, which was left alone\n' "$SERVICE_FILE" "$exe" >&2 ;;
+    esac
+    reload_bus
+    cat <<EOF
+
+Removed: $SERVICE_FILE${exe:+ and $exe}
+A helper that is running exits on its own within a minute. Plastile then keeps its
+preferences in memory from its next start. The saved state in $STATE_DIR was left as it
+is; delete that directory to forget it.
 EOF
 }
 
@@ -147,6 +230,15 @@ cmd_status() {
         [ -n "$enabled" ] || enabled="unset"
     fi
     printf 'enabled   : %s (kwinrc [Plugins] %sEnabled)\n' "$enabled" "$PLUGIN"
+    exe=$(service_exec "$SERVICE_FILE")
+    if [ -z "$exe" ]; then
+        printf 'helper    : not installed (no %s): preferences are kept in memory only\n' "$SERVICE_FILE"
+    elif [ -x "$exe" ]; then
+        printf 'helper    : installed (%s, started by the session bus)\n' "$exe"
+    else
+        printf 'helper    : BROKEN (%s names %s, which is not an executable)\n' "$SERVICE_FILE" "$exe"
+    fi
+    printf 'state     : %s\n' "$STATE_DIR"
     printf 'kpackagetool6 --type %s --show %s:\n' "$TYPE" "$PLUGIN"
     "$KPT" --type "$TYPE" --show "$PLUGIN" 2>&1 | sed 's/^/  /' || true
 }
@@ -156,7 +248,9 @@ case "${1:-}" in
     upgrade) shift; cmd_upgrade "$@" ;;
     remove)  shift; cmd_remove ;;
     status)  shift; cmd_status ;;
+    install-helper) shift; cmd_install_helper ;;
+    remove-helper)  shift; cmd_remove_helper ;;
     -h|--help|help) usage ;;
     "") usage >&2; exit 64 ;;
-    *) die "unknown subcommand '$1' (install|upgrade|remove|status)" 64 ;;
+    *) die "unknown subcommand '$1' (install|upgrade|remove|install-helper|remove-helper|status)" 64 ;;
 esac

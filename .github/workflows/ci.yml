@@ -95,8 +95,10 @@ jobs:
         run: python3 tools/check_docs.py
 
       - name: Release package is reproducible (tools/release.py --check)
-        # Builds dist/plastile-<version>.kwinscript twice and compares bytes. It does
-        # not install anything (installation is exercised only in nested sessions).
+        # Builds dist/plastile-<version>.kwinscript (script-only) and the persistence
+        # helper's source tarball dist/plastile-state-<version>.tar.gz twice and compares
+        # bytes. It does not install anything (installation is exercised only in nested
+        # sessions).
         if: hashFiles('tools/release.py') != ''
         run: python3 tools/release.py --check --out dist
 
@@ -182,6 +184,7 @@ jobs:
           path: |
             package/contents/code/plastile.mjs
             dist/*.kwinscript
+            dist/plastile-state-*.tar.gz
             fixtures/client/build/plastile-fixture
             fixtures/xclient/build/plastile-xclient
             build/input/plastile-input
@@ -219,6 +222,13 @@ jobs:
           cmake --build build/settings-check
           test -x build/settings-check/plastile-settings-check
 
+      - name: Build the persistence helper (helper/, plastile-state; -Werror)
+        # Qt6 Core + DBus only (ADR-020). Built only here; the nested jobs build and run it.
+        run: |
+          cmake -S helper -B build/helper -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build/helper
+          test -x build/helper/plastile-state
+
       - name: Job summary
         if: always()
         run: |
@@ -246,7 +256,7 @@ jobs:
           sudo apt-get install -y --no-install-recommends debootstrap
           sudo PLASTILE_SANDBOX_APPS=0 tools/sandbox/create.sh /opt/plastile-kwin-sandbox stonking
 
-      - name: Build inside the sandbox (npm ci, bundle, fixtures, input injector)
+      - name: Build inside the sandbox (npm ci, bundle, fixtures, input injector, persistence helper)
         run: |
           sudo tools/sandbox/run.sh -- bash -euc '
             npm ci
@@ -254,6 +264,8 @@ jobs:
             make -C fixtures/client
             make -C fixtures/xclient
             make -C tools/input
+            cmake -S helper -B build/helper -G Ninja -DCMAKE_BUILD_TYPE=Release
+            cmake --build build/helper
           '
 
       - name: Run nested integration scenarios
@@ -323,10 +335,12 @@ jobs:
       - name: Run nested integration scenarios (KWin 6.8)
         run: |
           tools/sandbox/nix/run.sh -- kwin_wayland --version
-          # llvmpipe runs the tile-editor effect here; the expected SKIPs are the negative origin and the
-          # real-panel scenario (the Nix environment has no plasmashell).
+          # llvmpipe runs the tile-editor effect here; the expected SKIPs are the negative origin, the
+          # real-panel scenario (the Nix environment has no plasmashell) and the helper's install.sh build
+          # (no compiler in the environment). The environment builds the persistence helper itself
+          # (env.nix plastileState; run.sh exports PLASTILE_STATE_HELPER).
           tools/sandbox/nix/run.sh -- python3 tests/integration/run.py --markdown artifacts/integration-kwin68-summary.md \
-            --expect-skips output-negative-origin-G02,plasmashell-panels-O07
+            --expect-skips output-negative-origin-G02,plasmashell-panels-O07,package-helper-install-T32
 
       - name: Diagnostics on failure (device nodes, first KWin log)
         if: failure()
