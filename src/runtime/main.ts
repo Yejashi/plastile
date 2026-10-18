@@ -13,6 +13,7 @@ import { KwinAdapter } from "../adapters/kwin/adapter.ts";
 import type { KKWin, KOptions, KQt, KSignal, KWorkspace } from "../adapters/kwin/kwinTypes.ts";
 import { describeConflicts, ShortcutAudit, type Bus, type ShortcutReport } from "./shortcuts.ts";
 import { describeWindow, type InspectorView } from "./inspect.ts";
+import { zoneOverlayView, type ZoneOverlayHost } from "./zoneOverlay.ts";
 import { Persister, type StateStore } from "./persistence.ts";
 
 export const VERSION = "0.1.0";
@@ -35,6 +36,8 @@ export interface RuntimeEnv {
   readonly dbus?: Bus;
   /** The lazily created inspector window (package/contents/ui/Inspector.qml); absent: explain only logs. */
   readonly inspector?: InspectorHost;
+  /** The lazily created zones overlay (package/contents/ui/ZoneOverlay.qml, experimental); absent: zone.show only logs. */
+  readonly zones?: ZoneOverlayHost;
   // ---- persistence (T27) ----
   /** Saved session preferences (package/contents/ui/Persistence.qml); absent: nothing is loaded or saved. */
   readonly state?: StateStore;
@@ -203,6 +206,26 @@ export function createRuntime(env: RuntimeEnv): Runtime {
   };
   // ---- end T26/T28/D9 ----
 
+  // ---- zones overlay (M9, experimental; docs/design/ZONES.md §4) ----
+  // Exists from the first "show" until unload; draws the engine's own projection. Refreshed only by
+  // Plastile commands while shown (no timer, no polling, nothing at all while hidden).
+  const zoneOverlay = (refreshOnly: boolean): void => {
+    const host = env.zones;
+    const shown = !!host && host.state() === "shown";
+    if (refreshOnly && !shown) return;
+    if (!refreshOnly && shown) { host!.hide(); return; }
+    const m = engine.zoneOverlay();
+    if ("reason" in m) {
+      if (shown) host!.hide();
+      log("info", `zones overlay not shown: ${m.reason}`);
+      return;
+    }
+    const view = zoneOverlayView(m);
+    log("info", "zones overlay", { output: m.output, layout: m.layout, zones: view.rects.map((z) => ({ n: z.n, rect: z.rect })) });
+    if (host) host.show(view);
+  };
+  // ---- end zones overlay ----
+
   const dispatch = (id: string): CommandResult | null => {
     if (!engine.isAlive()) return null;
     if (id === "plastile.inspect.explain-window") { explainWindow(); return null; }
@@ -211,7 +234,8 @@ export function createRuntime(env: RuntimeEnv): Runtime {
         connections: adapter.connectionCount(), windows: adapter.windowCount(), contexts: engine.contextSummary(),
         configRevision: snapshot?.revision ?? null,
         shortcuts: shortcuts ? { state: shortcuts.state, conflicts: shortcuts.conflicts.length } : null,
-        inspectorOpen: env.inspector ? env.inspector.isOpen() : null, persistence: persister.summary() }));
+        inspectorOpen: env.inspector ? env.inspector.isOpen() : null, zoneOverlay: env.zones ? env.zones.state() : null,
+        persistence: persister.summary() }));
       return null;
     }
     if (id === "plastile.inspect.dump-trace") {
@@ -223,6 +247,7 @@ export function createRuntime(env: RuntimeEnv): Runtime {
       return null;
     }
     if (id === "plastile.runtime.reload-config") { reloadConfig(); return null; }
+    if (id === "plastile.zone.show") { zoneOverlay(false); return null; }
     const clock = env.perf ? env.clockNs : undefined;
     const t0 = clock ? clock() : 0;
     engine.lastTiming = null;
@@ -234,6 +259,7 @@ export function createRuntime(env: RuntimeEnv): Runtime {
         timing: engine.lastTiming, activateNs: engine.lastActivateNs, writes: r.requested }));
     }
     log("debug", "command", r);
+    if (r.status === "accepted" && (id.indexOf("plastile.zone.") === 0 || id.indexOf("plastile.layout.") === 0)) zoneOverlay(true);
     return r;
   };
 
@@ -250,6 +276,7 @@ export function createRuntime(env: RuntimeEnv): Runtime {
       // Own UI and pending D-Bus replies go first: neither may reach a stopped engine.
       if (audit) audit.cancel();
       if (env.inspector) env.inspector.close();
+      if (env.zones) env.zones.destroy();
       // The last save reads the engine's preferences, so it precedes the engine's stop (T27).
       persister.shutdown();
       // Invalidate first (engine stops deferred work and restores owned state), then disconnect.
@@ -286,7 +313,7 @@ export function engineOptions(snap: ConfigSnapshot, names: ContextNames): Engine
     rulesFor: (meta, key) => {
       const r = resolveWindow(snap, meta, key ? info(key) : null);
       if (r.ruleIds.length === 0) return null;
-      return { mode: r.actions.mode, border: r.actions.border, insert: r.actions.insert, minSize: r.actions.minSize,
+      return { mode: r.actions.mode, border: r.actions.border, insert: r.actions.insert, minSize: r.actions.minSize, zone: r.actions.zone,
                ruleIds: r.ruleIds, reasons: r.reasons };
     },
     titleRules: snap.usesTitleRules,

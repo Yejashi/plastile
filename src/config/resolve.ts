@@ -127,7 +127,7 @@ function contextPasses(c: CompiledConfig, ctx: ContextInfo, key: string): Readon
 /** Apply matched rules in order (later rules win per field); a built-in exclusion overrides them. */
 function build(rules: readonly CompiledRule[], meta: WindowMeta): WindowRuleResult {
   const actions: { mode?: RuleActions["mode"]; border?: RuleActions["border"]; insert?: RuleActions["insert"];
-                   minSize?: RuleActions["minSize"] } = {};
+                   minSize?: RuleActions["minSize"]; zone?: number } = {};
   const reasons: Record<string, string> = {};
   const ruleIds: string[] = [];
   for (const r of rules) {
@@ -137,6 +137,7 @@ function build(rules: readonly CompiledRule[], meta: WindowMeta): WindowRuleResu
     if (a.border !== undefined) { actions.border = a.border; reasons.border = `rule ${r.id}`; }
     if (a.insert !== undefined) { actions.insert = a.insert; reasons.insert = `rule ${r.id}`; }
     if (a.minSize !== undefined) { actions.minSize = a.minSize; reasons.minSize = `rule ${r.id}`; }
+    if (a.zone !== undefined) { actions.zone = a.zone; reasons.zone = `rule ${r.id}`; }
   }
 
   const blockedBy = builtinBlock(meta);

@@ -44,7 +44,8 @@ test("every schema value (defaults and enum choices) is accepted by the runtime"
 test("command ids are unique and stable-looking", () => {
   const ids = COMMANDS.map((c) => c.id);
   assert.equal(new Set(ids).size, ids.length);
-  for (const id of ids) assert.match(id, /^plastile\.[a-z]+\.[a-z-]+$/);
+  // A trailing number names one of a numbered set (plastile.zone.assign-1 … assign-9).
+  for (const id of ids) assert.match(id, /^plastile\.[a-z]+\.[a-z][a-z-]*(-[1-9])?$/);
   const seqs = COMMANDS.map((c) => c.sequence).filter((s) => s !== "");
   assert.equal(new Set(seqs).size, seqs.length, "no two commands share a default binding");
 });

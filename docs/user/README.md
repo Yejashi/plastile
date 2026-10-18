@@ -113,6 +113,26 @@ Known limitations:
 - The strip (columns, widths, scroll position) lasts for the KWin session only; it is not saved.
 - Unlike the other layouts, focus changes move windows here, so focus is more expensive than in master/stack. No latency comparison with a scrolling baseline has been made.
 
+### Zones (experimental)
+
+**Off unless you select it**: set `layout` to `zones` (flat key or JSON, globally or in an override), or run *Zones layout* in a context. It is experimental: tested with mock and nested-KWin scenarios only, and not yet checked on physical monitors (see below).
+
+- **Manual placement:** a zones context places only the windows you assign to a zone, with *Zones: assign window to zone 1…9*, *next* or *previous zone*, or with a rule's `zone` action for new windows. Every other window there is an ordinary floating window that Plastile does not move. Selecting the layout moves nothing.
+- **Zone layouts:** `halves`, `thirds`, `grid-2x2` and `main-side` are built in, and you can define up to 16 more ([CONFIGURATION](CONFIGURATION.md#zones-layout-settings-experimental)). *Zones: next zone layout* steps through them for one context; windows keep their zone number when the new layout has it, and the others stay where they are.
+- **Sharing a zone:** windows assigned to the same zone are stacked; the one assigned or activated most recently is on top.
+- **Too big for its zone:** a window whose minimum size does not fit gets the zone's top-left corner and its minimum size, and its explanation says so. Plastile does not keep resizing it.
+- **Leaving a zone:** *Zones: release window from its zone* leaves the window where it is. *Toggle floating* puts it back where it floated before. Moving or resizing it with the mouse releases it where you put it. Switching the context to another layout, *Reset this layout*, suspending and unloading release every window without moving it.
+- **Overlay:** *Zones: show or hide the zone overlay* draws the active screen's zones and their numbers, from the same rectangles windows are placed in. It does not take clicks for itself: windows under it keep receiving pointer motion and scrolling. A small legend at the top holds the keyboard while the overlay is shown, like a menu: Escape closes it, as does a click anywhere (that click only closes it) or the same command. Shortcuts keep working. The overlay is never needed: keyboard placement works without it.
+
+Settings (JSON only): `zoneLayouts` and `zones.layout`; rule action `zone` ([CONFIGURATION](CONFIGURATION.md#zones-layout-settings-experimental)). Commands: [SHORTCUTS](SHORTCUTS.md#zones-layout-experimental).
+
+Known limitations:
+
+- **Physical-session checks are open:** how the overlay looks at mixed scales, whether its numbers are legible, and pointer pass-through on real input devices. Pointer pass-through rests on KWin's source (an input-transparent internal window is skipped by hit testing), not on a measurement.
+- Assignments and the context's zone layout choice last for the KWin session only; they are not saved.
+- The overlay shows the state when it was opened, refreshed by Plastile's own commands. Other changes (a window closing, a panel appearing) show the next time it is opened.
+- Dragging a window into a zone is not implemented.
+
 ### Overflow
 
 A context may be unable to fit every window above its minimum size. Plastile then keeps the windows that were there first and floats each newer window that does not fit next to them (`overflow: float-new`, the only policy implemented); a window whose minimum size does not fit the area even on its own floats by itself, without taking newer windows with it. The reason appears in the window's explanation. Existing tiles are never shrunk below their minima, and no desktops are created or removed.
@@ -165,4 +185,4 @@ Saving needs Qt's `QtCore` QML module, which Plasma's own QML depends on. Withou
 
 ## Where this project is going
 
-The user-visible scope today is the automatic tiler described above. Scrolling layouts, manual zones, drag previews and animations are later milestones ([roadmap](../implementation/ROADMAP.md)). Nothing in this guide is a promise about them. Design intent beyond what is implemented lives in the [behaviour specification](../design/BEHAVIOR_SPEC.md). Where that document and this guide disagree, this guide describes the code.
+The user-visible scope today is the automatic tiler described above, plus the experimental scrolling and zones layouts. Drag previews, a zone editor and animations are later milestones ([roadmap](../implementation/ROADMAP.md)). Nothing in this guide is a promise about them. Design intent beyond what is implemented lives in the [behaviour specification](../design/BEHAVIOR_SPEC.md). Where that document and this guide disagree, this guide describes the code.

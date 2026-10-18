@@ -1,6 +1,6 @@
 # Plastile shortcuts
 
-Every Plastile command is one KWin global shortcut. All of them are registered under the **KWin** component, and their labels start with `Plastile:`. The table below is derived from [`src/core/commands.ts`](../../src/core/commands.ts): 53 commands, 20 of them bound by default. The five scrolling commands are experimental (see [Scrolling layout](#scrolling-layout-experimental)).
+Every Plastile command is one KWin global shortcut. All of them are registered under the **KWin** component, and their labels start with `Plastile:`. The table below is derived from [`src/core/commands.ts`](../../src/core/commands.ts): 68 commands, 20 of them bound by default. The five scrolling commands and the fifteen zones commands are experimental (see [Scrolling layout](#scrolling-layout-experimental) and [Zones layout](#zones-layout-experimental)).
 
 **Context.** Commands act on the **active window** and its context: the screen, virtual desktop and activity it is on. When there is no active window, commands use the active screen's visible desktop.
 
@@ -46,6 +46,7 @@ Every Plastile command is one KWin global shortcut. All of them are registered u
 | `plastile.layout.monocle` | Monocle layout | `Meta+Shift+M` | Sets monocle for the current context. |
 | `plastile.layout.floating` | Floating layout (no tiling here) | *unbound* | Stops tiling the current context. Windows that have a remembered floating rectangle are restored to it once, then Plastile leaves them alone. |
 | `plastile.layout.scrolling` | Scrolling layout (experimental) | *unbound* | Sets the experimental scrolling layout for the current context. *Next layout* and *Previous layout* never select it; from scrolling, *Next layout* goes to master/stack and *Previous layout* to floating. See [Scrolling layout](#scrolling-layout-experimental). |
+| `plastile.layout.zones` | Zones layout (experimental) | *unbound* | Sets the experimental zones layout for the current context. Nothing moves until you assign windows to zones. *Next layout* and *Previous layout* never select it. See [Zones layout](#zones-layout-experimental). |
 | `plastile.layout.rotate-clockwise` | Rotate layout clockwise | *unbound* | BSP only: rotates every split. Side-by-side splits become stacked and vice versa, with children reordered clockwise. In other layouts it reports a no-op. |
 | `plastile.layout.rotate-counterclockwise` | Rotate layout counterclockwise | *unbound* | BSP only: rotates every split counterclockwise. |
 | `plastile.layout.mirror-horizontal` | Mirror layout horizontally | *unbound* | BSP only: flips every side-by-side split (the children exchange places and the ratio is inverted). |
@@ -54,6 +55,12 @@ Every Plastile command is one KWin global shortcut. All of them are registered u
 | `plastile.scroll.expel` | Scrolling: move window out into its own column | *unbound* | Scrolling layout only: the focused window leaves a shared column and gets its own column just right of it, with the same width. No-op when it is already alone. |
 | `plastile.scroll.width-cycle` | Scrolling: cycle column width | *unbound* | Scrolling layout only: the focused column steps to the next wider width preset (default ⅓, ½, ⅔, full), wrapping to the narrowest. A column is never narrower than the minimum width of a window in it. |
 | `plastile.scroll.center` | Scrolling: centre focused column | *unbound* | Scrolling layout only: scrolls so the focused column is centred. With the default `lazy` policy the strip does not scroll past its first or last column, so an end column is centred only as far as that allows. |
+| `plastile.zone.assign-1` … `plastile.zone.assign-9` | Zones: assign window to zone 1 … 9 | *unbound* | Zones layout only: places the active window in that zone of the context's zone layout (one write). No-op when it is already there or the zone layout has fewer zones. |
+| `plastile.zone.next` | Zones: move window to the next zone | *unbound* | Zones layout only: moves the active window to the next zone, wrapping to zone 1. A window in no zone goes to zone 1. |
+| `plastile.zone.previous` | Zones: move window to the previous zone | *unbound* | The same in the other direction; a window in no zone goes to zone 1. |
+| `plastile.zone.unassign` | Zones: release window from its zone | *unbound* | Zones layout only: the active window leaves its zone and stays where it is, as an ordinary floating window. |
+| `plastile.zone.layout-next` | Zones: next zone layout | *unbound* | Zones layout only: switches the context to the next zone layout (built-ins first, then your own). Windows keep their zone number when the new layout has it; the others are released where they are. |
+| `plastile.zone.show` | Zones: show or hide the zone overlay | *unbound* | Zones layout only: shows the zones of the active screen with their numbers; the same command, Escape or a click hides it. Never needed for keyboard placement. |
 | `plastile.window.toggle-float` | Toggle floating | `Meta+Shift+F` | **Tiled window:** floats it and restores its last floating rectangle, if one is remembered; peers re-solve once. **Floating or natively quick-tiled window:** remembers its current rectangle, releases any native tile and tiles it. This also works for a resizable dialog, utility or transient window. A window that cannot be tiled (fixed size, or on several desktops) stays floating and the reason is reported. Excluded windows (panels, menus, shell surfaces, rule-excluded windows) are not affected. |
 | `plastile.window.adopt-native` | Adopt natively tiled window | *unbound* | A window you quick-tiled with KWin's own actions (`Meta+arrow`, edge drag) is left to KWin. This command releases that native tile and adopts the window back into the layout. No-op for other windows. |
 | `plastile.context.reset` | Reset this layout | *unbound* | Drops the current context's session layout choice and its structure (master ratio and count, BSP tree and ratios, row weights), then re-solves from the configured settings. Global settings are untouched. |
@@ -163,3 +170,16 @@ In a context using the experimental scrolling layout ([README](README.md#scrolli
 | *Rotate*, *Mirror*, *More/Fewer master windows* | No-op. |
 
 Focus changes in a scrolling context move windows: scrolling is a position-only change (no window is resized). Focusing a column that is already fully visible scrolls nothing with the default `lazy` policy.
+
+## Zones layout (experimental)
+
+In a context using the experimental zones layout ([README](README.md#zones-experimental)), only windows you assigned to a zone (or a rule's `zone` assigned) are placed. Every other window there is an ordinary floating window.
+
+| Command | In a zones context |
+|---|---|
+| *Toggle floating* on a window in a zone | Releases it from its zone and puts it back where it floated before it was assigned. Toggling again makes it an ordinary window of the context again, in no zone. |
+| Moving or resizing a window in a zone with the mouse | Releases it from its zone where you put it; it does not snap back. |
+| *Focus left/right/up/down* | Moves between windows in zones, by their zone rectangles. |
+| *Swap left/right/up/down* | Exchanges the zones of the active window and its neighbour. |
+| *Grow/Shrink*, *Equalize*, *Rotate*, *Mirror*, *More/Fewer master windows* | No-op: zones have fixed sizes. |
+| *Next layout*, another layout, *Reset this layout*, *Suspend* | Releases every window from its zone; no window moves because of it (a tiling layout you switch to then places the windows as usual). |

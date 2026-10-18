@@ -39,8 +39,8 @@ RAW_DIR = ROOT / "artifacts/realapps"
 FIX = "plastile-fixture"
 FIELDS = (
     "({id: String(w.internalId), caption: w.caption, appId: w.resourceClass, resourceName: w.resourceName, pid: w.pid,"
-    # Plastile's own UI (the inspector the explain command opens), by adapter.ts isOwnUi's rule.
-    " own: w.caption === 'Plastile inspector' && !w.resourceClass && !w.desktopFileName && !(w.pid > 0),"
+    # Plastile's own UI (the inspector, the zones overlay), by adapter.ts isOwnUi's rule.
+    " own: (w.caption === 'Plastile inspector' || w.caption === 'Plastile zones') && !w.resourceClass && !w.desktopFileName && !(w.pid > 0),"
     " frame: {x: w.frameGeometry.x, y: w.frameGeometry.y, width: w.frameGeometry.width, height: w.frameGeometry.height},"
     " client: {x: w.clientGeometry.x, y: w.clientGeometry.y, width: w.clientGeometry.width, height: w.clientGeometry.height},"
     " minSize: {width: w.minSize.width, height: w.minSize.height}, maxSize: {width: w.maxSize.width, height: w.maxSize.height},"

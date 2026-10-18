@@ -2,7 +2,8 @@
 // They normalize into patches and uncompiled-order lists; errors carry exact paths.
 
 import type { Edges } from "../core/geometry.ts";
-import type { BspSettings, LayoutKind, MasterStackSettings, ScrollingSettings, WindowKind } from "../core/types.ts";
+import type { BspSettings, LayoutKind, MasterStackSettings, ScrollingSettings, WindowKind, ZoneLayout, ZoneRect } from "../core/types.ts";
+import { canonical, MAX_ZONE_LAYOUTS, MAX_ZONES, MIN_ZONE_FRACTION } from "../core/layouts/zones.ts";
 import { compileStringMatcher } from "./matchers.ts";
 import type { CompiledOverride, CompiledRule, DiagnosticsLevel, RuleActions, SettingsPatch, StringMatcher } from "./types.ts";
 import {
@@ -10,7 +11,7 @@ import {
   at, bool, err, expected, finite, has, idx, intIn, objectWith, oneOf, openRatio, ratioStep, str, warn, type Sink,
 } from "./validate.ts";
 
-export const LAYOUTS: readonly LayoutKind[] = ["master-stack", "bsp", "monocle", "floating", "scrolling"];
+export const LAYOUTS: readonly LayoutKind[] = ["master-stack", "bsp", "monocle", "floating", "scrolling", "zones"];
 export const SCROLL_POLICY: readonly ScrollingSettings["policy"][] = ["lazy", "centered"];
 /** Width presets the width-cycle command steps through: at most this many. */
 export const MAX_WIDTH_PRESETS = 8;
@@ -153,7 +154,7 @@ export function readFlat(s: Sink, flat: Readonly<Record<string, unknown>>): Flat
 // ---- settings patch (JSON `defaults` and override `set`) ----
 
 const SETTINGS_KEYS = [
-  "enabled", "layout", "gaps", "masterStack", "bsp", "scrolling", "overflow", "singleWindowGaps",
+  "enabled", "layout", "gaps", "masterStack", "bsp", "scrolling", "zones", "overflow", "singleWindowGaps",
   "followOnSend", "focusWrap", "liveResize", "multiContextWindows", "animation",
 ];
 
@@ -239,6 +240,20 @@ export function readPatch(s: Sink, v: unknown, path: string): SettingsPatch {
     }
   }
   if (has(o, "scrolling")) p.scrolling = readScrolling(s, o.scrolling, at(path, "scrolling"));
+  if (has(o, "zones")) {
+    // Which zone layout a zones context uses; checked against the known ids in compileConfig.
+    const zp = at(path, "zones");
+    const z = objectWith(s, o.zones, zp, ["layout"]);
+    if (z) {
+      const zones: { layout?: string } = {};
+      if (has(z, "layout")) {
+        const id = str(s, z.layout, at(zp, "layout"), MAX_ZONE_ID);
+        if (id === "") err(s, at(zp, "layout"), "must not be empty");
+        else if (id !== null) zones.layout = id;
+      }
+      p.zones = zones;
+    }
+  }
   if (has(o, "followOnSend")) { const x = bool(s, o.followOnSend, at(path, "followOnSend")); if (x !== null) p.followOnSend = x; }
   if (has(o, "focusWrap")) { const x = bool(s, o.focusWrap, at(path, "focusWrap")); if (x !== null) p.focusWrap = x; }
   if (has(o, "liveResize")) { const x = bool(s, o.liveResize, at(path, "liveResize")); if (x !== null) p.liveResize = x; }
@@ -295,6 +310,76 @@ function readScrolling(s: Sink, v: unknown, path: string): Partial<ScrollingSett
   return out;
 }
 
+// ---- zone layouts (experimental, docs/design/ZONES.md §1) ----
+
+/** Longest zone layout id. */
+export const MAX_ZONE_ID = 64;
+const ZONE_FIELDS = ["x", "y", "width", "height"];
+
+function readZone(s: Sink, v: unknown, path: string): ZoneRect | null {
+  const o = objectWith(s, v, path, ZONE_FIELDS);
+  if (!o) return null;
+  const before = s.errors.length;
+  const val: Record<string, number> = {};
+  for (const k of ZONE_FIELDS) {
+    if (!has(o, k)) { err(s, at(path, k), "required (a fraction of the usable area, 0..1)"); continue; }
+    const x = finite(s, o[k], at(path, k));
+    if (x === null) continue;
+    if (k === "x" || k === "y") {
+      if (x < 0 || x > 1) { err(s, at(path, k), "must be between 0 and 1 (a fraction of the usable area)"); continue; }
+    } else if (x < MIN_ZONE_FRACTION || x > 1) {
+      err(s, at(path, k), `must be at least ${MIN_ZONE_FRACTION} and at most 1 (a fraction of the usable ${k})`);
+      continue;
+    }
+    val[k] = canonical(x);
+  }
+  if (s.errors.length !== before) return null;
+  // Fractions on a 1e-6 grid: 0.3333 + 0.6667 ends exactly at the edge.
+  if (canonical(val.x + val.width) > 1) {
+    return err(s, path, `x + width is ${canonical(val.x + val.width)}; the zone must end at the right edge (1) or before it`);
+  }
+  if (canonical(val.y + val.height) > 1) {
+    return err(s, path, `y + height is ${canonical(val.y + val.height)}; the zone must end at the bottom edge (1) or before it`);
+  }
+  return { x: val.x, y: val.y, width: val.width, height: val.height };
+}
+
+/** The top-level `zoneLayouts` list: at most 16 layouts of 1..32 zones, unique non-empty ids. */
+export function readZoneLayouts(s: Sink, v: unknown, path: string): ZoneLayout[] {
+  if (!Array.isArray(v)) { expected(s, path, "an array of zone layouts", v); return []; }
+  if (v.length > MAX_ZONE_LAYOUTS) { err(s, path, `at most ${MAX_ZONE_LAYOUTS} zone layouts allowed (got ${v.length})`); return []; }
+  const out: ZoneLayout[] = [];
+  const seen: Record<string, string> = Object.create(null);
+  for (let i = 0; i < v.length; ++i) {
+    const ip = idx(path, i);
+    const o = objectWith(s, v[i], ip, ["id", "zones"]);
+    if (!o) continue;
+    const before = s.errors.length;
+    let id: string | null = null;
+    if (!has(o, "id")) err(s, at(ip, "id"), "required");
+    else if ((id = str(s, o.id, at(ip, "id"), MAX_ZONE_ID)) !== null && id === "") id = err(s, at(ip, "id"), "must not be empty");
+    if (id !== null) {
+      if (seen[id] !== undefined) err(s, at(ip, "id"), `duplicate id "${id}" (also at ${seen[id]})`);
+      else seen[id] = ip;
+    }
+    const zp = at(ip, "zones");
+    const list: ZoneRect[] = [];
+    if (!has(o, "zones")) err(s, zp, "required");
+    else if (!Array.isArray(o.zones)) expected(s, zp, "an array of zones", o.zones);
+    else if (o.zones.length === 0 || o.zones.length > MAX_ZONES) err(s, zp, `must hold 1..${MAX_ZONES} zones (got ${o.zones.length})`);
+    else for (let k = 0; k < o.zones.length; ++k) { const z = readZone(s, o.zones[k], idx(zp, k)); if (z) list.push(z); }
+    if (s.errors.length === before && id !== null) out.push({ id, zones: list });
+  }
+  return out;
+}
+
+/** Built-ins first; a configured layout with a built-in's id replaces it in place, the others follow. */
+export function mergeZoneLayouts(builtin: readonly ZoneLayout[], configured: readonly ZoneLayout[]): ZoneLayout[] {
+  const out = builtin.map((b) => configured.find((c) => c.id === b.id) ?? b);
+  for (const c of configured) if (!builtin.some((b) => b.id === c.id)) out.push(c);
+  return out;
+}
+
 // ---- JSON document ----
 
 export interface Ordered<T> {
@@ -308,9 +393,11 @@ export interface DocumentInput {
   readonly overrides: readonly Ordered<CompiledOverride>[];
   readonly rules: readonly Ordered<CompiledRule>[];
   readonly diagnostics: DiagnosticsPatch;
+  /** Configured zone layouts (null when the document has none). */
+  readonly zoneLayouts: readonly ZoneLayout[] | null;
 }
 
-const EMPTY_DOC: DocumentInput = { defaults: null, overrides: [], rules: [], diagnostics: {} };
+const EMPTY_DOC: DocumentInput = { defaults: null, overrides: [], rules: [], diagnostics: {}, zoneLayouts: null };
 
 export function readDocument(s: Sink, text: string): DocumentInput {
   let raw: unknown;
@@ -320,7 +407,7 @@ export function readDocument(s: Sink, text: string): DocumentInput {
     err(s, "configJson", `invalid JSON: ${e instanceof Error ? e.message : String(e)}`);
     return EMPTY_DOC;
   }
-  const o = objectWith(s, raw, "", ["schemaVersion", "defaults", "overrides", "rules", "diagnostics"]);
+  const o = objectWith(s, raw, "", ["schemaVersion", "defaults", "overrides", "rules", "diagnostics", "zoneLayouts"]);
   if (!o) return EMPTY_DOC;
   if (!has(o, "schemaVersion")) err(s, "schemaVersion", "required");
   else if (o.schemaVersion !== 1) err(s, "schemaVersion", `unsupported schema version ${JSON.stringify(o.schemaVersion)} (supported: 1)`);
@@ -328,6 +415,7 @@ export function readDocument(s: Sink, text: string): DocumentInput {
   const defaults = has(o, "defaults") ? readPatch(s, o.defaults, "defaults") : null;
   const overrides = has(o, "overrides") ? readList(s, o.overrides, "overrides", MAX_OVERRIDES, readOverride) : [];
   const rules = has(o, "rules") ? readList(s, o.rules, "rules", MAX_RULES, readRule) : [];
+  const zoneLayouts = has(o, "zoneLayouts") ? readZoneLayouts(s, o.zoneLayouts, "zoneLayouts") : null;
   const diagnostics: DiagnosticsPatch = {};
   if (has(o, "diagnostics")) {
     const d = objectWith(s, o.diagnostics, "diagnostics", ["level", "traceCapacity"]);
@@ -339,7 +427,7 @@ export function readDocument(s: Sink, text: string): DocumentInput {
       }
     }
   }
-  return { defaults, overrides, rules, diagnostics };
+  return { defaults, overrides, rules, diagnostics, zoneLayouts };
 }
 
 type ItemReader<T> = (s: Sink, o: Record<string, unknown>, path: string, id: string) => T | null;
@@ -426,11 +514,11 @@ function readRule(s: Sink, o: Record<string, unknown>, path: string, id: string)
 
   const ap = at(path, "actions");
   if (!has(o, "actions")) return err(s, ap, "required");
-  const a = objectWith(s, o.actions, ap, ["mode", "border", "insert", "minSize", ...Object.keys(UNSUPPORTED_ACTIONS)]);
+  const a = objectWith(s, o.actions, ap, ["mode", "border", "insert", "minSize", "zone", ...Object.keys(UNSUPPORTED_ACTIONS)]);
   if (!a) return null;
   for (const k of Object.keys(UNSUPPORTED_ACTIONS)) if (has(a, k)) err(s, at(ap, k), UNSUPPORTED_ACTIONS[k]);
   const actions: { mode?: RuleActions["mode"]; border?: RuleActions["border"]; insert?: RuleActions["insert"];
-                   minSize?: RuleActions["minSize"] } = {};
+                   minSize?: RuleActions["minSize"]; zone?: number } = {};
   if (has(a, "mode")) { const x = oneOf(s, a.mode, at(ap, "mode"), MODES); if (x !== null) actions.mode = x; }
   if (has(a, "border")) { const x = oneOf(s, a.border, at(ap, "border"), BORDERS); if (x !== null) actions.border = x; }
   if (has(a, "insert")) { const x = oneOf(s, a.insert, at(ap, "insert"), MS_INSERT); if (x !== null) actions.insert = x; }
@@ -445,6 +533,11 @@ function readRule(s: Sink, o: Record<string, unknown>, path: string, id: string)
       if (!has(z, "width") && !has(z, "height")) err(s, zp, "give width, height or both (logical pixels)");
       else if (width !== null && height !== null) actions.minSize = { width, height };
     }
+  }
+  if (has(a, "zone")) {
+    // Zones layout (experimental): the zone number a new window is assigned to, as in "Assign to zone N".
+    const x = intIn(s, finite(s, a.zone, at(ap, "zone")), at(ap, "zone"), 1, MAX_ZONES);
+    if (x !== null) actions.zone = x;
   }
   if (s.errors.length !== errorsBefore) return null;
   if (Object.keys(actions).length === 0) warn(s, ap, "empty actions have no effect");

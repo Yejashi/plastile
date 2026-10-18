@@ -37,7 +37,7 @@ type Obj = Record<string, unknown>;
 
 const LAYOUT_NAMES: Readonly<Record<string, string>> = {
   "master-stack": "master and stack", bsp: "binary split (BSP)", monocle: "monocle (one window shown at a time)",
-  floating: "floating (this desktop does not tile)", scrolling: "scrolling (experimental)",
+  floating: "floating (this desktop does not tile)", scrolling: "scrolling (experimental)", zones: "zones (experimental)",
 };
 
 const SUSPENSIONS: Readonly<Record<string, string>> = {
@@ -182,6 +182,12 @@ export function describeWindow(x: Obj | null, ctx: InspectContext): InspectorVie
     reason = `It would be tiled (${s(decision.reason)}), but ${because}.`;
   }
   rows.push({ label: "Why", text: reason });
+  const zone = obj(x.zone);
+  if (zone && mode === "tiled") {
+    rows.push({ label: "Zone", text: zone.zone === null || zone.zone === undefined
+      ? `Not in a zone of “${s(zone.layout)}”: an ordinary floating window here. “Zones: assign window to zone N” places it.${zone.note ? ` ${s(zone.note)}.` : ""}`
+      : `Zone ${s(zone.zone)} of “${s(zone.layout)}”.${zone.note ? ` ${s(zone.note)}.` : ""}` });
+  } else if (zone && zone.note) rows.push({ label: "Zone", text: s(zone.note) + "." });
   if (x.userMode) rows.push({ label: "Your choice", text: `You chose ${s(x.userMode)} with “Toggle floating”; that lasts until the window closes.` });
   rows.push({ label: "Rules", text: ruleText(obj(x.rules)) });
   if (context) {

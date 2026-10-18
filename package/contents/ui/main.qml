@@ -67,6 +67,38 @@ Item {
     }
     // ---- end T26/T28/D9 ----
 
+    // ---- zones overlay (M9, experimental; docs/design/ZONES.md §4) ----
+    // Nothing exists until the first "Zones: show or hide the zone overlay"; it is then hidden and
+    // shown again (Escape, a click, or the command hides it) and destroyed on unload.
+    property bool zonesWanted: false
+    Loader {
+        id: zoneOverlay
+        active: false
+        asynchronous: true
+        onLoaded: if (root.zonesWanted) item.showOverlay()
+    }
+    Connections {
+        target: zoneOverlay.item
+        ignoreUnknownSignals: true
+        function onDismissed() { Qt.callLater(root.hideZones); }
+    }
+    function showZones(view) {
+        zonesWanted = true;
+        if (zoneOverlay.item) { zoneOverlay.item.view = view; zoneOverlay.item.showOverlay(); return; }
+        zoneOverlay.active = true;
+        zoneOverlay.setSource("ZoneOverlay.qml", { view: view });
+    }
+    function hideZones() {
+        zonesWanted = false;
+        if (zoneOverlay.item) zoneOverlay.item.hideOverlay();
+    }
+    function destroyZones() {
+        zonesWanted = false;
+        zoneOverlay.source = "";
+        zoneOverlay.active = false;
+    }
+    // ---- end zones overlay ----
+
     // ---- persistence (T27, ADR-013): state slots and their one-shot maintenance timer ----
     Persistence { id: persistence }
     // ---- end T27 ----
@@ -86,6 +118,12 @@ Item {
                 close: root.closeInspector,
                 isOpen: function () { return inspector.active; },
             },
+            zones: {
+                show: root.showZones,
+                hide: root.hideZones,
+                destroy: root.destroyZones,
+                state: function () { return !zoneOverlay.active ? "absent" : root.zonesWanted ? "shown" : "hidden"; },
+            },
             state: persistence,
         });
     }
@@ -93,6 +131,7 @@ Item {
     Component.onDestruction: {
         deadline.stop();
         closeInspector();
+        destroyZones();
         if (runtime) runtime.shutdown();
         runtime = null;
     }

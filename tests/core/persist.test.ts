@@ -90,6 +90,7 @@ test("T27/Q07: invalid, partial, empty and oversized texts are rejected as a who
   };
   assert.ok(variant(() => {}), "control: the unmodified fixture validates");
   assert.ok(variant((o) => { o.contexts[1].layout = "scrolling"; }), "every layout kind, scrolling included");
+  assert.ok(variant((o) => { o.contexts[1].layout = "zones"; }), "zones too (a layout chosen with plastile.layout.zones)");
   assert.ok(!variant((o) => { o.extra = 1; }), "unknown top-level key");
   assert.ok(!variant((o) => { delete o.floats; }), "missing key");
   assert.ok(!variant((o) => { o.generation = -1; }), "negative generation");

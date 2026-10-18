@@ -3,9 +3,9 @@
 
 import { DEFAULT_SETTINGS } from "../core/defaults.ts";
 import { applyPatch, cloneSettings, freezeSettings, isEmptyPatch } from "./patch.ts";
-import { readDocument, readFlat, type Ordered } from "./schema.ts";
+import { mergeZoneLayouts, readDocument, readFlat, type Ordered } from "./schema.ts";
 import type { CompileResult, ConfigSnapshot, DiagnosticsLevel } from "./types.ts";
-import { sink } from "./validate.ts";
+import { err, sink } from "./validate.ts";
 
 export const DEFAULT_TRACE_CAPACITY = 2048;
 export const DEFAULT_DIAGNOSTICS: DiagnosticsLevel = "warn";
@@ -25,8 +25,23 @@ export function compileConfig(flat: Readonly<Record<string, unknown>>, revision:
 
     const chain = ["builtin"];
     let defaults = cloneSettings(DEFAULT_SETTINGS);
+    if (doc && doc.zoneLayouts) {
+      // Zone layouts are one list for every context; contexts select one by id (zones.layout).
+      defaults = { ...defaults, zones: { layout: defaults.zones.layout, layouts: mergeZoneLayouts(defaults.zones.layouts, doc.zoneLayouts) } };
+    }
     if (!isEmptyPatch(f.patch)) { defaults = applyPatch(defaults, f.patch); chain.push("flat"); }
     if (doc && doc.defaults && !isEmptyPatch(doc.defaults)) { defaults = applyPatch(defaults, doc.defaults); chain.push("json.defaults"); }
+    if (doc) {
+      const known = defaults.zones.layouts.map((l) => l.id);
+      const check = (id: string | undefined, path: string): void => {
+        if (id !== undefined && known.indexOf(id) < 0) {
+          err(s, path, `unknown zone layout "${id}" (known: ${known.join(", ")}; add it to zoneLayouts)`);
+        }
+      };
+      check(doc.defaults?.zones?.layout, "defaults.zones.layout");
+      for (const o of doc.overrides) check(o.item.set.zones?.layout, `overrides[${o.index}].set.zones.layout`);
+      if (s.errors.length > 0) return { ok: false, errors: s.errors };
+    }
 
     const diag = doc ? doc.diagnostics : {};
     const rules = doc ? ordered(doc.rules) : [];

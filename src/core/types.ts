@@ -85,7 +85,7 @@ export interface Decision {
   readonly ruleIds: readonly string[];
 }
 
-export type LayoutKind = "master-stack" | "bsp" | "monocle" | "floating" | "scrolling";
+export type LayoutKind = "master-stack" | "bsp" | "monocle" | "floating" | "scrolling" | "zones";
 
 export interface GapSettings {
   readonly inner: number;
@@ -116,6 +116,27 @@ export interface ScrollingSettings {
   readonly widthPresets: readonly number[];
 }
 
+/** One zone: a rectangle in fractions of the work area after outer gaps (docs/design/ZONES.md §1). */
+export interface ZoneRect {
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+}
+
+export interface ZoneLayout {
+  readonly id: string;
+  readonly zones: readonly ZoneRect[];
+}
+
+/** Zones layout (experimental, ADR-014, docs/design/ZONES.md). */
+export interface ZoneSettings {
+  /** Id of the zone layout a zones context uses unless a command chose another (`zones.layout`). */
+  readonly layout: string;
+  /** Every zone layout: the built-ins, then the configured `zoneLayouts` (a configured id replaces a built-in). */
+  readonly layouts: readonly ZoneLayout[];
+}
+
 /** Effective per-context settings after precedence resolution (M5 provides them). */
 export interface ContextSettings {
   readonly enabled: boolean;
@@ -124,6 +145,7 @@ export interface ContextSettings {
   readonly masterStack: MasterStackSettings;
   readonly bsp: BspSettings;
   readonly scrolling: ScrollingSettings;
+  readonly zones: ZoneSettings;
   readonly overflow: "float-new";
   readonly singleWindowGaps: boolean;
   /** Send to desktop/output also shows that desktop there and activates the window (T24). */
