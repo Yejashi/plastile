@@ -7,24 +7,24 @@
   "qt": "6.11.2",
   "libei": "1.5.0",
   "compositing": "QPainter",
-  "implementationCommit": "6ada721c10fa3b1c22ee7710999626bd10248f6d",
-  "captureNote": "Plastile src/ and package/ were at 6ada721 (unchanged by WP-10); the kit ran from its working tree just before commit f500cb8 (implementationDirty=true refers to that); summaries were recomputed from the raw logs with the committed kit (orchestrate.py correlate). Raw logs stay in the gitignored artifacts/physical/."
+  "implementationCommit": "8fde4e4 (protocol run), bb0a811 (all-workloads run)",
+  "captureNote": "Plastile src/ and package/ are those of merge commit 8fde4e4 (main merged into the WP-10 branch; unchanged since). The protocol-scale run and the pre-fix-defaults key run were captured with the kit changes that were committed unchanged as bb0a811 shortly after (hence implementationDirty=true); the all-workloads run and its key check ran at bb0a811 with a clean tree. Raw logs stay in the gitignored artifacts/physical/."
  },
  "guardSelfCheck": {
   "keytapUinput": {
    "exitCode": 3,
-   "message": "refusing to run: kwin_wayland (pid 21655) runs nested (--virtual): uinput would reach the host session instead"
+   "message": "refusing to run: kwin_wayland (pid 24421) runs nested (--virtual): uinput would reach the host session instead"
   },
   "pythonGuard": {
    "refused": true,
    "reasons": [
-    "kwin_wayland (pid 21655) runs nested (--virtual); this kit is for the physical session only"
+    "kwin_wayland (pid 24421) runs nested (--virtual); this kit is for the physical session only"
    ]
   },
   "ok": true
  },
  "protocolScaleRun": {
-  "command": "tools/physical/nested_dryrun.py --rounds 5 --samples 1000 --warmup 20 --windows 3 --workloads P02-quicktile,P03-ratio --rebind-ratio --bootstrap 1000",
+  "command": "tools/physical/nested_dryrun.py --rounds 5 --samples 1000 --warmup 20 --windows 3 --workloads P02-quicktile,P03-ratio --bootstrap 1000",
   "seed": 1,
   "summary": {
    "definitions": {
@@ -54,70 +54,70 @@
       "inputToFirstPresentNs": {
        "pooled": {
         "n": 5000,
-        "median": 17305480,
-        "p95": 34940623,
-        "p99": 35711545,
-        "max": 86128451,
-        "min": 6740896
+        "median": 17131610,
+        "p95": 34809248,
+        "p99": 35567805,
+        "max": 51585053,
+        "min": 6909963
        },
        "ci95ByRun": {
         "median": [
-         16762380,
-         19261287
+         16569606,
+         18824372
         ],
         "p95": [
-         34876761,
-         34997140
+         34771927,
+         34848125
         ],
         "p99": [
-         35521612,
-         35840186
+         35447811,
+         35822649
         ]
        },
        "perRun": {
         "run1": {
          "n": 1000,
-         "median": 17356776,
-         "p95": 34850060,
+         "median": 18578315,
+         "p95": 34817364,
          "p99": null,
-         "max": 50891778,
-         "min": 7137238,
+         "max": 41640918,
+         "min": 7423952,
          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
         },
         "run2": {
          "n": 1000,
-         "median": 17238883,
-         "p95": 35019984,
+         "median": 17305570,
+         "p95": 34907285,
          "p99": null,
-         "max": 66978471,
-         "min": 7152183,
+         "max": 51585053,
+         "min": 7030339,
          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
         },
         "run3": {
          "n": 1000,
-         "median": 16481356,
-         "p95": 35007273,
+         "median": 16941623,
+         "p95": 34861785,
          "p99": null,
-         "max": 41198746,
-         "min": 6943446,
+         "max": 51155418,
+         "min": 7103283,
          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
         },
         "run4": {
          "n": 1000,
-         "median": 16873300,
-         "p95": 34876761,
+         "median": 19228788,
+         "p95": 34746150,
          "p99": null,
-         "max": 39715708,
-         "min": 6740896,
+         "max": 39251412,
+         "min": 6909963,
          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
         },
         "run5": {
          "n": 1000,
-         "median": 19862100,
-         "p95": 34892008,
+         "median": 16182680,
+         "p95": 34807100,
          "p99": null,
-         "max": 86128451,
-         "min": 7021765,
+         "max": 37372725,
+         "min": 7260271,
          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
         }
        }
@@ -125,70 +125,70 @@
       "inputToSettledNs": {
        "pooled": {
         "n": 5000,
-        "median": 17305480,
-        "p95": 34940623,
-        "p99": 35711545,
-        "max": 86128451,
-        "min": 6740896
+        "median": 17131610,
+        "p95": 34809248,
+        "p99": 35567805,
+        "max": 51585053,
+        "min": 6909963
        },
        "ci95ByRun": {
         "median": [
-         16789206,
-         19261287
+         16575834,
+         18944356
         ],
         "p95": [
-         34876761,
-         34996312
+         34772954,
+         34848125
         ],
         "p99": [
-         35544256,
-         35840186
+         35447811,
+         35822649
         ]
        },
        "perRun": {
         "run1": {
          "n": 1000,
-         "median": 17356776,
-         "p95": 34850060,
+         "median": 18578315,
+         "p95": 34817364,
          "p99": null,
-         "max": 50891778,
-         "min": 7137238,
+         "max": 41640918,
+         "min": 7423952,
          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
         },
         "run2": {
          "n": 1000,
-         "median": 17238883,
-         "p95": 35019984,
+         "median": 17305570,
+         "p95": 34907285,
          "p99": null,
-         "max": 66978471,
-         "min": 7152183,
+         "max": 51585053,
+         "min": 7030339,
          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
         },
         "run3": {
          "n": 1000,
-         "median": 16481356,
-         "p95": 35007273,
+         "median": 16941623,
+         "p95": 34861785,
          "p99": null,
-         "max": 41198746,
-         "min": 6943446,
+         "max": 51155418,
+         "min": 7103283,
          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
         },
         "run4": {
          "n": 1000,
-         "median": 16873300,
-         "p95": 34876761,
+         "median": 19228788,
+         "p95": 34746150,
          "p99": null,
-         "max": 39715708,
-         "min": 6740896,
+         "max": 39251412,
+         "min": 6909963,
          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
         },
         "run5": {
          "n": 1000,
-         "median": 19862100,
-         "p95": 34892008,
+         "median": 16182680,
+         "p95": 34807100,
          "p99": null,
-         "max": 86128451,
-         "min": 7021765,
+         "max": 37372725,
+         "min": 7260271,
          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
         }
        }
@@ -219,70 +219,70 @@
       "inputToFirstPresentNs": {
        "pooled": {
         "n": 5000,
-        "median": 12716413,
-        "p95": 20345772,
-        "p99": 21773491,
-        "max": 40983451,
-        "min": 3459231
+        "median": 13124581,
+        "p95": 20797948,
+        "p99": 22525903,
+        "max": 40155535,
+        "min": 3747637
        },
        "ci95ByRun": {
         "median": [
-         12233768,
-         13144706
+         12791594,
+         13361202
         ],
         "p95": [
-         20193280,
-         20506562
+         20575823,
+         20992430
         ],
         "p99": [
-         21579565,
-         22060992
+         22356893,
+         23049509
         ]
        },
        "perRun": {
         "run1": {
          "n": 1000,
-         "median": 12358321,
-         "p95": 20474601,
+         "median": 13553343,
+         "p95": 21127080,
          "p99": null,
-         "max": 35308415,
-         "min": 3459231,
+         "max": 40155535,
+         "min": 3754997,
          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
         },
         "run2": {
          "n": 1000,
-         "median": 12111118,
-         "p95": 20159517,
+         "median": 12882318,
+         "p95": 20590411,
          "p99": null,
-         "max": 23556217,
-         "min": 3727620,
+         "max": 34147611,
+         "min": 3784803,
          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
         },
         "run3": {
          "n": 1000,
-         "median": 13136450,
-         "p95": 20491007,
+         "median": 13031927,
+         "p95": 20827898,
          "p99": null,
-         "max": 26850977,
-         "min": 3914561,
+         "max": 24808463,
+         "min": 3747637,
          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
         },
         "run4": {
          "n": 1000,
-         "median": 12260320,
-         "p95": 20099854,
+         "median": 12564512,
+         "p95": 20515707,
          "p99": null,
-         "max": 31858581,
-         "min": 3510351,
+         "max": 33720860,
+         "min": 3871117,
          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
         },
         "run5": {
          "n": 1000,
-         "median": 13401947,
-         "p95": 20507695,
+         "median": 13276115,
+         "p95": 20630323,
          "p99": null,
-         "max": 40983451,
-         "min": 3565769,
+         "max": 34659303,
+         "min": 3804914,
          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
         }
        }
@@ -290,70 +290,70 @@
       "inputToSettledNs": {
        "pooled": {
         "n": 5000,
-        "median": 24447542,
-        "p95": 37005971,
-        "p99": 38353149,
-        "max": 77882090,
-        "min": 8754684
+        "median": 24955342,
+        "p95": 37355899,
+        "p99": 39013745,
+        "max": 122194049,
+        "min": 8021721
        },
        "ci95ByRun": {
         "median": [
-         23937065,
-         24848699
+         24209526,
+         25931946
         ],
         "p95": [
-         36847725,
-         37157673
+         37123702,
+         37587241
         ],
         "p99": [
-         38246231,
-         38510524
+         38690512,
+         39132969
         ]
        },
        "perRun": {
         "run1": {
          "n": 1000,
-         "median": 25108679,
-         "p95": 37039337,
+         "median": 26633200,
+         "p95": 37676361,
          "p99": null,
-         "max": 77882090,
-         "min": 10230685,
+         "max": 61475760,
+         "min": 8021721,
          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
         },
         "run2": {
          "n": 1000,
-         "median": 23500606,
-         "p95": 36826183,
+         "median": 24566078,
+         "p95": 37148899,
          "p99": null,
-         "max": 44094104,
-         "min": 8861877,
+         "max": 122194049,
+         "min": 8723811,
          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
         },
         "run3": {
          "n": 1000,
-         "median": 24590488,
-         "p95": 37173228,
+         "median": 24461943,
+         "p95": 37494564,
          "p99": null,
-         "max": 52754026,
-         "min": 10143387,
+         "max": 41480965,
+         "min": 10692357,
          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
         },
         "run4": {
          "n": 1000,
-         "median": 24424689,
-         "p95": 36730047,
+         "median": 23709744,
+         "p95": 37040288,
          "p99": null,
-         "max": 44604243,
-         "min": 8754684,
+         "max": 41507103,
+         "min": 8641637,
          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
         },
         "run5": {
          "n": 1000,
-         "median": 24702318,
-         "p95": 37163382,
+         "median": 25693896,
+         "p95": 37235991,
          "p99": null,
-         "max": 52852919,
-         "min": 10010202,
+         "max": 41124741,
+         "min": 9699286,
          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
         }
        }
@@ -379,15 +379,15 @@
      "metric": "inputToFirstPresentNs",
      "thresholdNs": 16666666,
      "matchedBaseline": true,
-     "medianDiffNs": -4589067,
+     "medianDiffNs": -4007029,
      "medianDiffCi95": [
-      -6757658,
-      -3891446
+      -5815749,
+      -3393031
      ],
-     "p95DiffNs": -14594851,
+     "p95DiffNs": -14011300,
      "p95DiffCi95": [
-      -14753276,
-      -14399995
+      -14246910,
+      -13802458
      ],
      "protocolMet": true,
      "medianRule": "pass",
@@ -407,11 +407,11 @@
      "successes": 100,
      "inputToFirstPresentNs": {
       "n": 100,
-      "median": 12355323,
-      "p95": 20698861,
+      "median": 13081056,
+      "p95": 20339163,
       "p99": null,
-      "max": 22874425,
-      "min": 4974956,
+      "max": 21826469,
+      "min": 3747064,
       "p99WithheldReason": "n=100 < 5000 (PERFORMANCE section 6.5)"
      }
     },
@@ -426,11 +426,11 @@
      "successes": 100,
      "inputToFirstPresentNs": {
       "n": 100,
-      "median": 16349620,
-      "p95": 34874330,
+      "median": 17138199,
+      "p95": 34723358,
       "p99": null,
-      "max": 37699500,
-      "min": 8033376,
+      "max": 36067994,
+      "min": 9042907,
       "p99WithheldReason": "n=100 < 5000 (PERFORMANCE section 6.5)"
      }
     }
@@ -441,7 +441,7 @@
     "environmentId": "nested-virtual-kwin",
     "outputName": "Virtual-0",
     "refreshHzDeclared": 60,
-    "implementationCommit": "6ada721c10fa3b1c22ee7710999626bd10248f6d",
+    "implementationCommit": "8fde4e4d166ed0ad19c3bddb750572bd220f85f8",
     "implementationDirty": true,
     "clockResolutionNs": 1
    },
@@ -472,6 +472,7 @@
       "partial": 0,
       "external": 0,
       "learned": 0,
+      "accepted": 0,
       "diverged": 0,
       "deadlines": 0,
       "overflow": 0,
@@ -483,8 +484,8 @@
       "activations": 0
      },
      "presentGrid": {
-      "intervals": 1782,
-      "aligned": 1782,
+      "intervals": 1838,
+      "aligned": 1838,
       "alignedFraction": 1.0,
       "residualP95Ns": 0,
       "residualMaxNs": 0,
@@ -536,6 +537,7 @@
       "partial": 0,
       "external": 0,
       "learned": 0,
+      "accepted": 0,
       "diverged": 0,
       "deadlines": 0,
       "overflow": 0,
@@ -547,8 +549,8 @@
       "activations": 0
      },
      "presentGrid": {
-      "intervals": 1681,
-      "aligned": 1681,
+      "intervals": 1751,
+      "aligned": 1751,
       "alignedFraction": 1.0,
       "residualP95Ns": 0,
       "residualMaxNs": 0,
@@ -585,8 +587,8 @@
      "refreshNsObservedAtStart": 16666666,
      "countersDelta": null,
      "presentGrid": {
-      "intervals": 1022,
-      "aligned": 1022,
+      "intervals": 1021,
+      "aligned": 1021,
       "alignedFraction": 1.0,
       "residualP95Ns": 0,
       "residualMaxNs": 0,
@@ -619,6 +621,7 @@
       "partial": 0,
       "external": 0,
       "learned": 0,
+      "accepted": 0,
       "diverged": 0,
       "deadlines": 0,
       "overflow": 0,
@@ -630,8 +633,8 @@
       "activations": 0
      },
      "presentGrid": {
-      "intervals": 1732,
-      "aligned": 1732,
+      "intervals": 1716,
+      "aligned": 1716,
       "alignedFraction": 1.0,
       "residualP95Ns": 0,
       "residualMaxNs": 0,
@@ -664,6 +667,7 @@
       "partial": 0,
       "external": 0,
       "learned": 0,
+      "accepted": 0,
       "diverged": 0,
       "deadlines": 0,
       "overflow": 0,
@@ -675,8 +679,8 @@
       "activations": 0
      },
      "presentGrid": {
-      "intervals": 1750,
-      "aligned": 1750,
+      "intervals": 1685,
+      "aligned": 1685,
       "alignedFraction": 1.0,
       "residualP95Ns": 0,
       "residualMaxNs": 0,
@@ -747,6 +751,7 @@
       "partial": 0,
       "external": 0,
       "learned": 0,
+      "accepted": 0,
       "diverged": 0,
       "deadlines": 0,
       "overflow": 0,
@@ -758,8 +763,8 @@
       "activations": 0
      },
      "presentGrid": {
-      "intervals": 1737,
-      "aligned": 1737,
+      "intervals": 1768,
+      "aligned": 1768,
       "alignedFraction": 1.0,
       "residualP95Ns": 0,
       "residualMaxNs": 0,
@@ -771,7 +776,7 @@
   }
  },
  "allWorkloadsRun": {
-  "command": "tools/physical/nested_dryrun.py --rounds 2 --samples 40 --warmup 5 --windows 3 --workloads P00-maximize,P02-quicktile,P00-switch,P03-ratio,P03-swap,P03-focus --rebind-ratio",
+  "command": "tools/physical/nested_dryrun.py --rounds 2 --samples 40 --warmup 5 --windows 3 --workloads P00-maximize,P02-quicktile,P00-switch,P03-ratio,P03-swap,P03-focus --keys",
   "summary": {
    "definitions": {
     "quantile": "nearest-rank",
@@ -800,40 +805,40 @@
       "inputToFirstPresentNs": {
        "pooled": {
         "n": 80,
-        "median": 21353743,
-        "p95": 34918848,
+        "median": 19476601,
+        "p95": 35096296,
         "p99": null,
-        "max": 35625889,
-        "min": 11958931,
+        "max": 37294861,
+        "min": 9295454,
         "p99WithheldReason": "n=80 < 5000 (PERFORMANCE section 6.5)"
        },
        "ci95ByRun": {
         "median": [
-         20821734,
-         22688838
+         17613156,
+         20134226
         ],
         "p95": [
-         27994998,
-         34918848
+         34922673,
+         35096296
         ]
        },
        "perRun": {
         "run1": {
          "n": 40,
-         "median": 22688838,
-         "p95": 34918848,
+         "median": 20134226,
+         "p95": 35096296,
          "p99": null,
-         "max": 35625889,
-         "min": 13187595,
+         "max": 35652074,
+         "min": 9770918,
          "p99WithheldReason": "n=40 < 5000 (PERFORMANCE section 6.5)"
         },
         "run2": {
          "n": 40,
-         "median": 20821734,
-         "p95": 27994998,
+         "median": 17613156,
+         "p95": 34922673,
          "p99": null,
-         "max": 34971414,
-         "min": 11958931,
+         "max": 37294861,
+         "min": 9295454,
          "p99WithheldReason": "n=40 < 5000 (PERFORMANCE section 6.5)"
         }
        }
@@ -841,40 +846,40 @@
       "inputToSettledNs": {
        "pooled": {
         "n": 80,
-        "median": 21353743,
-        "p95": 34918848,
+        "median": 19476601,
+        "p95": 35096296,
         "p99": null,
-        "max": 35625889,
-        "min": 11958931,
+        "max": 37294861,
+        "min": 9295454,
         "p99WithheldReason": "n=80 < 5000 (PERFORMANCE section 6.5)"
        },
        "ci95ByRun": {
         "median": [
-         20821734,
-         22688838
+         17613156,
+         20134226
         ],
         "p95": [
-         27994998,
-         34918848
+         34922673,
+         35096296
         ]
        },
        "perRun": {
         "run1": {
          "n": 40,
-         "median": 22688838,
-         "p95": 34918848,
+         "median": 20134226,
+         "p95": 35096296,
          "p99": null,
-         "max": 35625889,
-         "min": 13187595,
+         "max": 35652074,
+         "min": 9770918,
          "p99WithheldReason": "n=40 < 5000 (PERFORMANCE section 6.5)"
         },
         "run2": {
          "n": 40,
-         "median": 20821734,
-         "p95": 27994998,
+         "median": 17613156,
+         "p95": 34922673,
          "p99": null,
-         "max": 34971414,
-         "min": 11958931,
+         "max": 37294861,
+         "min": 9295454,
          "p99WithheldReason": "n=40 < 5000 (PERFORMANCE section 6.5)"
         }
        }
@@ -905,40 +910,40 @@
       "inputToFirstPresentNs": {
        "pooled": {
         "n": 80,
-        "median": 18717718,
-        "p95": 31556609,
+        "median": 19018117,
+        "p95": 31790127,
         "p99": null,
-        "max": 46470103,
-        "min": 10027712,
+        "max": 40409427,
+        "min": 8277923,
         "p99WithheldReason": "n=80 < 5000 (PERFORMANCE section 6.5)"
        },
        "ci95ByRun": {
         "median": [
-         17494036,
-         22743274
+         17834802,
+         20272973
         ],
         "p95": [
-         26151009,
-         31761168
+         27026728,
+         36836021
         ]
        },
        "perRun": {
         "run1": {
          "n": 40,
-         "median": 17494036,
-         "p95": 26151009,
+         "median": 20272973,
+         "p95": 27026728,
          "p99": null,
-         "max": 40938672,
-         "min": 10363537,
+         "max": 29232364,
+         "min": 11799241,
          "p99WithheldReason": "n=40 < 5000 (PERFORMANCE section 6.5)"
         },
         "run2": {
          "n": 40,
-         "median": 22743274,
-         "p95": 31761168,
+         "median": 17834802,
+         "p95": 36836021,
          "p99": null,
-         "max": 46470103,
-         "min": 10027712,
+         "max": 40409427,
+         "min": 8277923,
          "p99WithheldReason": "n=40 < 5000 (PERFORMANCE section 6.5)"
         }
        }
@@ -946,40 +951,40 @@
       "inputToSettledNs": {
        "pooled": {
         "n": 80,
-        "median": 18717718,
-        "p95": 31761168,
+        "median": 20272973,
+        "p95": 31790127,
         "p99": null,
-        "max": 46470103,
-        "min": 10027712,
+        "max": 40409427,
+        "min": 8277923,
         "p99WithheldReason": "n=80 < 5000 (PERFORMANCE section 6.5)"
        },
        "ci95ByRun": {
         "median": [
-         17494036,
-         22743274
+         17834802,
+         20897303
         ],
         "p95": [
-         26151009,
-         35601869
+         29232364,
+         36836021
         ]
        },
        "perRun": {
         "run1": {
          "n": 40,
-         "median": 17494036,
-         "p95": 26151009,
+         "median": 20897303,
+         "p95": 29232364,
          "p99": null,
-         "max": 40938672,
-         "min": 10363537,
+         "max": 30608454,
+         "min": 11799241,
          "p99WithheldReason": "n=40 < 5000 (PERFORMANCE section 6.5)"
         },
         "run2": {
          "n": 40,
-         "median": 22743274,
-         "p95": 35601869,
+         "median": 17834802,
+         "p95": 36836021,
          "p99": null,
-         "max": 46470103,
-         "min": 10027712,
+         "max": 40409427,
+         "min": 8277923,
          "p99WithheldReason": "n=40 < 5000 (PERFORMANCE section 6.5)"
         }
        }
@@ -1010,40 +1015,40 @@
       "inputToFirstPresentNs": {
        "pooled": {
         "n": 80,
-        "median": 20640990,
-        "p95": 34837238,
+        "median": 19452346,
+        "p95": 34287148,
         "p99": null,
-        "max": 36434178,
-        "min": 9461599,
+        "max": 37888652,
+        "min": 8357071,
         "p99WithheldReason": "n=80 < 5000 (PERFORMANCE section 6.5)"
        },
        "ci95ByRun": {
         "median": [
-         19141110,
-         21783031
+         15132355,
+         20622404
         ],
         "p95": [
-         34703252,
-         35184576
+         34152323,
+         34287148
         ]
        },
        "perRun": {
         "run1": {
          "n": 40,
-         "median": 19141110,
-         "p95": 34703252,
+         "median": 15132355,
+         "p95": 34152323,
          "p99": null,
-         "max": 35134538,
-         "min": 9701975,
+         "max": 37888652,
+         "min": 8357071,
          "p99WithheldReason": "n=40 < 5000 (PERFORMANCE section 6.5)"
         },
         "run2": {
          "n": 40,
-         "median": 21783031,
-         "p95": 35184576,
+         "median": 20622404,
+         "p95": 34287148,
          "p99": null,
-         "max": 36434178,
-         "min": 9461599,
+         "max": 34988373,
+         "min": 9296849,
          "p99WithheldReason": "n=40 < 5000 (PERFORMANCE section 6.5)"
         }
        }
@@ -1051,40 +1056,40 @@
       "inputToSettledNs": {
        "pooled": {
         "n": 80,
-        "median": 20640990,
-        "p95": 34837238,
+        "median": 19452346,
+        "p95": 34287148,
         "p99": null,
-        "max": 36434178,
-        "min": 9461599,
+        "max": 37888652,
+        "min": 8357071,
         "p99WithheldReason": "n=80 < 5000 (PERFORMANCE section 6.5)"
        },
        "ci95ByRun": {
         "median": [
-         19141110,
-         21783031
+         15132355,
+         20622404
         ],
         "p95": [
-         34703252,
-         35184576
+         34152323,
+         34287148
         ]
        },
        "perRun": {
         "run1": {
          "n": 40,
-         "median": 19141110,
-         "p95": 34703252,
+         "median": 15132355,
+         "p95": 34152323,
          "p99": null,
-         "max": 35134538,
-         "min": 9701975,
+         "max": 37888652,
+         "min": 8357071,
          "p99WithheldReason": "n=40 < 5000 (PERFORMANCE section 6.5)"
         },
         "run2": {
          "n": 40,
-         "median": 21783031,
-         "p95": 35184576,
+         "median": 20622404,
+         "p95": 34287148,
          "p99": null,
-         "max": 36434178,
-         "min": 9461599,
+         "max": 34988373,
+         "min": 9296849,
          "p99WithheldReason": "n=40 < 5000 (PERFORMANCE section 6.5)"
         }
        }
@@ -1115,40 +1120,40 @@
       "inputToFirstPresentNs": {
        "pooled": {
         "n": 80,
-        "median": 20135045,
-        "p95": 31334484,
+        "median": 18347221,
+        "p95": 31410107,
         "p99": null,
-        "max": 38768972,
-        "min": 8247000,
+        "max": 35094263,
+        "min": 9259010,
         "p99WithheldReason": "n=80 < 5000 (PERFORMANCE section 6.5)"
        },
        "ci95ByRun": {
         "median": [
-         19737461,
-         20604827
+         17714908,
+         18463283
         ],
         "p95": [
-         29395178,
-         31334484
+         28663320,
+         31559875
         ]
        },
        "perRun": {
         "run1": {
          "n": 40,
-         "median": 20604827,
-         "p95": 29395178,
+         "median": 17714908,
+         "p95": 31559875,
          "p99": null,
-         "max": 38768972,
-         "min": 8247000,
+         "max": 33082560,
+         "min": 9259010,
          "p99WithheldReason": "n=40 < 5000 (PERFORMANCE section 6.5)"
         },
         "run2": {
          "n": 40,
-         "median": 19737461,
-         "p95": 31334484,
+         "median": 18463283,
+         "p95": 28663320,
          "p99": null,
-         "max": 36911699,
-         "min": 11450260,
+         "max": 35094263,
+         "min": 10800453,
          "p99WithheldReason": "n=40 < 5000 (PERFORMANCE section 6.5)"
         }
        }
@@ -1156,40 +1161,40 @@
       "inputToSettledNs": {
        "pooled": {
         "n": 80,
-        "median": 20478766,
-        "p95": 31334484,
+        "median": 18711497,
+        "p95": 31410107,
         "p99": null,
-        "max": 38768972,
-        "min": 10386867,
+        "max": 35094263,
+        "min": 9259010,
         "p99WithheldReason": "n=80 < 5000 (PERFORMANCE section 6.5)"
        },
        "ci95ByRun": {
         "median": [
-         19737461,
-         24031376
+         17761506,
+         19251116
         ],
         "p95": [
-         29395178,
-         31334484
+         29059504,
+         31559875
         ]
        },
        "perRun": {
         "run1": {
          "n": 40,
-         "median": 24031376,
-         "p95": 29395178,
+         "median": 17761506,
+         "p95": 31559875,
          "p99": null,
-         "max": 38768972,
-         "min": 10386867,
+         "max": 33082560,
+         "min": 9259010,
          "p99WithheldReason": "n=40 < 5000 (PERFORMANCE section 6.5)"
         },
         "run2": {
          "n": 40,
-         "median": 19737461,
-         "p95": 31334484,
+         "median": 19251116,
+         "p95": 29059504,
          "p99": null,
-         "max": 36911699,
-         "min": 11450260,
+         "max": 35094263,
+         "min": 10800453,
          "p99WithheldReason": "n=40 < 5000 (PERFORMANCE section 6.5)"
         }
        }
@@ -1220,40 +1225,40 @@
       "inputToFirstPresentNs": {
        "pooled": {
         "n": 80,
-        "median": 13905147,
-        "p95": 20652635,
+        "median": 13365917,
+        "p95": 20010574,
         "p99": null,
-        "max": 22595869,
-        "min": 4097475,
+        "max": 25896174,
+        "min": 3753842,
         "p99WithheldReason": "n=80 < 5000 (PERFORMANCE section 6.5)"
        },
        "ci95ByRun": {
         "median": [
-         12714404,
-         15264739
+         12253255,
+         14734574
         ],
         "p95": [
-         20511678,
-         20652635
+         19741736,
+         21065395
         ]
        },
        "perRun": {
         "run1": {
          "n": 40,
-         "median": 12714404,
-         "p95": 20511678,
+         "median": 14734574,
+         "p95": 21065395,
          "p99": null,
-         "max": 22595869,
-         "min": 5253895,
+         "max": 25896174,
+         "min": 3753842,
          "p99WithheldReason": "n=40 < 5000 (PERFORMANCE section 6.5)"
         },
         "run2": {
          "n": 40,
-         "median": 15264739,
-         "p95": 20652635,
+         "median": 12253255,
+         "p95": 19741736,
          "p99": null,
-         "max": 21422662,
-         "min": 4097475,
+         "max": 21125294,
+         "min": 4413636,
          "p99WithheldReason": "n=40 < 5000 (PERFORMANCE section 6.5)"
         }
        }
@@ -1261,40 +1266,40 @@
       "inputToSettledNs": {
        "pooled": {
         "n": 80,
-        "median": 26837073,
-        "p95": 37319301,
+        "median": 24699683,
+        "p95": 36514763,
         "p99": null,
-        "max": 39262535,
-        "min": 14332092,
+        "max": 37791960,
+        "min": 12253255,
         "p99WithheldReason": "n=80 < 5000 (PERFORMANCE section 6.5)"
        },
        "ci95ByRun": {
         "median": [
-         26011288,
-         27878734
+         24050471,
+         25733956
         ],
         "p95": [
-         37178344,
-         37319301
+         36408402,
+         36514763
         ]
        },
        "perRun": {
         "run1": {
          "n": 40,
-         "median": 26011288,
-         "p95": 37178344,
+         "median": 25733956,
+         "p95": 36514763,
          "p99": null,
-         "max": 39262535,
-         "min": 14332092,
+         "max": 37781752,
+         "min": 12613313,
          "p99WithheldReason": "n=40 < 5000 (PERFORMANCE section 6.5)"
         },
         "run2": {
          "n": 40,
-         "median": 27878734,
-         "p95": 37319301,
+         "median": 24050471,
+         "p95": 36408402,
          "p99": null,
-         "max": 38089328,
-         "min": 15437290,
+         "max": 37791960,
+         "min": 12253255,
          "p99WithheldReason": "n=40 < 5000 (PERFORMANCE section 6.5)"
         }
        }
@@ -1325,40 +1330,40 @@
       "inputToFirstPresentNs": {
        "pooled": {
         "n": 80,
-        "median": 13534202,
-        "p95": 20906275,
+        "median": 13238263,
+        "p95": 20345399,
         "p99": null,
-        "max": 22962614,
-        "min": 4575942,
+        "max": 21216435,
+        "min": 4022484,
         "p99WithheldReason": "n=80 < 5000 (PERFORMANCE section 6.5)"
        },
        "ci95ByRun": {
         "median": [
-         13477619,
-         13534202
+         12471373,
+         13238263
         ],
         "p95": [
-         20690688,
-         21189084
+         20334827,
+         20345399
         ]
        },
        "perRun": {
         "run1": {
          "n": 40,
-         "median": 13534202,
-         "p95": 20690688,
+         "median": 12471373,
+         "p95": 20334827,
          "p99": null,
-         "max": 21992327,
-         "min": 4575942,
+         "max": 21216435,
+         "min": 4919431,
          "p99WithheldReason": "n=40 < 5000 (PERFORMANCE section 6.5)"
         },
         "run2": {
          "n": 40,
-         "median": 13477619,
-         "p95": 21189084,
+         "median": 13238263,
+         "p95": 20345399,
          "p99": null,
-         "max": 22962614,
-         "min": 4908558,
+         "max": 20373578,
+         "min": 4022484,
          "p99WithheldReason": "n=40 < 5000 (PERFORMANCE section 6.5)"
         }
        }
@@ -1366,40 +1371,40 @@
       "inputToSettledNs": {
        "pooled": {
         "n": 80,
-        "median": 21575224,
-        "p95": 37357354,
+        "median": 22585322,
+        "p95": 37012065,
         "p99": null,
-        "max": 39629280,
-        "min": 10675561,
+        "max": 37883101,
+        "min": 11374006,
         "p99WithheldReason": "n=80 < 5000 (PERFORMANCE section 6.5)"
        },
        "ci95ByRun": {
         "median": [
-         21242608,
-         21575224
+         21822847,
+         24381434
         ],
         "p95": [
-         35479337,
-         37855750
+         37001493,
+         37012065
         ]
        },
        "perRun": {
         "run1": {
          "n": 40,
-         "median": 21242608,
-         "p95": 35479337,
+         "median": 21822847,
+         "p95": 37001493,
          "p99": null,
-         "max": 37572941,
-         "min": 11160119,
+         "max": 37883101,
+         "min": 11374006,
          "p99WithheldReason": "n=40 < 5000 (PERFORMANCE section 6.5)"
         },
         "run2": {
          "n": 40,
-         "median": 21575224,
-         "p95": 37855750,
+         "median": 24381434,
+         "p95": 37012065,
          "p99": null,
-         "max": 39629280,
-         "min": 10675561,
+         "max": 37040244,
+         "min": 12383312,
          "p99WithheldReason": "n=40 < 5000 (PERFORMANCE section 6.5)"
         }
        }
@@ -1425,15 +1430,15 @@
      "metric": "inputToFirstPresentNs",
      "thresholdNs": 16666666,
      "matchedBaseline": false,
-     "medianDiffNs": -4812571,
+     "medianDiffNs": -5652200,
      "medianDiffCi95": [
-      -10028870,
-      -2229297
+      -8019718,
+      -3100228
      ],
-     "p95DiffNs": -10903974,
+     "p95DiffNs": -11779553,
      "p95DiffCi95": [
-      -11249490,
-      -5498374
+      -17094285,
+      -5961333
      ],
      "protocolMet": false,
      "medianRule": "pass",
@@ -1451,15 +1456,15 @@
      "metric": "inputToFirstPresentNs",
      "thresholdNs": 16666666,
      "matchedBaseline": false,
-     "medianDiffNs": -7448596,
+     "medianDiffNs": -6110684,
      "medianDiffCi95": [
-      -9974434,
-      -5556995
+      -7880971,
+      -2878582
      ],
-     "p95DiffNs": -14266213,
+     "p95DiffNs": -15085722,
      "p95DiffCi95": [
-      -14407170,
-      -7342363
+      -15354560,
+      -13857278
      ],
      "protocolMet": false,
      "medianRule": "pass",
@@ -1477,15 +1482,15 @@
      "metric": "inputToFirstPresentNs",
      "thresholdNs": 16666666,
      "matchedBaseline": true,
-     "medianDiffNs": -6735843,
+     "medianDiffNs": -6086429,
      "medianDiffCi95": [
-      -9068627,
-      -3876371
+      -8369149,
+      -397781
      ],
-     "p95DiffNs": -14184603,
+     "p95DiffNs": -14276574,
      "p95DiffCi95": [
-      -14672898,
-      -14050617
+      -14545412,
+      -13086928
      ],
      "protocolMet": false,
      "medianRule": "pass",
@@ -1503,15 +1508,15 @@
      "metric": "inputToFirstPresentNs",
      "thresholdNs": 16666666,
      "matchedBaseline": true,
-     "medianDiffNs": 1417327,
+     "medianDiffNs": -670896,
      "medianDiffCi95": [
-      -3005813,
-      3110791
+      -2558065,
+      628481
      ],
-     "p95DiffNs": -222125,
+     "p95DiffNs": -380020,
      "p95DiffCi95": [
-      -2365990,
-      5183475
+      -8172701,
+      4533147
      ],
      "protocolMet": false,
      "medianRule": "pass",
@@ -1529,15 +1534,15 @@
      "metric": "inputToFirstPresentNs",
      "thresholdNs": 16666666,
      "matchedBaseline": false,
-     "medianDiffNs": -1218698,
+     "medianDiffNs": -1129380,
      "medianDiffCi95": [
-      -2951377,
-      -216907
+      -2419318,
+      850127
      ],
-     "p95DiffNs": -3584364,
+     "p95DiffNs": -3686189,
      "p95DiffCi95": [
-      -5523670,
-      3339486
+      -6432976,
+      -3362798
      ],
      "protocolMet": false,
      "medianRule": "pass",
@@ -1555,15 +1560,15 @@
      "metric": "inputToFirstPresentNs",
      "thresholdNs": 16666666,
      "matchedBaseline": false,
-     "medianDiffNs": -505945,
+     "medianDiffNs": -1105125,
      "medianDiffCi95": [
-      -2045570,
-      1463717
+      -2907496,
+      3330928
      ],
-     "p95DiffNs": -3502754,
+     "p95DiffNs": -2877041,
      "p95DiffCi95": [
-      -5789398,
-      -3368768
+      -5623828,
+      -2592448
      ],
      "protocolMet": false,
      "medianRule": "pass",
@@ -1581,15 +1586,15 @@
      "metric": "inputToFirstPresentNs",
      "thresholdNs": 16666666,
      "matchedBaseline": false,
-     "medianDiffNs": -5183516,
+     "medianDiffNs": -5779854,
      "medianDiffCi95": [
-      -9265655,
-      -3959834
+      -7801600,
+      -4596539
      ],
-     "p95DiffNs": -10650334,
+     "p95DiffNs": -11444728,
      "p95DiffCi95": [
-      -11070480,
-      -4961925
+      -16501194,
+      -6681329
      ],
      "protocolMet": false,
      "medianRule": "pass",
@@ -1607,15 +1612,15 @@
      "metric": "inputToFirstPresentNs",
      "thresholdNs": 16666666,
      "matchedBaseline": false,
-     "medianDiffNs": -7819541,
+     "medianDiffNs": -6238338,
      "medianDiffCi95": [
-      -9211219,
-      -7287532
+      -7662853,
+      -4374893
      ],
-     "p95DiffNs": -14012573,
+     "p95DiffNs": -14750897,
      "p95DiffCi95": [
-      -14228160,
-      -6805914
+      -14761469,
+      -14577274
      ],
      "protocolMet": false,
      "medianRule": "pass",
@@ -1633,15 +1638,15 @@
      "metric": "inputToFirstPresentNs",
      "thresholdNs": 16666666,
      "matchedBaseline": true,
-     "medianDiffNs": -7106788,
+     "medianDiffNs": -6214083,
      "medianDiffCi95": [
-      -8305412,
-      -5606908
+      -8151031,
+      -1894092
      ],
-     "p95DiffNs": -13930963,
+     "p95DiffNs": -13941749,
      "p95DiffCi95": [
-      -14493888,
-      -13514168
+      -13952321,
+      -13806924
      ],
      "protocolMet": false,
      "medianRule": "pass",
@@ -1662,11 +1667,11 @@
      "successes": 10,
      "inputToFirstPresentNs": {
       "n": 10,
-      "median": 18521422,
-      "p95": 27993918,
+      "median": 21905131,
+      "p95": 29178377,
       "p99": null,
-      "max": 27993918,
-      "min": 11153162,
+      "max": 29178377,
+      "min": 8639252,
       "p99WithheldReason": "n=10 < 5000 (PERFORMANCE section 6.5)"
      }
     },
@@ -1681,11 +1686,11 @@
      "successes": 10,
      "inputToFirstPresentNs": {
       "n": 10,
-      "median": 12469469,
-      "p95": 18622962,
+      "median": 13667238,
+      "p95": 20353891,
       "p99": null,
-      "max": 18622962,
-      "min": 6146631,
+      "max": 20353891,
+      "min": 6281797,
       "p99WithheldReason": "n=10 < 5000 (PERFORMANCE section 6.5)"
      }
     },
@@ -1700,11 +1705,11 @@
      "successes": 10,
      "inputToFirstPresentNs": {
       "n": 10,
-      "median": 19470216,
-      "p95": 26591770,
+      "median": 18980874,
+      "p95": 25975035,
       "p99": null,
-      "max": 26591770,
-      "min": 12141707,
+      "max": 25975035,
+      "min": 11287200,
       "p99WithheldReason": "n=10 < 5000 (PERFORMANCE section 6.5)"
      }
     },
@@ -1719,11 +1724,11 @@
      "successes": 10,
      "inputToFirstPresentNs": {
       "n": 10,
-      "median": 24752697,
-      "p95": 35251326,
+      "median": 17154933,
+      "p95": 27219540,
       "p99": null,
-      "max": 35251326,
-      "min": 15552781,
+      "max": 27219540,
+      "min": 11226245,
       "p99WithheldReason": "n=10 < 5000 (PERFORMANCE section 6.5)"
      }
     },
@@ -1738,11 +1743,11 @@
      "successes": 10,
      "inputToFirstPresentNs": {
       "n": 10,
-      "median": 14979457,
-      "p95": 21950327,
+      "median": 15372977,
+      "p95": 19496705,
       "p99": null,
-      "max": 21950327,
-      "min": 5252587,
+      "max": 19496705,
+      "min": 6232938,
       "p99WithheldReason": "n=10 < 5000 (PERFORMANCE section 6.5)"
      }
     },
@@ -1757,11 +1762,11 @@
      "successes": 10,
      "inputToFirstPresentNs": {
       "n": 10,
-      "median": 23267003,
-      "p95": 25717580,
+      "median": 15716268,
+      "p95": 24930850,
       "p99": null,
-      "max": 25717580,
-      "min": 11384359,
+      "max": 24930850,
+      "min": 9494453,
       "p99WithheldReason": "n=10 < 5000 (PERFORMANCE section 6.5)"
      }
     }
@@ -1772,8 +1777,8 @@
     "environmentId": "nested-virtual-kwin",
     "outputName": "Virtual-0",
     "refreshHzDeclared": 60,
-    "implementationCommit": "6ada721c10fa3b1c22ee7710999626bd10248f6d",
-    "implementationDirty": true,
+    "implementationCommit": "bb0a81106b2266c05ec3f09ce57230d57c699b24",
+    "implementationDirty": false,
     "clockResolutionNs": 1
    },
    "blocks": [
@@ -1788,8 +1793,8 @@
      "refreshNsObservedAtStart": 16666666,
      "countersDelta": null,
      "presentGrid": {
-      "intervals": 46,
-      "aligned": 46,
+      "intervals": 47,
+      "aligned": 47,
       "alignedFraction": 1.0,
       "residualP95Ns": 0,
       "residualMaxNs": 0,
@@ -1822,6 +1827,7 @@
       "partial": 0,
       "external": 0,
       "learned": 0,
+      "accepted": 0,
       "diverged": 0,
       "deadlines": 0,
       "overflow": 0,
@@ -1833,8 +1839,8 @@
       "activations": 0
      },
      "presentGrid": {
-      "intervals": 82,
-      "aligned": 82,
+      "intervals": 76,
+      "aligned": 76,
       "alignedFraction": 1.0,
       "residualP95Ns": 0,
       "residualMaxNs": 0,
@@ -1867,6 +1873,7 @@
       "partial": 0,
       "external": 0,
       "learned": 0,
+      "accepted": 0,
       "diverged": 0,
       "deadlines": 0,
       "overflow": 0,
@@ -1878,8 +1885,8 @@
       "activations": 45
      },
      "presentGrid": {
-      "intervals": 49,
-      "aligned": 49,
+      "intervals": 46,
+      "aligned": 46,
       "alignedFraction": 1.0,
       "residualP95Ns": 0,
       "residualMaxNs": 0,
@@ -1931,6 +1938,7 @@
       "partial": 0,
       "external": 0,
       "learned": 0,
+      "accepted": 0,
       "diverged": 0,
       "deadlines": 0,
       "overflow": 0,
@@ -1942,8 +1950,8 @@
       "activations": 0
      },
      "presentGrid": {
-      "intervals": 67,
-      "aligned": 67,
+      "intervals": 71,
+      "aligned": 71,
       "alignedFraction": 1.0,
       "residualP95Ns": 0,
       "residualMaxNs": 0,
@@ -1961,8 +1969,8 @@
      "refreshNsObservedAtStart": 16666666,
      "countersDelta": null,
      "presentGrid": {
-      "intervals": 47,
-      "aligned": 47,
+      "intervals": 46,
+      "aligned": 46,
       "alignedFraction": 1.0,
       "residualP95Ns": 0,
       "residualMaxNs": 0,
@@ -2018,8 +2026,8 @@
      "refreshNsObservedAtStart": 16666666,
      "countersDelta": null,
      "presentGrid": {
-      "intervals": 46,
-      "aligned": 46,
+      "intervals": 45,
+      "aligned": 45,
       "alignedFraction": 1.0,
       "residualP95Ns": 0,
       "residualMaxNs": 0,
@@ -2052,6 +2060,7 @@
       "partial": 0,
       "external": 0,
       "learned": 0,
+      "accepted": 0,
       "diverged": 0,
       "deadlines": 0,
       "overflow": 0,
@@ -2063,8 +2072,8 @@
       "activations": 0
      },
      "presentGrid": {
-      "intervals": 70,
-      "aligned": 70,
+      "intervals": 76,
+      "aligned": 76,
       "alignedFraction": 1.0,
       "residualP95Ns": 0,
       "residualMaxNs": 0,
@@ -2097,6 +2106,7 @@
       "partial": 0,
       "external": 0,
       "learned": 0,
+      "accepted": 0,
       "diverged": 0,
       "deadlines": 0,
       "overflow": 0,
@@ -2108,8 +2118,8 @@
       "activations": 45
      },
      "presentGrid": {
-      "intervals": 45,
-      "aligned": 45,
+      "intervals": 46,
+      "aligned": 46,
       "alignedFraction": 1.0,
       "residualP95Ns": 0,
       "residualMaxNs": 0,
@@ -2142,6 +2152,7 @@
       "partial": 0,
       "external": 0,
       "learned": 0,
+      "accepted": 0,
       "diverged": 0,
       "deadlines": 0,
       "overflow": 0,
@@ -2153,8 +2164,8 @@
       "activations": 0
      },
      "presentGrid": {
-      "intervals": 79,
-      "aligned": 79,
+      "intervals": 73,
+      "aligned": 73,
       "alignedFraction": 1.0,
       "residualP95Ns": 0,
       "residualMaxNs": 0,
@@ -2166,6 +2177,56 @@
   }
  },
  "keysDefaultBindings": {
+  "delivered": [
+   "plastile.focus.down",
+   "plastile.focus.left",
+   "plastile.focus.next",
+   "plastile.focus.previous",
+   "plastile.focus.right",
+   "plastile.focus.up",
+   "plastile.layout.monocle",
+   "plastile.layout.next",
+   "plastile.master.decrease",
+   "plastile.master.increase",
+   "plastile.move.output-next",
+   "plastile.resize.grow",
+   "plastile.resize.shrink",
+   "plastile.swap.down",
+   "plastile.swap.left",
+   "plastile.swap.master",
+   "plastile.swap.right",
+   "plastile.swap.up",
+   "plastile.window.toggle-float"
+  ],
+  "notDelivered": [],
+  "unknown": [],
+  "skipped": [
+   "plastile.runtime.toggle-suspend"
+  ],
+  "bindings": {
+   "plastile.focus.down": "Meta+Shift+J",
+   "plastile.focus.left": "Meta+Shift+H",
+   "plastile.focus.next": "Meta+Shift+N",
+   "plastile.focus.previous": "Meta+Shift+P",
+   "plastile.focus.right": "Meta+Shift+L",
+   "plastile.focus.up": "Meta+Shift+K",
+   "plastile.layout.monocle": "Meta+Shift+M",
+   "plastile.layout.next": "Meta+Shift+Space",
+   "plastile.master.decrease": "Meta+Shift+D",
+   "plastile.master.increase": "Meta+Shift+I",
+   "plastile.move.output-next": "Meta+Shift+O",
+   "plastile.resize.grow": "Meta+Ctrl+=",
+   "plastile.resize.shrink": "Meta+Ctrl+-",
+   "plastile.swap.down": "Meta+Ctrl+J",
+   "plastile.swap.left": "Meta+Ctrl+H",
+   "plastile.swap.master": "Meta+Shift+Return",
+   "plastile.swap.right": "Meta+Ctrl+L",
+   "plastile.swap.up": "Meta+Ctrl+K",
+   "plastile.window.toggle-float": "Meta+Shift+F"
+  }
+ },
+ "keysWithPreFixDefaultsStored": {
+  "command": "tools/physical/nested_dryrun.py --no-latency --keys --binding plastile.resize.grow=Meta+Shift+= --binding plastile.resize.shrink=Meta+Shift+-",
   "delivered": [
    "plastile.focus.down",
    "plastile.focus.left",
@@ -2207,55 +2268,6 @@
    "plastile.move.output-next": "Meta+Shift+O",
    "plastile.resize.grow": "Meta+Shift+=",
    "plastile.resize.shrink": "Meta+Shift+-",
-   "plastile.swap.down": "Meta+Ctrl+J",
-   "plastile.swap.left": "Meta+Ctrl+H",
-   "plastile.swap.master": "Meta+Shift+Return",
-   "plastile.swap.right": "Meta+Ctrl+L",
-   "plastile.swap.up": "Meta+Ctrl+K",
-   "plastile.window.toggle-float": "Meta+Shift+F"
-  }
- },
- "keysWithReboundGrowShrink": {
-  "delivered": [
-   "plastile.focus.down",
-   "plastile.focus.left",
-   "plastile.focus.next",
-   "plastile.focus.previous",
-   "plastile.focus.right",
-   "plastile.focus.up",
-   "plastile.layout.monocle",
-   "plastile.layout.next",
-   "plastile.master.decrease",
-   "plastile.master.increase",
-   "plastile.move.output-next",
-   "plastile.resize.grow",
-   "plastile.resize.shrink",
-   "plastile.swap.down",
-   "plastile.swap.left",
-   "plastile.swap.master",
-   "plastile.swap.right",
-   "plastile.swap.up",
-   "plastile.window.toggle-float"
-  ],
-  "notDelivered": [],
-  "unknown": [],
-  "skipped": [
-   "plastile.runtime.toggle-suspend"
-  ],
-  "bindings": {
-   "plastile.focus.down": "Meta+Shift+J",
-   "plastile.focus.left": "Meta+Shift+H",
-   "plastile.focus.next": "Meta+Shift+N",
-   "plastile.focus.previous": "Meta+Shift+P",
-   "plastile.focus.right": "Meta+Shift+L",
-   "plastile.focus.up": "Meta+Shift+K",
-   "plastile.layout.monocle": "Meta+Shift+M",
-   "plastile.layout.next": "Meta+Shift+Space",
-   "plastile.master.decrease": "Meta+Shift+D",
-   "plastile.master.increase": "Meta+Shift+I",
-   "plastile.move.output-next": "Meta+Shift+O",
-   "plastile.resize.grow": "Meta+Ctrl+=",
-   "plastile.resize.shrink": "Meta+Ctrl+-",
    "plastile.swap.down": "Meta+Ctrl+J",
    "plastile.swap.left": "Meta+Ctrl+H",
    "plastile.swap.master": "Meta+Shift+Return",
