@@ -12,9 +12,11 @@ The output is a plain zip that `kpackagetool6 --type KWin/Script --install` acce
 
 The version is read from package/metadata.json (KPlugin.Version). Required entries
 are verified before writing and the file's SHA-256 is printed. Running it twice
-yields identical bytes (see --check, and the tests/integration package scenario).
+yields identical bytes. --check proves it against a perturbed rebuild: a copy of the
+package with different file mtimes and modes, built in a separate process with a
+different umask and time zone, must produce the same bytes.
 
-Usage: python3 tools/release.py [--out DIR] [--check] [--json]
+Usage: python3 tools/release.py [--out DIR] [--check] [--json] [--package DIR]
 """
 from __future__ import annotations
 
@@ -23,7 +25,10 @@ import hashlib
 import io
 import json
 import os
+import shutil
+import subprocess
 import sys
+import tempfile
 import time
 import zipfile
 from pathlib import Path
@@ -145,20 +150,39 @@ def build(out_dir: Path, package: Path = PACKAGE) -> dict:
     }
 
 
+def perturbed_rebuild_sha256(package: Path = PACKAGE) -> str:
+    """Build a copy of `package` whose metadata differs in everything the archive must not
+    depend on (mtimes, permission bits, umask, time zone), in a separate interpreter."""
+    with tempfile.TemporaryDirectory(prefix="plastile-release-check-") as tmp:
+        copy = Path(tmp) / "package"
+        shutil.copytree(package, copy)
+        for i, path in enumerate(sorted(p for p in copy.rglob("*") if p.is_file())):
+            os.chmod(path, 0o755 if i % 2 else 0o600)
+            stamp = 1_000_000_000 + 7919 * i  # 2001, distinct per file
+            os.utime(path, (stamp, stamp))
+        env = {**os.environ, "TZ": "Pacific/Kiritimati"}
+        r = subprocess.run(
+            [sys.executable, str(Path(__file__).resolve()), "--package", str(copy), "--out", str(Path(tmp) / "out"),
+             "--json"], env=env, capture_output=True, text=True, preexec_fn=lambda: os.umask(0o077))
+        if r.returncode != 0:
+            raise ReleaseError(f"perturbed rebuild failed: {r.stderr.strip()}")
+        return json.loads(r.stdout)["sha256"]
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--out", default=str(ROOT / "dist"), help="output directory (default: dist/)")
-    ap.add_argument("--check", action="store_true", help="build twice in memory and fail unless the bytes match")
+    ap.add_argument("--check", action="store_true",
+                    help="also build a perturbed copy in a separate process and fail unless the bytes match")
     ap.add_argument("--json", action="store_true", help="print the result as JSON")
+    ap.add_argument("--package", default=str(PACKAGE), help=argparse.SUPPRESS)
     args = ap.parse_args(argv)
     try:
-        result = build(Path(args.out))
+        result = build(Path(args.out), Path(args.package))
         if args.check:
-            entries = collect_entries()
-            again = build_bytes(entries, source_date())
-            result["reproducible"] = hashlib.sha256(again).hexdigest() == result["sha256"]
+            result["reproducible"] = perturbed_rebuild_sha256(Path(args.package)) == result["sha256"]
             if not result["reproducible"]:
-                raise ReleaseError("second build produced different bytes")
+                raise ReleaseError("a rebuild with different mtimes, modes, umask and time zone produced different bytes")
     except ReleaseError as exc:
         print(f"release: {exc}", file=sys.stderr)
         return 1
@@ -168,7 +192,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"{result['path']}  ({result['bytes']} bytes, {len(result['entries'])} entries)")
         print(f"sha256 {result['sha256']}")
         if args.check:
-            print("reproducible: identical bytes on rebuild")
+            print("reproducible: identical bytes from a rebuild with different mtimes, modes, umask and time zone")
     return 0
 
 

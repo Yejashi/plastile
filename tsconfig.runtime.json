@@ -1,0 +1,12 @@
+{
+  // Runtime code runs in KWin's QV4 engine, not Node. esbuild lowers syntax to
+  // ES2016 but not library APIs, and @types/node pulls in ES2020 libs, so src/ is
+  // also checked alone against ES2017 libraries with no Node types: a call to a
+  // newer built-in (Object.fromEntries, Array.prototype.flat, ...) fails here.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "lib": ["ES2017"],
+    "types": []
+  },
+  "include": ["src/**/*.ts"]
+}

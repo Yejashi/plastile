@@ -25,8 +25,10 @@ import os
 import re
 import shutil
 import signal
+import stat
 import subprocess
 import sys
+import tempfile
 import time
 from pathlib import Path
 
@@ -38,6 +40,21 @@ SHORT_BASE = Path(os.environ.get("PLASTILE_NESTED_BASE", f"/tmp/plastile-{os.get
 
 class NestedError(RuntimeError):
     pass
+
+
+def session_base() -> Path:
+    """The private parent of all session roots: a real directory owned by us, mode 0700.
+
+    /tmp/plastile-<uid> is predictable, so refuse anything another user could have
+    planted (a symlink, a foreign owner) instead of deleting or writing through it.
+    """
+    os.makedirs(SHORT_BASE, mode=0o700, exist_ok=True)
+    st = os.lstat(SHORT_BASE)
+    if not stat.S_ISDIR(st.st_mode) or st.st_uid != os.getuid():
+        raise NestedError(f"{SHORT_BASE} is not a directory owned by uid {os.getuid()}; refusing to use it")
+    if st.st_mode & 0o077:
+        os.chmod(SHORT_BASE, 0o700)
+    return SHORT_BASE
 
 
 def _monotonic_ns() -> int:
@@ -124,8 +141,9 @@ class NestedKwin:
             raise
 
     def _start(self, timeout: float) -> "NestedKwin":
-        if self.root.exists():
-            shutil.rmtree(self.root)
+        # A fresh, unpredictable root per session: concurrent sessions with the same
+        # name never share or delete each other's tree.
+        self.root = Path(tempfile.mkdtemp(prefix=f"{self.name}-", dir=session_base()))
         for sub in ("run", "config", "data", "cache", "state"):
             (self.root / sub).mkdir(parents=True)
         self.run_dir.chmod(0o700)
