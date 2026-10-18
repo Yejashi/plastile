@@ -88,7 +88,7 @@ Try it if a window seems stuck outside the layout after an unusual sequence. If 
 
 1. **Make KWin re-read the file.** Apply in the settings dialog does not notify the script, and the *Reload configuration* shortcut alone re-reads KWin's cached copy of `kwinrc` (both measured, [details](INSTALL.md#applying-settings-changes)). Run `qdbus6 org.kde.KWin /KWin reconfigure`, or disable and re-enable Plastile in KWin Scripts.
 2. **Look for a rejection.** Search the log for `plastile error configuration rejected; keeping previous revision [...]`. The list gives each problem with its path. Fix all of them: one error rejects the whole revision.
-3. **Check for typos.** `plastile warn configuration: <key>: unknown key ignored` means a flat key was mistyped. Unknown keys inside the JSON are errors, not warnings.
+3. **Check for typos.** A mistyped flat key in `[Script-plastile]` is ignored without any message: KWin lets a script read keys only by name, so Plastile cannot see keys it does not know. Compare the names with the table in [CONFIGURATION](CONFIGURATION.md#flat-keys). Unknown keys inside the JSON are errors, logged with their path.
 4. **Confirm activation.** At `info`, `configuration activated {"revision": N}` confirms a change was taken. An unchanged configuration deliberately produces no new revision and no log line.
 
 ## A window is not tiled
@@ -107,7 +107,7 @@ Run *Explain active window* and read `mode`, `userMode`, `nativeTile`, `decision
   - **Gave up:** the window was tiled but did not reach its slot after two corrections. It stays where the client put it.
   - **Overflow (`overflow: ...`):** the layout could not fit it, so it floats.
 
-  Changing the layout, gaps, screen area or the client's constraints re-evaluates the window; unrelated focus changes do not. Toggling the window back to tiled with *Toggle floating* clears the exception and retries.
+  The exception is not reconsidered automatically: changing the layout, gaps, screen area or the client's constraints leaves an overflowed window floating (current limitation; observed source, `src/core/engine.ts`). Toggling the window back to tiled with *Toggle floating* clears the exception and retries.
 - **`mode: pending`:** the window has not reported an application id yet. Plastile waits up to 300 ms before classifying it.
 
 ## A window keeps resizing or flickers

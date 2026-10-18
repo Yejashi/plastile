@@ -114,7 +114,9 @@ test("flat key errors name the key (Q01)", () => {
   hasError(errors({ gapInner: "NaN" }), "gapInner: must be a number");
   hasError(errors({ gapInner: "0x10" }), "gapInner: must be a number");
   hasError(errors({ masterRatio: Infinity }), "masterRatio: must be a finite number");
-  // Unknown flat keys are leftovers from other versions: warning, not failure.
+  // Unknown flat keys are leftovers from other versions: warning, not failure. This covers
+  // compileConfig only: in KWin the runtime reads FLAT_KEYS by name (readConfig cannot list a
+  // group), so an unknown key never reaches the validator and is ignored without a warning.
   const r = compileConfig({ floatDialogs: true }, 1);
   assert.ok(r.ok);
   assert.deepEqual(r.warnings.map(formatError), ["floatDialogs: unknown key ignored"]);

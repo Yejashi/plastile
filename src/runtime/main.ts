@@ -48,7 +48,9 @@ export function createRuntime(env: RuntimeEnv): Runtime {
   let snapshot: ConfigSnapshot | null = null;
   const readFlat = (): Record<string, unknown> => {
     const flat: Record<string, unknown> = {};
-    // Flat keys from kwinrc [Script-plastile] (the settings dialog writes these).
+    // Flat keys from kwinrc [Script-plastile] (the settings dialog writes these). readConfig
+    // reads one key by name and cannot list the group, so a mistyped key is never seen here
+    // (the validator's unknown-key warning is reachable only from compileConfig callers).
     for (const k of FLAT_KEYS) flat[k] = env.kwin.readConfig(k, "");
     return flat;
   };
