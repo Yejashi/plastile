@@ -3,7 +3,7 @@
 
 import test from "node:test";
 import assert from "node:assert/strict";
-import { classify, EXCLUDED_APPS, EXCLUDED_KINDS, FLOATING_APPS, type ClassifyInput, type RuleView } from "../../src/core/classify.ts";
+import { classify, EXCLUDED_APPS, EXCLUDED_KINDS, FLOATING_APPS, TINY_REASON, type ClassifyInput, type RuleView } from "../../src/core/classify.ts";
 import type { Constraints, Decision, Membership, WindowKind, WindowMeta } from "../../src/core/types.ts";
 import { FREE, meta } from "./mockHost.ts";
 
@@ -153,6 +153,39 @@ test("titles are not identity: a normal window titled 'Dialog' stays tiled", () 
   }
   // Nor does a role string make a window a dialog.
   is(classify(input({ role: "dialog" })), "tiled", "default");
+});
+
+test("misleading ids are not identity: app-id lists match exactly, an excluded kind outranks the id, tiny size applies to any id", () => {
+  // A normal app whose resource name / class looks like a shell surface or helper: only appId
+  // is matched, and only exactly.
+  is(classify(input({ appId: "org.example.editor", resourceName: "plasmashell" })), "tiled", "default");
+  is(classify(input({ appId: "org.example.editor", resourceName: "xdg-desktop-portal-kde" })), "tiled", "default");
+  // Prefixes, extensions and substrings of listed ids are different applications.
+  const near = ["org.kde.plasma", "plasma", "org.kde.krun", "kwin_", "kscreenlocker", "org.kde",
+    "org.kde.plasmashell.settings", "org.kde.krunner-config", "org.kde.kwinrules", "kwin_wayland_wrapper",
+    "xwaylandvideobridge2", "my-plasmashell", "org.kde.plasmashel"];
+  for (const appId of near) {
+    assert.ok(!EXCLUDED_APPS.has(appId) && !FLOATING_APPS.has(appId), `${appId} must not be listed`);
+    is(classify(input({ appId })), "tiled", "default");
+  }
+  const helperish = ["xdg-desktop-portal", "xdg-desktop-portal-kde-helper", "org.kde.polkit-kde-authentication-agent",
+    "org.kde.plasma.emojier.extra", "kdeconnect"];
+  for (const appId of helperish) is(classify(input({ appId })), "tiled", "default");
+  // A listed id on a different kind: an excluded kind is reported by type before the app id;
+  // otherwise the app exclusion outranks the kind's float default and a tiling rule.
+  is(classify(input({ appId: "org.kde.plasmashell", kind: "dock" })), "excluded", "type");
+  is(classify(input({ appId: "xdg-desktop-portal-kde", kind: "popup" })), "excluded", "type");
+  const shellDialog = classify(input({ appId: "org.kde.plasmashell", kind: "dialog" }, { rule: rule("tiled", "t") }));
+  is(shellDialog, "excluded", "builtin");
+  assert.match(shellDialog.reason, /org\.kde\.plasmashell/);
+  is(classify(input({ appId: "org.kde.krunner", kind: "utility", transient: true, transientFor: "W1" })), "excluded", "builtin");
+  // A helper-listed id on a dialog floats as the built-in helper (the list is checked before type).
+  is(classify(input({ appId: "org.kde.polkit-kde-authentication-agent-1", kind: "dialog" })), "floating", "builtin");
+  // A listed shell id at helper size is explained by the app id; an ordinary id at that size by the tiny rule.
+  assert.match(classify(input({ appId: "kwin_wayland" }, { frameSize: { width: 1, height: 1 } })).reason, /kwin_wayland/);
+  const tiny = classify(input({ appId: "org.example.editor", title: "Editor" }, { frameSize: { width: 1, height: 1 } }));
+  is(tiny, "excluded", "builtin");
+  assert.equal(tiny.reason, TINY_REASON);
 });
 
 test("precedence summary: own > kind > special > app exclusion > tiny > rule exclusion > membership > rule mode > helper app > type > constraint", () => {

@@ -5,7 +5,7 @@ import { allocate } from "../../src/core/layouts/allocate.ts";
 import { masterStack } from "../../src/core/layouts/masterStack.ts";
 import { monocle } from "../../src/core/layouts/monocle.ts";
 import type { Constraints, WindowId } from "../../src/core/types.ts";
-import { assertTiling, input, minC, prng, settings } from "./helpers.ts";
+import { assertTiling, coveredArea, input, minC, prng, settings } from "./helpers.ts";
 
 const S = settings();
 
@@ -282,8 +282,9 @@ test("max-size windows are centred in their slot, not stretched (G09)", () => {
   assert.ok(a.x > 8 && a.y > 8);
 });
 
-test("randomized: tiling invariants hold across counts, areas, ratios and minima", () => {
+test("randomized: tiling invariants hold across counts, areas, ratios, gaps and minima (T12 coverage)", () => {
   const rnd = prng(42);
+  let full = 0, overflowed = 0;
   for (let iter = 0; iter < 400; ++iter) {
     const n = 1 + Math.floor(rnd() * 12);
     const area = rect(Math.floor(rnd() * 4000) - 2000, Math.floor(rnd() * 2000) - 1000,
@@ -292,8 +293,14 @@ test("randomized: tiling invariants hold across counts, areas, ratios and minima
     const constraints = new Map(ids.filter(() => rnd() < 0.3)
       .map((id) => [id, minC(Math.floor(rnd() * 700), Math.floor(rnd() * 500))] as const));
     const st = { ratio: 0.05 + rnd() * 0.9, masterCount: Math.floor(rnd() * 4), weights: {} };
-    const r = masterStack.solve(st, input(ids, { area, constraints }));
+    const outer = [0, 8, 13][Math.floor(rnd() * 3)];
+    const gap = [0, 5, 8, 12][Math.floor(rnd() * 4)];
+    const sw = rnd() < 0.5;
+    const set = settings({ gaps: { inner: gap, outer: { top: outer, right: outer, bottom: outer, left: outer } }, singleWindowGaps: sw });
+    const r = masterStack.solve(st, input(ids, { area, constraints, settings: set }));
+    const tag = JSON.stringify({ iter, n, area, gap, outer, sw, st });
     assert.equal(r.slots.size + r.overflow.length, n);
+    assert.ok(r.overflow.every((id) => !r.slots.has(id)), `overflowed window still tiled ${tag}`);
     assertTiling(r.slots, area);
     for (const [id, s] of r.slots) {
       const c = constraints.get(id);
@@ -302,7 +309,18 @@ test("randomized: tiling invariants hold across counts, areas, ratios and minima
         assert.ok(s.height >= c.minFrame.height, `${id} height below minimum`);
       }
     }
+    if (r.overflow.length) ++overflowed; else ++full;
+    // Float-new keeps a full tiling of the windows that stay (BEHAVIOR §11), so the same
+    // coverage holds with overflow; the outer gap follows the number of tiles shown.
+    if (r.slots.size === 0) continue;
+    const inner = r.slots.size === 1 && !sw ? area : inset(area, set.gaps.outer);
+    // Gap conservation: each edge is on the usable boundary (outer gap from the area) or
+    // exactly `gap` from a neighbour, and no two tiles come closer than `gap`.
+    assertCover(r.slots, inner, gap, constraints);
+    // Coverage: tiles plus half-gaps account for every pixel of the usable area.
+    assert.equal(coveredArea(r.slots, inner, gap), inner.width * inner.height, `tiles and gaps leave a hole ${tag}`);
   }
+  assert.ok(full > 150 && overflowed > 30, `samples: ${full} full, ${overflowed} with overflow`);
 });
 
 test("resize-boundary moves the divider and row weights", () => {

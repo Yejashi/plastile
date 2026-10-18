@@ -61,9 +61,34 @@ export function assertTiling(slots: Map<WindowId, Rect>, area: Rect) {
     }
 }
 
-/** Oracle: tiled area + gaps exactly cover the inner area when slots form a full tiling. */
-export function coveredArea(slots: Map<WindowId, Rect>): number {
+/**
+ * Conservation oracle, independent of any layout's structure: grow every slot by half the
+ * gap on each edge that is not on the boundary of `inner`. Tiles plus the gaps between them
+ * account for the usable area exactly when the grown rectangles lie in `inner`, never
+ * overlap, and their areas sum to the area of `inner` (no hole, no lost or doubled pixel).
+ * Asserts the first two and returns the summed area for the caller to compare.
+ */
+export function coveredArea(slots: Map<WindowId, Rect>, inner: Rect, gap: number, eps = 1e-6): number {
+  const near = (a: number, b: number) => Math.abs(a - b) <= eps;
+  const right = inner.x + inner.width, bottom = inner.y + inner.height;
+  const grown = [...slots.entries()].map(([id, r]) => {
+    const x0 = near(r.x, inner.x) ? r.x : r.x - gap / 2;
+    const y0 = near(r.y, inner.y) ? r.y : r.y - gap / 2;
+    const x1 = near(r.x + r.width, right) ? r.x + r.width : r.x + r.width + gap / 2;
+    const y1 = near(r.y + r.height, bottom) ? r.y + r.height : r.y + r.height + gap / 2;
+    assert.ok(x0 >= inner.x - eps && y0 >= inner.y - eps && x1 <= right + eps && y1 <= bottom + eps,
+      `${id} ${JSON.stringify(r)} with its gaps leaves ${JSON.stringify(inner)}`);
+    return [id, x0, y0, x1, y1] as const;
+  });
   let s = 0;
-  for (const r of slots.values()) s += r.width * r.height;
+  for (let i = 0; i < grown.length; ++i) {
+    const [ia, ax0, ay0, ax1, ay1] = grown[i];
+    s += (ax1 - ax0) * (ay1 - ay0);
+    for (let j = i + 1; j < grown.length; ++j) {
+      const [ib, bx0, by0, bx1, by1] = grown[j];
+      const ox = Math.min(ax1, bx1) - Math.max(ax0, bx0), oy = Math.min(ay1, by1) - Math.max(ay0, by0);
+      assert.ok(ox <= eps || oy <= eps, `${ia} and ${ib} closer than ${gap} px (their gaps overlap)`);
+    }
+  }
   return s;
 }
