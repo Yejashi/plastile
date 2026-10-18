@@ -3,9 +3,9 @@
 Each scenario starts a fresh nested KWin with `--xwayland` (its own private bus, XDG tree and
 X display), two Wayland fixture windows, the real Plastile package, and one
 fixtures/xclient/build/plastile-xclient (xcb) client. The nested X display is discovered
-from the X lock file whose owner PID is the nested KWin (KWin owns the listening socket and
-starts Xwayland lazily), with the Xwayland child's command line as a fallback; the user's
-own display is never used.
+by tools/nested.py (NestedKwin.x_display: the Xwayland child's command line, else the
+lowest-numbered X lock file owned by the nested KWin, which starts Xwayland lazily); the
+user's own display is never used.
 
 Geometry is judged by the oracle (one-shot KWin scripts reading real window state) and by
 the X client's own ConfigureNotify log. Plastile's counters are used only for work-amount
@@ -16,7 +16,6 @@ are fixture titles chosen here; no paths, users or real application titles).
 """
 from __future__ import annotations
 
-import glob
 import json
 import re
 import subprocess
@@ -48,30 +47,8 @@ UNBOUNDED = 2147483647
 
 # --------------------------------------------------------------------------- helpers
 def x_display(s: Session, timeout: float = 10.0) -> str:
-    """The nested KWin's X display (never the user's): lock file owned by our KWin, else Xwayland child argv."""
-    pid = s.kw.kwin_pid
-    deadline = time.monotonic() + timeout
-    while time.monotonic() < deadline:
-        for lock in glob.glob("/tmp/.X*-lock"):
-            try:
-                if int(Path(lock).read_text().strip()) == pid:
-                    return ":" + re.search(r"\.X(\d+)-lock$", lock).group(1)
-            except (OSError, ValueError, AttributeError):
-                continue
-        for proc in Path("/proc").iterdir():
-            if not proc.name.isdigit():
-                continue
-            try:
-                ppid = int((proc / "stat").read_text().rsplit(")", 1)[1].split()[1])
-                if ppid != pid:
-                    continue
-                argv = (proc / "cmdline").read_bytes().split(b"\0")
-                if argv and argv[0].endswith(b"Xwayland") and len(argv) > 1 and re.fullmatch(rb":\d+", argv[1]):
-                    return argv[1].decode()
-            except (OSError, ValueError, IndexError):
-                continue
-        time.sleep(0.05)
-    raise NestedError("no X display owned by the nested KWin")
+    """The nested KWin's public X display (never the user's); see NestedKwin.x_display."""
+    return s.kw.x_display(timeout)
 
 
 class XClient:
