@@ -458,6 +458,19 @@ class NestedKwin:
                 return int(line.split()[1])
         return None
 
+    def kwin_rss_parts_kib(self) -> dict | None:
+        """VmRSS split into anonymous, file-backed and shared-memory pages (/proc/<pid>/status), to tell heap
+        growth from buffers that the renderer or the virtual backend map."""
+        if not self._kwin:
+            return None
+        keys = ("VmRSS", "RssAnon", "RssFile", "RssShmem")
+        parts = {}
+        for line in Path(f"/proc/{self._kwin.pid}/status").read_text().splitlines():
+            k = line.split(":", 1)[0]
+            if k in keys:
+                parts[k] = int(line.split()[1])
+        return parts or None
+
 
 def _terminate(proc: subprocess.Popen, grace: float = 3.0) -> None:
     if proc.poll() is not None:

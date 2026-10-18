@@ -35,6 +35,7 @@ def main() -> int:
         kw.spawn(fixture)
         time.sleep(1.0)
         base = kw.kwin_rss_kib()
+        parts = [kw.kwin_rss_parts_kib()]
         for i in range(args.cycles):
             kw.load_declarative(qml, "plt-empty")
             time.sleep(0.05)
@@ -51,7 +52,8 @@ def main() -> int:
             else:
                 time.sleep(0.9)  # match the lifecycle probe's per-cycle wall time roughly
             rss.append(kw.kwin_rss_kib())
-    summary = {"cycles": args.cycles, "package": args.package, "spawnWindow": args.spawn_window, "baselineRssKiB": base, "finalRssKiB": rss[-1],
+        parts.append(kw.kwin_rss_parts_kib())
+    summary = {"partsFirstLast": parts, "cycles": args.cycles, "package": args.package, "spawnWindow": args.spawn_window, "baselineRssKiB": base, "finalRssKiB": rss[-1],
                "rssKiBByCycle": rss[:: max(1, len(rss) // 10)]}
     out.mkdir(parents=True, exist_ok=True)
     (out / "summary.json").write_text(json.dumps(summary, indent=1))

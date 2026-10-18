@@ -611,6 +611,7 @@ def persist_reload_cycles(out: Path, c: Checks):
         s.spawn(1); s.spawn(2); s.spawn(3)
         s.load(); first = s.settle()
         fds, rss, gens, errors = [], [], [], []
+        parts = [s.kw.kwin_rss_parts_kib()]
         g0 = generation(base) or 0
         watch = Inotify(base / "state/plastile")
         for i in range(cycles):
@@ -626,6 +627,7 @@ def persist_reload_cycles(out: Path, c: Checks):
                                first["connections"], first.get("transientConnections")))
             fds.append(fd_count(s))
             rss.append(s.kw.kwin_rss_kib())
+        parts.append(s.kw.kwin_rss_parts_kib())
         time.sleep(2.8)
         watch.close()
         g_end = generation(base)
@@ -650,6 +652,6 @@ def persist_reload_cycles(out: Path, c: Checks):
         c("Q09: exactly one Plastile script object after the reloads (independent)", len(objects) == 1, objects)
         grow = rss[-1] - rss[0] if None not in (rss[0], rss[-1]) else None
         c("Q09: KWin RSS bounded across the reloads (< 8 MiB growth; gross-leak bound, independent)",
-          grow is not None and grow < 8 * 1024, {"growthKiB": grow, "samples": rss})
+          grow is not None and grow < 8 * 1024, {"growthKiB": grow, "samples": rss, "partsFirstLast": parts})
         c("no errors or JS exceptions logged", not unexpected(s), unexpected(s)[:5])
     c("facts (recorded, always passes)", True, facts)

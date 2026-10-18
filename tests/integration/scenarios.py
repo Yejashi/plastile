@@ -500,6 +500,7 @@ def reload(out: Path, c: Checks):
         time.sleep(0.5)
         cpu0 = idle_cpu(s)
         rss: list[int | None] = []
+        parts = [s.kw.kwin_rss_parts_kib()]
         errors = []
         for i in range(cycles):
             s.act("plastile-fixture 1", "workspace.activeWindow = w")
@@ -514,6 +515,7 @@ def reload(out: Path, c: Checks):
                                base["connections"], base.get("transientConnections")))
             if i % 10 == 9:
                 rss.append(s.kw.kwin_rss_kib())
+        parts.append(s.kw.kwin_rss_parts_kib())
         names1 = s.kw.shortcut_names()
         objects = script_objects(s)
         time.sleep(0.5)
@@ -528,7 +530,7 @@ def reload(out: Path, c: Checks):
         c("Q09: exactly one Plastile script object exported by KWin after the reloads (independent)", len(objects) == 1, objects)
         grow_rss = (rss[-1] - rss[0]) if len(rss) >= 2 and None not in (rss[0], rss[-1]) else None
         c(f"Q09: KWin RSS bounded from cycle 10 to {cycles} (< 16 MiB growth; gross-leak bound, independent)",
-          grow_rss is not None and grow_rss < 16 * 1024, {"growthKiB": grow_rss, "samples": rss})
+          grow_rss is not None and grow_rss < 16 * 1024, {"growthKiB": grow_rss, "samples": rss, "partsFirstLast": parts})
         c("Q09: no leaked work: KWin idle CPU after the reloads within 0.02 cores of before (independent)",
           cpu1 <= cpu0 + 0.02, {"before": cpu0, "after": cpu1})
         c("Q09: no errors or JS exceptions logged", not warnings, warnings[:5])
