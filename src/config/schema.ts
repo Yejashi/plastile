@@ -15,6 +15,8 @@ export const LAYOUTS: readonly LayoutKind[] = ["master-stack", "bsp", "monocle",
 export const SCROLL_POLICY: readonly ScrollingSettings["policy"][] = ["lazy", "centered"];
 /** Width presets the width-cycle command steps through: at most this many. */
 export const MAX_WIDTH_PRESETS = 8;
+/** Longest zone layout id (declared before its first use: QV4 warns otherwise; tests/core/bundle.test.ts). */
+export const MAX_ZONE_ID = 64;
 export const MS_INSERT: readonly MasterStackSettings["insert"][] = ["after-focus", "end", "master"];
 export const BSP_INSERT: readonly BspSettings["insert"][] = ["focused", "last"];
 export const BSP_AXIS: readonly BspSettings["axis"][] = ["alternate", "longest", "horizontal", "vertical"];
@@ -312,8 +314,6 @@ function readScrolling(s: Sink, v: unknown, path: string): Partial<ScrollingSett
 
 // ---- zone layouts (experimental, docs/design/ZONES.md §1) ----
 
-/** Longest zone layout id. */
-export const MAX_ZONE_ID = 64;
 const ZONE_FIELDS = ["x", "y", "width", "height"];
 
 function readZone(s: Sink, v: unknown, path: string): ZoneRect | null {

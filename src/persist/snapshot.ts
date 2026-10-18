@@ -127,6 +127,14 @@ export function parse(text: string): Parsed {
   return v.ok ? { ok: true, snapshot: v.snapshot, migratedFrom: m.from } : v;
 }
 
+// Field names per record, declared before the functions that read them: QV4 warns about a
+// module-level binding used above its declaration (qt.qml.usedbeforedeclared; tests/core/bundle.test.ts).
+const TOP_KEYS = ["schemaVersion", "generation", "savedAt", "contexts", "floats"];
+const CONTEXT_KEYS = ["outputKey", "desktopId", "activity", "layout", "masterStack"];
+const MASTER_KEYS = ["ratio", "masterCount"];
+const FLOAT_KEYS = ["appId", "resourceName", "role", "rect", "outputKey", "area", "windowHint"];
+const RECT_KEYS = ["x", "y", "width", "height"];
+
 /**
  * Validate a current-version snapshot object; any invalid field rejects the whole snapshot.
  *
@@ -209,12 +217,6 @@ export function validate(raw: unknown): Parsed {
     snapshot: { schemaVersion: SCHEMA_VERSION, generation: generation as number, savedAt: o.savedAt as string, contexts, floats },
   };
 }
-
-const TOP_KEYS = ["schemaVersion", "generation", "savedAt", "contexts", "floats"];
-const CONTEXT_KEYS = ["outputKey", "desktopId", "activity", "layout", "masterStack"];
-const MASTER_KEYS = ["ratio", "masterCount"];
-const FLOAT_KEYS = ["appId", "resourceName", "role", "rect", "outputKey", "area", "windowHint"];
-const RECT_KEYS = ["x", "y", "width", "height"];
 
 function bad(reason: string): Parsed {
   return { ok: false, reason, future: false };
