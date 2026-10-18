@@ -22,7 +22,8 @@ damaged. Requests are processed one at a time, in arrival order.
 ## Files and lifetime
 
 - `$XDG_STATE_HOME/plastile/state-0.json` and `state-1.json` (`QStandardPaths::GenericStateLocation`,
-  default `~/.local/state`). The directory is made 0700 and the files 0600. Each write is a
+  default `~/.local/state`). The directory is made 0700 and the files 0600 (a slot made read-only,
+  by restoring a backup say, is made writable again first). Each write is a
   `QSaveFile` commit: a temporary file, `fsync`, then a rename onto the slot. The `fsync` blocks
   only the helper.
 - No lock file: owning the bus name is what makes one helper the only writer. A second instance
@@ -38,9 +39,14 @@ damaged. Requests are processed one at a time, in arrival order.
 ```sh
 cmake -S helper -B build/helper -DCMAKE_BUILD_TYPE=Release
 cmake --build build/helper
-tools/install.sh install-helper     # or: cmake --install build/helper --prefix ~/.local
+tools/install.sh install-helper     # builds, installs into ~/.local and asks the bus to reload
 tools/install.sh remove-helper
 ```
+
+Installing with CMake directly: choose the prefix when configuring
+(`-DCMAKE_INSTALL_PREFIX=$HOME/.local`, then `cmake --install build/helper`). The activation
+file's `Exec=` and its directory are fixed at configure time, so `cmake --install --prefix`
+puts the binary somewhere the activation file does not name.
 
 It needs CMake, a C++17 compiler and the Qt 6 (6.5 or later) Core and DBus development files.
 `install-helper` puts the binary in `$PLASTILE_HELPER_PREFIX/libexec` (default `~/.local`) and

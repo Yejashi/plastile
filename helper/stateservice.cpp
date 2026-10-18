@@ -4,6 +4,7 @@
 #include <QDir>
 #include <QFile>
 #include <QFileDevice>
+#include <QFileInfo>
 #include <QLoggingCategory>
 #include <QSaveFile>
 #include <QStringDecoder>
@@ -153,14 +154,21 @@ bool StateService::writeSlot(int slot, const QByteArray &data, QString *why) con
 {
     if (!ensureDirectory(why))
         return false;
+    const QString path = slotPath(slot);
+    // QSaveFile refuses to replace a file its owner cannot write ("Existing file ... is not
+    // writable"), which would fail this slot on every save; the slot files are the helper's own,
+    // 0600, so a read-only one (restored from a backup, say) is made writable first.
+    const auto rw = QFileDevice::ReadOwner | QFileDevice::WriteOwner;
+    if (QFileInfo(path).isFile() && !(QFile::permissions(path) & QFileDevice::WriteOwner))
+        QFile::setPermissions(path, rw);
     // QSaveFile writes a temporary file, fsyncs it and renames it onto the slot: a reader sees
     // the old text or the new text, never a torn one. The fsync blocks this process only.
-    QSaveFile f(slotPath(slot));
+    QSaveFile f(path);
     if (!f.open(QIODevice::WriteOnly)) {
         *why = f.errorString();
         return false;
     }
-    f.setPermissions(QFileDevice::ReadOwner | QFileDevice::WriteOwner);
+    f.setPermissions(rw);
     if (f.write(data) != data.size()) {
         *why = f.errorString();
         f.cancelWriting();

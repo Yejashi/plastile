@@ -2,12 +2,14 @@
 # stores Plastile's saved-state text in two files so KWin's compositor thread never does
 # persistence file I/O. Qt6 Core + DBus only.
 #
-#   cmake -S helper -B build/helper -DCMAKE_BUILD_TYPE=Release
+#   cmake -S helper -B build/helper -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$HOME/.local
 #   cmake --build build/helper
-#   cmake --install build/helper --prefix ~/.local     # or tools/install.sh install-helper
+#   cmake --install build/helper     # or tools/install.sh install-helper
 #
 # Installs bin: <libexecdir>/plastile-state and the D-Bus activation file
 # <PLASTILE_DBUS_SERVICE_DIR>/org.kde.plastile.State.service (Exec= the installed binary).
+# Choose the prefix when configuring: the activation file's Exec= and its directory are
+# fixed then, so `cmake --install --prefix` would put the binary elsewhere than both.
 cmake_minimum_required(VERSION 3.21)
 project(plastile_state VERSION 0.1.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
