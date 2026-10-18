@@ -206,6 +206,21 @@ class Session:
 
     def act(self, caption: str, statement: str) -> None:
         self.kw.act(caption, statement)
+        if "workspace.activeWindow = w" in statement:
+            self.wait_active(caption)
+
+    def wait_active(self, caption: str, timeout: float = 3.0) -> None:
+        """Wait until KWin reports `caption` active. Commands resolve their target from the
+        active window at dispatch, and under load activation can land after the next
+        command (seen as a flake of fractional-scale-G03 on a busy machine)."""
+        deadline = time.monotonic() + timeout
+        while True:
+            out = self.js("emit(workspace.activeWindow ? workspace.activeWindow.caption : null)")
+            if out and json.loads(out[0]) == caption:
+                return
+            if time.monotonic() > deadline:
+                raise NestedError(f"{caption!r} did not become active within {timeout} s (active: {out})")
+            time.sleep(0.02)
 
     def js(self, body: str) -> list[str]:
         return self.kw.run_js(body)
