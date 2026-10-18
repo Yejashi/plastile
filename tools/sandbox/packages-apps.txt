@@ -1,0 +1,6 @@
+# Optional real applications for tests/integration/scenarios_realapps.py.
+# Installed unless PLASTILE_SANDBOX_APPS=0 (CI keeps the sandbox lean).
+konsole
+kate
+dolphin
+foot
