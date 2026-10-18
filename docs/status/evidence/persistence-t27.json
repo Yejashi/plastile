@@ -1,0 +1,31 @@
+{
+ "experiment": "E12/T27: QtCore Settings persistence from a declarative KWin script",
+ "layer": "nested KWin virtual backend (not physical)",
+ "measuredAt": "2026-10-18T02:13:39",
+ "kwin": "kwin 6.7.5",
+ "qtcoreQmlModule": "libqt6qml6 6.11.2+dfsg-2ubuntu1",
+ "events": [
+  {
+   "phase": "loaded",
+   "counter": 0,
+   "json": "",
+   "location": "file:///tmp/plastile-0/s2358-43935284/state/plastile-probe/state.ini"
+  },
+  {
+   "phase": "synced",
+   "counter": 1
+  },
+  {
+   "phase": "loaded",
+   "counter": 1,
+   "json": "{\"v\":1,\"ratio\":0.6,\"layouts\":{\"Virtual-0\":\"bsp\"}}",
+   "location": "file:///tmp/plastile-0/s2358-43935284/state/plastile-probe/state.ini"
+  },
+  {
+   "phase": "synced",
+   "counter": 2
+  }
+ ],
+ "fileWritten": true,
+ "secondLoadReadsFirstWrite": true
+}

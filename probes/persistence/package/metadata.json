@@ -1,0 +1,2 @@
+{ "KPlugin": { "Id": "plastileqtcoreprobe", "Name": "QtCore Settings probe", "Version": "0.0.1", "License": "MIT", "Authors": [{"Name": "probe"}] },
+  "X-Plasma-API": "declarativescript", "X-Plasma-MainScript": "ui/main.qml", "KPackageStructure": "KWin/Script" }
