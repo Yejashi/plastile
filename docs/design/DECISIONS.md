@@ -222,7 +222,7 @@ and is closed by KWin on a click elsewhere or when a window is activated (observ
 `popup_input_filter.cpp`, `internalwindow.cpp`). Setting `visible` did not map such a window in a script;
 `show()` did (measured).
 
-**Decision.** *Explain active window* activates a `Loader` that creates `Inspector.qml`, a frameless `Qt.Popup`
+**Decision.** *Explain active window* activates an asynchronous `Loader` (file read and compilation off the command's call) that creates `Inspector.qml`, a frameless `Qt.Popup`
 window displaying a view computed once by pure code (`src/runtime/inspect.ts`): plain behaviour statements,
 internal ids only under *Show details*. Escape, KWin's popup cancellation, the same command, or unload
 destroys it. The adapter treats a window as Plastile's own when its caption is the inspector's fixed title

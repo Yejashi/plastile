@@ -44,9 +44,11 @@ Item {
         c.call();
     }
     // No inspector object exists until "Explain active window" opens it; closing destroys it.
+    // Asynchronous: reading and compiling Inspector.qml happen off the command's call.
     Loader {
         id: inspector
         active: false
+        asynchronous: true
         onLoaded: item.show()
     }
     Connections {
@@ -77,7 +79,7 @@ Item {
             inspector: {
                 open: root.openInspector,
                 close: root.closeInspector,
-                isOpen: function () { return inspector.item !== null; },
+                isOpen: function () { return inspector.active; },
             },
         });
     }
