@@ -8,7 +8,7 @@
 // while another request is in flight, recognizes stale observations of older
 // targets, and bounds corrective writes.
 
-import { rectNear, type Rect, type Size } from "../geometry.ts";
+import { rectNear, sizeNear, type Rect, type Size } from "../geometry.ts";
 
 export const HISTORY = 4;
 export const CORRECTION_BUDGET = 2;
@@ -22,11 +22,17 @@ export interface Request {
   readonly reason: string;
 }
 
+/** An issued target and whether its size was ever observed (committed). */
+export interface Issued {
+  readonly rect: Rect;
+  seen: boolean;
+}
+
 export interface LedgerEntry {
   desired: Rect | null;
   request: Request | null;
   outstanding: boolean;
-  history: Rect[];
+  history: Issued[];
   /** Corrective writes issued for the current desired target. */
   corrections: number;
   observed: Rect | null;
@@ -71,28 +77,44 @@ export function acceptNoop(e: LedgerEntry, target: Rect): void {
 }
 
 /**
- * Record an issued write. `before`/`after` are frames read immediately before and after
- * the property write. Returns true when the write settled synchronously.
+ * Register an outgoing request BEFORE the property write: KWin emits position
+ * observations synchronously inside the setter, and they must see this request
+ * as outstanding (ROADMAP M2: record outgoing intent before external writes).
  */
-export function recordWrite(e: LedgerEntry, target: Rect, seq: number, now: number, reason: string,
-  before: Rect | null, after: Rect | null): boolean {
+export function beginWrite(e: LedgerEntry, target: Rect, seq: number, now: number, reason: string): void {
   setDesired(e, target);
   if (reason === "correction") e.corrections++;
   e.request = { rect: target, seq, issuedAt: now, reason };
-  e.history.push(target);
+  e.history.push({ rect: target, seen: false });
   if (e.history.length > HISTORY) e.history.shift();
   e.outstanding = true;
   e.status = "pending";
   e.pendingSince = now;
+}
+
+/**
+ * Complete a write with the frames read immediately before and after the property
+ * write. Returns true when the request is settled (possibly already by an
+ * observation delivered inside the write).
+ */
+export function finishWrite(e: LedgerEntry, before: Rect | null, after: Rect | null): boolean {
   e.observed = after;
+  if (!e.outstanding) return e.status === "settled";
   // Settle on readback only if the frame actually changed to the target: when the
   // old committed frame already equals the target while another request is in
   // flight, KWin sends no configure and the late commit must still be caught.
-  if (!rectNear(before, target) && rectNear(after, target)) {
+  if (e.request && !rectNear(before, e.request.rect) && rectNear(after, e.request.rect)) {
     settle(e);
     return true;
   }
   return false;
+}
+
+/** beginWrite + finishWrite for callers without re-entrant observations (tests). */
+export function recordWrite(e: LedgerEntry, target: Rect, seq: number, now: number, reason: string,
+  before: Rect | null, after: Rect | null): boolean {
+  beginWrite(e, target, seq, now, reason);
+  return finishWrite(e, before, after);
 }
 
 function settle(e: LedgerEntry): void {
@@ -105,22 +127,32 @@ export type Observation =
   | "untracked"   // no request yet
   | "settled"     // observed the outstanding target
   | "confirmed"   // observed the already-settled target again
-  | "stale"       // observed an older target while a newer one is outstanding
+  | "stale"       // observed an older issued target (late commit), newer target still wanted
   | "partial"     // in flight: neither the target nor an older one (e.g. move applied, size pending)
   | "external";   // the frame changed after settlement: user, application or KWin
 
 export function observe(e: LedgerEntry, observed: Rect): Observation {
   e.observed = observed;
   if (!e.request) return "untracked";
-  if (rectNear(observed, e.request.rect)) {
+  // A superseded target whose size had never been observed arriving now is a late
+  // commit (E04: B committed after the return to A). Its size lands at the window's
+  // current position, hence size matching. Sizes already seen before (e.g. the old
+  // committed size shown while a move applies first) are partial, not stale.
+  const current = e.request.rect;
+  const last = e.history.length - 1;
+  let late = false;
+  for (let i = 0; i <= last; ++i) {
+    const h = e.history[i];
+    if (!sizeNear(observed, h.rect)) continue;
+    if (!h.seen && i < last && !sizeNear(h.rect, current)) late = true;
+    h.seen = true;
+  }
+  if (rectNear(observed, current)) {
     if (e.outstanding) { settle(e); return "settled"; }
     return "confirmed";
   }
-  if (!e.outstanding) return "external";
-  for (let i = 0; i < e.history.length - 1; ++i) {
-    if (rectNear(observed, e.history[i])) return "stale";
-  }
-  return "partial";
+  if (late) return "stale";
+  return e.outstanding ? "partial" : "external";
 }
 
 export function canCorrect(e: LedgerEntry): boolean {
