@@ -1117,3 +1117,41 @@ test("E08: a late activity service re-keys adopted windows; all-activity windows
   h.drain();
   assertTiling(tiledFrames(h, ["a", "b", "c", "d"]), AREA);
 });
+
+test("T11: a command queued during apply runs on the target resolved at dispatch, not the later focus", () => {
+  const { h, e } = setup(["a", "b", "c"]);
+  h.active = "a";
+  const orig = h.applyFrame.bind(h);
+  let queued: string | null = null;
+  h.applyFrame = (id, gen, t) => {
+    if (queued === null) {
+      // A shortcut handled re-entrantly while a transaction applies is queued, then focus moves.
+      queued = e.execute("plastile.window.toggle-float").reason ?? "";
+      h.active = "c";
+    }
+    return orig(id, gen, t);
+  };
+  e.execute("plastile.layout.monocle");
+  h.applyFrame = orig;
+  h.drain();
+  assert.equal(queued, "queued during apply");
+  assert.equal(e.modeOf("a"), "floating", "the queued toggle acted on the window focused when it arrived");
+  assert.equal(e.modeOf("c"), "tiled", "the later focus is not the target");
+  assert.deepEqual(e.check(), []);
+});
+
+test("T11: a queued command whose target closed before the flush is a no-op, not retargeted", () => {
+  const { h, e } = setup(["a", "b"]);
+  h.active = "a";
+  const orig = h.applyFrame.bind(h);
+  let once = false;
+  h.applyFrame = (id, gen, t) => {
+    if (!once) { once = true; e.execute("plastile.window.toggle-float"); h.close("a"); h.active = "b"; }
+    return orig(id, gen, t);
+  };
+  e.execute("plastile.layout.monocle");
+  h.applyFrame = orig;
+  h.drain();
+  assert.equal(e.modeOf("b"), "tiled", "b was never the target");
+  assert.deepEqual(e.check(), []);
+});

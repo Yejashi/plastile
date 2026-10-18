@@ -59,6 +59,12 @@ export interface WindowRules {
   readonly reasons?: Readonly<Record<string, string>>;
 }
 
+/** The window and output a command targets, resolved once at dispatch. */
+interface DispatchTarget {
+  readonly active: WindowId | null;
+  readonly output: OutputId | null;
+}
+
 export interface EngineOptions {
   /** Effective settings for a context (configuration precedence resolved by the caller). */
   settingsFor?: (key: ContextKey) => ContextSettings;
@@ -233,7 +239,9 @@ export class Engine {
   private liveLast = new Map<WindowId, Rect>();
   /** Windows currently parked by a scrolling strip (recorded before each parking write). */
   private parked = new Map<WindowId, Parked>();
-  private queued: Array<{ id: string; arg: unknown }> = [];
+  private queued: Array<{ id: string; arg: unknown; target: DispatchTarget }> = [];
+  /** Target resolved at dispatch for a command queued during apply (T11); null otherwise. */
+  private dispatchTarget: DispatchTarget | null = null;
   private applying = 0;
   private flushScheduled = false;
   private cancelDeadline: (() => void) | null = null;
@@ -1028,7 +1036,11 @@ export class Engine {
       this.syncActivities();
       const queued = this.queued;
       this.queued = [];
-      for (const q of queued) this.execute(q.id, q.arg);
+      for (const q of queued) {
+        // Run against the target resolved when the command arrived, not the focus now (T11).
+        this.dispatchTarget = q.target;
+        try { this.execute(q.id, q.arg); } finally { this.dispatchTarget = null; }
+      }
       if (this.suspended) {
         this.dirty.clear(); this.corrections.clear(); this.endedInteractions.clear(); this.liveResize.clear();
         return;
@@ -1453,7 +1465,7 @@ export class Engine {
     if (!this.alive) return result(id, "rejected", "runtime stopped", [], revision, false);
     if (!COMMAND_IDS.has(id)) return result(id, "rejected", "unknown command", [], revision, false);
     if (this.applying > 0) {
-      this.queued.push({ id, arg });
+      this.queued.push({ id, arg, target: { active: this.host.activeWindow(), output: this.host.activeOutput() } });
       this.counters.commandsQueued++;
       this.ensureFlush();
       return result(id, "accepted", "queued during apply", [], revision, false);
@@ -1475,14 +1487,14 @@ export class Engine {
   }
 
   private activeRec(): Rec | null {
-    const a = this.host.activeWindow();
+    const a = this.dispatchTarget ? this.dispatchTarget.active : this.host.activeWindow();
     return a === null ? null : this.recs.get(a) ?? null;
   }
 
   /** Context for a command: the active window's, else the visible context of the active output. */
   private commandCtx(r: Rec | null): Ctx | null {
     if (r && r.ctx) return this.ctxFor(r.ctx);
-    const out = this.host.activeOutput();
+    const out = this.dispatchTarget ? this.dispatchTarget.output : this.host.activeOutput();
     if (out === null) return null;
     const desk = this.host.visibleDesktop(out);
     if (desk === null) return null;
