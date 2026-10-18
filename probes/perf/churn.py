@@ -76,6 +76,13 @@ def script_objects(s: Session) -> int:
     return len(re.findall(r'<node name="([^"]+)"', xml[0] if isinstance(xml, list) else xml))
 
 
+def anon_kib(s: Session) -> int | None:
+    """KWin's anonymous resident pages (heap): client buffers and renderer mappings are file or shared
+    pages, which follow the windows' number and size rather than retained state."""
+    parts = s.kw.kwin_rss_parts_kib()
+    return parts.get("RssAnon") if parts else None
+
+
 def rss_trend(points: list[tuple[float, float]], warm: float) -> dict:
     """Least-squares RSS slope after the warm-up (x >= warm), and the max - min spread there."""
     after = [p for p in points if p[0] >= warm and p[1] is not None]
@@ -155,7 +162,7 @@ def run_p14(out: Path, cycles: int) -> dict:
             dead = gap_lines(s, off)
             bad = s.log_lines(BAD, off)
             rec = {"cycle": i, "outstandingAtUnload": pend, "connections": cc["connections"], "windows": cc["windows"], "outstanding": cc["outstanding"],
-                   "errors": cc["counters"]["errors"], "rssKiB": s.kw.kwin_rss_kib(),
+                   "errors": cc["counters"]["errors"], "rssKiB": s.kw.kwin_rss_kib(), "rssAnonKiB": anon_kib(s),
                    "shortcutNames": len(s.kw.shortcut_names()), "scriptObjects": script_objects(s), "deadLines": len(dead), "badLines": len(bad),
                    "tSeconds": round(time.monotonic() - t_start, 1)}
             recs.append(rec)
@@ -192,7 +199,8 @@ def run_p14(out: Path, cycles: int) -> dict:
         "shortcutNames": {"first": names0, "min": min(r["shortcutNames"] for r in recs), "max": max(r["shortcutNames"] for r in recs)},
         "rssKiB": {"beforeCycles": rss0, "afterCycles": rss_end, "delta": rss_end - rss0, "byCycle": sparse(rss),
                    "secondHalfDelta": (rss[-1] - rss[half]) if half else None,
-                   "trendAfterCycle10": rss_trend([(r["cycle"], r["rssKiB"]) for r in recs], 10)},
+                   "trendAfterCycle10": rss_trend([(r["cycle"], r["rssKiB"]) for r in recs], 10),
+                   "anonTrendAfterCycle10": rss_trend([(r["cycle"], r["rssAnonKiB"]) for r in recs], 10)},
         "scriptObjects": {"min": min(r["scriptObjects"] for r in recs), "max": max(r["scriptObjects"] for r in recs)},
         "deadInstanceLines": sum(r["deadLines"] for r in recs),
         "errorWarnExceptionLines": len(all_bad), "errorWarnSamples": all_bad[:5],
@@ -222,7 +230,7 @@ def run_control(out: Path, cycles: int) -> dict:
             s.spawn(5); s.kill(5)
             # Stand in for the settle() oracle calls of the P14 run (one-shot scripts also allocate).
             s.frames_list(); s.frames_list()
-            rec = {"cycle": i, "rssKiB": s.kw.kwin_rss_kib(), "shortcutNames": len(s.kw.shortcut_names()),
+            rec = {"cycle": i, "rssKiB": s.kw.kwin_rss_kib(), "rssAnonKiB": anon_kib(s), "shortcutNames": len(s.kw.shortcut_names()),
                    "tSeconds": round(time.monotonic() - t_start, 1)}
             recs.append(rec)
             jl.write(json.dumps(rec) + "\n"); jl.flush()
@@ -237,7 +245,8 @@ def run_control(out: Path, cycles: int) -> dict:
                "shortcutNames": {"min": min(names), "max": max(names)} if names else None,
                "rssKiB": {"beforeCycles": rss0, "afterCycles": rss_end, "delta": rss_end - rss0, "byCycle": sparse(rss),
                           "secondHalfDelta": (rss[-1] - rss[half]) if half else None,
-                          "trendAfterCycle10": rss_trend([(r["cycle"], r["rssKiB"]) for r in recs], 10)},
+                          "trendAfterCycle10": rss_trend([(r["cycle"], r["rssKiB"]) for r in recs], 10),
+                          "anonTrendAfterCycle10": rss_trend([(r["cycle"], r["rssAnonKiB"]) for r in recs], 10)},
                "secondsTotal": recs[-1]["tSeconds"] if recs else 0}
     write_json(out / "control-summary.json", summary)
     return summary
@@ -288,14 +297,15 @@ def run_p15(out: Path, minutes: float, seed: int, idle_seconds: float, idle_pair
         def sample(label: str) -> dict:
             if control:
                 rec = {"tSeconds": round(time.monotonic() - t0, 1), "label": label, "windowsLive": len(live),
-                       "oracleWindows": len(s.frames_list()), "rssKiB": s.kw.kwin_rss_kib()}
+                       "oracleWindows": len(s.frames_list()), "rssKiB": s.kw.kwin_rss_kib(), "rssAnonKiB": anon_kib(s)}
                 samples.append(rec)
                 jl.write(json.dumps(rec) + "\n"); jl.flush()
                 return rec
             c = s.counters()
             rec = {"tSeconds": round(time.monotonic() - t0, 1), "label": label, "windowsLive": len(live),
                    "counters": c["counters"], "outstanding": c["outstanding"], "connections": c["connections"],
-                   "windows": c["windows"], "rssKiB": s.kw.kwin_rss_kib(), "badLines": len(s.log_lines(BAD, off0))}
+                   "windows": c["windows"], "rssKiB": s.kw.kwin_rss_kib(), "rssAnonKiB": anon_kib(s),
+                   "badLines": len(s.log_lines(BAD, off0))}
             samples.append(rec)
             jl.write(json.dumps(rec) + "\n"); jl.flush()
             return rec
@@ -360,7 +370,8 @@ def run_p15(out: Path, minutes: float, seed: int, idle_seconds: float, idle_pair
                        "skipped": "Plastile commands (toggle-float, swap, ratio, layout.next); the activation before them is kept",
                        "samplesEvery30s": samples,
                        "rssKiB": {"afterLoad": rss0, "afterChurn": final["rssKiB"], "churnDelta": final["rssKiB"] - rss0,
-                                  "trendAfter120sPerMinute": rss_trend([(r["tSeconds"] / 60, r["rssKiB"]) for r in samples], 2.0)},
+                                  "trendAfter120sPerMinute": rss_trend([(r["tSeconds"] / 60, r["rssKiB"]) for r in samples], 2.0),
+                   "anonTrendAfter120sPerMinute": rss_trend([(r["tSeconds"] / 60, r["rssAnonKiB"]) for r in samples], 2.0)},
                        "failures": failures, "pass": not failures}
             jl.close()
             write_json(out / f"{tag}-summary.json", summary)
@@ -392,7 +403,8 @@ def run_p15(out: Path, minutes: float, seed: int, idle_seconds: float, idle_pair
             for r in samples],
         "finalCounters": final["counters"], "finalOutstanding": final["outstanding"],
         "rssKiB": {"afterLoad": rss0, "afterChurn": final["rssKiB"], "afterIdle": rss_end, "churnDelta": final["rssKiB"] - rss0,
-                   "trendAfter120sPerMinute": rss_trend([(r["tSeconds"] / 60, r["rssKiB"]) for r in samples], 2.0)},
+                   "trendAfter120sPerMinute": rss_trend([(r["tSeconds"] / 60, r["rssKiB"]) for r in samples], 2.0),
+                   "anonTrendAfter120sPerMinute": rss_trend([(r["tSeconds"] / 60, r["rssAnonKiB"]) for r in samples], 2.0)},
         "connections": {"min": min(r["connections"] for r in samples), "max": max(r["connections"] for r in samples),
                         "perWindowAtEnd": round(final["connections"] / max(1, final["windows"]), 2)},
         "errorWarnExceptionLines": len(bad), "errorWarnSamples": bad[:5],

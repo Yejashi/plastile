@@ -278,10 +278,31 @@ def gc_attribution(cdir: Path, rows: list[dict]) -> dict | None:
     for rec, ts, steps in perf:
         entry_ms = rec["entryNs"] / 1e6 + off
         inside = [(t, name, us) for t, name, us in steps if t * 1e3 >= entry_ms - 1.0]
+        t = rec.get("timing") or {}
         out.append({"ns": rec["dispatchToReturnNs"], "id": rec["id"], "gcStepsInside": len(inside),
-                    "gcUsInside": sum(us for _, _, us in inside)})
+                    "gcUsInside": sum(us for _, _, us in inside), "solveNs": t.get("solveNs"), "applyNs": t.get("applyNs")})
     if not out:
         return None
+    # Which span held the collection: the span that exceeds its own median for that command by at least half
+    # the GC's logged step time.
+    med = {}
+    for key in ("solveNs", "applyNs"):
+        for cmd in {r["id"] for r in out}:
+            xs = sorted(r[key] for r in out if r["id"] == cmd and r[key] is not None and not r["gcStepsInside"])
+            if xs:
+                med[(key, cmd)] = xs[len(xs) // 2]
+    where = Counter()
+    for r in out:
+        if not r["gcStepsInside"]:
+            continue
+        g = r["gcUsInside"] * 1000 * 0.5
+        if r["solveNs"] is not None and r["solveNs"] - med.get(("solveNs", r["id"]), 0) >= g:
+            where["solve"] += 1
+        elif r["applyNs"] is not None and r["applyNs"] - med.get(("applyNs", r["id"]), 0) >= g:
+            where["apply"] += 1
+        else:
+            where["outsideSolveAndApply"] += 1
+    solving = [r for r in out if r["solveNs"] is not None]
     s = sorted(out, key=lambda r: r["ns"])
     thr99 = s[int(0.99 * (len(s) - 1))]["ns"]
     top = [r for r in s if r["ns"] >= thr99]
@@ -290,7 +311,11 @@ def gc_attribution(cdir: Path, rows: list[dict]) -> dict | None:
     return {
         "unit": "qualify-n32-diag-gc (instrumented + QT_LOGGING_RULES qt.qml.gc.*=true; never pooled)",
         "commands": len(s), "gcStepLinesTotal": dict(steps_total), "logClockOffsetMs": round(off, 3),
-        "commandsWithGcStepInside": len(gcs),
+        "commandsWithGcStepInside": len(gcs), "gcCyclesTotal": steps_total.get("MarkStart", 0),
+        "gcHeldBy": dict(where),
+        "solvingCommands": len(solving),
+        "shareOfSolvesHoldingGc": round(where["solve"] / max(1, len(solving)), 4),
+        "gcStepTimeInHandlerMs": stat_ms(pc.stats([r["gcUsInside"] * 1000 for r in gcs])),
         "shareWithGcInside": {"top1pct": round(sum(1 for r in top if r["gcStepsInside"]) / max(1, len(top)), 4),
                               "rest": round(sum(1 for r in rest if r["gcStepsInside"]) / max(1, len(rest)), 4)},
         "top1pctThresholdMs": ms(thr99),
@@ -356,6 +381,10 @@ def p03(cdir: Path, ev: Path, rows: list[dict], units: dict[str, dict]) -> dict:
                     "samples": len(cr), "runs": len({r["runId"] for r in cr}), "failures": dict(fails),
                     "dispatchToLastRequestOuter": metric(cr, "outerNs"),
                     "warmupOuter": stat_ms(pc.stats([r["outerNs"] for r in warm if r.get("outerNs") is not None])),
+                    # Alternating workloads mix two commands (no-op: context.reset re-solves, layout.master-stack
+                    # does not), so the pooled median can sit between two modes.
+                    "outerByCommand": {c: stat_ms(pc.stats([r["outerNs"] for r in cr if r["cmd"] == c and r.get("outerNs") is not None]))
+                                       for c in sorted({r["cmd"] for r in cr})},
                     "sendToDispatch": stat_ms(pc.stats([r["sendToDispatchNs"] for r in cr if r.get("sendToDispatchNs")])),
                     "work": block_work(units, n, wl, mode),
                     "client": {
@@ -628,7 +657,7 @@ def churn(cdir: Path) -> dict:
         sm = u["summary"]
         keep = {k: v for k, v in sm.items() if k not in ("samplesEvery30s",)}
         if "samplesEvery30s" in sm:
-            keep["samplesEvery30s"] = [{k: v for k, v in r.items() if k in ("tSeconds", "windowsLive", "rssKiB", "connections", "windows",
+            keep["samplesEvery30s"] = [{k: v for k, v in r.items() if k in ("tSeconds", "windowsLive", "rssKiB", "rssAnonKiB", "connections", "windows",
                                                                           "outstanding", "corrections", "errors", "oracleWindows",
                                                                           "badLines")} for r in sm["samplesEvery30s"]]
         out[name] = {"implementationCommit": u["implementationCommit"], "implementationDirty": u["implementationDirty"],
@@ -641,16 +670,31 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("campaign", type=Path)
     ap.add_argument("--evidence", type=Path, default=ROOT / "docs/status/evidence")
+    ap.add_argument("--churn-campaign", type=Path, default=None,
+                    help="a later campaign (campaign.py --only churn) whose churn units replace the main campaign's")
+    ap.add_argument("--superseded", default="", help="text recorded for the replaced churn units")
+    ap.add_argument("--p04", type=Path, default=None, help="probes/perf/pure.ts JSON output (Node, informational)")
     args = ap.parse_args()
     cdir, ev = args.campaign, args.evidence
     ev.mkdir(parents=True, exist_ok=True)
     prov, _ = campaign(cdir)
-    pc.write_json(ev / "g2-campaign.json", {"purpose": "G2 (T20/T34/T04) measurement campaign provenance", **prov})
+    record = {"purpose": "G2 (T20/T34/T04) measurement campaign provenance", "main": prov}
+    if args.churn_campaign:
+        record["churn"] = campaign(args.churn_campaign)[0] | {"replaces": args.superseded}
+    pc.write_json(ev / "g2-campaign.json", record)
+    if args.p04:
+        pc.write_json(ev / "g2-p04-node.json", {
+            "purpose": "P04 pure-core scaling (PERFORMANCE §5): production engine + mock compositor in Node",
+            "label": "Node V8 with a mock host: informs algorithm and queue scaling only; it is not QV4, not KWin, and "
+                     "proves nothing about desktop latency", **json.loads(args.p04.read_text())})
     rows, units = p03_rows(cdir)
     pc.write_json(ev / "g2-p03.json", {"purpose": "G2 P03 qualification (T20/T34)", **p03(cdir, ev, rows, units)})
     pc.write_json(ev / "g2-baselines.json", {"purpose": "T04 baselines: P01/P02 no-tiler controls, Polonium vs Plastile", **baselines(cdir, ev)})
     pc.write_json(ev / "g2-lifecycle.json", {"purpose": "G2 P05 bursts, P05 boundary, P07/P12/P13", **lifecycle(cdir)})
-    pc.write_json(ev / "g2-churn.json", {"purpose": "T34 P14/P15 resource tracking and idle", **churn(cdir)})
+    ch = churn(args.churn_campaign or cdir)
+    if args.churn_campaign:
+        ch["supersededChurnUnits"] = {"campaign": cdir.name, "reason": args.superseded, "units": churn(cdir)}
+    pc.write_json(ev / "g2-churn.json", {"purpose": "T34 P14/P15 resource tracking and idle", **ch})
     for f in sorted(ev.glob("g2-*")):
         print(f"{f.stat().st_size:>10}  {f.name}")
     return 0

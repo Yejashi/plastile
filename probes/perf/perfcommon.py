@@ -159,39 +159,46 @@ def slope(points: list[tuple[float, float]]) -> float | None:
 
 
 def proc_cpu(pid: int) -> dict:
-    """CPU time of every thread of `pid`: ticks from stat, ns from schedstat, context switches.
+    """Per-thread CPU accounting of `pid`, keyed by thread id: ticks from stat, ns from schedstat,
+    voluntary and involuntary context switches.
 
     schedstat is the scheduler's own run-time accounting in ns (finer than the 10 ms ticks);
     voluntary context switches are the number of times a thread blocked and was woken again,
-    the closest readable proxy for wakeups.
+    the closest readable proxy for wakeups. Threads are kept apart because KWin starts and ends
+    worker threads: a sum over the live threads drops when one exits.
     """
-    ticks = run_ns = vol = invol = 0
-    tasks = os.listdir(f"/proc/{pid}/task")
-    for tid in tasks:
+    threads = {}
+    for tid in os.listdir(f"/proc/{pid}/task"):
         base = f"/proc/{pid}/task/{tid}"
         try:
             st = Path(base + "/stat").read_text()
             f = st[st.rindex(")") + 2:].split()
-            ticks += int(f[11]) + int(f[12])
             ss = Path(base + "/schedstat").read_text().split()
-            run_ns += int(ss[0])
+            vol = invol = 0
             for line in Path(base + "/status").read_text().splitlines():
                 if line.startswith("voluntary_ctxt_switches:"):
-                    vol += int(line.split()[1])
+                    vol = int(line.split()[1])
                 elif line.startswith("nonvoluntary_ctxt_switches:"):
-                    invol += int(line.split()[1])
+                    invol = int(line.split()[1])
+            threads[tid] = (int(f[11]) + int(f[12]), int(ss[0]), vol, invol)
         except (OSError, IndexError, ValueError):
             continue
-    return {"ticks": ticks, "runNs": run_ns, "voluntarySwitches": vol, "involuntarySwitches": invol, "threads": len(tasks)}
+    return threads
 
 
 def cpu_delta(a: dict, b: dict, seconds: float) -> dict:
-    return {"seconds": round(seconds, 3), "cpuMsTicks": (b["ticks"] - a["ticks"]) * 1000 // CLK_TCK,
-            "cpuMsSchedstat": round((b["runNs"] - a["runNs"]) / 1e6, 3),
-            "wakeupsVoluntary": b["voluntarySwitches"] - a["voluntarySwitches"],
-            "involuntarySwitches": b["involuntarySwitches"] - a["involuntarySwitches"],
-            "wakeupsPerSecond": round((b["voluntarySwitches"] - a["voluntarySwitches"]) / seconds, 2) if seconds else None,
-            "threads": b["threads"]}
+    """Work done between two proc_cpu snapshots by the threads alive at the second one (a thread
+    started in between counts from zero). Work of threads that ended in between is not visible
+    per thread; their number is reported, and the process-level stat ticks still include it."""
+    d = [0, 0, 0, 0]
+    for tid, cur in b.items():
+        prev = a.get(tid, (0, 0, 0, 0))
+        for i in range(4):
+            d[i] += cur[i] - prev[i]
+    return {"seconds": round(seconds, 3), "cpuMsTicks": d[0] * 1000 // CLK_TCK, "cpuMsSchedstat": round(d[1] / 1e6, 3),
+            "wakeupsVoluntary": d[2], "involuntarySwitches": d[3],
+            "wakeupsPerSecond": round(d[2] / seconds, 2) if seconds else None,
+            "threads": len(b), "threadsStarted": len(set(b) - set(a)), "threadsEnded": len(set(a) - set(b))}
 
 
 def write_json(path: Path, data) -> None:
