@@ -369,7 +369,10 @@ def settings_dialog(out: Path, c: Checks):
                 return
             shown0 = form(dlg["nodes"])
             ev["dialogOpened"] = shown0
-            c("the dialog shows kwinrc's values (master/stack, gap 8, single-window gaps on, Apply disabled)",
+            # kwinrc has no layout keys yet, so this is main.xml's defaults (= the running settings); the
+            # reopened dialog below is what shows values read back from kwinrc.
+            c("the dialog shows the running settings: main.xml defaults, kwinrc has none of these keys "
+              "(master/stack, gap 8, single-window gaps on, Apply disabled)",
               shown0 == {"layout": "Master and stack", "gapInner": 8.0, "singleWindowGaps": True, "applyEnabled": False},
               shown0)
             want = {"layout": "Binary split (BSP)", "gapInner": 20.0, "singleWindowGaps": False, "applyEnabled": True}
@@ -445,6 +448,15 @@ def settings_dialog(out: Path, c: Checks):
             shown = edit(d, dlg, 40, want)
             ev["dialogEditedBeforeCancel"] = shown
             c("real input changed all three fields again (monocle, 40, on)", shown == want, shown)
+            # A passive plain-JS script (not Plastile) reports KWin's configChanged, so a KWin re-read is
+            # observed, not assumed: Plastile skips an identical input silently (main.ts loadConfig), so its
+            # own log cannot show that Cancel caused no reconfigure.
+            probe = kw.root / "plt-config-listen.js"
+            probe.write_text("options.configChanged.connect(function () { print('PLT-CFG changed'); });\n"
+                             "print('PLT-CFG ready');\n")
+            off = kw.mark()
+            kw.load_script(probe, "plt-config-listen")
+            kw.wait_log(r"PLT-CFG ready", 5, off)
             raw = kwinrc_bytes(s)
             off = kw.mark()
             press(d, dlg, "Cancel")
@@ -453,22 +465,20 @@ def settings_dialog(out: Path, c: Checks):
             s.settle()
             alone = kcm_frames(s, kcm.pid).get(SCRIPTS_WINDOW)
             quiet = s.log_lines(rf"{ACTIVATED}|{RELOAD_REQUESTED}|plastile info (started|stopped)", off)
-            ev["cancel"] = {"closed": closed, "kwinrcUnchanged": kwinrc_bytes(s) == raw, "logged": quiet, "alone": alone}
+            kwin_reread = s.log_lines(r"PLT-CFG changed", off)
+            ev["cancel"] = {"closed": closed, "kwinrcUnchanged": kwinrc_bytes(s) == raw, "logged": quiet,
+                            "kwinConfigChanged": kwin_reread, "alone": alone}
             c("Cancel closes the dialog and kwinrc is byte-for-byte unchanged", closed and kwinrc_bytes(s) == raw,
               ev["cancel"])
             # Monocle with single-window gaps on would inset the lone window by the outer gap.
             c("Cancel reloads nothing: no activation, reload request, start or stop; the lone window still fills "
               "the area (oracle)", not quiet and alone is not None and all(abs(alone[k] - area[k]) <= 0.5 for k in area),
               ev["cancel"])
-            # KWin's own reconfigure (what other settings pages trigger) re-reads kwinrc; a passive plain-JS
-            # script (not Plastile) reports KWin's configChanged, so the re-read is observed, not assumed. The
-            # input is what the last activation read, so Plastile makes no new revision (main.ts loadConfig).
-            probe = kw.root / "plt-config-listen.js"
-            probe.write_text("options.configChanged.connect(function () { print('PLT-CFG changed'); });\n"
-                             "print('PLT-CFG ready');\n")
-            off = kw.mark()
-            kw.load_script(probe, "plt-config-listen")
-            kw.wait_log(r"PLT-CFG ready", 5, off)
+            c("Cancel makes KWin re-read nothing: no configChanged reached the passive listener (oracle)",
+              not kwin_reread, ev["cancel"])
+            # KWin's own reconfigure (what other settings pages trigger) re-reads kwinrc; the same listener is
+            # the positive control for the check above. The input is what the last activation read, so
+            # Plastile makes no new revision (main.ts loadConfig).
             off = kw.mark()
             kw.call("/KWin", "org.kde.KWin", "reconfigure")
             reread = until(lambda: s.log_lines(r"PLT-CFG changed", off), 5)
