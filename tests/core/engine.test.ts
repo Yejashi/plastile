@@ -1199,3 +1199,72 @@ test("T13: a layout slot that is not finite or smaller than 1 px is never writte
     ms.solve = orig;
   }
 });
+
+test("T19: reconcile adopts the live inventory: missed closes drop, missed opens join, floats survive, stale callbacks are ignored", () => {
+  const { h, e } = setup(["a", "b", "c"]);
+  h.active = "c";
+  e.execute("plastile.window.toggle-float");
+  h.drain();
+  // Events the engine never saw: b closed, d opened.
+  const b = h.windows.get("b")!;
+  b.alive = false;
+  const d = h.make("d");
+  e.reconcile(["a", "c", "d"].map((id) => h.snapshot(h.windows.get(id)!)));
+  h.drain();
+  assert.equal(e.modeOf("b"), null, "the closed window is not revived");
+  assert.equal(e.modeOf("c"), "floating", "the user's float choice survives");
+  assert.equal(e.modeOf("d"), "tiled", "the missed open is adopted");
+  assertTiling(tiledFrames(h, ["a", "d"]), AREA);
+  // A late callback for the dropped generation does nothing.
+  const stale = e.counters.staleEvents;
+  e.windowAdded(h.snapshot(b));
+  e.frameObserved("b", b.gen, rect(0, 0, 50, 50));
+  assert.ok(e.counters.staleEvents > stale);
+  assert.equal(e.modeOf("b"), null);
+  assert.equal(d.alive, true);
+  assert.deepEqual(e.check(), []);
+});
+
+test("T19: windows closed and opened while suspended: resume tiles the current set and never touches the closed one", () => {
+  const { h, e } = setup(["a", "b", "c"]);
+  e.execute("plastile.runtime.toggle-suspend");
+  h.drain();
+  const bWrites = h.writesTo("b");
+  h.close("b");
+  h.open("d");
+  h.drain();
+  assert.equal(h.writesTo("d"), 0, "nothing is placed while suspended");
+  e.execute("plastile.runtime.toggle-suspend");
+  h.drain();
+  assert.equal(h.writesTo("b"), bWrites, "no write to the closed window");
+  assert.equal(e.modeOf("b"), null);
+  assertTiling(tiledFrames(h, ["a", "c", "d"]), AREA);
+  assert.deepEqual(e.check(), []);
+});
+
+test("T19: unloading from inside a geometry write drops the queued command and all deferred work", () => {
+  const { h, e } = setup(["a", "b"]);
+  h.active = "a";
+  const orig = h.applyFrame.bind(h);
+  let queued = "";
+  let afterStop = 0;
+  h.applyFrame = (id, gen, t) => {
+    if (queued !== "") afterStop++;
+    else {
+      queued = e.execute("plastile.window.toggle-float").reason ?? "";
+      e.stop();
+    }
+    return orig(id, gen, t);
+  };
+  e.execute("plastile.layout.monocle");
+  h.applyFrame = orig;
+  assert.equal(queued, "queued during apply");
+  assert.equal(afterStop, 0, "the rest of the transaction is not written");
+  const writes = h.writes.length;
+  h.drain();
+  h.advance(5000);
+  h.open("c");
+  h.drain();
+  assert.equal(h.writes.length, writes, "no write after unload");
+  assert.notEqual(e.modeOf("a"), "floating", "the queued command did not run after unload");
+});
