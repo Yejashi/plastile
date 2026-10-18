@@ -5,7 +5,10 @@ import json
 import time
 from pathlib import Path
 
-from harness import Session, delta, near, tiling_errors
+import os
+import re
+
+from harness import Session, delta, explain, fixture_events, near, tiling_errors, trace
 
 SCENARIOS = {}
 
@@ -71,13 +74,18 @@ def noop_focus(out: Path, c: Checks):
         s.cmd("layout.master-stack")
         s.cmd("context.reset")
         b = s.settle()
-        c("C11: no-op layout + context reset write nothing", delta(a, b).get("writes", 0) == 0, delta(a, b))
+        d = delta(a, b)
+        c("C11 positive control: both commands ran and the reset re-solved all three windows "
+          "(commands +2, solves +1, skipNoop +3)", d.get("commands", 0) == 2 and d.get("solves", 0) == 1
+          and d.get("skipNoop", 0) >= 3, d)
+        c("C11: no-op layout + context reset write nothing", d.get("writes", 0) == 0, d)
         s.act("plastile-fixture 1", "workspace.activeWindow = w")
         a = s.counters()
         for cmd in ("focus.right", "focus.down", "focus.left", "focus.next", "focus.previous", "focus.master"):
             s.cmd(cmd); time.sleep(0.05)
         b = s.settle()
         d = delta(a, b)
+        c("C12 positive control: all six focus commands were dispatched (commands +6)", d.get("commands", 0) == 6, d)
         c("C12: focus commands solve/write nothing", d.get("solves", 0) == 0 and d.get("writes", 0) == 0, d)
         c("C12: focus commands activate windows", d.get("activations", 0) >= 4, d)
 
@@ -177,11 +185,12 @@ def burst(out: Path, c: Checks):
 
 @scenario("constraints-G08-G12")
 def constraints(out: Path, c: Checks):
-    with Session(out) as s:
+    with Session(out, config={"traceCapacity": 8192}) as s:
         three(s)
         s.load(); s.settle()
+        area = s.area()
         a = s.counters()
-        s.spawn(4, "--min", "900x700", "--clamp")
+        f4 = s.spawn(4, "--min", "900x700", "--clamp")
         time.sleep(3.0)
         b = s.settle()
         d = delta(a, b)
@@ -190,9 +199,29 @@ def constraints(out: Path, c: Checks):
         time.sleep(2.0)
         b2 = s.counters()
         c("G08: no further work after convergence", delta(b, b2).get("writes", 0) == 0, delta(b, b2))
+        # Positive controls: the overflow is explained and the windows that fit are still tiled.
+        e4 = explain(s, "plastile-fixture 4")
+        exc = str(e4.get("exception") or "")
+        f = s.frames()
+        k4 = f["plastile-fixture 4"]
+        tiled = [f[f"plastile-fixture {i}"] for i in (1, 2, 3)]
+        if e4.get("mode") == "floating":
+            c("G08: overflow explained: the window floats with an 'overflow: ...' exception naming the failed constraint",
+              exc.startswith("overflow:") and re.search(r"needs? \d+ px", exc) is not None and d.get("overflow", 0) >= 1,
+              {"mode": e4.get("mode"), "exception": exc, "overflow": d.get("overflow", 0)})
+        else:
+            c("G08: tiled at or above its minimum (oracle client >= 900x700)",
+              e4.get("mode") == "tiled" and k4["client"]["width"] >= 899.5 and k4["client"]["height"] >= 699.5, k4)
+        c("G08: the client kept its own minimum (oracle client >= 900x700, never shrunk below it)",
+          k4["client"]["width"] >= 899.5 and k4["client"]["height"] >= 699.5, k4["client"])
+        c("G08: the windows that fit still tile the area (oracle, gaps>=8)",
+          not tiling_errors(tiled, area, 8) and tiled[0]["frame"]["height"] >= area["height"] - 16.5, tiling_errors(tiled, area, 8))
+        cfg4 = [e for e in fixture_events(f4.log, "configure") if 0 < e["width"] < 900 or 0 < e["height"] < 700]
+        c("G08 (recorded): configures below the client minimum it received", True, len(cfg4))
         s.kill(4); s.settle()
         a = s.counters()
-        s.spawn(5, "--ignore-size")
+        f5 = s.spawn(5, "--ignore-size")
+        cfg_spawn = len(fixture_events(f5.log, "configure"))
         time.sleep(4.0)
         b = s.settle()
         time.sleep(2.0)
@@ -200,11 +229,28 @@ def constraints(out: Path, c: Checks):
         d = delta(a, b)
         c("G12: ignoring client corrected within budget", d.get("corrections", 0) <= 3, d)
         c("G12: no endless retries", delta(b, b2).get("writes", 0) == 0, delta(b, b2))
+        # Positive controls: Plastile did try to place the window, then recorded a visible fallback.
+        e5 = explain(s, "plastile-fixture 5")
+        wid5 = e5.get("id")
+        w5 = [r for r in trace(s) if r.get("kind") == "write" and r.get("id") == wid5]
+        sized = [e for e in fixture_events(f5.log, "configure") if e["width"] > 0]
+        c("G12 positive control: classified tiled and sent requests (>= 1 write; the client received sized configures)",
+          (e5.get("decision") or {}).get("mode") == "tiled" and len(w5) >= 1 and len(sized) >= 1,
+          {"decision": e5.get("decision"), "writes": len(w5), "sizedConfigures": len(sized), "configuresAtSpawn": cfg_spawn})
+        led = e5.get("ledger") or {}
+        c("G12: visible fallback: the explanation records that Plastile stopped insisting (exception set; diverged or learned)",
+          bool(e5.get("exception")) and (led.get("status") == "diverged" or e5.get("learnedMax") is not None
+                                         or e5.get("learnedMin") is not None),
+          {"exception": e5.get("exception"), "ledger": led, "learnedMax": e5.get("learnedMax"), "learnedMin": e5.get("learnedMin")})
+        n = len(fixture_events(f5.log, "configure"))
+        time.sleep(1.5)
+        c("G12: client-side quiet: no further configures after the fallback (client log)",
+          len(fixture_events(f5.log, "configure")) == n, {"before": n, "after": len(fixture_events(f5.log, "configure"))})
 
 
 @scenario("app-resize-G11")
 def app_resize(out: Path, c: Checks):
-    with Session(out) as s:
+    with Session(out, config={"traceCapacity": 8192}) as s:
         s.spawn(1); fx = s.spawn(2)
         s.load(); s.settle()
         a = s.counters()
@@ -217,6 +263,21 @@ def app_resize(out: Path, c: Checks):
         c("G11: self-resizing app corrected at most twice", d.get("corrections", 0) <= 2, d)
         time.sleep(1.5)
         c("G11: then left alone", delta(b, s.counters()).get("writes", 0) == 0)
+        # Positive controls: the app really resized itself, Plastile saw it and reacted, and the outcome is explained.
+        ev = fixture_events(fx.log)
+        resizes = [e for e in ev if e.get("ev") == "commit" and e.get("reason") == "app-resize"]
+        t_first = resizes[0]["t_ns"] if resizes else None
+        reacted = [e for e in ev if e.get("ev") == "configure" and t_first is not None and e["t_ns"] > t_first and e["width"] > 0]
+        c("G11 precondition: the client committed five self-initiated sizes (client log)", len(resizes) == 5, len(resizes))
+        c("G11 positive control: Plastile observed the external changes and corrected at least once "
+          "(external >= 1, corrections >= 1, the client received a sized configure afterwards)",
+          d.get("external", 0) >= 1 and d.get("corrections", 0) >= 1 and len(reacted) >= 1,
+          {"delta": d, "configuresAfterFirstResize": len(reacted)})
+        e2 = explain(s, "plastile-fixture 2")
+        f2 = s.frames()["plastile-fixture 2"]["frame"]
+        c("G11: outcome defined: back in its slot (oracle frame == plan) or yielded with an explanation",
+          near(f2, e2.get("slot") or {"x": -1, "y": -1, "width": -1, "height": -1}, 1.0) or "own size" in str(e2.get("exception")),
+          {"frame": f2, "slot": e2.get("slot"), "exception": e2.get("exception"), "ledger": e2.get("ledger")})
 
 
 @scenario("states-L09-L12")
@@ -302,9 +363,15 @@ def float_toggle(out: Path, c: Checks):
           near(f["plastile-fixture 3"]["frame"], {"x": 300, "y": 200, "width": 500, "height": 350}, 1.0), f["plastile-fixture 3"]["frame"])
 
 
+STACK_INFO = ("({stack: workspace.stackingOrder.indexOf(w), minimized: w.minimized, hidden: w.hidden, active: w.active,"
+              " frame: {x: w.frameGeometry.x, y: w.frameGeometry.y, width: w.frameGeometry.width, height: w.frameGeometry.height}})")
+
+
 @scenario("transient-dialog-L07")
 def transient(out: Path, c: Checks):
-    with Session(out) as s:
+    """A transient child floats; then, in monocle (TEST_MATRIX L07), selecting its parent keeps the dialog usable."""
+    from harness import window_info
+    with Session(out, config={"traceCapacity": 8192}) as s:
         s.spawn(1); s.spawn(2, "--parent-after-ms", "200")
         s.load()
         time.sleep(1.0); s.settle()
@@ -314,6 +381,38 @@ def transient(out: Path, c: Checks):
         c("transient child exists", len(children) == 1, [x["caption"] for x in f])
         c("transient child floats (not tiled)", children and children[0]["frame"]["width"] == 300, children and children[0]["frame"])
         c("two mains tiled", len(mains) == 2 and not tiling_errors(mains, s.area(), 8), tiling_errors(mains, s.area(), 8))
+        child = "plastile-fixture 2 child"
+        child0 = window_info(s, child, STACK_INFO)
+        # L07: monocle, with the transient's parent selected.
+        s.act("plastile-fixture 1", "workspace.activeWindow = w")
+        s.cmd("layout.monocle")
+        time.sleep(0.4); s.settle()
+        s.act("plastile-fixture 2", "workspace.activeWindow = w")
+        time.sleep(0.4); s.settle()
+        area = s.area()
+        fr = s.frames()
+        p2 = window_info(s, "plastile-fixture 2", STACK_INFO)
+        p1 = window_info(s, "plastile-fixture 1", STACK_INFO)
+        ch = window_info(s, child, STACK_INFO)
+        full = {"x": area["x"] + 8, "y": area["y"] + 8, "width": area["width"] - 16, "height": area["height"] - 16}
+        c("L07 precondition: monocle: both members fill the area (oracle)",
+          all(near(fr[k]["frame"], full, 1.0) for k in ("plastile-fixture 1", "plastile-fixture 2")),
+          {k: fr[k]["frame"] for k in ("plastile-fixture 1", "plastile-fixture 2")})
+        c("L07: the selected member (the parent) is on top of the other member (stacking order)", p2["stack"] > p1["stack"],
+          {"parent": p2["stack"], "other": p1["stack"]})
+        c("L07: the dialog is not hidden: visible, not minimized, above its parent (stacking order)",
+          not ch["minimized"] and not ch["hidden"] and ch["stack"] > p2["stack"], {"dialog": ch, "parent": p2["stack"]})
+        c("L07: the dialog keeps its own floating geometry (oracle unchanged)", near(ch["frame"], child0["frame"], 0.5),
+          {"before": child0["frame"], "after": ch["frame"]})
+        # Focusing the dialog does not change the monocle selection or hide anything.
+        s.act(child, "workspace.activeWindow = w")
+        time.sleep(0.4); s.settle()
+        p1b, p2b, chb = (window_info(s, k, STACK_INFO) for k in ("plastile-fixture 1", "plastile-fixture 2", child))
+        c("L07: activating the dialog keeps it on top and the parent selected", chb["active"] and chb["stack"] > p2b["stack"] > p1b["stack"],
+          {"dialog": chb, "parent": p2b["stack"], "other": p1b["stack"]})
+        wid = {x["caption"]: x["id"] for x in s.frames_list()}
+        w = [r for r in trace(s) if r.get("kind") == "write" and r.get("id") == wid.get(child)]
+        c("L07: Plastile never wrote the dialog (trace)", not w, len(w))
 
 
 @scenario("outputs-O01")
@@ -340,12 +439,19 @@ def desktops(out: Path, c: Checks):
         s.js("workspace.createDesktop(1, 'Two'); emit(workspace.desktops.length);")
         three(s)
         s.load(); s.settle()
+        area = s.area()
+        pre = s.frames()
+        stack = pre["plastile-fixture 2"]["frame"]  # upper half of the stack column before the send
         s.act("plastile-fixture 3", "workspace.activeWindow = w")
         s.cmd("move.desktop-next")
         time.sleep(0.6); s.settle()
         f = s.frames()
         d1 = [x for x in f.values() if x["desktops"] == f["plastile-fixture 1"]["desktops"]]
-        c("send-to-desktop: source reflowed to two", len(d1) == 2 and d1[0]["frame"]["height"] > 700, [x["frame"] for x in d1])
+        want2 = {"x": stack["x"], "y": area["y"] + 8, "width": stack["width"], "height": area["height"] - 16}
+        c("send-to-desktop: source reflowed to two: fixture 2 now fills the whole stack column (oracle, gaps>=8)",
+          len(d1) == 2 and near(f["plastile-fixture 2"]["frame"], want2, 1.0) and not tiling_errors(d1, area, 8)
+          and all(x["frame"]["height"] >= area["height"] - 16.5 for x in d1),
+          {"fixture2": f["plastile-fixture 2"]["frame"], "expected": want2, "errors": tiling_errors(d1, area, 8)})
         c("send-to-desktop: no follow (desktop unchanged)",
           json.loads(s.js("emit(workspace.currentDesktop.x11DesktopNumber)")[0]) == 1)
         s.js("workspace.currentDesktop = workspace.desktops[1]; emit(1)")
@@ -355,15 +461,47 @@ def desktops(out: Path, c: Checks):
           near(f["plastile-fixture 3"]["frame"], {"x": 8, "y": 8, "width": 1264, "height": 784}, 1.0), f["plastile-fixture 3"]["frame"])
 
 
+def kwin_cpu_seconds(s: Session) -> float:
+    """utime + stime of the nested kwin_wayland process (/proc/<pid>/stat)."""
+    st = Path(f"/proc/{s.kw.kwin_pid}/stat").read_text().rsplit(")", 1)[1].split()
+    return (int(st[11]) + int(st[12])) / os.sysconf("SC_CLK_TCK")
+
+
+def idle_cpu(s: Session, seconds: float = 3.0) -> float:
+    """KWin CPU use (cores) over an idle interval: independent of Plastile's own counters."""
+    c0, t0 = kwin_cpu_seconds(s), time.monotonic()
+    time.sleep(seconds)
+    return (kwin_cpu_seconds(s) - c0) / (time.monotonic() - t0)
+
+
+def script_objects(s: Session) -> list[str]:
+    """Script objects KWin exports under /Scripting (one per loaded script; one-shot oracles unload themselves)."""
+    xml = s.kw.call("/Scripting", "org.freedesktop.DBus.Introspectable", "Introspect")
+    return re.findall(r'<node name="([^"]+)"', xml[0] if isinstance(xml, list) else xml)
+
+
 @scenario("reload-Q09")
 def reload(out: Path, c: Checks):
+    """100 disable/enable cycles with pending work (TEST_MATRIX Q09).
+
+    Plastile's own connection/window counters describe only the newest runtime, so they cannot see
+    leftovers of an unloaded one. Independent evidence: KWin's exported script objects, kglobalaccel's
+    shortcut list, the size of one command's effect (one grow step, not two), KWin's idle CPU and RSS.
+    A guarded closure that a dead runtime left connected but that returns immediately stays
+    invisible to all of these; detecting it would need a per-runtime instance id in the runtime.
+    """
+    cycles = 100
+    facts: dict = {}
     with Session(out) as s:
         three(s, "--configure-delay-ms", "200")
         s.load(); s.settle()
         base = s.counters()
-        names0 = len(s.kw.shortcut_names())
+        names0 = s.kw.shortcut_names()
+        time.sleep(0.5)
+        cpu0 = idle_cpu(s)
+        rss: list[int | None] = []
         errors = []
-        for i in range(20):
+        for i in range(cycles):
             s.act("plastile-fixture 1", "workspace.activeWindow = w")
             s.cmd("resize.grow")  # pending work at unload (fixture 3 delays commits)
             s.unload()
@@ -371,13 +509,42 @@ def reload(out: Path, c: Checks):
             cc = s.settle()
             if cc["connections"] != base["connections"] or cc["windows"] != base["windows"]:
                 errors.append((i, cc["connections"], cc["windows"]))
-        names1 = len(s.kw.shortcut_names())
+            if i % 10 == 9:
+                rss.append(s.kw.kwin_rss_kib())
+        names1 = s.kw.shortcut_names()
+        objects = script_objects(s)
+        time.sleep(0.5)
+        cpu1 = idle_cpu(s)
         f = s.frames_list()
         warnings = [l for l in s.log_lines(r"plastile (error|warn)|TypeError|ReferenceError")]
-        c("Q09: 20 reloads with pending work: connection/window counts stable", not errors, errors)
-        c("Q09: one shortcut per command after reloads", names0 == names1, (names0, names1))
+        facts.update({"cycles": cycles, "kwinRssKiBEvery10": rss, "idleCpuBefore": round(cpu0, 4), "idleCpuAfter": round(cpu1, 4),
+                      "scriptObjects": objects, "shortcutNames": [len(names0), len(names1)]})
+        c(f"Q09: {cycles} reloads with pending work: connection/window counts stable (runtime's own counters)", not errors, errors)
+        c("Q09: one shortcut per command after reloads (kglobalaccel: same names, no duplicates)",
+          sorted(names0) == sorted(names1) and len(names1) == len(set(names1)), (len(names0), len(names1)))
+        c("Q09: exactly one Plastile script object exported by KWin after the reloads (independent)", len(objects) == 1, objects)
+        grow_rss = (rss[-1] - rss[0]) if len(rss) >= 2 and None not in (rss[0], rss[-1]) else None
+        c(f"Q09: KWin RSS bounded from cycle 10 to {cycles} (< 16 MiB growth; gross-leak bound, independent)",
+          grow_rss is not None and grow_rss < 16 * 1024, {"growthKiB": grow_rss, "samples": rss})
+        c("Q09: no leaked work: KWin idle CPU after the reloads within 0.02 cores of before (independent)",
+          cpu1 <= cpu0 + 0.02, {"before": cpu0, "after": cpu1})
         c("Q09: no errors or JS exceptions logged", not warnings, warnings[:5])
         c("Q09: final layout valid", not tiling_errors(f, s.area(), 8), tiling_errors(f, s.area(), 8))
+        # Effect size: one shortcut press moves the divider by exactly one ratio step. A surviving handler
+        # of an unloaded runtime acting on the same press would move it twice.
+        area = s.area()
+        m0 = s.frames()["plastile-fixture 1"]["frame"]
+        s.act("plastile-fixture 1", "workspace.activeWindow = w")
+        a = s.counters()
+        s.cmd("resize.grow")
+        time.sleep(0.6)
+        b = s.settle()
+        m1 = s.frames()["plastile-fixture 1"]["frame"]
+        step = 0.05 * (area["width"] - 16 - 8)
+        c("Q09: one grow press after the reloads moves the master edge by exactly one step (oracle) and one command ran",
+          abs((m1["width"] - m0["width"]) - step) <= 1.5 and delta(a, b).get("commands", 0) == 1,
+          {"before": m0["width"], "after": m1["width"], "step": step, "delta": delta(a, b)})
+    c("facts (recorded, always passes)", True, facts)
 
 
 @scenario("config-Q01")
@@ -414,12 +581,20 @@ def suspend_idle(out: Path, c: Checks):
         b = s.counters()
         d = {k: v for k, v in delta(a, b).items() if k not in ("commands",)}
         c("C14: idle 3 s does no work (no flushes/deadlines/writes)", not d, d)
+        slot1 = s.frames()["plastile-fixture 1"]["frame"]
         s.cmd("runtime.toggle-suspend")
         s.act("plastile-fixture 1", "w.frameGeometry = {x: 50, y: 50, width: 400, height: 300}")
         time.sleep(0.6)
         f = s.frames()
         c("suspend: user geometry not fought", near(f["plastile-fixture 1"]["frame"], {"x": 50, "y": 50, "width": 400, "height": 300}, 1.0))
-        s.cmd("runtime.toggle-suspend"); time.sleep(0.5); s.settle()
+        a = s.counters()
+        s.cmd("runtime.toggle-suspend"); time.sleep(0.5)
+        b = s.settle()
+        f = s.frames()
+        c("resume: the moved window is back in its pre-suspend slot (oracle)", near(f["plastile-fixture 1"]["frame"], slot1, 1.0),
+          {"frame": f["plastile-fixture 1"]["frame"], "slot": slot1})
+        c("resume: re-solved and wrote the moved window (solves >= 1, writes >= 1)",
+          delta(a, b).get("solves", 0) >= 1 and delta(a, b).get("writes", 0) >= 1, delta(a, b))
         f = s.frames_list()
         c("resume: retiled", not tiling_errors(f, s.area(), 8), tiling_errors(f, s.area(), 8))
 
@@ -449,8 +624,9 @@ def fractional_scale(out: Path, c: Checks):
             a = s.settle()
             area = s.area(1)
             f = on_output(s, "Virtual-1")
-            c(f"G03 scale {scale}: two tiles inside the new area without overlap",
-              len(f) == 2 and not tiling_errors(f, area, 8), (area, [x["frame"] for x in f]))
+            tol = 0.5 + 1 / float(scale)  # KWin snaps frame edges to the device-pixel grid (geometry.frameTolerance)
+            c(f"G03 scale {scale}: two tiles inside the new area without overlap, gaps>=8 within one device pixel",
+              len(f) == 2 and not tiling_errors(f, area, 8, tol), (area, [x["frame"] for x in f], tiling_errors(f, area, 8, tol)))
             time.sleep(1.5)
             b = s.counters()
             c(f"G03 scale {scale}: converged, no repeated corrections", delta(a, b).get("writes", 0) == 0 and
@@ -499,10 +675,15 @@ def unplug(out: Path, c: Checks):
         c("O04: no errors from stale output callbacks", not errs, errs[:3])
         kscreen(s, "output.Virtual-1.enable")
         time.sleep(1.0); s.settle()
-        for name in ("Virtual-0", "Virtual-1"):
-            ws = on_output(s, name)
-            if ws:
-                c(f"O05 replug: {name} tiled without overlap", not tiling_errors(ws, s.area(0 if name == "Virtual-0" else 1), 8))
+        f = s.frames_list()
+        live = {"Virtual-0", "Virtual-1"}
+        per = {name: on_output(s, name) for name in sorted(live)}
+        errs = {name: tiling_errors(ws, s.area(0 if name == "Virtual-0" else 1), 8) for name, ws in per.items() if ws}
+        # Placement validity only: which output a window returns to is KWin's decision; Plastile's own
+        # preference recovery (O05 "deterministic preference recovery") is not asserted here.
+        c("O05 replug (partial): all four windows on live outputs and each output's windows tiled (oracle, gaps>=8)",
+          len(f) == 4 and all(x["output"] in live for x in f) and not any(errs.values()),
+          {"placement": {x["caption"]: x["output"] for x in f}, "errors": errs})
         c("O05 replug: no errors", not s.log_lines(r"plastile (error|warn)|TypeError", off))
 
 

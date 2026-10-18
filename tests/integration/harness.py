@@ -43,26 +43,54 @@ def near(a, b, tol=TOL):
     return all(abs(a[k] - b[k]) <= tol for k in ("x", "y", "width", "height"))
 
 
-def overlaps(a, b):
-    return (min(a["x"] + a["width"], b["x"] + b["width"]) - max(a["x"], b["x"]) > TOL and
-            min(a["y"] + a["height"], b["y"] + b["height"]) - max(a["y"], b["y"]) > TOL)
+def overlaps(a, b, tol=TOL):
+    return (min(a["x"] + a["width"], b["x"] + b["width"]) - max(a["x"], b["x"]) > tol and
+            min(a["y"] + a["height"], b["y"] + b["height"]) - max(a["y"], b["y"]) > tol)
 
 
-def tiling_errors(frames: list[dict], area: dict, gap: int | None = None) -> list[str]:
-    """Oracle: inside area, no overlap; with `gap`, outer margins and spacing are >= gap."""
+def separation(a: dict, b: dict) -> tuple[float, float]:
+    """(dx, dy): the gap between two rectangles on each axis; negative = their projections overlap by that much."""
+    dx = max(a["x"], b["x"]) - min(a["x"] + a["width"], b["x"] + b["width"])
+    dy = max(a["y"], b["y"]) - min(a["y"] + a["height"], b["y"] + b["height"])
+    return dx, dy
+
+
+def tiling_errors(frames: list[dict], area: dict, gap: int | None = None, tol: float = TOL) -> list[str]:
+    """Independent tiling oracle over KWin's reported frames.
+
+    Always: every frame lies inside `area` and no two frames overlap (by more than `tol`).
+    With `gap`: all four outer margins (left, top, right, bottom) are >= gap, and two frames that
+    face each other (their projections overlap on one axis) are >= gap apart on the other axis,
+    as the core layout tests require (tests/core/bsp.test.ts assertGaps). Frames smaller than
+    their slot (maximum size, increments) only make margins larger, so they still pass.
+
+    `tol` absorbs KWin's rounding: 0.5 px at scale 1. At a fractional scale KWin snaps frame
+    edges to the device-pixel grid, so callers pass 0.5 + 1/scale (the product's own
+    frameTolerance in src/core/geometry.ts).
+    """
     errs = []
+    ax0, ay0 = area["x"], area["y"]
+    ax1, ay1 = ax0 + area["width"], ay0 + area["height"]
     for f in frames:
         r = f["frame"]
-        if r["x"] < area["x"] - TOL or r["y"] < area["y"] - TOL or r["x"] + r["width"] > area["x"] + area["width"] + TOL \
-                or r["y"] + r["height"] > area["y"] + area["height"] + TOL:
+        x1, y1 = r["x"] + r["width"], r["y"] + r["height"]
+        if r["x"] < ax0 - tol or r["y"] < ay0 - tol or x1 > ax1 + tol or y1 > ay1 + tol:
             errs.append(f"{f['caption']} outside area {r}")
         if gap is not None:
-            if r["x"] - area["x"] < gap - TOL or r["y"] - area["y"] < gap - TOL:
-                errs.append(f"{f['caption']} closer than {gap}px to the area edge: {r}")
+            margins = {"left": r["x"] - ax0, "top": r["y"] - ay0, "right": ax1 - x1, "bottom": ay1 - y1}
+            close = {k: round(v, 3) for k, v in margins.items() if v < gap - tol}
+            if close:
+                errs.append(f"{f['caption']} closer than {gap}px to the area edge {close}: {r}")
     for i, a in enumerate(frames):
         for b in frames[i + 1:]:
-            if overlaps(a["frame"], b["frame"]):
+            dx, dy = separation(a["frame"], b["frame"])
+            if dx < -tol and dy < -tol:
                 errs.append(f"{a['caption']} overlaps {b['caption']}")
+            elif gap is not None:
+                if dy < -tol and dx < gap - tol:
+                    errs.append(f"{a['caption']} and {b['caption']} are {round(dx, 3)}px apart horizontally (< {gap})")
+                if dx < -tol and dy < gap - tol:
+                    errs.append(f"{a['caption']} and {b['caption']} are {round(dy, 3)}px apart vertically (< {gap})")
     return errs
 
 
@@ -261,3 +289,94 @@ def centre(r: dict) -> tuple[float, float]:
 def delta(a: dict, b: dict) -> dict:
     ca, cb = a["counters"], b["counters"]
     return {k: cb[k] - ca[k] for k in cb if cb[k] != ca[k]}
+
+
+# ------------------------------------------------------------------ shared helpers
+def trace(s: Session) -> list[dict]:
+    """Plastile's own event trace (inspect.dump-trace). Work attribution only, never a geometry oracle."""
+    off = s.kw.mark()
+    s.cmd("inspect.dump-trace")
+    line = s.kw.wait_log(r"plastile trace ", 5, off)[-1]
+    return json.loads(line.split("plastile trace ", 1)[1])
+
+
+def trace_since(records: list[dict], t0: float) -> list[dict]:
+    return [r for r in records if r["t"] > t0]
+
+
+def last_trace_t(s: Session) -> float:
+    tr = trace(s)
+    return tr[-1]["t"] if tr else 0
+
+
+def explain(s: Session, caption: str) -> dict:
+    """Plastile's recorded decision for a window (activates it first: explain-window reads the active window)."""
+    s.act(caption, "workspace.activeWindow = w")
+    time.sleep(0.1)
+    off = s.kw.mark()
+    s.cmd("inspect.explain-window")
+    line = s.kw.wait_log(r"plastile info explain ", 5, off)[-1]
+    return json.loads(line.split("plastile info explain ", 1)[1])
+
+
+def fixture_events(log: Path, ev: str | None = None, win: str = "main") -> list[dict]:
+    """Records from a fixture client's own JSONL log (the client-side protocol view)."""
+    out = []
+    for line in log.read_text().splitlines():
+        try:
+            e = json.loads(line)
+        except ValueError:
+            continue
+        if (ev is None or e.get("ev") == ev) and e.get("win", win) == win:
+            out.append(e)
+    return out
+
+
+def window_info(s: Session, caption: str, fields: str) -> dict | None:
+    """One-shot oracle: `fields` is a JS object literal evaluated with `w` bound to the window."""
+    out = s.js(f"const w = workspace.windowList().find(x => x.caption === {json.dumps(caption)});\n"
+               f"emit(w ? ({fields}) : null);")
+    return json.loads(out[0])
+
+
+class Listener:
+    """A passive plain-JS KWin script (not Plastile) that logs workspace/window signals it observes.
+
+    Every line is `PLT-L <event> <caption>|<internalId> [extra]` (`added` carries `{"cls": resourceClass}`,
+    `frame` the new frame). It is loaded and unloaded by the
+    harness, owns nothing, and gives scenarios an observation independent of Plastile's counters.
+    `frames` lists captions whose frameGeometryChanged emissions are counted.
+    """
+
+    def __init__(self, s: Session, name: str = "plt-listen", frames: tuple[str, ...] = ()):
+        self.s, self.name = s, name
+        body = (
+            "function tag(w) { return w ? String(w.caption) + '|' + String(w.internalId) : 'null'; }\n"
+            "var watched = " + json.dumps(list(frames)) + ";\n"
+            "function hook(w) {\n"
+            "  if (!w || watched.indexOf(String(w.caption)) < 0) return;\n"
+            "  w.frameGeometryChanged.connect(function () { var g = w.frameGeometry;\n"
+            "    print('PLT-L frame ' + tag(w) + ' ' + JSON.stringify([g.x, g.y, g.width, g.height])); });\n"
+            "}\n"
+            "workspace.windowAdded.connect(function (w) {\n"
+            "  print('PLT-L added ' + tag(w) + ' ' + JSON.stringify({cls: String(w.resourceClass)})); hook(w); });\n"
+            "workspace.windowRemoved.connect(function (w) { print('PLT-L removed ' + tag(w)); });\n"
+            "workspace.windowList().forEach(hook);\n"
+            "print('PLT-L ready');\n")
+        self.path = s.kw.root / f"{name}.js"
+        self.path.write_text(body)
+        off = s.kw.mark()
+        s.kw.load_script(self.path, name)
+        s.kw.wait_log(r"PLT-L ready", 5, off)
+
+    def lines(self, kind: str, offset: int = 0) -> list[str]:
+        return self.s.log_lines(rf"PLT-L {kind} ", offset)
+
+    def captions(self, kind: str, offset: int = 0) -> list[str]:
+        return [ln.split(f"PLT-L {kind} ", 1)[1].split("|", 1)[0] for ln in self.lines(kind, offset)]
+
+    def close(self) -> None:
+        try:
+            self.s.kw.unload(self.name)
+        except Exception:
+            pass
