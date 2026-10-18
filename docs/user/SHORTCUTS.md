@@ -52,7 +52,7 @@ Every Plastile command is one KWin global shortcut. All of them are registered u
 | `plastile.context.reset` | Reset this layout | *unbound* | Drops the current context's session layout choice and its structure (master ratio and count, BSP tree and ratios, row weights), then re-solves from the configured settings. Global settings are untouched. |
 | `plastile.runtime.toggle-suspend` | Suspend/resume tiling | `Meta+Ctrl+S` | **Suspend:** cancels every outstanding request, restores borders Plastile changed and leaves windows where they are. While suspended, every command except this one, *Reconcile*, *Reload configuration* and the three inspect commands is rejected with `tiling suspended`. **Resume:** re-solves every context. |
 | `plastile.runtime.reconcile` | Reconcile with live windows | *unbound* | Compares the model with KWin's live window list: drops windows that are gone, adds missing ones and re-solves every context. On an unchanged session it writes nothing (measured). It is a manual recovery command, not a background task. |
-| `plastile.runtime.reload-config` | Reload configuration | *unbound* | Re-reads `[Script-plastile]` as KWin currently has it cached. If the values changed and are valid, they are activated; otherwise the errors are logged and the previous configuration is kept. It does **not** make KWin re-read `kwinrc`, so on its own it does not pick up the settings dialog's Apply (measured; see [INSTALL](INSTALL.md#applying-settings-changes)). |
+| `plastile.runtime.reload-config` | Reload configuration | *unbound* | Asks KWin to re-read `kwinrc` (an asynchronous D-Bus call to KWin's `reconfigure`, as KDE settings pages make on Apply). About 200 ms later KWin reports the re-read settings; if `[Script-plastile]` changed and is valid it is activated, otherwise the errors are logged and the previous configuration is kept. Use it after Apply in the settings dialog. Requests in quick succession become one re-read (measured: 20 requests, one activation, one engine; see [INSTALL](INSTALL.md#applying-settings-changes)). It also re-runs the [conflict report](#conflict-report). |
 | `plastile.inspect.explain-window` | Explain active window (log) | *unbound* | Logs the active window's classification, mode, decision source, rule ids, context, layout, constraints, ledger state, planned slot and exception, at `info` level (see [CONFIGURATION](CONFIGURATION.md#seeing-why-a-window-was-classified)). |
 | `plastile.inspect.counters` | Log counters | *unbound* | Logs the work counters (solves, writes, corrections and others), outstanding requests, connection and window counts, a per-context summary and the configuration revision. Logged at every level. |
 | `plastile.inspect.dump-trace` | Log trace | *unbound* | Logs the bounded event trace (the `traceCapacity` most recent events). Empty when `diagnostics` is `off`. |
@@ -84,7 +84,7 @@ Pressed and confirmed to reach Plastile:
 2. Choose the **KWin** component and search for "Plastile". Each row of the table appears under its label.
 3. Assign, change or clear bindings there.
 
-KGlobalAccel stores your choice in `~/.config/kglobalshortcutsrc`. A stored user binding normally survives script reloads and upgrades; that is KGlobalAccel's behaviour and was not tested by Plastile's suite.
+KGlobalAccel stores your choice in `~/.config/kglobalshortcutsrc`. A stored user binding normally survives script reloads and upgrades; that is KGlobalAccel's behaviour. Plastile's suite measured that a user binding of another action on a Plastile default key is kept ([conflict report](#conflict-report)); a rebound Plastile command surviving an upgrade was not tested.
 
 Unbound commands (*unbound* in the table) appear in the same list and only need a binding.
 
@@ -108,9 +108,28 @@ The defaults use `Meta+Shift+<letter>`, `Meta+Shift+Space` and `Meta+Shift+Retur
 - `Meta+1..9` (task manager)
 - `Meta+Shift+S` (Spectacle) and `Meta+=` / `Meta+-` (KWin Zoom)
 
-The full list of that machine's bindings was not committed. The nested scenario above checks the registry of the nested session on every run; unit tests check that no two Plastile commands share a default and that no default combines Shift with punctuation.
+The full list of that machine's bindings was not committed. The nested scenario above checks the registry of the nested session on every run; unit tests check that no two Plastile commands share a default and that no default combines Shift with punctuation. On your machine, the [conflict report](#conflict-report) checks the bindings that are actually registered.
 
-**Your own bindings.** If you have already bound one of these sequences to something else, expect Plastile's key press not to work, as happened with Spectacle above. Pick another key for the Plastile command.
+**Your own bindings.** If you have already bound one of these sequences to something else, expect Plastile's key press not to work, as happened with Spectacle above. Pick another key for the Plastile command. The conflict report below tells you which ones.
+
+### Conflict report
+
+When Plastile starts, it asks KGlobalAccel (over D-Bus, on a later event-loop turn than the start, one request at a time) for every registered shortcut of every component, and compares the keys with Plastile's commands. A Plastile command's keys are its current binding, so a key you moved is checked where you put it. Each key that a Plastile command shares with another action is reported:
+
+- in the log, as one warning: `plastile warn shortcut conflicts: Meta+Shift+H: "Plastile: Focus left" and "Maximize Window" (KWin) (change one in System Settings, Keyboard, Shortcuts)`;
+- in *Explain active window*: the log line's `shortcutConflicts` field;
+- in *Log counters*: `shortcuts: {"state": "done", "conflicts": N}`.
+
+Without conflicts the log says `plastile info shortcut check: no conflicts`. *Reload configuration* runs the check again, for example after you rebound something.
+
+**Plastile never changes a binding.** It only reads them. Measured in nested KWin 6.7.5 (scenario `shortcuts-conflict-Q08`): with KWin's *Maximize Window* bound to `Meta+Shift+H` by the user before Plastile loaded, KGlobalAccel still gave *Focus left* the same key (it accepts duplicates without complaint), the report named both, the user's binding stayed in `kglobalshortcutsrc`, and pressing `Meta+Shift+H` maximized the window without reaching Plastile.
+
+Limits:
+
+- The check sees the components KGlobalAccel knows at that moment. In the nested session that was KWin, Konsole, Dolphin and the keyboard layout switcher, although only KWin was running (measured), so installed applications that declare global shortcuts are included. An application KGlobalAccel has never heard of is not.
+- Keys are compared as single key combinations; multi-key sequences are not checked.
+- A KWin script can only call D-Bus methods without arguments of KDE's own types: KWin's `DBusCall` passes arguments as plain values, so methods taking a key sequence (`globalShortcutsByKey`, `isGlobalShortcutAvailable`) cannot be called. The check therefore lists every shortcut (`allComponents` and each component's `allShortcutInfos`) and compares locally; the work is bounded (at most 64 components and 2048 entries each) and happens once per load or reload.
+- If KGlobalAccel cannot be reached, the log says `shortcut check unavailable: ...` and nothing else changes.
 
 Plastile does not override `Meta+T` and does not take over KWin's own quick-tile keys. A window you quick-tile with `Meta+Left` is released to KWin (see [README](README.md#floating-windows-and-native-quick-tiling)).
 
@@ -118,4 +137,4 @@ Plastile does not override `Meta+T` and does not take over KWin's own quick-tile
 
 - **Leftover entries:** shortcut registrations are KWin-wide and **persist in `kglobalshortcutsrc` after the script is disabled or uninstalled** (measured in nested KWin). They are harmless entries without a handler; remove them in the shortcuts settings if you want a clean file.
 - **Screens:** directional focus, swap and move never cross screens. Use *Send window to next output* to change screens.
-- **Unbound diagnostics:** *Reload configuration*, *Explain active window*, *Log counters* and *Log trace* are unbound by default. Bind them if you need to debug ([TROUBLESHOOTING](TROUBLESHOOTING.md)).
+- **Unbound diagnostics:** *Reload configuration*, *Explain active window*, *Log counters* and *Log trace* are unbound by default. Bind them if you change settings or need to debug ([TROUBLESHOOTING](TROUBLESHOOTING.md)).

@@ -182,3 +182,30 @@ performance counters of the initial layouts: the existing suites gate every chan
 **Consequences.** M8/M9 results are nested-only until a physical session runs their physical checks, and
 the release notes must say so. If they turn out to weaken core correctness, they are removed rather than
 patched around. G3 remains the gate for calling any build a release.
+
+## ADR-015: Script-side D-Bus requests for reload and the shortcut report
+
+**Status:** accepted (2026-10-18); tasks D9 and T26.
+
+**Context.** The settings dialog's Apply never reaches a script (kwin v6.7.5 `ScriptingConfig::reload()` is a
+TODO), and `KWin.readConfig` reads KWin's cached `kwinrc`, so a script that re-reads its keys sees the old
+values. Default shortcuts can collide silently: KGlobalAccel accepts a key another action already holds
+(measured). KWin registers `DBusCall` (org.kde.kwin 3.0) for declarative scripts; its `call()` is asynchronous
+and its reply arrives as plain lists through `dbusToVariant` (observed source: `src/scripting/dbuscall.cpp`,
+`scriptingutils.cpp`; measured: `call()` returns within the same millisecond).
+
+**Decision.** The root creates one `DBusCall` per request and destroys it with its reply; requests still
+pending at unload are destroyed with the root, and the runtime also ignores late replies. *Reload
+configuration* calls `org.kde.KWin /KWin reconfigure`; KWin's handler only restarts its 200 ms reconfigure
+timer, after which KWin re-reads `kwinrc` and emits `Options.configChanged`, the path every reconfigure
+already takes. The shortcut report calls only argument-free methods (`allComponents`, then each component's
+`allShortcutInfos`, one request in flight), because `DBusCall` arguments are plain QVariants and cannot carry
+the `(ai)` key-sequence struct that `globalShortcutsByKey` takes. It starts on an event-loop turn after
+start-up and only reads.
+
+**Consequences.** No file I/O or synchronous IPC is added to a command: the reload command issues one
+asynchronous call whose handler only starts a timer, and KWin's re-read happens on its own timer. A reload
+re-reads all of KWin's settings, as any KDE settings page's Apply does, and Scripting::start then runs and
+skips the loaded script (measured: one engine, one activation for 20 rapid requests). The shortcut report is a
+snapshot (load and reload), limited to single-chord keys and to components KGlobalAccel knows. Replies are
+QV4 array-like sequences, not Arrays (measured), so parsing accepts array-likes.

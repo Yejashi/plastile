@@ -20,8 +20,8 @@ If nothing appears although the script is enabled:
 
 **What each level adds.**
 
-- **`warn` (the default):** configuration warnings, and errors such as `configuration rejected; keeping previous revision [...]`.
-- **`info`:** also `started 0.1.0 {...}`, `stopped`, `configuration activated {"revision": N}` and the `explain` lines.
+- **`warn` (the default):** configuration warnings, `shortcut conflicts: ...` ([details](SHORTCUTS.md#conflict-report)), and errors such as `configuration rejected; keeping previous revision [...]`.
+- **`info`:** also `started 0.1.0 {...}`, `stopped`, `configuration reload requested`, `configuration activated {"revision": N}`, `shortcut check: no conflicts {...}` and the `explain` lines.
 - **`debug`:** also one line per command, with its result (`accepted`, `rejected` or `noop`), reason, targets, model revision and whether a placement request was issued.
 
 ## Inspect commands
@@ -59,6 +59,7 @@ qdbus6 org.kde.kglobalaccel /component/kwin org.kde.kglobalaccel.Component.invok
 | `windows` | Windows the adapter tracks. |
 | `contexts` | One entry per screen, desktop and activity: layout, member count, model revision and applied revision. |
 | `configRevision` | Increases with every configuration attempt that differs from the previous input. |
+| `shortcuts` | The startup shortcut check: `state` (`pending`, `done` or `unavailable`) and the number of `conflicts` ([details](SHORTCUTS.md#conflict-report)). |
 
 A healthy idle session shows no change between two dumps taken a few seconds apart. Measured: 3 s of idle produced no flushes, deadlines or writes.
 
@@ -87,7 +88,7 @@ Try it if a window seems stuck outside the layout after an unusual sequence. If 
 
 ## Configuration does not change
 
-1. **Make KWin re-read the file.** Apply in the settings dialog does not notify the script, and the *Reload configuration* shortcut alone re-reads KWin's cached copy of `kwinrc` (both measured, [details](INSTALL.md#applying-settings-changes)). Run `qdbus6 org.kde.KWin /KWin reconfigure`, or disable and re-enable Plastile in KWin Scripts.
+1. **Make KWin re-read the file.** Apply in the settings dialog does not notify the script (observed source and measured, [details](INSTALL.md#applying-settings-changes)). Press *Reload configuration*, which asks KWin to re-read `kwinrc`, or run `qdbus6 org.kde.KWin /KWin reconfigure`. At `info`, `configuration reload requested` confirms the request was made; `KWin reconfigure request failed` (a warning) means KWin could not be asked, and only its cached copy was re-read.
 2. **Look for a rejection.** Search the log for `plastile error configuration rejected; keeping previous revision [...]`. The list gives each problem with its path. Fix all of them: one error rejects the whole revision.
 3. **Check for typos.** A mistyped flat key in `[Script-plastile]` is ignored without any message: KWin lets a script read keys only by name, so Plastile cannot see keys it does not know. Compare the names with the table in [CONFIGURATION](CONFIGURATION.md#flat-keys). Unknown keys inside the JSON are errors, logged with their path.
 4. **Confirm activation.** At `info`, `configuration activated {"revision": N}` confirms a change was taken. An unchanged configuration deliberately produces no new revision and no log line.
@@ -125,7 +126,7 @@ Check KWin's Window Rules and disable other tiling scripts. Then compare two cou
 
 - **Script not running:** shortcuts work only while the script is enabled. Check KWin Scripts and look for `plastile info started` in the log.
 - **Old defaults:** earlier versions bound *Suspend/resume* to `Meta+Shift+S` (taken by Spectacle) and *Grow*/*Shrink* to `Meta+Shift+=` / `Meta+Shift+-`, which never arrive as registered on a US keymap. The defaults are now `Meta+Ctrl+S`, `Meta+Ctrl+=` and `Meta+Ctrl+-` (measured to reach Plastile; [details](SHORTCUTS.md#default-bindings-measured-with-real-key-presses)). A binding you set yourself is kept by KGlobalAccel.
-- **Your own bindings:** a key you had already bound to something else will most likely go to that other action. Pick another key for the Plastile command.
+- **Your own bindings:** a key you had already bound to something else goes to that other action (measured for a KWin action bound to `Meta+Shift+H`). Look for `plastile warn shortcut conflicts:` in the log; it names the key and the other action ([conflict report](SHORTCUTS.md#conflict-report)). Pick another key for one of them.
 - **Script disabled:** KGlobalAccel still accepts the shortcut and nothing runs (measured). That is expected.
 - **Suspended:** layout commands are rejected with `tiling suspended` (visible at `debug`).
 
@@ -134,7 +135,7 @@ Check KWin's Window Rules and disable other tiling scripts. Then compare two cou
 | Limitation | Detail | Status |
 |---|---|---|
 | Per-session layout changes are not persisted | Layout choices made with the layout shortcuts, master ratio and count changes, BSP structure and ratios, and float toggles live in memory. They are lost when KWin restarts or the script reloads. The script API offers no supported write path (`KWin.readConfig` only), so there is nothing to save them to. Put lasting choices in the configuration as `defaults` or `overrides`. | By design for now; a persistence path is a later milestone |
-| Apply in the settings dialog does not reach the running script | `ScriptingConfig::reload()` is a TODO in kwin v6.7.5, and the *Reload configuration* shortcut reads KWin's cached `kwinrc`. Use `qdbus6 org.kde.KWin /KWin reconfigure`, or disable and enable the script. | Observed source; measured |
+| Apply in the settings dialog alone does not reach the running script | `ScriptingConfig::reload()` is a TODO in kwin v6.7.5. Press *Reload configuration* after Apply: it asks KWin to re-read `kwinrc`, which also re-reads KWin's other settings. | Observed source; measured |
 | Default shortcuts tested on one keymap | All 20 defaults reach Plastile with real key presses on the default (US) keymap in a nested session; other layouts and installed software (Spectacle is not installed in the test sandbox) are not covered. | Measured (nested, libei) |
 | Activities untested | The matcher and context key include the activity, but every test ran with the single default activity (no Activities service in nested sessions). Switching activities with tiled windows on each is unverified. | Untested |
 | Physical session unvalidated | All measurements come from nested `kwin_wayland --virtual` sessions: no plasmashell panels, real monitors or everyday applications, and no mixed refresh rates. | Untested |
@@ -142,8 +143,9 @@ Check KWin's Window Rules and disable other tiling scripts. Then compare two cou
 | Windows that ignore sizes are corrected at most twice | A client that refuses or alters the requested size is re-requested at most twice. It is then left alone with `exception` set and the reason shown in *Explain*. A client that accepts a larger size than requested has that size learned as its minimum, and the layout re-solves around it. A client that settles up to 32 px smaller is accepted as it is, and one that never answers is not learned from (unit-tested with mock clients). | Measured; by design |
 | Only `float-new` overflow | When windows cannot fit above their minimum sizes, the newer ones that do not fit float (and a window too large for the area on its own floats by itself). There is no stack-in-leaf or new-desktop alternative. | By design for now |
 | One `ratioStep` in the dialog | The dialog's grow/shrink step drives both master/stack and BSP. Use the JSON document for different steps. | By design |
-| Rules have no context matchers | A rule cannot depend on the screen or desktop a window is on, and overrides cannot change rules. | Not implemented |
-| Rule `insert` and `border` actions | `border` is covered by a unit test only; `insert` by validation only. | Partly untested |
+| Rules cannot move windows | Rules match the screen, desktop and activity a window is on, but cannot send it elsewhere, set a layout or choose another overflow policy; these actions are rejected with the alternative named ([CONFIGURATION](CONFIGURATION.md#rules)). Overrides cannot change rules. | By design for now |
+| Rule `insert` action | `border`, `mode`, `minSize` and the context matchers are covered by nested scenarios; `insert` only by validation. | Partly untested |
+| Shortcut conflict report is a snapshot | It runs at load and on *Reload configuration*, not when you rebind a key in System Settings. | By design |
 | Three or more outputs | Two virtual outputs were tested, not more. | Untested |
 | Package discovery after install | A package installed while KWin was running was found by `Scripting.start` only after about 20 s (one nested run). Retry, or log out and in, if Plastile does not appear. | Measured (n=1) |
 | Shortcut entries outlive the script | `kglobalshortcutsrc` keeps the `plastile.*` entries after unload or removal. | Measured; KWin behaviour |

@@ -4,7 +4,7 @@
 
 **Where it lives.** Everything is in `~/.config/kwinrc` under `[Script-plastile]`, written by the settings dialog or by hand ([INSTALL](INSTALL.md#4-settings-dialog)).
 
-**When changes take effect.** After a KWin reconfigure (`qdbus6 org.kde.KWin /KWin reconfigure`) or when the script is (re)enabled. The dialog's Apply alone does **not** reach the running script, and neither does the *Reload configuration* shortcut on its own ([measured, see INSTALL](INSTALL.md#applying-settings-changes)).
+**When changes take effect.** After *Plastile: Reload configuration*, which asks KWin to re-read `kwinrc`; after any other KWin reconfigure (`qdbus6 org.kde.KWin /KWin reconfigure`); or when the script is (re)enabled. The dialog's Apply alone does **not** reach the running script ([measured, see INSTALL](INSTALL.md#applying-settings-changes)).
 
 ## Flat keys
 
@@ -275,9 +275,10 @@ It also records the reason text and, when a rule decided the mode, the ids of th
 
 ### Seeing why a window was classified
 
-1. Set `diagnostics` to `info` or `debug`; the explanation is logged at `info` level.
-2. Bind **Plastile: Explain active window (log)** to a key ([SHORTCUTS](SHORTCUTS.md#rebinding)), or invoke it from a terminal.
-3. Watch the log and trigger the command with the window focused:
+**Plastile: Explain active window (log)** (unbound; [bind it](SHORTCUTS.md#rebinding) or invoke it from a terminal) logs the explanation of the focused window as one line, with the fields below. This needs `diagnostics` at `info` or `debug`.
+
+
+To read the log line:
 
 ```sh
 journalctl --user -f | grep plastile
@@ -304,6 +305,7 @@ The line is `plastile info explain {...}` with these fields:
 | `exception` | Why Plastile gave up on the window, for example `did not reach its target after bounded corrections` or `overflow: ...`. |
 | `nativeTile` | Whether KWin's native tile holds the window. |
 | `nativeYield` | Whether a native tile action made Plastile yield the window. It stays yielded after KWin releases the tile, until *Adopt natively tiled window* or *Toggle floating*. |
+| `shortcutConflicts` | Present only when the startup shortcut check found conflicts: each `key`, the Plastile `command` and the `others` holding that key ([SHORTCUTS](SHORTCUTS.md#conflict-report)). |
 
 **Where the log goes.** In the nested tests, the line was read from the compositor's captured stderr. Without `QT_FORCE_STDERR_LOGGING`, Qt sends script log output to the user journal (observed during environment discovery, [ENVIRONMENT](../status/ENVIRONMENT.md)). Reading it with `journalctl` in a physical Plasma session is untested ([TROUBLESHOOTING](TROUBLESHOOTING.md#reading-the-log)).
 

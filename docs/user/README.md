@@ -125,7 +125,7 @@ Plastile does not fight you or the application indefinitely:
 - **Interactive move:** dragging a tile re-tiles nothing while you drag. Dropping it on another tile swaps the two; dropping it anywhere else snaps it back. Meta+right-drag resizing moves the shared divider.
 - **Applications that resize themselves** or refuse the requested size are corrected at most twice per target. Plastile then leaves them alone and records why (see *Explain active window*). A client that settles at a larger size than requested has that size learned as its minimum, and the layout is re-solved around it. A client that settles up to 32 px smaller (a terminal sizing itself in character cells) is accepted as it is.
 
-Plastile never sets a window maximized, minimized, fullscreen or kept-above to make a layout fit. It never changes KWin's focus policy and never moves the cursor. The window state it writes is limited to: frame geometry, activation and raising (focus commands, monocle), the output and desktop (send commands), releasing a native quick tile (adopt), and the border, when a rule asks for `border` (unit-tested only).
+Plastile never sets a window maximized, minimized, fullscreen or kept-above to make a layout fit. It never changes KWin's focus policy and never moves the cursor. The window state it writes is limited to: frame geometry, activation and raising (focus commands, monocle), the output and desktop (send commands), releasing a native quick tile (adopt), and the border, when a rule asks for `border` (measured in nested KWin).
 
 ## Where this project is going
 

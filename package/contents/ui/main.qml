@@ -26,6 +26,25 @@ Item {
         }
     }
 
+    // ---- D-Bus calls (T26 shortcut report, D9 reload) ----
+    // One DBusCall (org.kde.kwin 3.0, asynchronous) per request, destroyed with its reply;
+    // calls still pending at unload are destroyed with this root, so no reply outlives it.
+    Component {
+        id: busCall
+        DBusCall {
+            property var done: null
+            property var fail: null
+            onFinished: function (reply) { var f = done; destroy(); if (f) f(reply); }
+            onFailed: { var f = fail; destroy(); if (f) f(); }
+        }
+    }
+    function dbus(call, done, fail) {
+        var c = busCall.createObject(root, { service: call.service, path: call.path, dbusInterface: call.iface,
+                                             method: call.method, done: done, fail: fail });
+        c.call();
+    }
+    // ---- end T26/D9 ----
+
     Component.onCompleted: {
         runtime = Bundle.createRuntime({
             workspace: Workspace,
@@ -35,6 +54,7 @@ Item {
             setDeadline: function (ms) { deadline.interval = ms; deadline.restart(); },
             clearDeadline: function () { deadline.stop(); },
             print: function (line) { console.info(line); },
+            dbus: root.dbus,
         });
     }
 

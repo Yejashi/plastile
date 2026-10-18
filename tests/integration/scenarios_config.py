@@ -1,4 +1,4 @@
-"""Configuration scenarios (T25, T26, T28, D9; TEST_MATRIX Q02, Q04, Q08).
+"""Configuration scenarios (T25, T26, D9; TEST_MATRIX Q02, Q04, Q08).
 
 Geometry comes from the independent oracle (one-shot KWin scripts reading frameGeometry).
 Plastile's log is read only for what it reports about itself (explanations, the shortcut
@@ -8,10 +8,12 @@ geometry claim.
 from __future__ import annotations
 
 import json
+import re
+import subprocess
 import time
 from pathlib import Path
 
-from harness import Session, near, tiling_errors
+from harness import Input, Session, evidence_file, near, tiling_errors
 from scenarios import Checks, scenario
 from scenarios_classify import brief, explain, rejected
 
@@ -99,3 +101,162 @@ def rules_context(out: Path, c: Checks):
           and (e1.get("decision") or {}).get("ruleIds") == ["second-output-floats"], brief(e1))
         ok, warn = no_errors(s)
         c("no model errors or JS exceptions", ok, warn)
+
+
+# ------------------------------------------------------------------ D9 / Q04
+def kwriteconfig(s: Session, key: str, value: str) -> None:
+    """Change [Script-plastile] the way the settings dialog does: kwinrc only, no change notification."""
+    r = subprocess.run(["kwriteconfig6", "--file", "kwinrc", "--group", "Script-plastile", "--key", key, value],
+                       env=s.kw.env(), capture_output=True, text=True, timeout=15)
+    if r.returncode != 0:
+        raise RuntimeError(f"kwriteconfig6 failed: {r.stderr.strip()}")
+
+
+def inner_gap(s: Session) -> float:
+    f = s.frames()
+    a, b = sorted((f["plastile-fixture 1"]["frame"], f["plastile-fixture 2"]["frame"]), key=lambda r: r["x"])
+    return b["x"] - (a["x"] + a["width"])
+
+
+@scenario("reload-config-D9-Q04")
+def reload_config(out: Path, c: Checks):
+    """Reload configuration after a dialog-style kwinrc write; a storm of reloads: one engine, one activation."""
+    import release
+    from scenarios_package import STARTED, PackagedSession
+    zip_path = Path(release.build(out / "dist")["path"])
+    ev: dict = {}
+    with PackagedSession(out, zip_path) as s:
+        # Autoloaded from the installed, enabled package: KWin's reconfigure also runs
+        # Scripting::start, which must not load it a second time.
+        s.kw.wait_log(STARTED, 30, 0)
+        s.spawn(1); s.spawn(2)
+        base = s.settle()
+        names0 = len(s.kw.shortcut_names())
+        c("setup: default inner gap 8 (oracle)", abs(inner_gap(s) - 8) <= 0.5, inner_gap(s))
+
+        kwriteconfig(s, "gapInner", "20")
+        off = s.kw.mark()
+        t0 = time.monotonic()
+        s.cmd("runtime.reload-config")
+        try:
+            s.kw.wait_log(r"plastile info configuration activated", 5, off)
+            activated_after = round(time.monotonic() - t0, 3)
+        except Exception:  # noqa: BLE001
+            activated_after = None
+        time.sleep(0.6)
+        s.settle()
+        acts = s.log_lines(r"plastile info configuration activated", off)
+        ev["single"] = {"activatedAfterS": activated_after, "activations": len(acts), "gap": inner_gap(s)}
+        c("D9: after a kwinrc write without notification, one reload command activates the new gap 20 (oracle)",
+          abs(inner_gap(s) - 20) <= 0.5, ev["single"])
+        c("D9: exactly one activation for one reload", len(acts) == 1, acts)
+        c("D9: the command asked KWin to reconfigure (logged request)",
+          bool(s.log_lines(r"plastile info configuration reload requested", off)), None)
+
+        kwriteconfig(s, "gapInner", "12")
+        off = s.kw.mark()
+        t0 = time.monotonic()
+        for _ in range(20):
+            s.cmd("runtime.reload-config")
+        storm_s = round(time.monotonic() - t0, 3)
+        time.sleep(1.2)
+        cc = s.settle()
+        acts = s.log_lines(r"plastile info configuration activated", off)
+        started = s.log_lines(STARTED, 0)
+        stopped = s.log_lines(r"plastile info stopped", 0)
+        names1 = len(s.kw.shortcut_names())
+        ev["storm"] = {"requests": 20, "sendSeconds": storm_s, "activations": len(acts), "gap": inner_gap(s),
+                       "started": len(started), "stopped": len(stopped),
+                       "connections": [base["connections"], cc["connections"]],
+                       "windows": [base["windows"], cc["windows"]], "shortcutNames": [names0, names1]}
+        c("Q04: 20 rapid reloads activate the new gap 12 once (oracle + one activation)",
+          abs(inner_gap(s) - 12) <= 0.5 and len(acts) == 1, ev["storm"])
+        c("Q04: one engine: started once, never stopped, script still loaded", len(started) == 1 and not stopped
+          and s.kw.is_loaded("plastile"), ev["storm"])
+        c("Q04: connection and window counts unchanged, one shortcut per command",
+          cc["connections"] == base["connections"] and cc["windows"] == base["windows"] and names0 == names1, ev["storm"])
+        ok, warn = no_errors(s)
+        c("no model errors or JS exceptions", ok, warn)
+    evidence_file("reload-config-D9-Q04.json").write_text(json.dumps(ev, indent=1) + "\n")
+
+
+# ------------------------------------------------------------------ T26 / Q08
+PREBOUND = "[kwin]\nWindow Maximize=Meta+Shift+H,Meta+PgUp,Maximize Window\n"
+
+
+def shortcut_entry(s: Session, action: str) -> str | None:
+    rc = s.kw.root / "config/kglobalshortcutsrc"
+    if not rc.exists():
+        return None
+    group = ""
+    for line in rc.read_text().splitlines():
+        if line.startswith("["):
+            group = line.strip("[]")
+        elif group == "kwin" and line.startswith(action + "="):
+            return line.split("=", 1)[1]
+    return None
+
+
+def no_errors_except(s: Session, allowed: str) -> tuple[bool, list[str]]:
+    warn = [ln for ln in s.log_lines(r"plastile (error|warn)|TypeError|ReferenceError") if not re.search(allowed, ln)]
+    return s.counters()["counters"]["errors"] == 0 and not warn, warn[:3]
+
+
+@scenario("shortcuts-conflict-Q08")
+def shortcuts_conflict(out: Path, c: Checks):
+    """A user binding on a Plastile default key is reported (log, counters, explain) and left in place."""
+    ev: dict = {}
+    s = Session(out / "prebound", config={"diagnostics": "debug"})
+    s.kw.prepare = lambda kw: (kw.root / "config/kglobalshortcutsrc").write_text(PREBOUND)
+    with s:
+        s.spawn(1); s.spawn(2)
+        off = s.kw.mark()
+        s.load()
+        try:
+            line = s.kw.wait_log(r"plastile warn shortcut conflicts: ", 5, off)[-1]
+        except Exception:  # noqa: BLE001
+            line = ""
+        ev["log"] = line.split("plastile ", 1)[-1] if line else None
+        c("T26: startup reports the conflict in one warning naming the key and both actions",
+          "Meta+Shift+H" in line and "Focus left" in line and "Maximize Window" in line, ev["log"])
+        s.settle()
+        cz = s.counters()
+        c("T26: counters expose the report (done, one conflict)", cz.get("shortcuts") == {"state": "done", "conflicts": 1},
+          cz.get("shortcuts"))
+        e = explain(s, "plastile-fixture 1")
+        sc = e.get("shortcutConflicts") or []
+        c("T26: explain output carries the conflict (key, command, other action)",
+          len(sc) == 1 and sc[0].get("key") == "Meta+Shift+H" and sc[0].get("command") == "plastile.focus.left"
+          and [o.get("action") for o in sc[0].get("others", [])] == ["Window Maximize"], sc)
+        held = shortcut_entry(s, "Window Maximize")
+        mine = shortcut_entry(s, "plastile.focus.left")
+        ev["registry"] = {"Window Maximize": held, "plastile.focus.left": mine}
+        c("Q08: the user's binding is preserved (Window Maximize keeps Meta+Shift+H)",
+          held is not None and held.split(",")[0].split("\t")[0] == "Meta+Shift+H", ev["registry"])
+        # Which action KGlobalAccel runs for the shared key (recorded, not asserted).
+        try:
+            inp = Input(s)
+            try:
+                s.act("plastile-fixture 1", "workspace.activeWindow = w")
+                off = s.kw.mark()
+                inp.do("key 125 down", "key 42 down", "key 35 down", "key 35 up", "key 42 up", "key 125 up")
+                time.sleep(0.6)
+                ev["pressMetaShiftH"] = {
+                    "plastileDispatched": bool(s.log_lines(r'plastile debug command \{"command":"plastile.focus.left"', off)),
+                    "fixture1MaximizeMode": s.frames()["plastile-fixture 1"]["maximizeMode"]}
+            finally:
+                inp.close()
+        except Exception as exc:  # noqa: BLE001
+            ev["pressMetaShiftH"] = f"not measured: {exc}"
+        ok, warn = no_errors_except(s, r"shortcut conflicts")
+        c("no model errors or JS exceptions", ok, warn)
+    with Session(out / "control") as s:
+        off = s.kw.mark()
+        s.load()
+        try:
+            ctrl = s.kw.wait_log(r"plastile info shortcut check: no conflicts", 5, off)[-1]
+        except Exception:  # noqa: BLE001
+            ctrl = ""
+        ev["control"] = ctrl.split("plastile ", 1)[-1] if ctrl else None
+        c("control: without the user binding the check reports no conflicts", bool(ctrl), ev["control"])
+    evidence_file("shortcuts-conflict-Q08.json").write_text(json.dumps(ev, indent=1) + "\n")

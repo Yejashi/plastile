@@ -10,6 +10,7 @@ import {
 } from "../config/index.ts";
 import { KwinAdapter } from "../adapters/kwin/adapter.ts";
 import type { KKWin, KOptions, KQt, KSignal, KWorkspace } from "../adapters/kwin/kwinTypes.ts";
+import { describeConflicts, ShortcutAudit, type Bus, type ShortcutReport } from "./shortcuts.ts";
 
 export const VERSION = "0.1.0";
 export { COMMANDS };
@@ -26,6 +27,9 @@ export interface RuntimeEnv {
   /** Measurement builds only (probes/perf): CLOCK_MONOTONIC ns and per-command timing logs. */
   readonly clockNs?: () => number;
   readonly perf?: boolean;
+  // ---- configuration reload and shortcut report (T26, D9) ----
+  /** Asynchronous session-bus call (KWin's DBusCall, one object per call); absent: features that need it are off. */
+  readonly dbus?: Bus;
 }
 
 type Level = "error" | "warn" | "info" | "debug";
@@ -124,17 +128,53 @@ export function createRuntime(env: RuntimeEnv): Runtime {
     if (engine.isAlive() && snapshot && snapshot.usesDesktopNames) engine.configure(options(snapshot));
   };
 
+  // ---- configuration reload and shortcut report (T26, D9) ----
+  const bus = env.dbus;
+  // Shortcut report: read-only, once per load (and per reload request), on a later event-loop
+  // turn than the start, one D-Bus request in flight at a time; never on the command path.
+  let shortcuts: ShortcutReport | null = null;
+  const audit = bus ? new ShortcutAudit(bus, COMMANDS, (r) => {
+    if (!engine.isAlive()) return;
+    shortcuts = r;
+    if (r.state === "unavailable") log("info", `shortcut check unavailable: ${r.reason}`);
+    else if (r.conflicts.length > 0) {
+      log("warn", `shortcut conflicts: ${describeConflicts(r.conflicts)} (change one in System Settings, Keyboard, Shortcuts)`);
+    } else log("info", "shortcut check: no conflicts", { components: r.components, actions: r.actions });
+  }) : null;
+  const startAudit = (): void => { if (audit && engine.isAlive()) audit.start(); };
+  if (audit) env.qt.callLater(startAudit);
+  // Reload: the settings dialog's Apply does not reach a script, and readConfig reads KWin's
+  // cached kwinrc, so re-reading alone changes nothing (KWin v6.7.5 genericscriptedconfig.cpp
+  // ScriptingConfig::reload() is a TODO). Ask KWin to reconfigure instead: an asynchronous
+  // D-Bus call whose handler only (re)starts KWin's 200 ms reconfigure timer; KWin then
+  // re-reads kwinrc and emits Options.configChanged, which activates through onConfig. A
+  // burst of requests restarts that timer: one re-read, one activation (Q04).
+  const reloadConfig = (): void => {
+    if (!bus) { onConfig(); return; }
+    log("info", "configuration reload requested");
+    bus({ service: "org.kde.KWin", path: "/KWin", iface: "org.kde.KWin", method: "reconfigure" }, () => {}, () => {
+      if (!engine.isAlive()) return;
+      log("warn", "KWin reconfigure request failed; re-reading KWin's cached configuration");
+      onConfig();
+    });
+    env.qt.callLater(startAudit);
+  };
+  const explainWindow = (): void => {
+    const a = adapter.activeWindow();
+    const x = a ? engine.explain(a) : null;
+    const conflicts = shortcuts && shortcuts.conflicts.length > 0 ? shortcuts.conflicts : null;
+    log("info", "explain", x ? (conflicts ? { ...x, shortcutConflicts: conflicts } : x) : { error: "no active window" });
+  };
+  // ---- end T26/D9 ----
+
   const dispatch = (id: string): CommandResult | null => {
     if (!engine.isAlive()) return null;
-    if (id === "plastile.inspect.explain-window") {
-      const a = adapter.activeWindow();
-      log("info", "explain", a ? engine.explain(a) : { error: "no active window" });
-      return null;
-    }
+    if (id === "plastile.inspect.explain-window") { explainWindow(); return null; }
     if (id === "plastile.inspect.counters") {
       env.print("plastile counters " + safeJson({ counters: engine.counters, outstanding: engine.outstandingCount(),
         connections: adapter.connectionCount(), windows: adapter.windowCount(), contexts: engine.contextSummary(),
-        configRevision: snapshot?.revision ?? null }));
+        configRevision: snapshot?.revision ?? null,
+        shortcuts: shortcuts ? { state: shortcuts.state, conflicts: shortcuts.conflicts.length } : null }));
       return null;
     }
     if (id === "plastile.inspect.dump-trace") {
@@ -145,7 +185,7 @@ export function createRuntime(env: RuntimeEnv): Runtime {
       engine.reconcile(adapter.liveSnapshots());
       return null;
     }
-    if (id === "plastile.runtime.reload-config") { onConfig(); return null; }
+    if (id === "plastile.runtime.reload-config") { reloadConfig(); return null; }
     const clock = env.perf ? env.clockNs : undefined;
     const t0 = clock ? clock() : 0;
     engine.lastTiming = null;
@@ -170,6 +210,8 @@ export function createRuntime(env: RuntimeEnv): Runtime {
       if (fn) fn();
     },
     shutdown: () => {
+      // Pending D-Bus replies go first: none may reach a stopped engine.
+      if (audit) audit.cancel();
       // Invalidate first (engine stops deferred work and restores owned state), then disconnect.
       engine.stop();
       pendingDeadline = null;

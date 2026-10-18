@@ -108,23 +108,24 @@ It has **not** been clicked through in a live System Settings window.
 
 That second point matters. Plastile reads its settings through `KWin.readConfig`, which reads KWin's **cached** `kwinrc` (observed source: `AbstractScript::config()` in `src/scripting/scripting.cpp`). KWin re-reads the file only on a reconfigure (`Workspace::slotReconfigure`), on `Scripting.start`, or when the writer sends a KConfig change notification.
 
-Measured in nested KWin 6.7.5, with `kwinrc` changed from outside KWin the way the dialog does it:
+An emulation of the dialog's save path (`tools/settings-check`, the same KConfigLoader save) sent no change notification on the session bus.
 
-| After writing the new values, you... | Result |
+**So, after Apply, press Plastile: Reload configuration** (unbound by default; bind it in the shortcut settings, or run it from a terminal with `qdbus6 org.kde.kglobalaccel /component/kwin org.kde.kglobalaccel.Component.invokeShortcut plastile.runtime.reload-config`). The command asks KWin to reconfigure, through the same asynchronous D-Bus call that `qdbus6 org.kde.KWin /KWin reconfigure` makes. KWin re-reads `kwinrc` about 200 ms later (its own reconfigure timer), and Plastile activates the new values when KWin reports them. Like the other KDE settings pages' Apply, this makes KWin re-read all of its settings, not only Plastile's.
+
+Measured in nested KWin 6.7.5 (scenario `reload-config-D9-Q04`), with the package installed and enabled, after `kwriteconfig6` changed `gapInner` without a change notification:
+
+| You... | Result |
 |---|---|
-| press **Plastile: Reload configuration** only | **No effect.** The cached old values are read again, so nothing changes. |
-| run `qdbus6 org.kde.KWin /KWin reconfigure` | New values active. Plastile reloads on its own. |
-| call `org.kde.kwin.Scripting.start`, then press *Reload configuration* | New values active. |
-| write with `kwriteconfig6 --notify`, then press *Reload configuration* | New values active. |
+| press *Reload configuration* once | The new gap was active 0.3 s later. One activation. |
+| press it 20 times in a row (70 ms) | One activation. KWin coalesces the requests into one re-read. |
+| either of the above | The script was not loaded a second time (KWin's reconfigure also runs `Scripting.start`, which skips loaded scripts): one `started` line, the same connection and window counts, one shortcut per command. |
 
-An emulation of the dialog's save path (`tools/settings-check`, the same KConfigLoader save) sent no change notification on the session bus. The *Reload configuration* shortcut after it did not activate the new values, and a reconfigure did.
+Earlier versions' *Reload configuration* only re-read KWin's cached copy and changed nothing after Apply. If the D-Bus request fails, the command still re-reads the cached copy and logs a warning.
 
-So, after **Apply** in the settings dialog, do one of these:
+Other paths that work:
 
-1. Run `qdbus6 org.kde.KWin /KWin reconfigure` in a terminal (measured). This makes KWin re-read all of its settings, not only Plastile's, as other KDE settings pages also do.
+1. Run `qdbus6 org.kde.KWin /KWin reconfigure` in a terminal (measured). Plastile reloads on its own.
 2. Untick Plastile in KWin Scripts and Apply, then tick it and Apply again. The re-enabled script reads the file fresh. This is an inference from the measured pieces: `Scripting.start` re-reads `kwinrc`, and a newly loaded script reads its settings at start.
-
-The *Reload configuration* shortcut is useful only after KWin has re-read `kwinrc`: for example, after `kwriteconfig6 --notify` edits, or after something else triggered a reconfigure.
 
 Whichever path you use, the new configuration is validated first. If it is invalid, the previous configuration stays active and the errors are logged ([TROUBLESHOOTING](TROUBLESHOOTING.md#reading-the-log)). An unchanged configuration is not a new revision and changes nothing.
 
