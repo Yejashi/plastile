@@ -1,10 +1,16 @@
 // MEASUREMENT-ONLY root (probes/perf): the production bundle plus the test clock.
 // Never installed. Requires QML_IMPORT_PATH=build/measure/qml (nested sessions).
+// Like the production root (package/contents/ui/main.qml) it owns the deadline Timer, one
+// ShortcutHandler per command and the persistence store (Persistence.qml: the plastile-state
+// helper over asynchronous D-Bus), so a command's work, persistence bookkeeping included, is
+// the production path. It has no inspector, zones overlay or D-Bus reload hooks; none of
+// them runs on a measured command.
 import QtQuick
 import QtQml
 import org.kde.kwin
 import Plastile.Measure
 import "../../package/contents/code/plastile.mjs" as Bundle
+import "../../package/contents/ui" as Production
 
 Item {
     id: root
@@ -57,6 +63,24 @@ Item {
         }
     }
 
+    // Clock calibration in this engine: back-to-back reads give the cost of one read (the
+    // effective resolution of every span above); clock_getres gives the kernel's.
+    ShortcutHandler {
+        name: "plastile-measure-calibrate"
+        text: "Plastile measurement: clock calibration"
+        sequence: ""
+        onActivated: {
+            var n = 5000, d = [], prev = MonotonicClock.nowNs();
+            for (var i = 0; i < n; ++i) { var t = MonotonicClock.nowNs(); d.push(t - prev); prev = t; }
+            d.sort(function (a, b) { return a - b; });
+            console.info("plastile-measure calibrate " + JSON.stringify({ resolutionNs: MonotonicClock.resolutionNs(), n: n,
+                min: d[0], p50: d[n >> 1], p99: d[Math.floor(n * 0.99)], max: d[n - 1], nowNs: prev,
+                exactAsDouble: prev < 9007199254740992 }));
+        }
+    }
+
+    Production.Persistence { id: persistence }
+
     Component.onCompleted: {
         Options.configChanged.connect(root.markConfigChanged);
         runtime = Bundle.createRuntime({
@@ -73,6 +97,7 @@ Item {
             },
             clockNs: root.instrumented ? function () { return MonotonicClock.nowNs(); } : undefined,
             perf: root.instrumented,
+            state: persistence,
         });
         console.info("plastile-measure instrumented " + root.instrumented);
     }

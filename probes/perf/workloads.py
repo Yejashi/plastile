@@ -15,11 +15,11 @@ Plastile's own claims; Plastile counters gate the amount of work only.
   instr  n=16 ratio workload, diagnostics=off vs diagnostics=debug
   teardown  the measurement root's own marker connection does not survive unload
 
-The nested virtual backend is not a physical measurement, and the machine is
-shared with other agents while this runs: numbers are indicative, not budgets.
+The nested virtual backend is not a physical measurement. Machine state (load, governor, busy
+processes, other nested sessions) is recorded at the start and end of every run.
 
 Usage: python3 probes/perf/workloads.py [--only p05,p07,p12,p13,instr,teardown] [--samples 200] [--seed 1]
-                                       [--counts 4,8,16,32] [--instr-order off,debug]
+                                       [--counts 4,8,16,32] [--instr-order off,debug] [--out DIR]
 """
 from __future__ import annotations
 
@@ -40,18 +40,18 @@ from harness import PLUGIN, Session, delta, near, overlaps, tiling_errors  # noq
 
 PERF = re.compile(r"plastile perf (\{.*\})$")
 LOG_TS = re.compile(r"^\s*(\d+\.\d+) ")
-# The measurement module must be built against the KWin under test's Qt: build/measure for
-# the Ubuntu sandbox (KWin 6.7.5); tools/sandbox/nix/measure.nix for KWin 6.8, selected with
-# PLASTILE_MEASURE_QML (run.sh passes PLASTILE_* through).
+# The measurement module must be built against the Qt of the KWin under test (build/measure
+# for the host or the Ubuntu sandbox). PLASTILE_MEASURE_QML selects another build, e.g. one made
+# for another KWin's Qt; none is provided for the KWin 6.8 Nix environment yet.
 MEASURE = Path(os.environ.get("PLASTILE_MEASURE_QML") or ROOT / "build/measure/qml")
+GAP = 8  # default gaps; the oracle checks margins >= GAP
 
 
 def measure_env() -> dict:
     """QML_IMPORT_PATH for the nested KWin: the measurement module first, then whatever the
-    environment already provides (the Nix environment's QML modules live there)."""
+    environment already provides (a Nix environment's QML modules live there)."""
     paths = [str(MEASURE)] + [p for p in os.environ.get("QML_IMPORT_PATH", "").split(":") if p]
     return {"QML_IMPORT_PATH": ":".join(paths)}
-GAP = 8  # default gaps; the oracle checks margins >= GAP
 
 
 def q(xs):
@@ -646,11 +646,16 @@ def main() -> int:
     ap.add_argument("--seed", type=int, default=1)
     ap.add_argument("--counts", default="4,8,16,32")
     ap.add_argument("--instr-order", default="off,debug", help="session order for the instrumentation comparison")
+    ap.add_argument("--out", type=Path, default=None, help="artifact directory (default artifacts/perf/workloads/<stamp>)")
     args = ap.parse_args()
     stamp = time.strftime("%Y%m%dT%H%M%S")
-    out = ROOT / "artifacts/perf/workloads" / stamp
+    out = args.out or ROOT / "artifacts/perf/workloads" / stamp
     out.mkdir(parents=True, exist_ok=True)
-    rev = subprocess.run(["git", "-C", str(ROOT), "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip()
+    sys.path.insert(0, str(HERE))
+    import perfcommon
+    meta = perfcommon.git_meta()
+    rev = meta["implementationCommit"]
+    machine0 = perfcommon.machine_state()
     kwin = subprocess.run(["kwin_wayland", "--version"], capture_output=True, text=True).stdout.strip()
     load1 = Path("/proc/loadavg").read_text().split()[0]
     res = Results()
@@ -673,9 +678,10 @@ def main() -> int:
             res.check(f"{name}: completed without exception", False, str(exc)[-300:])
     load2 = Path("/proc/loadavg").read_text().split()[0]
     summary = {
-        "implementationCommit": rev, "kwin": kwin,
-        "layer": "nested KWin virtual backend (not physical); machine shared with other agents",
-        "loadAvg1mStartEnd": [float(load1), float(load2)],
+        "implementationCommit": rev, "implementationDirty": meta["implementationDirty"], "kwin": kwin,
+        "versions": perfcommon.versions(), "args": {k: str(v) for k, v in vars(args).items() if k != "out"},
+        "layer": "nested KWin virtual backend (not physical)",
+        "loadAvg1mStartEnd": [float(load1), float(load2)], "machineStart": machine0, "machineEnd": perfcommon.machine_state(),
         "clock": "CLOCK_MONOTONIC via the measurement module inside QV4; fixture t_ns and Python monotonic_ns are the same clock;"
                  " KWin log timestamps (%{time boot}) are ms-resolution and calibrated in logClockMinusMonotonicMs",
         "dispatchToReturnNs": "command handler entry -> return after the last frame request was issued (not presentation)",

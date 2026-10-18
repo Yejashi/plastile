@@ -92,7 +92,8 @@ for (const n of COUNTS) {
         exec.push(dt);
         writes.push(h.writes.length - w0);
         solves += e.counters.solves - s0;
-        if (e.lastTiming) solve.push(e.lastTiming.solveNs);
+        const timing = e.lastTiming as { solveNs: number } | null; // set by execute()
+        if (timing) solve.push(timing.solveNs);
       }
       h.drain();
     }
