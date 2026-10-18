@@ -1,6 +1,6 @@
 {
  "layer": "nested KWin virtual backend (not physical); package installed into the private data home",
- "implementationCommit": "cbdcb9409b25d30add263978c38c43af25ab7604",
+ "implementationCommit": "fdc92f055232c1082442dce9044bbc64cac4e756",
  "implementationDirty": false,
  "kwin": "kwin 6.7.5",
  "kcmshell6": "kcmutils 6.30.0-1",
@@ -86,6 +86,7 @@
   "closed": true,
   "kwinrcUnchanged": true,
   "logged": [],
+  "kwinConfigChanged": [],
   "alone": {
    "x": 0,
    "y": 0,
@@ -124,7 +125,7 @@
     "argv": [
      "tools/install.sh",
      "install",
-     "<repo>/artifacts/integration/20261018T092903/settings-dialog-T28/dist/plastile-0.1.0.kwinscript"
+     "<repo>/artifacts/integration/20261018T093709/settings-dialog-T28/dist/plastile-0.1.0.kwinscript"
     ],
     "rc": 0,
     "stdout": "Successfully installed <session>/data/kwin/scripts/plastile/\n\nInstalled to: <session>/data/kwin/scripts/plastile\nNothing was enabled, reloaded or restarted. KWin discovers packages when it (re)scans\nkwin/scripts; a package installed while KWin is running may not be visible until the\nscript list is refreshed (log out and in). To enable Plastile, either:\n\n  System Settings > Window Management > KWin Scripts > tick \"Plastile\" > Apply\n\nor, from a terminal in the same session:\n\n  kwriteconfig6 --file kwinrc --group Plugins --key plastileEnabled true\n  qdbus6 org.kde.KWin /Scripting org.kde.kwin.Scripting.start\n\nTo disable later, set the same key to false and run the same Scripting.start command.\nThis script prints these commands; it does not execute them.\n",
@@ -166,7 +167,7 @@
      "caption": "KWin Scripts",
      "popup": false,
      "desktops": [
-      "d444aef1-a197-4428-9b7e-6dfa402a7a5a"
+      "806f9dee-e546-466b-aa1f-bde1b899ab9f"
      ],
      "client": {
       "x": 8,
@@ -185,7 +186,7 @@
      "caption": "Configure",
      "popup": false,
      "desktops": [
-      "d444aef1-a197-4428-9b7e-6dfa402a7a5a"
+      "806f9dee-e546-466b-aa1f-bde1b899ab9f"
      ],
      "client": {
       "x": 707,
@@ -202,7 +203,7 @@
     }
    ]
   },
-  "the dialog shows kwinrc's values (master/stack, gap 8, single-window gaps on, Apply disabled)": {
+  "the dialog shows the running settings: main.xml defaults, kwinrc has none of these keys (master/stack, gap 8, single-window gaps on, Apply disabled)": {
    "pass": true,
    "detail": {
     "layout": "Master and stack",
@@ -298,7 +299,7 @@
   "Reload configuration activates the applied settings once": {
    "pass": true,
    "detail": [
-    " 72433.002 qml plastile info configuration activated {\"revision\":2}"
+    " 72918.564 qml plastile info configuration activated {\"revision\":2}"
    ]
   },
   "singleWindowGaps=false: the lone KWin Scripts window now fills the whole work area (oracle)": {
@@ -348,7 +349,7 @@
      "caption": "KWin Scripts",
      "popup": false,
      "desktops": [
-      "d444aef1-a197-4428-9b7e-6dfa402a7a5a"
+      "806f9dee-e546-466b-aa1f-bde1b899ab9f"
      ],
      "client": {
       "x": 8,
@@ -367,7 +368,7 @@
      "caption": "Configure",
      "popup": false,
      "desktops": [
-      "d444aef1-a197-4428-9b7e-6dfa402a7a5a"
+      "806f9dee-e546-466b-aa1f-bde1b899ab9f"
      ],
      "client": {
       "x": 650,
@@ -408,6 +409,7 @@
     "closed": true,
     "kwinrcUnchanged": true,
     "logged": [],
+    "kwinConfigChanged": [],
     "alone": {
      "x": 0,
      "y": 0,
@@ -422,6 +424,22 @@
     "closed": true,
     "kwinrcUnchanged": true,
     "logged": [],
+    "kwinConfigChanged": [],
+    "alone": {
+     "x": 0,
+     "y": 0,
+     "width": 1280,
+     "height": 800
+    }
+   }
+  },
+  "Cancel makes KWin re-read nothing: no configChanged reached the passive listener (oracle)": {
+   "pass": true,
+   "detail": {
+    "closed": true,
+    "kwinrcUnchanged": true,
+    "logged": [],
+    "kwinConfigChanged": [],
     "alone": {
      "x": 0,
      "y": 0,
