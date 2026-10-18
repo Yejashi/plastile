@@ -236,3 +236,39 @@ or geometry writes. While it is open it takes the keyboard like a menu; global s
 (measured). A client window could only be mistaken for it by having that exact caption with no application
 id and no process, which ordinary Wayland and X11 clients do not have. Further own windows (a zones overlay)
 must reuse the marker or extend `isOwnUi`.
+
+## ADR-017: Defer the drag drop preview; live peer resize is opt-in
+
+**Status:** accepted (2026-10-18); task T29.
+
+**Context.** BEHAVIOR §8 allows an optional lightweight insertion/swap preview during a drag and optional
+live peer updates during a shared resize, coalesced to at most one solve per display frame. The drop rule is
+already deterministic and documented: the dragged window's centre over another tile swaps the two, anywhere
+else snaps back, with one release commit (nested `drag-I01-I02`). A preview needs a Plastile-owned overlay
+window per output that takes no input, is created lazily, follows the hovered target on every frame change of
+the moved window, and is destroyed on drop, Escape, window or output removal, configuration switch and
+unload. KWin delivers no input to an ordinary internal script window but a `Qt.Popup` takes a grab
+(ADR-016); whether a non-popup internal window shows above the dragged window without affecting KWin's
+drag, and what it costs per motion event, are unmeasured. The nested virtual backend can check the overlay's
+lifetime but not what is presented, so its visual result would rest on a physical session that is not
+available. The zones layout ([ZONES](ZONES.md), M9) is building the first own-UI overlay at the same time.
+
+**Decision.** Defer the drop preview. Build live peer resize as the per-context JSON setting `liveResize`,
+default `false`: while a tile in master/stack or BSP is resized interactively, each frame change of the
+resized window marks it for the existing coalesced flush, which applies the dragged boundary to the
+committed layout state, solves once, and writes only peers whose target changed (never the resized window,
+which KWin owns while interactive). The committed state, plan and revision are untouched until release,
+which commits the boundary once as before; a cancel restores the committed slots. No timer or pointer
+sampling is involved.
+
+**Evidence.** Nested KWin 6.7.5, 2 s of libei Meta+right-drag on the master of three tiles at 60 steps/s
+(`live-resize-T29`, evidence `live-resize-T29.json`): off, 0 solves and 0 writes during the drag and one
+release solve; on, 60 solves/s and 120 frame requests/s (two peers), one solve per frame change of the
+resized window (120 frame changes, 120 live solves), no write to the resized window, and a release that
+needed one solve and no further peer write.
+
+**Consequences.** No visual hint appears while dragging; nothing exists to leak or tear down. Revisit the
+preview once the zones overlay has established an input-transparent own-UI window and its teardown, and a
+physical session can judge it, reusing that window rather than adding a second overlay path. Live resize
+costs client redraws of the peers at the resized window's commit rate; it stays opt-in until physical
+measurements show it is not perceived as lag or flicker.

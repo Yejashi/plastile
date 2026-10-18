@@ -3,7 +3,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { rect, type Rect } from "../../src/core/geometry.ts";
-import { neighbour, type Direction } from "../../src/core/navigation.ts";
+import { adjacentOutput, neighbour, outputOrder, wrapNeighbour, type Direction } from "../../src/core/navigation.ts";
 import { bsp, leaves } from "../../src/core/layouts/bsp.ts";
 import { masterStack } from "../../src/core/layouts/masterStack.ts";
 import type { WindowId } from "../../src/core/types.ts";
@@ -15,6 +15,10 @@ type Row = [from: WindowId, dir: Direction, want: WindowId | null];
 
 function table(rects: Map<WindowId, Rect>, rows: Row[]) {
   for (const [from, dir, want] of rows) assert.equal(neighbour(from, dir, rects), want, `${from} ${dir}`);
+}
+
+function wrapTable(rects: Map<WindowId, Rect>, rows: Row[]) {
+  for (const [from, dir, want] of rows) assert.equal(wrapNeighbour(from, dir, rects), want, `wrap ${from} ${dir}`);
 }
 
 test("master/stack: neighbours, ties in stable order, nothing beyond the area edges", () => {
@@ -105,4 +109,59 @@ test("randomized BSP tilings: results lie in the direction's half-plane; null on
     }
   }
   assert.ok(picks > 1000 && edges > 1000, `${picks} picks, ${edges} edge cases`);
+});
+
+test("focusWrap: continues from the far end of the same row or column, never diagonally", () => {
+  // m | s1 / s2: wrap right from a stack window returns to the master; wrap left from the
+  // master reaches the stack (s1 and s2 tie: stable order); wrap up/down cycles the stack
+  // column; the full-height master has no row/column partner above or below.
+  const three = masterStack.solve(masterStack.initial(S), input(["m", "s1", "s2"])).slots;
+  wrapTable(three, [
+    ["s1", "right", "m"], ["s2", "right", "m"], ["m", "left", "s1"], ["s2", "down", "s1"], ["s1", "up", "s2"],
+    ["m", "up", null], ["m", "down", null],
+    // Away from an edge the ordinary neighbour wins (wrap only applies at the edge).
+    ["m", "right", "s1"], ["s2", "up", "s1"], ["s2", "left", "m"],
+  ]);
+  // m | s1 / s2 / s3: the column cycles both ways.
+  const four = masterStack.solve(masterStack.initial(S), input(["m", "s1", "s2", "s3"])).slots;
+  wrapTable(four, [["s3", "down", "s1"], ["s1", "up", "s3"], ["s3", "right", "m"], ["m", "up", null]]);
+  // A 3x1 row: right from the last wraps to the first, left from the first to the last.
+  const row = new Map([["a", rect(0, 0, 100, 100)], ["b", rect(110, 0, 100, 100)], ["c", rect(220, 0, 100, 100)]]);
+  wrapTable(row, [["c", "right", "a"], ["a", "left", "c"], ["b", "right", "c"], ["a", "up", null], ["b", "down", null]]);
+  // Irregular: [a | (b / (c | d))]. Wrap right from d reaches a (it overlaps d's rows); wrap
+  // down from d reaches b, the top of d's column; wrap left from a reaches the overlapping right edge member.
+  let st = bsp.initial(S);
+  for (const [id, after] of [["a", null], ["b", "a"], ["c", "b"], ["d", "c"]] as const) {
+    st = bsp.insert(st, id, after, input(leaves(st)));
+  }
+  const r = bsp.solve(st, input(["a", "b", "c", "d"])).slots;
+  wrapTable(r, [["d", "right", "a"], ["b", "right", "a"], ["d", "down", "b"], ["c", "down", "b"], ["b", "up", "c"]]);
+  // A lone window and an unknown origin have nothing to wrap to.
+  wrapTable(new Map([["x", rect(0, 0, 10, 10)]]), [["x", "right", null], ["y", "left", null]]);
+});
+
+test("focusWrap: ties at the far end break by overlap, then stable order", () => {
+  const rects = new Map([["cur", rect(400, 0, 100, 100)], ["p", rect(0, 0, 100, 50)], ["q", rect(0, 50, 100, 50)],
+    ["far", rect(0, 300, 100, 100)]]);
+  wrapTable(rects, [["cur", "right", "p"]]);
+  const swapped = new Map([["cur", rect(400, 0, 100, 100)], ["q", rect(0, 50, 100, 50)], ["p", rect(0, 0, 100, 50)]]);
+  wrapTable(swapped, [["cur", "right", "q"]]);
+});
+
+test("cross-output order follows topology, not enumeration order", () => {
+  const o = (id: string, x: number, y: number) => ({ id, geometry: rect(x, y, 1280, 800) });
+  // Enumerated right, left, middle: topology is left, middle, right.
+  const outs = [o("R", 2560, 0), o("L", 0, 0), o("M", 1280, 0)];
+  assert.deepEqual(outputOrder(outs).map((x) => x.id), ["L", "M", "R"]);
+  const rows: Array<[string | null, 1 | -1, string]> = [
+    ["L", 1, "M"], ["M", 1, "R"], ["R", 1, "L"], ["L", -1, "R"], ["M", -1, "L"], ["R", -1, "M"],
+    [null, 1, "L"], ["gone", -1, "R"],
+  ];
+  for (const [from, step, want] of rows) assert.equal(adjacentOutput(outs, from, step)?.id, want, `${from} ${step}`);
+  // A vertical stack orders top to bottom; a negative origin sorts first; equal origins by id.
+  assert.deepEqual(outputOrder([o("low", 0, 800), o("top", 0, 0)]).map((x) => x.id), ["top", "low"]);
+  assert.deepEqual(outputOrder([o("main", 0, 0), o("left", -1920, 0)]).map((x) => x.id), ["left", "main"]);
+  assert.deepEqual(outputOrder([o("b", 0, 0), o("a", 0, 0)]).map((x) => x.id), ["a", "b"]);
+  assert.equal(adjacentOutput([o("only", 0, 0)], "only", 1), null);
+  assert.equal(adjacentOutput([], null, 1), null);
 });

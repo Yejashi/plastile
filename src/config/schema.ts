@@ -155,7 +155,7 @@ export function readFlat(s: Sink, flat: Readonly<Record<string, unknown>>): Flat
 
 const SETTINGS_KEYS = [
   "enabled", "layout", "gaps", "masterStack", "bsp", "scrolling", "zones", "overflow", "singleWindowGaps",
-  "followOnSend", "multiContextWindows", "animation",
+  "followOnSend", "focusWrap", "liveResize", "multiContextWindows", "animation",
 ];
 
 function unsupported(s: Sink, v: unknown, path: string, only: unknown): void {
@@ -255,6 +255,8 @@ export function readPatch(s: Sink, v: unknown, path: string): SettingsPatch {
     }
   }
   if (has(o, "followOnSend")) { const x = bool(s, o.followOnSend, at(path, "followOnSend")); if (x !== null) p.followOnSend = x; }
+  if (has(o, "focusWrap")) { const x = bool(s, o.focusWrap, at(path, "focusWrap")); if (x !== null) p.focusWrap = x; }
+  if (has(o, "liveResize")) { const x = bool(s, o.liveResize, at(path, "liveResize")); if (x !== null) p.liveResize = x; }
   // Accepted for forward compatibility with the documented example, only at their inert values.
   if (has(o, "multiContextWindows")) unsupported(s, o.multiContextWindows, at(path, "multiContextWindows"), "float");
   if (has(o, "animation")) {

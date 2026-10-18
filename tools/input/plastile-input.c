@@ -7,6 +7,9 @@
 //   press left|right      button down        release left|right   button up
 //   key CODE down|up      evdev key code (e.g. 125 = KEY_LEFTMETA, 1 = KEY_ESC)
 // Prints "ready" once pointer-absolute, button and keyboard devices are resumed.
+// KWin replaces its EIS devices when the output layout changes (an output disabled in the
+// middle of a drag): a removed or paused device is dropped, its replacement is adopted when
+// it resumes, and a command waits (bounded, 3 s) for its device to be emulating again.
 // This drives KWin's real input pipeline (interactive move/resize included); it is
 // never used against the user's session.
 #define _POSIX_C_SOURCE 200809L
@@ -39,6 +42,15 @@ static void handle(struct ei *ei)
             if (!kbd_dev && ei_device_has_capability(d, EI_DEVICE_CAP_KEYBOARD)) kbd_dev = ei_device_ref(d);
             break;
         }
+        case EI_EVENT_DEVICE_REMOVED:
+        case EI_EVENT_DEVICE_PAUSED: {
+            struct ei_device *d = ei_event_get_device(ev);
+            bool removed = ei_event_get_type(ev) == EI_EVENT_DEVICE_REMOVED;
+            if (d == abs_dev) { abs_ok = false; if (removed) { ei_device_unref(abs_dev); abs_dev = NULL; } }
+            if (d == btn_dev) { btn_ok = false; if (removed) { ei_device_unref(btn_dev); btn_dev = NULL; } }
+            if (d == kbd_dev) { kbd_ok = false; if (removed) { ei_device_unref(kbd_dev); kbd_dev = NULL; } }
+            break;
+        }
         case EI_EVENT_DEVICE_RESUMED: {
             struct ei_device *d = ei_event_get_device(ev);
             ei_device_start_emulating(d, ++seq);
@@ -63,12 +75,26 @@ static void handle(struct ei *ei)
     }
 }
 
+/* Wait (bounded) until the device flag is set again after KWin replaced its devices. */
+static void await_device(struct ei *ei, bool *ok)
+{
+    for (int i = 0; i < 300 && !*ok; ++i) {
+        struct pollfd p = { .fd = ei_get_fd(ei), .events = POLLIN };
+        if (poll(&p, 1, 10) > 0) { ei_dispatch(ei); handle(ei); }
+    }
+}
+
 static int command(struct ei *ei, char *line)
 {
     double x, y;
     char what[16];
     unsigned code;
     line[strcspn(line, "\n")] = '\0';
+    ei_dispatch(ei);
+    handle(ei);
+    if (strncmp(line, "move ", 5) == 0) await_device(ei, &abs_ok);
+    else if (strncmp(line, "press ", 6) == 0 || strncmp(line, "release ", 8) == 0) await_device(ei, &btn_ok);
+    else if (strncmp(line, "key ", 4) == 0) await_device(ei, &kbd_ok);
     if (sscanf(line, "move %lf %lf", &x, &y) == 2 && abs_ok) {
         ei_device_pointer_motion_absolute(abs_dev, x, y);
         ei_device_frame(abs_dev, ei_now(ei));

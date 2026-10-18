@@ -73,6 +73,8 @@ export interface SettingsPatch {
   overflow?: "float-new";
   singleWindowGaps?: boolean;
   followOnSend?: boolean;
+  focusWrap?: boolean;
+  liveResize?: boolean;
 }
 
 export type StringMatcher =

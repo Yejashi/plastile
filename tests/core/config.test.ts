@@ -576,3 +576,16 @@ test("scrolling (experimental): layout value and settings validate; arrays repla
   assert.match(bad({ widthPresets: "1/2" })[0], /^defaults\.scrolling\.widthPresets: /);
   assert.match(bad({ speed: 1 })[0], /^defaults\.scrolling\.speed: unknown key/);
 });
+
+test("T23/T29: focusWrap and liveResize default off, validate as booleans, and resolve per context", () => {
+  const base = ok(compileConfig({}, 1));
+  assert.equal(base.defaults.focusWrap, false);
+  assert.equal(base.defaults.liveResize, false);
+  hasError(docErrors({ schemaVersion: 1, defaults: { focusWrap: 1 } }), "defaults.focusWrap: must be a boolean");
+  hasError(docErrors({ schemaVersion: 1, defaults: { liveResize: "on" } }), "defaults.liveResize: must be a boolean");
+  const s = json({ schemaVersion: 1, defaults: { liveResize: true },
+    overrides: [{ id: "wrap-dp1", match: { outputName: "DP-1" }, set: { focusWrap: true } }] });
+  assert.equal(s.defaults.liveResize, true);
+  assert.equal(resolveContext(s, CTX).settings.focusWrap, false);
+  assert.equal(resolveContext(s, { ...CTX, outputName: "DP-1" }).settings.focusWrap, true);
+});

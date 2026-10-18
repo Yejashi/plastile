@@ -25,6 +25,9 @@ export const COMMANDS: readonly CommandSpec[] = [
   { id: "plastile.focus.next", text: "Plastile: Focus next", sequence: "Meta+Shift+N" },
   { id: "plastile.focus.previous", text: "Plastile: Focus previous", sequence: "Meta+Shift+P" },
   { id: "plastile.focus.master", text: "Plastile: Focus master", sequence: "" },
+  // Cross-output focus (BEHAVIOR §7): unbound, like every command added after the measured defaults.
+  { id: "plastile.focus.output-next", text: "Plastile: Focus next output", sequence: "" },
+  { id: "plastile.focus.output-previous", text: "Plastile: Focus previous output", sequence: "" },
   { id: "plastile.swap.left", text: "Plastile: Swap with window to the left", sequence: "Meta+Ctrl+H" },
   { id: "plastile.swap.down", text: "Plastile: Swap with window below", sequence: "Meta+Ctrl+J" },
   { id: "plastile.swap.up", text: "Plastile: Swap with window above", sequence: "Meta+Ctrl+K" },

@@ -1,6 +1,6 @@
 # Plastile shortcuts
 
-Every Plastile command is one KWin global shortcut. All of them are registered under the **KWin** component, and their labels start with `Plastile:`. The table below is derived from [`src/core/commands.ts`](../../src/core/commands.ts): 51 commands, 20 of them bound by default. The five scrolling commands are experimental (see [Scrolling layout](#scrolling-layout-experimental)).
+Every Plastile command is one KWin global shortcut. All of them are registered under the **KWin** component, and their labels start with `Plastile:`. The table below is derived from [`src/core/commands.ts`](../../src/core/commands.ts): 53 commands, 20 of them bound by default. The five scrolling commands are experimental (see [Scrolling layout](#scrolling-layout-experimental)).
 
 **Context.** Commands act on the **active window** and its context: the screen, virtual desktop and activity it is on. When there is no active window, commands use the active screen's visible desktop.
 
@@ -10,13 +10,15 @@ Every Plastile command is one KWin global shortcut. All of them are registered u
 
 | Command id | Label in System Settings (after `Plastile:`) | Default | Behaviour |
 |---|---|---|---|
-| `plastile.focus.left` | Focus left | `Meta+Shift+H` | Activates the tiled neighbour to the left of the focused tile, on the same screen and desktop. Candidates lying fully beyond the facing edge win over others. Among them, one that overlaps vertically wins, then the nearest facing edge, then the larger overlap, then stable order. When nothing lies fully beyond the edge (irregular or overlapping frames, such as a size-limited window centred in its tile), a tile that reaches past the edge with its centre on that side is used; a tile beside the focused one never is. No wrap-around, no screen change, no geometry change. If the active window is not tiled here, the most recently focused tile of the context is activated instead. |
+| `plastile.focus.left` | Focus left | `Meta+Shift+H` | Activates the tiled neighbour to the left of the focused tile, on the same screen and desktop. Candidates lying fully beyond the facing edge win over others. Among them, one that overlaps vertically wins, then the nearest facing edge, then the larger overlap, then stable order. When nothing lies fully beyond the edge (irregular or overlapping frames, such as a size-limited window centred in its tile), a tile that reaches past the edge with its centre on that side is used; a tile beside the focused one never is. No wrap-around by default (with `focusWrap`, [CONFIGURATION](CONFIGURATION.md#settings-patch), it continues from the opposite end of the same row or column on the same screen), no screen change, no geometry change. If the active window is not tiled here, the most recently focused tile of the context is activated instead. |
 | `plastile.focus.down` | Focus down | `Meta+Shift+J` | Same as *Focus left*, downwards. |
 | `plastile.focus.up` | Focus up | `Meta+Shift+K` | Same as *Focus left*, upwards. |
 | `plastile.focus.right` | Focus right | `Meta+Shift+L` | Same as *Focus left*, to the right. |
 | `plastile.focus.next` | Focus next | `Meta+Shift+N` | Activates the next tiled window in the context's stable order (wraps around). In monocle, it also raises that window. |
 | `plastile.focus.previous` | Focus previous | `Meta+Shift+P` | Activates the previous tiled window in stable order (wraps around). |
 | `plastile.focus.master` | Focus master | *unbound* | Activates the first window in the order (the master in master/stack). |
+| `plastile.focus.output-next` | Focus next output | *unbound* | Activates a window on the next screen. Screens are ordered by position (left edge, then top edge), not by how KWin enumerates them, and the order wraps around. On that screen it activates the window focused there most recently (tiled or floating, not minimized, on the desktop that screen shows), else that screen's first tile. No-op with one screen or when the next screen shows no window. No geometry change. |
+| `plastile.focus.output-previous` | Focus previous output | *unbound* | Same as *Focus next output*, towards the previous screen. |
 | `plastile.swap.left` | Swap with window to the left | `Meta+Ctrl+H` | Exchanges the focused tile with its left neighbour: their order positions in master/stack and monocle, their leaves in BSP. One re-solve. No-op when nothing lies in that direction or the active window is not tiled here. |
 | `plastile.swap.down` | Swap with window below | `Meta+Ctrl+J` | Same as *Swap with window to the left*, downwards. |
 | `plastile.swap.up` | Swap with window above | `Meta+Ctrl+K` | Same as *Swap with window to the left*, upwards. |
@@ -28,7 +30,7 @@ Every Plastile command is one KWin global shortcut. All of them are registered u
 | `plastile.move.down` | Move tile down (reinsert) | *unbound* | Same as *Move tile left*, downwards (BSP: below the neighbour; order layouts: just after it). |
 | `plastile.move.up` | Move tile up (reinsert) | *unbound* | Same as *Move tile left*, upwards (BSP: above; order layouts: just before). |
 | `plastile.move.right` | Move tile right (reinsert) | *unbound* | Same as *Move tile left*, to the right (BSP: right side; order layouts: just after). |
-| `plastile.move.output-next` | Send window to next output | `Meta+Shift+O` | Sends the active window to the next screen in KWin's output order (cyclic), where it is tiled. KWin puts it on that screen's current desktop and keeps it active, so no desktop changes; the source screen is re-solved. No-op with one output. Tested with two virtual outputs, with and without per-screen desktops. |
+| `plastile.move.output-next` | Send window to next output | `Meta+Shift+O` | Sends the active window to the next screen by position (left edge, then top edge, cyclic; the order *Focus next output* uses), where it is tiled. KWin puts it on that screen's current desktop and keeps it active, so no desktop changes; the source screen is re-solved. No-op with one output. Tested with two virtual outputs, with and without per-screen desktops. |
 | `plastile.move.output-previous` | Send window to previous output | *unbound* | Sends the active window to the previous screen. |
 | `plastile.move.desktop-next` | Send window to next desktop | *unbound* | Sends the active window to the next virtual desktop (cyclic). The current desktop does not change, and the window is tiled when that desktop is shown. With `followOnSend` ([CONFIGURATION](CONFIGURATION.md#settings-patch)) that desktop is shown on the window's screen and the window activated. No-op for a window on several or all desktops. |
 | `plastile.move.desktop-previous` | Send window to previous desktop | *unbound* | Sends the active window to the previous virtual desktop. |
