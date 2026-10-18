@@ -96,7 +96,7 @@ Plastile places nothing in a floating context, and windows keep ordinary KDE beh
 
 ### Overflow
 
-A context may be unable to fit every window above its minimum size. Plastile then floats the newest insertions (`overflow: float-new`, the only policy implemented), and the reason appears in the window's explanation. Existing tiles are never shrunk below their minima, and no desktops are created or removed.
+A context may be unable to fit every window above its minimum size. Plastile then keeps the windows that were there first and floats each newer window that does not fit next to them (`overflow: float-new`, the only policy implemented); a window whose minimum size does not fit the area even on its own floats by itself, without taking newer windows with it. The reason appears in the window's explanation. Existing tiles are never shrunk below their minima, and no desktops are created or removed.
 
 ## Which windows are tiled
 
