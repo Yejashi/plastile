@@ -75,7 +75,9 @@ let
         *) echo "plastile-env: /dev/udmabuf emulated by libplastile-udmabuf-shim (no render node, no kernel udmabuf)" >&2 ;;
       esac
     fi
-    exec ${kde.kwin}/bin/kwin_wayland "$@"
+    # PLASTILE_KWIN_EXEC: run another binary after the decision above (persist-no-qtcore-Q05 runs
+    # the one behind nixpkgs' Qt wrapper so its own QML import path can come first).
+    exec "''${PLASTILE_KWIN_EXEC:-${kde.kwin}/bin/kwin_wayland}" "$@"
   '';
 in
 pkgs.buildEnv {

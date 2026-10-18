@@ -184,25 +184,50 @@ def xdg(base: Path) -> dict:
     return {"XDG_STATE_HOME": str(base / "state"), "XDG_CONFIG_HOME": str(base / "config")}
 
 
-def nix_unwrapped_kwin() -> tuple[str, str | None]:
-    """(executable, wrapper): the binary behind a nixpkgs wrapQtAppsHook wrapper of kwin_wayland, or
-    ("kwin_wayland", None) when kwin_wayland is not such a wrapper (distribution packages)."""
+_EXEC_RX = re.compile(rb'exec\s+(?:-a\s+\S+\s+)?"?(?:\$\{[A-Z_]+:-)?(/[^\s"}$]+)')
+
+
+def nix_qt_wrapper() -> dict:
+    """Follow kwin_wayland's chain of exec wrappers (shell scripts) to a nixpkgs wrapQtAppsHook wrapper.
+
+    Returns {"chain": [...], "wrapped": path or None, "override": bool}. "wrapped" is the binary behind the
+    Qt wrapper (`.kwin_wayland-wrapped`); "override" says the first hop is the Nix sandbox's own script,
+    which runs PLASTILE_KWIN_EXEC instead of its target after its udmabuf decision (tools/sandbox/nix/env.nix).
+    Distribution packages: no chain beyond the binary, wrapped None."""
     found = shutil.which("kwin_wayland")
-    if found is None:
-        return "kwin_wayland", None
-    cur = Path(found).resolve()
-    wrapper = None
-    for _ in range(4):  # makeWrapper may wrap a wrapper
-        nxt = cur.parent / f".{cur.name}-wrapped"
+    out: dict = {"chain": [], "wrapped": None, "override": False}
+    cur = Path(found).resolve() if found else None
+    for hop in range(6):
+        if cur is None or not cur.exists():
+            break
+        out["chain"].append(str(cur))
         try:
-            marked = b"NIXPKGS_QT6_QML_IMPORT_PATH" in cur.read_bytes()
+            data = cur.read_bytes()
         except OSError:
             break
-        if not (marked and nxt.exists()):
+        if hop == 0 and b"PLASTILE_KWIN_EXEC" in data:
+            out["override"] = True
+        wrapped = cur.parent / f".{cur.name}-wrapped"
+        if b"NIXPKGS_QT6_QML_IMPORT_PATH" in data and wrapped.exists():
+            out["wrapped"] = str(wrapped)
             break
-        wrapper = wrapper or str(cur)
-        cur = nxt
-    return (str(cur), wrapper) if wrapper else ("kwin_wayland", None)
+        if not data.startswith(b"#!"):
+            break  # a binary: the end of the chain
+        m = _EXEC_RX.search(data)
+        cur = Path(m.group(1).decode()).resolve() if m else None
+    return out
+
+
+def proc_env(pid: int | None, names: tuple[str, ...]) -> dict | str:
+    """Selected variables from a process's environment, or why they cannot be read."""
+    if pid is None:
+        return "no pid"
+    try:
+        raw = Path(f"/proc/{pid}/environ").read_bytes().split(b"\0")
+    except OSError as e:
+        return f"unreadable: {e.strerror}"
+    env = dict(x.decode(errors="replace").split("=", 1) for x in raw if b"=" in x)
+    return {k: env.get(k) for k in names}
 
 
 def psession(out: Path, base: Path, extra_env: dict | None = None, **kw) -> Session:
@@ -523,14 +548,20 @@ def persist_no_qtcore(out: Path, c: Checks):
     # goes first on both or the real QtCore is still found.
     paths = {v: os.pathsep.join([str(shadow.parent)] + ([os.environ[v]] if os.environ.get(v) else []))
              for v in ("QML2_IMPORT_PATH", "QML_IMPORT_PATH")}
-    kwin_bin, wrapper = nix_unwrapped_kwin()
-    if wrapper is not None:
+    nix = nix_qt_wrapper()
+    kwin_bin = "kwin_wayland"
+    if nix["wrapped"] is not None:
         # nixpkgs' qtdeclarative adds NIXPKGS_QT6_QML_IMPORT_PATH after both (highest priority), and
-        # wrapQtAppsHook's wrapper prefixes it with qtdeclarative's own qml directory, so no
-        # environment can put the shadow first through the wrapper: run the wrapped binary instead,
-        # with the shadow first on that variable too (run.sh's environment carries everything else).
+        # wrapQtAppsHook's wrapper prefixes it with qtdeclarative's qml directory, so no environment
+        # reaches before the real QtCore through that wrapper: run the binary behind it, with the shadow
+        # first on that variable too (run.sh's environment carries the plugin and QML paths). The Nix
+        # sandbox's own script keeps its udmabuf decision and only changes what it runs.
         paths["NIXPKGS_QT6_QML_IMPORT_PATH"] = os.pathsep.join(
             [str(shadow.parent)] + [p for p in (os.environ.get("QML2_IMPORT_PATH"),) if p])
+        if nix["override"]:
+            paths["PLASTILE_KWIN_EXEC"] = nix["wrapped"]
+        else:
+            kwin_bin = nix["wrapped"]
     with psession(out / "s", base, extra_env=paths, kwin_bin=kwin_bin) as s:
         s.spawn(1); s.spawn(2); s.spawn(3)
         s.load(); s.settle()
@@ -539,7 +570,9 @@ def persist_no_qtcore(out: Path, c: Checks):
         c("Q05: tiles without persistence (oracle)", not tiling_errors(s.frames_list(), area, GAP),
           tiling_errors(s.frames_list(), area, GAP))
         c("Q05: one diagnostic naming the QtCore failure", len(diag) == 1 and "QtCore" in diag[0],
-          {"diagnostics": diag, "kwin": kwin_bin, "bypassedWrapper": wrapper})
+          {"diagnostics": diag, "kwin": kwin_bin, "nix": nix,
+           "kwinEnv": proc_env(getattr(s.kw._kwin, "pid", None), ("NIXPKGS_QT6_QML_IMPORT_PATH", "QML2_IMPORT_PATH",
+                                                                    "QML_IMPORT_PATH", "PLASTILE_KWIN_EXEC"))})
         w0 = s.frames()[fx(1)]["frame"]["width"]
         s.act(fx(1), "workspace.activeWindow = w")
         a = s.counters()
