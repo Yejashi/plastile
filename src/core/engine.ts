@@ -1788,7 +1788,7 @@ export class Engine {
     try { fw = this.host.applyFrame(r.id, r.gen, target); }
     catch (e) { this.counters.errors++; this.svc.log("warn", "restore failed", String(e)); }
     finally { this.applying--; }
-    if (fw) { this.counters.writes++; r.frame = fw.after; }
+    if (fw) { this.counters.writes++; r.frame = fw.after; this.trace.record(this.svc.now(), "write", r.id, { reason: "restore" }); }
   }
 
   private restoreFloatRects(c: Ctx): void {

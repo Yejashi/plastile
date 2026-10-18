@@ -1357,3 +1357,73 @@ test("T17: a window minimized on one output and moved to another while minimized
   assertTiling(tiledFrames(h, ["c", "b"]), rect(1280, 0, 1280, 800));
   assert.deepEqual(e.check(), []);
 });
+
+/** A scripted workload touching plan, correction, restore and removal writes. */
+function t14Workload(opts: { traceCapacity?: number } = {}) {
+  const h = new MockHost();
+  const e = h.start({ ...opts, titleRules: true, rulesFor: (m) => (m.title.includes("SECRET") ? { mode: "tiled" as const, ruleIds: ["t"] } : null) });
+  const SECRET = { meta: { ...meta("x"), title: "SECRET bank statement — Firefox", appId: "x" } };
+  h.open("a", { delay: 40, delayMode: "each" });
+  h.open("b", { ignore: true });
+  h.open("x", SECRET);
+  h.open("c", { commitOffset: { width: -3, height: 0 } });
+  h.advance(300);
+  h.active = "a";
+  e.execute("plastile.window.toggle-float");
+  h.advance(100);
+  h.userSetFrame("a", rect(200, 150, 500, 400));
+  e.execute("plastile.window.toggle-float");
+  h.advance(100);
+  e.execute("plastile.window.toggle-float"); // restore write
+  h.advance(100);
+  h.active = "c";
+  e.execute("plastile.swap.master");
+  e.execute("plastile.layout.monocle");
+  h.advance(100);
+  e.execute("plastile.layout.master-stack");
+  h.close("x");
+  h.advance(3000);
+  return { h, e };
+}
+
+test("T14: the same event sequence replays to the same frames and the same trace", () => {
+  const strip = (e: ReturnType<typeof t14Workload>["e"]) => JSON.stringify(e.trace.snapshot());
+  const r1 = t14Workload(), r2 = t14Workload();
+  assert.deepEqual(r1.h.writes, r2.h.writes);
+  assert.deepEqual(r1.h.framesOf(["a", "b", "c"]), r2.h.framesOf(["a", "b", "c"]));
+  assert.equal(strip(r1.e), strip(r2.e));
+  assert.deepEqual(r1.e.counters, r2.e.counters);
+});
+
+test("T14: every frame write has a trace record naming the window, in order", () => {
+  const { h, e } = t14Workload();
+  const traced = e.trace.snapshot().filter((t) => t.kind === "write").map((t) => t.id);
+  assert.ok(e.trace.snapshot().length < e.trace.capacity, "nothing evicted");
+  assert.deepEqual(traced, h.writes.map((w) => w.id));
+  assert.ok(e.trace.snapshot().some((t) => t.kind === "write" && (t.data as { reason: string }).reason === "restore"));
+  assert.equal(e.counters.writes, h.writes.length);
+});
+
+test("T14: the trace stays within its capacity, oldest first; disabled records nothing", () => {
+  const { e } = t14Workload({ traceCapacity: 16 });
+  const snap = e.trace.snapshot();
+  assert.equal(snap.length, 16);
+  for (let i = 1; i < snap.length; ++i) assert.ok(snap[i].t >= snap[i - 1].t);
+  const h = new MockHost();
+  const off = h.start({ traceEnabled: false });
+  h.open("a"); h.open("b"); h.drain();
+  assert.equal(off.trace.snapshot().length, 0);
+  assert.ok(h.writes.length > 0);
+});
+
+test("T14: a window title never reaches the trace or explain, even when a title rule matches it", () => {
+  const { e } = t14Workload();
+  assert.ok(!JSON.stringify(e.trace.snapshot()).includes("SECRET"));
+  const h = new MockHost();
+  const e2 = h.start({ titleRules: true, rulesFor: (m) => (m.title.includes("SECRET") ? { mode: "floating" as const, ruleIds: ["t"] } : null) });
+  h.open("x", { meta: { ...meta("x"), title: "SECRET bank statement — Firefox" } });
+  h.drain();
+  assert.equal(e2.modeOf("x"), "floating", "the rule did match");
+  assert.ok(!JSON.stringify(e2.explain("x")).includes("SECRET"));
+  assert.ok(!JSON.stringify(e2.trace.snapshot()).includes("SECRET"));
+});
