@@ -27,8 +27,9 @@ from nested import NestedKwin  # noqa: E402
 
 INSTALL = ROOT / "tools/install.sh"
 EVIDENCE = evidence_file("package-install.json")
-STARTED = r"plastile notice started "
-STOPPED = r"plastile notice stopped"
+# Older packages (before 0.1.0's notice level) log these at info: an upgrade test starts one.
+STARTED = r"plastile (?:info|notice) started "
+STOPPED = r"plastile (?:info|notice) stopped"
 
 
 def redact(text: str, kw: NestedKwin | None = None) -> str:

@@ -290,7 +290,7 @@ def wait_started(s: Session, off: int, timeout: float = 30) -> str | None:
         line = s.kw.wait_log(STARTED, timeout, off)[-1]
     except NestedError:
         return None
-    m = re.search(STARTED + r"(\S+)", line)
+    m = re.search(STARTED + r"(\d[^\s:]*)", line)  # "started 0.0.1 {...}" (older) or "started 0.1.0: ..."
     return m.group(1) if m else ""
 
 
