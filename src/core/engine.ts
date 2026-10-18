@@ -6,7 +6,7 @@
 // frame write goes through applyTarget() and the requested/observed ledger.
 
 import {
-  centredDefault, clampInto, contains, frameTolerance, intersects, isValidArea, rect, rectNear, rectOf, relocate, type Rect,
+  centredDefault, clampInto, contains, frameTolerance, intersects, isValidArea, rect, rectNear, rectOf, relocate, sizeNear, type Rect,
   type Size,
 } from "./geometry.ts";
 import { classify, TINY_PX, TINY_REASON } from "./classify.ts";
@@ -47,6 +47,8 @@ const LAYOUTS: Record<LayoutKind, AnyLayout> = {
   zones,
 };
 /** Scrolling and zones are experimental and opt-in (ADR-014): selected explicitly, never by the cycle. */
+/** Re-parks per parking target before a pull-back counts against the correction budget. */
+export const REPARK_LIMIT = 8;
 const LAYOUT_CYCLE: readonly LayoutKind[] = ["master-stack", "bsp", "monocle", "floating"];
 const DIVERGED = "did not reach its target after bounded corrections";
 /** Preferences kept for dropped (empty) contexts, most recent first out last. */
@@ -151,6 +153,9 @@ export interface SolveTiming {
 }
 
 interface Rec {
+  /** Re-parks of a parked scrolling window pulled back by KWin, for the current parking target. */
+  reparks: number;
+  reparkTarget: Rect | null;
   id: WindowId;
   gen: number;
   meta: WindowMeta;
@@ -264,6 +269,8 @@ export class Engine {
   private liveLast = new Map<WindowId, Rect>();
   /** Windows currently parked by a scrolling strip (recorded before each parking write). */
   private parked = new Map<WindowId, Parked>();
+  /** Parked windows KWin pulled back (position only) to re-park in the next flush. */
+  private reparkQueue = new Set<WindowId>();
   /** Zones: the last explanation per window (minimum size does not fit, rule zone missing). */
   private zoneNotes = new Map<WindowId, string>();
   private queued: Array<{ id: string; arg: unknown; target: DispatchTarget }> = [];
@@ -325,6 +332,7 @@ export class Engine {
     this.retryContexts.clear();
     this.endedInteractions.clear();
     this.interactionStart.clear();
+    this.reparkQueue.clear();
     this.floatPrefs.clear();
     this.pendingFloats.clear();
     this.restoreChecks.clear();
@@ -388,7 +396,7 @@ export class Engine {
       decision: { mode: "floating", source: "default", reason: "unclassified", ruleIds: [] },
       mode: "pending", userMode: null, ctx: null, suspensions: suspensionsOf(s.states),
       ledger: L.newEntry(rectOf(s.frame)), floatRect: null, insertedAt: ++this.insertSeq, exception: null,
-      readyBy: null, border: null, rules: null, restoreChecked: false, focusSeq: 0,
+      readyBy: null, border: null, rules: null, restoreChecked: false, focusSeq: 0, reparks: 0, reparkTarget: null,
     };
     this.recs.set(r.id, r);
     this.counters.adopted++;
@@ -429,6 +437,7 @@ export class Engine {
     this.corrections.delete(r.id);
     this.endedInteractions.delete(r.id);
     this.interactionStart.delete(r.id);
+    this.reparkQueue.delete(r.id);
     this.liveResize.delete(r.id);
     this.liveLast.delete(r.id);
     this.parked.delete(r.id);
@@ -585,6 +594,16 @@ export class Engine {
       case "partial": this.counters.partial++; break;
       case "external":
         this.counters.external++;
+        // KWin 6.8 confines a window to the work area on every configure-acknowledging commit
+        // (XdgToplevelWindow::handleRoleCommit -> confineInteractiveMove), which pulls a parked
+        // scrolling window back on activation, scale or decoration changes. A position-only
+        // pull-back of a parked window is re-parked without spending the correction budget,
+        // up to REPARK_LIMIT times per parking target; activation and topology events, the
+        // legitimate triggers, restore the allowance, so another tool fighting it still ends.
+        if (this.ownsGeometry(r) && r.ledger.desired && this.parked.has(id) && sizeNear(f, r.ledger.desired, r.ledger.tol)) {
+          if (!rectNear(r.reparkTarget, r.ledger.desired)) { r.reparkTarget = r.ledger.desired; r.reparks = 0; }
+          if (r.reparks < REPARK_LIMIT) { r.reparks++; this.reparkQueue.add(id); this.ensureFlush(); break; }
+        }
         // An application (or another tool) changed a settled tile: bounded correction, then stop.
         if (this.ownsGeometry(r) && r.ledger.desired) {
           if (L.canCorrect(r.ledger)) { this.corrections.add(id); this.ensureFlush(); }
@@ -601,6 +620,7 @@ export class Engine {
 
   activeChanged(id: WindowId | null): void {
     if (!this.alive || id === null) return;
+    this.resetReparks();
     const r = this.recs.get(id);
     if (!r) return;
     r.focusSeq = ++this.focusSeq;
@@ -628,6 +648,7 @@ export class Engine {
   topologyChanged(): void {
     if (!this.alive) return;
     this.trace.record(this.svc.now(), "topology");
+    this.resetReparks();
     this.refreshScales();
     this.syncActivities();
     this.retryOverflow("*"); // work areas may have grown
@@ -1100,6 +1121,7 @@ export class Engine {
         }
       }
       this.runCorrections();
+      this.runReparks();
       const ids = [...this.dirty];
       this.dirty.clear();
       for (const id of ids) {
@@ -1156,6 +1178,27 @@ export class Engine {
     for (const r of list) {
       r.exception = null;
       this.reclassify(r, "overflow-retry");
+    }
+  }
+
+  private runReparks(): void {
+    if (this.reparkQueue.size === 0) return;
+    const ids = [...this.reparkQueue];
+    this.reparkQueue.clear();
+    for (const id of ids) {
+      const r = this.recs.get(id);
+      if (!r || !this.ownsGeometry(r) || !this.parked.has(id) || !r.ledger.desired) continue;
+      if (rectNear(r.frame, r.ledger.desired, r.ledger.tol)) continue;
+      this.counters.reparks++;
+      this.contained("repark", () => this.write(r, r.ledger.desired!, "repark"));
+    }
+  }
+
+  /** Activation or topology events may legitimately pull parked windows back (KWin 6.8): fresh allowance. */
+  private resetReparks(): void {
+    for (const id of this.parked.keys()) {
+      const r = this.recs.get(id);
+      if (r) r.reparks = 0;
     }
   }
 
@@ -1312,7 +1355,7 @@ export class Engine {
   }
 
   /** The only place that issues frame requests. */
-  private write(r: Rec, target: Rect, reason: "plan" | "correction"): void {
+  private write(r: Rec, target: Rect, reason: "plan" | "correction" | "repark"): void {
     if (r.nativeTile) {
       r.releasingTile = true;
       if (!this.host.releaseNativeTile(r.id, r.gen)) r.releasingTile = false;

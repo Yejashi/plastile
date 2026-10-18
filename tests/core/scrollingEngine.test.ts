@@ -306,3 +306,38 @@ test("ordinary layouts are unaffected: no parking, no virtual navigation, focus 
   assert.equal(h.writes.length, writes);
   for (const id of ["a", "b", "c"]) assert.equal(e.explain(id)!.parked, false);
 });
+
+test("KWin 6.8 confinement: repeated position-only pull-backs of a parked window are re-parked, never diverged", () => {
+  const ids = ["a", "b", "c", "d"];
+  const { h, e } = setup(ids);
+  assert.deepEqual(parkedIds(h, ids), ["a", "b"]);
+  const parkedAt = { ...h.windows.get("a")!.frame };
+  const c0 = { ...e.counters };
+  // KWin 6.8 runs confineInteractiveMove on every configure-acknowledging commit: an activation
+  // change, a scale or decoration change pulls the parked window back into the work area.
+  for (let i = 0; i < 5; ++i) {
+    h.userSetFrame("a", rect(0, 0, parkedAt.width, parkedAt.height));
+    h.drain();
+    assert.ok(parkedIds(h, ids).includes("a"), `pull-back ${i + 1}: re-parked (${JSON.stringify(h.windows.get("a")!.frame)})`);
+    e.activeChanged("d"); // the legitimate trigger restores the allowance
+  }
+  assert.equal(e.counters.diverged - c0.diverged, 0, "never diverged");
+  assert.equal(e.counters.corrections - c0.corrections, 0, "the correction budget is untouched");
+  assert.equal(e.counters.reparks - c0.reparks, 5);
+  assert.deepEqual(e.check(), []);
+});
+
+test("re-parking is bounded: another tool pulling a parked window back without any trigger ends in divergence", () => {
+  const ids = ["a", "b", "c", "d"];
+  const { h, e } = setup(ids);
+  const parkedAt = { ...h.windows.get("a")!.frame };
+  const c0 = { ...e.counters };
+  let n = 0;
+  for (; n < 100 && e.counters.diverged === c0.diverged; ++n) {
+    h.userSetFrame("a", rect(0, 0, parkedAt.width, parkedAt.height)); // no activation or topology event
+    h.drain();
+  }
+  assert.ok(e.counters.diverged > c0.diverged, "diverges eventually instead of fighting forever");
+  assert.ok(n <= 8 + 2 + 2, `bounded: ${n} pull-backs`);
+  assert.ok(e.counters.reparks - c0.reparks <= 8, "the re-park allowance is capped");
+});

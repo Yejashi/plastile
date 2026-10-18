@@ -239,3 +239,33 @@ def scrolling_unload(out: Path, c: Checks):
           not k["parked"] and all(inside(area, f) for f in k["frames"].values()), k)
         c("no errors logged", not s.log_lines(r"plastile error|TypeError|ReferenceError"),
           s.log_lines(r"plastile error|TypeError|ReferenceError")[:5])
+
+
+@scenario("scrolling-pullback-M8")
+def scrolling_pullback(out: Path, c: Checks):
+    """KWin 6.8 confines a window to the work area on every configure-acknowledging commit, which pulls a
+    parked column back on activation, scale or decoration changes (measured in the 6.8 CI run). Simulated
+    here by a script moving a parked window back inside the output (position only), three times with an
+    activation in between: each pull-back is re-parked, the correction budget is untouched, nothing
+    diverges, and the strip oracle holds."""
+    with Session(out, outputs=1, config=SCROLL) as s:
+        start(s)
+        k = classify(s)
+        c("setup: at least one parked column", len(k["parked"]) >= 1, k)
+        victim = k["parked"][0]
+        a = s.counters()
+        rounds = []
+        for i in range(3):
+            f = s.frames()[victim]["frame"]
+            s.act(victim, f"w.frameGeometry = {{x: 40, y: 40, width: {f['width']}, height: {f['height']}}}")
+            time.sleep(0.3); s.settle()
+            kk = classify(s)
+            rounds.append({"parked": victim in kk["parked"], "errors": strip_errors(s)})
+            s.act(kk["active"][0] if kk["active"] else fx(4), "workspace.activeWindow = w")
+            time.sleep(0.2); s.settle()
+        b = s.counters()
+        d = {k_: b["counters"][k_] - a["counters"][k_] for k_ in ("reparks", "corrections", "diverged")}
+        c("each pull-back is re-parked and the strip oracle holds (oracle)",
+          all(r["parked"] and not r["errors"] for r in rounds), rounds)
+        c("re-parks counted, correction budget untouched, nothing diverged (counters)",
+          d["reparks"] >= 3 and d["corrections"] == 0 and d["diverged"] == 0, d)
