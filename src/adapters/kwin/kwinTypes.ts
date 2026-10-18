@@ -1,6 +1,6 @@
 // Structural types for the KWin 6.7 declarative-script surface Plastile uses.
-// Every member listed here was verified at runtime (docs/status/API_PROFILE.md);
-// nothing is assumed from C++ headers alone.
+// Every member listed here was verified at runtime (docs/status/API_PROFILE.md, or
+// the nested measurement named next to it); nothing is assumed from C++ headers alone.
 
 export interface KSignal<A extends unknown[] = unknown[]> {
   connect(fn: (...args: A) => void): void;
@@ -100,6 +100,11 @@ export interface KWindow {
   readonly transientChanged: KSignal;
   readonly hiddenChanged: KSignal;
   readonly modalChanged: KSignal;
+  /** Emitted on every xdg-toplevel min/max size change; X11: when the maximize action flips (measured, 6.7.5). */
+  readonly maximizeableChanged: KSignal;
+  /** Decoration created or destroyed; the client geometry (margin) follows in clientGeometryChanged (measured). */
+  readonly decorationChanged: KSignal;
+  readonly clientGeometryChanged: KSignal;
 }
 
 export interface KList<T> {

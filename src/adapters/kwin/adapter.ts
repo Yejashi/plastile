@@ -3,9 +3,10 @@
 // Owns the window registry, every signal connection (registry-owned and
 // disconnected on teardown: M0 measured that unowned closures survive unload),
 // value snapshots for the engine, and the HostPort operations. Uses only the
-// script surface verified in docs/status/API_PROFILE.md.
+// script surface verified in docs/status/API_PROFILE.md, plus signals measured in
+// nested KWin 6.7.5 where noted below.
 
-import { rectOf, type Rect } from "../../core/geometry.ts";
+import { rectOf, type Rect, type Size } from "../../core/geometry.ts";
 import type { FrameWrite, HostPort, OutputInfo, WindowSnapshot } from "../../core/ports.ts";
 import type { Engine } from "../../core/engine.ts";
 import type { Constraints, Membership, WindowKind, WindowMeta, WindowStates } from "../../core/types.ts";
@@ -25,6 +26,15 @@ interface Entry {
   hooked: boolean;
   /** captionChanged connection, present only while title rules are active. */
   caption: Conn | null;
+  /** Sizes around the last frame request until the client answers it (constraint refresh on deviation). */
+  req: { from: Size; to: Size } | null;
+}
+
+/** Constraint re-reads are bounded: one per frame request that the client answered with another size. */
+const SIZE_TOL = 1;
+
+function sameSize(a: Size, b: Size): boolean {
+  return Math.abs(a.width - b.width) <= SIZE_TOL && Math.abs(a.height - b.height) <= SIZE_TOL;
 }
 
 function sameRect(a: Rect, b: Rect): boolean {
@@ -124,12 +134,20 @@ export class KwinAdapter implements HostPort {
   /** Deferred work-area checks still allowed for the current panel event (0: none pending). */
   private areaChecks = 0;
   private deferredQueued = false;
+  /** Inside a frame write: re-entrant constraint refreshes are deferred to the next turn. */
+  private writing = false;
+  private pendingRefresh: Entry[] = [];
   /** Desktop names changed (configuration matchers read them); set by the runtime. */
   onDesktopNamesChanged: (() => void) | null = null;
   /** One coalesced callback for topology and work-area invalidation (stable identity for callLater). */
   private readonly deferredFlush = (): void => {
     this.deferredQueued = false;
     if (!this.alive || !this.engine) return;
+    if (this.pendingRefresh.length > 0) {
+      const list = this.pendingRefresh;
+      this.pendingRefresh = [];
+      for (const e of list) this.refreshConstraints(e);
+    }
     if (this.topologyPending) {
       // The engine re-solves every context; only refresh the area cache.
       this.topologyPending = false;
@@ -194,6 +212,7 @@ export class KwinAdapter implements HostPort {
     this.disconnectAll(this.outputConns);
     this.disconnectAll(this.desktopConns);
     this.areas.clear();
+    this.pendingRefresh = [];
     this.engine = null;
     this.onDesktopNamesChanged = null;
   }
@@ -301,7 +320,7 @@ export class KwinAdapter implements HostPort {
     const id = this.idOf(w);
     if (this.entries.has(id)) return this.snapshot(this.entries.get(id)!);
     const gen = ++this.lastGen;
-    const e: Entry = { w, id, gen, conns: [], meta: metaOf(w), hooked: false, caption: null };
+    const e: Entry = { w, id, gen, conns: [], meta: metaOf(w), hooked: false, caption: null, req: null };
     this.entries.set(id, e);
     if (e.meta.kind === "dock") {
       // Panels change the usable area; KWin has no script-visible work-area signal.
@@ -316,7 +335,19 @@ export class KwinAdapter implements HostPort {
     const w = e.w, id = e.id, gen = e.gen;
     e.hooked = true;
     const eng = () => (this.alive ? this.engine : null);
-    this.own(w.frameGeometryChanged, () => { const g = eng(); if (g) g.frameObserved(id, gen, rectOf(w.frameGeometry)); }, e.conns);
+    this.own(w.frameGeometryChanged, () => {
+      const g = eng();
+      if (!g) return;
+      const f = rectOf(w.frameGeometry);
+      g.frameObserved(id, gen, f);
+      const q = e.req;
+      // The previous size still showing (a move applied before the resize) is not an answer.
+      if (q === null || sameSize(f, q.from)) return;
+      e.req = null;
+      // Answered with a size other than the requested one: the client or KWin (X11 size
+      // hints) applied a constraint Plastile may not know. Re-read once per request.
+      if (!sameSize(f, q.to)) this.refreshConstraints(e);
+    }, e.conns);
     const states = () => { const g = eng(); if (g) g.statesChanged(id, gen, statesOf(w)); };
     for (const s of [w.minimizedChanged, w.fullScreenChanged, w.maximizedChanged, w.moveResizedChanged,
                      w.interactiveMoveResizeStarted, w.interactiveMoveResizeFinished, w.hiddenChanged]) {
@@ -333,7 +364,35 @@ export class KwinAdapter implements HostPort {
       g.constraintsChanged(id, gen, constraintsOf(w));
     };
     for (const s of [w.windowClassChanged, w.transientChanged, w.modalChanged]) this.own(s, metadata, e.conns);
+    // minSize/maxSize have no NOTIFY signal. KWin emits maximizeableChanged whenever an
+    // xdg-toplevel's min or max size changes (observed source: xdgshellwindow.cpp:1214-1226;
+    // measured for Kate and the fixture in nested KWin 6.7.5), and for X11 clients when the
+    // maximize action flips, e.g. on becoming fixed-size (x11window.cpp:1912, 3052).
+    if (w.maximizeableChanged) this.own(w.maximizeableChanged, () => this.refreshConstraints(e), e.conns);
+    // A decoration change alters the frame/client margin used for frame-space constraints.
+    // It is current only at the clientGeometryChanged that follows decorationChanged
+    // (measured order: decorationPolicyChanged, decorationChanged, clientGeometryChanged),
+    // so that signal is watched once instead of on every resize.
+    if (w.decorationChanged && w.clientGeometryChanged) {
+      let margin: Conn | null = null;
+      const settled = (): void => {
+        if (margin) { this.drop(margin, e.conns); margin = null; }
+        this.refreshConstraints(e);
+      };
+      this.own(w.decorationChanged, () => { if (!margin) margin = this.own(w.clientGeometryChanged, settled, e.conns); }, e.conns);
+    }
     this.watchCaption(e, this.watchTitles);
+  }
+
+  /** Re-read constraints (only at the refresh points above). Deferred while a frame write is in progress. */
+  private refreshConstraints(e: Entry): void {
+    if (!this.alive || !this.engine || this.entries.get(e.id) !== e) return;
+    if (this.writing) {
+      if (this.pendingRefresh.indexOf(e) < 0) this.pendingRefresh.push(e);
+      this.queueDeferred();
+      return;
+    }
+    this.engine.constraintsChanged(e.id, e.gen, constraintsOf(e.w));
   }
 
   private watchCaption(e: Entry, on: boolean): void {
@@ -403,6 +462,7 @@ export class KwinAdapter implements HostPort {
     this.entries.delete(id);
     this.release(e);
     e.caption = null;
+    e.req = null;
     if (this.alive && this.engine) {
       this.engine.windowRemoved(id, e.gen);
       if (e.meta.kind === "dock") this.panelChanged(false);
@@ -414,18 +474,31 @@ export class KwinAdapter implements HostPort {
     this.engine.activeChanged(w ? this.idOf(w) : null);
   }
 
-  private get(id: string, gen: number): KWindow | null {
+  private entry(id: string, gen: number): Entry | null {
     const e = this.entries.get(id);
     if (!e || e.gen !== gen || e.w.deleted) return null;
-    return e.w;
+    return e;
+  }
+
+  private get(id: string, gen: number): KWindow | null {
+    const e = this.entry(id, gen);
+    return e ? e.w : null;
   }
 
   // ---------------------------------------------------------------- HostPort
   applyFrame(id: string, gen: number, t: Rect): FrameWrite | null {
-    const w = this.get(id, gen);
-    if (!w) return null;
+    const e = this.entry(id, gen);
+    if (!e) return null;
+    const w = e.w;
     const before = rectOf(w.frameGeometry);
-    w.frameGeometry = this.qt.rect(t.x, t.y, t.width, t.height);
+    e.req = sameSize(before, t) ? null
+      : { from: { width: before.width, height: before.height }, to: { width: t.width, height: t.height } };
+    this.writing = true;
+    try {
+      w.frameGeometry = this.qt.rect(t.x, t.y, t.width, t.height);
+    } finally {
+      this.writing = false;
+    }
     return { before, after: rectOf(w.frameGeometry) };
   }
 

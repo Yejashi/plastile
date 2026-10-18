@@ -277,3 +277,53 @@ test("desktop rename connections are owned and re-owned when desktops change", (
   rt.shutdown();
   assert.equal(d1.nameChanged.fns.length + d2.nameChanged.fns.length, 0, "teardown disconnects them");
 });
+
+// ------------------------------------------------------------ constraint refresh
+
+const FULL = { x: 0, y: 0, width: 1280, height: 800 };
+
+test("a minimum size set after mapping (no NOTIFY) is picked up from maximizeableChanged and honoured", () => {
+  const { qt, wins, rt } = setup(1, 2);
+  const [w1, w2] = wins;
+  assert.ok(w1.frameGeometry.width < 760);
+  // An xdg-toplevel commits set_min_size later (Kate does, twice): KWin emits only maximizeableChanged.
+  w1.minSize = { width: 760, height: 300 };
+  w1.maximizeableChanged.emit(true);
+  qt.drain();
+  assert.ok(w1.frameGeometry.width >= 760, `w1 honours its new minimum: ${JSON.stringify(w1.frameGeometry)}`);
+  assertTiles([w1, w2], FULL);
+  rt.shutdown();
+});
+
+test("a decoration change re-reads the frame/client margin once the client geometry follows", () => {
+  const { qt, wins, rt, ws } = setup(1, 3);
+  const w3 = wins[2];
+  // Stack window with a 500 px client minimum: its frame minimum is 500 + the 30 px title bar.
+  w3.minSize = { width: 0, height: 500 };
+  w3.maximizeableChanged.emit(true);
+  qt.drain();
+  assert.equal(w3.frameGeometry.height, 530);
+  const before = ws.writes.length;
+  w3.noBorder = true; // the user (or a border rule) removes the decoration
+  qt.drain();
+  assert.equal(w3.frameGeometry.height, 500, "the frame minimum follows the removed title bar");
+  assertTiles(wins, FULL);
+  assert.ok(ws.writes.length - before <= 2, "one re-solve");
+  // The one-shot watch is gone: an ordinary resize re-reads nothing.
+  assert.equal(w3.clientGeometryChanged.fns.length, 0);
+  rt.shutdown();
+});
+
+test("a client answering a request with another size gets its constraints re-read once (no deadline needed)", () => {
+  const { ws, qt, wins, rt } = setup(1, 2);
+  const [w1, w2] = wins;
+  // KWin (X11 size hints) silently starts enforcing a 600 px minimum width on w2.
+  w2.minSize = { width: 600, height: 0 };
+  w2._clamp = { width: 600, height: 0 };
+  const w3 = ws.window({ caption: "w3", resourceClass: "app3" });
+  ws.add(w3); // the stack slots change: w2's narrower request is answered with 600 px
+  qt.drain();
+  assert.ok(w2.frameGeometry.width >= 600);
+  assertTiles([w1, w2, w3], FULL);
+  rt.shutdown();
+});
