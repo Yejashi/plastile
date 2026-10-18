@@ -1,0 +1,64 @@
+{
+  "schema": 1,
+  "notes": [
+    "Actions are kglobalaccel action names in the 'kwin' component. Their key chords are read from the user's kglobalshortcutsrc (read-only) unless --binding overrides them.",
+    "condition 'none': Plastile is not loaded (no tiling script). condition 'plastile': Plastile is loaded.",
+    "expect 'resize': each sample must change the size of at least one fixture window. expect 'activate': each sample must change which fixture is activated.",
+    "P02-quicktile alternates Quick Tile Top and Bottom on a window first tiled Left: Left -> TopLeft -> Left (observed source: kwin v6.7.5 src/window.cpp combineQuickTileMode, handleQuickTileShortcut). It never repeats a mode, so it never moves the window to another output.",
+    "matchedBaseline names the 'none' workload used for the PERFORMANCE section 4 verdict; every other baseline at the same output and window count is reported as a control comparison only."
+  ],
+  "workloads": {
+    "P00-maximize": {
+      "condition": "none",
+      "description": "No tiler: KWin's own Maximize Window toggle on the active fixture (maximize, restore, ...)",
+      "setup": [],
+      "cycle": ["Window Maximize"],
+      "expect": "resize",
+      "minWindows": 1
+    },
+    "P02-quicktile": {
+      "condition": "none",
+      "description": "Native quick tile without a tiler: tile Left once (setup), then alternate Quick Tile Top and Quick Tile Bottom",
+      "setup": ["Window Quick Tile Left"],
+      "cycle": ["Window Quick Tile Top", "Window Quick Tile Bottom"],
+      "expect": "resize",
+      "minWindows": 1
+    },
+    "P00-switch": {
+      "condition": "none",
+      "optional": true,
+      "description": "No tiler: KWin's Switch to Window to the Right (directional focus); needs windows that do not share a centre",
+      "setup": [],
+      "cycle": ["Switch Window Right"],
+      "expect": "activate",
+      "minWindows": 2
+    },
+    "P03-ratio": {
+      "condition": "plastile",
+      "description": "Plastile master/stack ratio: alternate Grow and Shrink focused tile (every window in the context resizes)",
+      "setup": [],
+      "cycle": ["plastile.resize.grow", "plastile.resize.shrink"],
+      "expect": "resize",
+      "matchedBaseline": "P02-quicktile",
+      "minWindows": 2
+    },
+    "P03-swap": {
+      "condition": "plastile",
+      "description": "Plastile Swap with master, repeated (the two windows exchange slots of different sizes)",
+      "setup": [],
+      "cycle": ["plastile.swap.master"],
+      "expect": "resize",
+      "matchedBaseline": "P02-quicktile",
+      "minWindows": 2
+    },
+    "P03-focus": {
+      "condition": "plastile",
+      "description": "Plastile Focus next (activation only; zero geometry writes by design)",
+      "setup": [],
+      "cycle": ["plastile.focus.next"],
+      "expect": "activate",
+      "matchedBaseline": "P00-switch",
+      "minWindows": 2
+    }
+  }
+}

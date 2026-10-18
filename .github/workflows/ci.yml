@@ -4,10 +4,12 @@
 #   - It runs the pure/replay TypeScript tests, the type check, the bundle build,
 #     the documentation integrity check, the release-zip reproducibility check and
 #     the native test-tool builds.
-#   - It does not yet run the nested-KWin integration scenarios
-#     (python3 tests/integration/run.py; locally via tools/sandbox/), and it CANNOT
-#     run physical-session checks. Those layers are reported as NOT RUN, never as
-#     passed.
+#   - The integration-nested job runs the nested-KWin scenarios against real
+#     kwin_wayland 6.7.5 (Ubuntu 26.10 packages) inside a disposable chroot built by
+#     tools/sandbox/create.sh: virtual backend, private D-Bus, QPainter compositing.
+#     Scenarios needing a capability the runner lacks report SKIP by ID.
+#   - It CANNOT run physical-session checks (real outputs, input-to-photon latency);
+#     those are reported as NOT RUN, never as passed.
 #
 # Nothing here publishes, installs into a home directory, or touches a compositor.
 
@@ -145,6 +147,13 @@ jobs:
           make -C tools/input
           test -x build/input/plastile-input
 
+      - name: Physical-session kit (tools/physical) unit tests and build
+        # Offline tests only (synthetic and recorded fixture logs). The live tools
+        # refuse to run outside a real Plasma Wayland session.
+        run: |
+          python3 -m unittest discover -s tools/physical/tests -v
+          make -C tools/physical
+
       - name: Job summary
         if: always()
         # T33 acceptance: CI may not pass by skipping mandatory tests unnoticed.
@@ -157,7 +166,7 @@ jobs:
             echo "|---|---|"
             echo "| Node ${NODE_MAJOR} type check, tests/core (pure + replay), bundle, docs check, release --check, fixture builds | required: job status ${{ job.status }} |"
             echo "| libei-dev install + tools/input build | ${{ steps.input_build.outcome }} |"
-            echo "| Nested KWin integration scenarios (${SCENARIO_COUNT:-?} registered) | **NOT RUN** in CI: run locally with \`sudo tools/sandbox/run.sh -- python3 tests/integration/run.py\` |"
+            echo "| Nested KWin integration scenarios (${SCENARIO_COUNT:-?} registered here) | run by the integration-nested job |"
             echo "| Physical-session checks | **NOT RUN**: requires a live Plasma Wayland desktop |"
             echo
             echo "See docs/status/CI.md for the TEST_MATRIX coverage split."
@@ -219,3 +228,115 @@ jobs:
             echo "Status: ${{ job.status }}. The settings-check binary is only built, not run"
             echo "(it needs a display)."
           } >> "$GITHUB_STEP_SUMMARY"
+
+  integration-nested:
+    # Nested KWin layer (TEST_MATRIX "Nested compositor integration"). Real
+    # kwin_wayland from Ubuntu 26.10 packages in a disposable chroot created by the
+    # committed tools/sandbox/create.sh (same scripts as local runs), virtual backend,
+    # private D-Bus, no GPU (QPainter compositing). Not a physical-session result.
+    name: Nested KWin integration (Ubuntu 26.10 sandbox)
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Create the KWin sandbox (debootstrap Ubuntu 26.10)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends debootstrap
+          sudo PLASTILE_SANDBOX_APPS=0 tools/sandbox/create.sh /opt/plastile-kwin-sandbox stonking
+
+      - name: Build inside the sandbox (npm ci, bundle, fixtures, input injector)
+        run: |
+          sudo tools/sandbox/run.sh -- bash -euc '
+            npm ci
+            npm run build
+            make -C fixtures/client
+            make -C fixtures/xclient
+            make -C tools/input
+          '
+
+      - name: Run nested integration scenarios
+        run: |
+          sudo tools/sandbox/run.sh -- python3 tests/integration/run.py --markdown artifacts/integration-summary.md
+
+      - name: Job summary
+        if: always()
+        run: |
+          if [ -f artifacts/integration-summary.md ]; then
+            cat artifacts/integration-summary.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Nested integration did not produce a summary (setup failed)." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload integration reports and KWin logs
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: nested-integration-${{ github.sha }}
+          if-no-files-found: warn
+          retention-days: 14
+          path: |
+            artifacts/integration/**/report.json
+            artifacts/integration/**/kwin.log
+            artifacts/integration-summary.md
+
+  integration-nested-kwin68:
+    # Second KWin API family: KWin 6.8.0 from the pinned Nix environment in
+    # tools/sandbox/nix (OpenGL via llvmpipe behind an emulated /dev/udmabuf, see its
+    # README). Same suite as integration-nested. continue-on-error until it has been
+    # seen green on a hosted runner (it passes locally: tools/sandbox/nix/README.md);
+    # the outcome is always written to the job summary.
+    name: Nested KWin 6.8 integration (Nix, provisional)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_MAJOR }}
+          cache: npm
+
+      - name: Install Nix (single-user, no daemon)
+        run: |
+          sh <(curl -fsSL https://releases.nixos.org/nix/nix-2.33.0/install) --no-daemon --yes
+          echo "$HOME/.nix-profile/bin" >> "$GITHUB_PATH"
+
+      - name: Build the bundle and fixture clients on the host
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends build-essential pkg-config \
+            libwayland-dev wayland-protocols libxcb1-dev libxcb-icccm4-dev libei-dev
+          npm ci
+          npm run build
+          make -C fixtures/client
+          make -C fixtures/xclient
+          make -C tools/input
+          sudo install -d -m 1777 /tmp/.X11-unix
+
+      - name: Run nested integration scenarios (KWin 6.8)
+        run: |
+          tools/sandbox/nix/run.sh -- kwin_wayland --version
+          tools/sandbox/nix/run.sh -- python3 tests/integration/run.py --markdown artifacts/integration-kwin68-summary.md
+
+      - name: Job summary
+        if: always()
+        run: |
+          echo "Provisional job (continue-on-error); status: ${{ job.status }}" >> "$GITHUB_STEP_SUMMARY"
+          if [ -f artifacts/integration-kwin68-summary.md ]; then
+            cat artifacts/integration-kwin68-summary.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload integration reports and KWin logs
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: nested-integration-kwin68-${{ github.sha }}
+          if-no-files-found: warn
+          retention-days: 14
+          path: |
+            artifacts/integration/**/report.json
+            artifacts/integration/**/kwin.log
+            artifacts/integration-kwin68-summary.md

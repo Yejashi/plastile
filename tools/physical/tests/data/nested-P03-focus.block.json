@@ -1,0 +1,7 @@
+{
+ "workload": "P03-focus",
+ "condition": "plastile",
+ "expect": "activate",
+ "windowCount": 3,
+ "refreshNsObservedAtStart": 16666666
+}
