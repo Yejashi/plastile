@@ -22,6 +22,10 @@ import {
   stripOrder, type ScrollState,
 } from "./layouts/scrolling.ts";
 import {
+  activeZoneLayout, assignZone, bumpZone, nextZoneLayout, projectZones, pruneZones, releaseZones, stepZone, unassignZone, zoneOf, zones,
+  type ZoneState,
+} from "./layouts/zones.ts";
+import {
   contextId, sameContext, type ActivityId, type Constraints, type ContextId, type ContextKey, type ContextSettings, type Decision,
   type DesktopId, type LayoutKind, type Membership, type OutputId, type PlacementMode, type Suspension, type WindowId, type WindowMeta,
   type WindowStates,
@@ -36,8 +40,9 @@ const LAYOUTS: Record<LayoutKind, AnyLayout> = {
   monocle,
   floating,
   scrolling,
+  zones,
 };
-/** Scrolling is experimental and opt-in (ADR-014): selected explicitly, never by the cycle. */
+/** Scrolling and zones are experimental and opt-in (ADR-014): selected explicitly, never by the cycle. */
 const LAYOUT_CYCLE: readonly LayoutKind[] = ["master-stack", "bsp", "monocle", "floating"];
 const DIVERGED = "did not reach its target after bounded corrections";
 /** Preferences kept for dropped (empty) contexts, most recent first out last. */
@@ -49,6 +54,8 @@ export interface WindowRules {
   readonly insert?: "end" | "after-focus" | "master";
   /** Minimum usable frame size for the tile (0 = none); a smaller slot overflows (CONFIGURATION §4). */
   readonly minSize?: Size;
+  /** Zones layout (experimental): zone number (1-based) assigned when the window joins a zones context. */
+  readonly zone?: number;
   /** Every matched rule, in evaluation order. */
   readonly ruleIds: readonly string[];
   /** Field-level reasons: which rule set each final action (CONFIGURATION §4). */
@@ -92,6 +99,17 @@ export interface ConfigChanges {
   readonly rules: boolean;
   /** Context settings may resolve to other values. */
   readonly settings: boolean;
+}
+
+/** What the zones overlay draws (Engine.zoneOverlay): absolute logical rectangles on one output. */
+export interface ZoneOverlayModel {
+  readonly output: OutputId;
+  /** The output's geometry (the overlay window covers it) and its work area. */
+  readonly geometry: Rect;
+  readonly area: Rect;
+  readonly layout: string;
+  /** Zone number (1-based), its projected rectangle, and how many windows are assigned to it. */
+  readonly zones: ReadonlyArray<{ readonly n: number; readonly rect: Rect; readonly windows: number }>;
 }
 
 /** Timing of the most recent solve+apply (only when a clockNs is supplied). */
@@ -187,6 +205,8 @@ export class Engine {
   private endedInteractions = new Map<WindowId, "move" | "resize">();
   /** Windows currently parked by a scrolling strip (recorded before each parking write). */
   private parked = new Map<WindowId, Parked>();
+  /** Zones: the last explanation per window (minimum size does not fit, rule zone missing). */
+  private zoneNotes = new Map<WindowId, string>();
   private queued: Array<{ id: string; arg: unknown }> = [];
   private applying = 0;
   private flushScheduled = false;
@@ -243,6 +263,7 @@ export class Engine {
     this.retryContexts.clear();
     this.endedInteractions.clear();
     this.parked.clear();
+    this.zoneNotes.clear();
     this.queued = [];
   }
 
@@ -271,6 +292,7 @@ export class Engine {
     if (this.cancelDeadline) { this.cancelDeadline(); this.cancelDeadline = null; }
     this.deadlineAt = Infinity;
     this.sweepParked(true); // every parked window back inside its output's work area (SCROLLING §5)
+    this.releaseAllZones(); // zoned windows keep their frames (ZONES §2)
     for (const r of this.recs.values()) {
       L.cancel(r.ledger);
       this.restoreBorder(r);
@@ -338,6 +360,7 @@ export class Engine {
     this.corrections.delete(r.id);
     this.endedInteractions.delete(r.id);
     this.parked.delete(r.id);
+    this.zoneNotes.delete(r.id);
     this.recs.delete(r.id);
   }
 
@@ -492,6 +515,7 @@ export class Engine {
     const kind = this.layoutKind(c);
     if (kind === "monocle") c.states.monocle = { selected: id };
     else if (kind === "scrolling") this.scrollActivated(c, id);
+    else if (kind === "zones") this.zoneActivated(c, id);
   }
 
   /** Visible desktop/activity changed on some output. */
@@ -869,6 +893,7 @@ export class Engine {
       const after = kind === "bsp" ? (focus ?? anchor) : kind === "scrolling" ? scrollAnchor : anchor;
       c.states[kind] = LAYOUTS[kind].insert(c.states[kind], r.id, after, input);
     }
+    if (r.rules?.zone !== undefined) this.zoneByRule(c, r, r.rules.zone);
     c.revision++;
     this.markDirty(c.key);
   }
@@ -903,16 +928,22 @@ export class Engine {
     return this.participates(r) && !r.suspensions.has("interactive");
   }
 
-  /** Writable and its context actually places windows (the floating layout does not). */
+  /** Writable and its context actually places it (the floating layout and an unassigned zones member: no). */
   private ownsGeometry(r: Rec): boolean {
     if (!this.writable(r)) return false;
     const c = this.contexts.get(contextId(r.ctx!));
-    return !!c && this.layoutKind(c) !== "floating";
+    return !!c && !this.placesNothing(c, r.id);
   }
 
   private inFloatingLayout(r: Rec): boolean {
     const c = r.ctx ? this.contexts.get(contextId(r.ctx)) : undefined;
-    return !!c && this.layoutKind(c) === "floating";
+    return !!c && this.placesNothing(c, r.id);
+  }
+
+  /** The context places nothing for this member: the floating layout, or zones without an assignment. */
+  private placesNothing(c: Ctx, id: WindowId): boolean {
+    const kind = this.layoutKind(c);
+    return kind === "floating" || (kind === "zones" && !this.zoneAssigned(c, id));
   }
 
   // ---------------------------------------------------------------- scheduling
@@ -1086,7 +1117,8 @@ export class Engine {
     if (kind === "scrolling") {
       input = this.scrollInput(c, input);
       state = this.revealState(c, state, input.focused, input);
-    }
+    } else if (kind === "zones") state = this.zonePrune(c, state as ZoneState, input);
+    if (kind !== "zones" && c.states.zones !== undefined) this.releaseZones(c); // another layout owns the context now
     const res = lay.solve(state, input);
     const t1 = clock ? clock() : 0;
     const writes0 = this.counters.writes;
@@ -1102,6 +1134,7 @@ export class Engine {
     c.plan = res.slots;
     c.applied = c.revision;
     this.noteParking(c, res.slots, res.parked, res.virtual);
+    if (kind === "zones") this.noteZones(c, res.notes);
     const tol = frameTolerance(this.scales.get(c.key.output) ?? 1);
     this.applying++;
     try {
@@ -1251,6 +1284,7 @@ export class Engine {
     // KWin finished the drag with its own state (drag-to-maximize maximizes before it
     // reports the end): the drop frame is KWin's, not a swap or boundary intent.
     if (!slot || !this.participates(r)) { this.markDirty(c.key); return; }
+    if (this.zoneInteractionEnded(c, r)) return;
     const f = this.host.frame(r.id, r.gen) ?? r.frame;
     if (kind === "move") {
       // Drop onto another tile swaps positions; anywhere else snaps back (one solve).
@@ -1361,7 +1395,7 @@ export class Engine {
       }
       if (action === "reconcile" || action === "reload-config") return noop("handled by the host adapter");
     }
-    if (family === "inspect") return noop("handled by the host adapter");
+    if (family === "inspect" || id === "plastile.zone.show") return noop("handled by the host adapter");
     if (this.suspended) return { status: "rejected", reason: "tiling suspended", targets: [] };
 
     const c = this.commandCtx(r);
@@ -1391,11 +1425,12 @@ export class Engine {
         next = i < 0 ? LAYOUT_CYCLE[action === "next" ? 0 : LAYOUT_CYCLE.length - 1]
           : LAYOUT_CYCLE[(i + (action === "next" ? 1 : LAYOUT_CYCLE.length - 1)) % LAYOUT_CYCLE.length];
       } else if (action === "master-stack" || action === "bsp" || action === "monocle" || action === "floating"
-                 || action === "scrolling") {
+                 || action === "scrolling" || action === "zones") {
         next = action;
       }
       if (next !== null) {
         if (next === cur) return noop(`already ${cur}`);
+        if (cur === "zones") this.releaseZones(c); // zoned windows keep their frames (ZONES §2)
         c.layoutOverride = next;
         if (next === "floating") this.restoreFloatRects(c);
         this.solveNow(c);
@@ -1428,12 +1463,14 @@ export class Engine {
       return this.layoutCommand(c, { kind: "master-count", delta: action === "increase" ? 1 : -1 });
     }
     if (family === "context" && action === "reset") {
+      this.releaseZones(c);
       c.layoutOverride = null;
       c.states = {};
       this.solveNow(c);
       return ok(c.members.slice());
     }
     if (family === "scroll") return this.scrollCommand(c, r, action);
+    if (family === "zone") return this.zoneCommand(c, r, action);
     if (family === "focus") return this.focusCommand(c, r, action);
     if (family === "swap") return this.swapCommand(c, r, action);
     if (family === "move") return this.moveCommand(c, r, action);
@@ -1830,6 +1867,186 @@ export class Engine {
     return { status: "accepted", targets: [r.id, other] };
   }
 
+  // ---------------------------------------------------------- zones (M9, experimental)
+  //
+  // Manual placement (docs/design/ZONES.md): only windows assigned to a zone, by command or by a
+  // rule's `zone`, are placed; the other members of a zones context are ordinary floating windows
+  // (placesNothing: no slot, no writes, and where the user puts them is their float rectangle).
+  // Assignments live in the context's ZoneState. Leaving the layout, a configuration that removes
+  // the zone, suspending and unloading release them without moving any window (releaseZones).
+
+  private zoneAssigned(c: Ctx, id: WindowId): boolean {
+    const st = c.states.zones as ZoneState | undefined;
+    return !!st && st.assigned[id] !== undefined;
+  }
+
+  private zoneState(c: Ctx): ZoneState {
+    return this.layoutState(c, "zones") as ZoneState;
+  }
+
+  /** One window leaves its zone where it is: no write, and its frame becomes its float rectangle. */
+  private zoneRelease(id: WindowId): void {
+    this.zoneNotes.delete(id);
+    const r = this.recs.get(id);
+    if (!r) return;
+    L.cancel(r.ledger);
+    this.corrections.delete(id);
+    const now = this.host.frame(r.id, r.gen);
+    if (now) r.frame = now;
+    if (r.suspensions.size === 0) r.floatRect = r.frame;
+  }
+
+  /** Release every assignment of a context; the zone layout choice is kept. */
+  private releaseZones(c: Ctx): void {
+    const st = c.states.zones as ZoneState | undefined;
+    if (!st) return;
+    const next = releaseZones(st);
+    if (next === st) return;
+    for (const id of Object.keys(st.assigned)) this.zoneRelease(id);
+    c.states.zones = next;
+    c.revision++;
+    this.trace.record(this.svc.now(), "zone", c.id, { released: Object.keys(st.assigned).length });
+  }
+
+  private releaseAllZones(): void {
+    for (const c of this.contexts.values()) this.releaseZones(c);
+  }
+
+  /** Assignments to zones the active zone layout does not have (after a configuration change) are released. */
+  private zonePrune(c: Ctx, state: ZoneState, input: SolveInput): ZoneState {
+    const p = pruneZones(state, activeZoneLayout(state, input.settings.zones).zones.length);
+    if (p.dropped.length === 0) return state;
+    for (const id of p.dropped) this.zoneRelease(id);
+    c.states.zones = p.state;
+    return p.state;
+  }
+
+  /** Keep each assigned window's explanation (a minimum size that does not fit its zone) for explain. */
+  private noteZones(c: Ctx, notes: readonly string[]): void {
+    for (const id of c.members) {
+      if (!this.zoneAssigned(c, id)) continue;
+      const prefix = id + ": ";
+      let note: string | null = null;
+      for (const n of notes) if (n.indexOf(prefix) === 0) note = n.slice(prefix.length);
+      if (note === null) { this.zoneNotes.delete(id); continue; }
+      if (this.zoneNotes.get(id) === note) continue;
+      this.zoneNotes.set(id, note);
+      this.trace.record(this.svc.now(), "zone", id, { note });
+      this.svc.log("info", "zone placement", { id, note });
+    }
+  }
+
+  /** An activated zoned window becomes the top of its zone (raised by KWin already; no solve). */
+  private zoneActivated(c: Ctx, id: WindowId): void {
+    const st = c.states.zones as ZoneState | undefined;
+    if (st) c.states.zones = bumpZone(st, id);
+  }
+
+  /** A rule's `zone: n` assigns a window that joins a zones context (ZONES §2); a missing zone is explained. */
+  private zoneByRule(c: Ctx, r: Rec, n: number): void {
+    if (this.layoutKind(c) !== "zones") return;
+    const st = this.zoneState(c);
+    const layout = activeZoneLayout(st, this.ctxSettings(c).zones);
+    const o = assignZone(st, r.id, n - 1, layout.zones.length, layout.id);
+    if (!o.changed) {
+      const why = `${r.rules?.reasons?.zone ?? "rule"}: ${o.reason}; the window floats`;
+      this.zoneNotes.set(r.id, why);
+      this.trace.record(this.svc.now(), "zone", r.id, { note: why });
+      return;
+    }
+    if (r.suspensions.size === 0) r.floatRect = r.frame;
+    c.states.zones = o.state;
+    this.zoneNotes.delete(r.id);
+  }
+
+  /**
+   * The user moved or resized a zoned window: it leaves its zone where the user put it, instead of
+   * snapping back (manual placement; never fight the user). One solve, which writes nothing.
+   */
+  private zoneInteractionEnded(c: Ctx, r: Rec): boolean {
+    if (this.layoutKind(c) !== "zones") return false;
+    const st = c.states.zones as ZoneState | undefined;
+    if (!st || zoneOf(st, r.id) === null) return false;
+    this.zoneRelease(r.id);
+    c.states.zones = unassignZone(st, r.id).state;
+    r.ledger.request = null;
+    c.revision++;
+    this.markDirty(c.key);
+    this.ensureFlush();
+    this.trace.record(this.svc.now(), "zone", r.id, { released: "interaction" });
+    return true;
+  }
+
+  /** plastile.zone.*: assign-1..9, next, previous, unassign, layout-next (ZONES §3). */
+  private zoneCommand(c: Ctx, r: Rec | null, action: string): { status: CommandStatus; reason?: string; targets: string[] } {
+    const noop = (reason?: string) => ({ status: "noop" as const, reason: reason ?? "no change", targets: [] as string[] });
+    if (this.layoutKind(c) !== "zones") return noop("the layout here is not zones");
+    const z = this.ctxSettings(c).zones;
+    const st = this.zoneState(c);
+    if (action === "layout-next") {
+      const o = nextZoneLayout(st, z);
+      if (!o.changed) return noop(o.reason);
+      for (const id of o.dropped) this.zoneRelease(id);
+      c.states.zones = o.state;
+      this.solveNow(c);
+      return { status: "accepted", targets: Object.keys(o.state.assigned) };
+    }
+    if (!r || !this.participates(r) || !sameContext(r.ctx, c.key)) {
+      return noop(r && r.mode === "floating" && r.userMode === "floating"
+        ? "the active window was floated by Toggle floating; toggle it back to place it in a zone"
+        : "active window is not a member of this zones context");
+    }
+    const layout = activeZoneLayout(st, z);
+    const count = layout.zones.length;
+    const m = /^assign-([1-9])$/.exec(action);
+    const o = m ? assignZone(st, r.id, Number(m[1]) - 1, count, layout.id)
+      : action === "next" ? stepZone(st, r.id, 1, count, layout.id)
+      : action === "previous" ? stepZone(st, r.id, -1, count, layout.id)
+      : action === "unassign" ? unassignZone(st, r.id) : null;
+    if (o === null) return { status: "rejected", reason: "unsupported command", targets: [] };
+    if (!o.changed) return noop(o.reason);
+    if (zoneOf(o.state, r.id) === null) this.zoneRelease(r.id); // unassigned: stays where it is
+    else if (zoneOf(st, r.id) === null && r.suspensions.size === 0) r.floatRect = r.frame; // Toggle floating returns here
+    c.states.zones = o.state;
+    this.solveNow(c);
+    return { status: "accepted", targets: [r.id] };
+  }
+
+  private zoneExplain(c: Ctx, r: Rec): Record<string, unknown> {
+    const st = (c.states.zones as ZoneState | undefined) ?? null;
+    const i = st ? zoneOf(st, r.id) : null;
+    return { layout: activeZoneLayout(st, this.ctxSettings(c).zones).id, zone: i === null ? null : i + 1,
+             note: this.zoneNotes.get(r.id) ?? null };
+  }
+
+  /**
+   * What the optional overlay draws on the active output (ZONES §4): the rectangles projectZones
+   * gives for the zone layout of the context shown there, the same function and inputs a solve
+   * uses, so the overlay cannot disagree with placements. Pure read: creates no context.
+   */
+  zoneOverlay(): ZoneOverlayModel | { reason: string } {
+    if (!this.alive) return { reason: "runtime stopped" };
+    const out = this.host.activeOutput();
+    if (out === null) return { reason: "no active output" };
+    const desk = this.host.visibleDesktop(out);
+    if (desk === null) return { reason: "no desktop is shown on the active output" };
+    const key: ContextKey = { output: out, desktop: desk, activity: this.host.currentActivity() };
+    const c = this.contexts.get(contextId(key));
+    const settings = c ? this.ctxSettings(c) : this.settingsFor(key);
+    const kind = c ? this.layoutKind(c) : (this.retained.get(contextId(key))?.prefs.layout ?? settings.layout);
+    if (kind !== "zones") return { reason: `the layout here is ${kind}, not zones` };
+    const area = this.host.workArea(out, desk);
+    if (!isValidArea(area)) return { reason: "the output has no usable area" };
+    let geometry: Rect = area;
+    for (const o of this.host.outputs()) if (o.id === out) geometry = o.geometry;
+    const st = c ? (c.states.zones as ZoneState | undefined) ?? null : null;
+    const layout = activeZoneLayout(st, settings.zones);
+    const rects = projectZones(layout.zones, area, settings.gaps);
+    const counts = rects.map(() => 0);
+    if (st) for (const id of Object.keys(st.assigned)) if (st.assigned[id] < counts.length) counts[st.assigned[id]]++;
+    return { output: out, geometry, area, layout: layout.id, zones: rects.map((r, i) => ({ n: i + 1, rect: r, windows: counts[i] })) };
+  }
+
   // ------------------------------------------------------------------- borders
 
   private applyBorderPolicy(r: Rec): void {
@@ -1866,6 +2083,7 @@ export class Engine {
       learnedMin: r.learnedMin, learnedMax: r.learnedMax, ledger: { status: r.ledger.status, outstanding: r.ledger.outstanding,
         desired: r.ledger.desired, corrections: r.ledger.corrections }, slot: c?.plan.get(r.id) ?? null,
       exception: r.exception, nativeTile: r.nativeTile, nativeYield: r.nativeYield, parked: this.parked.has(r.id),
+      zone: c && this.layoutKind(c) === "zones" ? this.zoneExplain(c, r) : null,
     };
   }
 
@@ -1947,6 +2165,7 @@ function explainRules(w: WindowRules): Record<string, unknown> {
   if (w.border !== undefined) actions.border = w.border;
   if (w.insert !== undefined) actions.insert = w.insert;
   if (w.minSize !== undefined) actions.minSize = `${w.minSize.width}x${w.minSize.height}`;
+  if (w.zone !== undefined) actions.zone = String(w.zone);
   return { ids: w.ruleIds.slice(), actions, reasons: { ...(w.reasons ?? {}) } };
 }
 

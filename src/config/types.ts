@@ -23,6 +23,8 @@ export interface RuleActions {
   readonly insert?: "end" | "after-focus" | "master";
   /** Minimum usable frame size for the window's tile (logical px, 0 = no preference); a smaller slot overflows. */
   readonly minSize?: { readonly width: number; readonly height: number };
+  /** Zones layout (experimental): assign the window to this zone (1-based) when it joins a zones context. */
+  readonly zone?: number;
 }
 
 export interface WindowRuleResult {
@@ -66,6 +68,8 @@ export interface SettingsPatch {
   masterStack?: Partial<MasterStackSettings>;
   bsp?: Partial<BspSettings>;
   scrolling?: Partial<ScrollingSettings>;
+  /** Only the selection: the zone layouts themselves come from the top-level `zoneLayouts`. */
+  zones?: { layout?: string };
   overflow?: "float-new";
   singleWindowGaps?: boolean;
   followOnSend?: boolean;
