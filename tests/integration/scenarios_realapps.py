@@ -39,6 +39,8 @@ RAW_DIR = ROOT / "artifacts/realapps"
 FIX = "plastile-fixture"
 FIELDS = (
     "({id: String(w.internalId), caption: w.caption, appId: w.resourceClass, resourceName: w.resourceName, pid: w.pid,"
+    # Plastile's own UI (the inspector the explain command opens), by adapter.ts isOwnUi's rule.
+    " own: w.caption === 'Plastile inspector' && !w.resourceClass && !w.desktopFileName && !(w.pid > 0),"
     " frame: {x: w.frameGeometry.x, y: w.frameGeometry.y, width: w.frameGeometry.width, height: w.frameGeometry.height},"
     " client: {x: w.clientGeometry.x, y: w.clientGeometry.y, width: w.clientGeometry.width, height: w.clientGeometry.height},"
     " minSize: {width: w.minSize.width, height: w.minSize.height}, maxSize: {width: w.maxSize.width, height: w.maxSize.height},"
@@ -325,7 +327,8 @@ def run_app(app: App, out: Path, c: Checks) -> None:
                 errs = tiling_errors(tiled_set, area, 8)
                 if mode == "tiled":
                     c(f"{app.name}: tiled with the fixtures without overlap (oracle)", not errs, errs)
-                    others = [w for w in ws if w["appId"] != FIX and w["id"] != main["id"] and not w["transient"] and w["normalWindow"]]
+                    others = [w for w in ws if w["appId"] != FIX and w["id"] != main["id"] and not w["transient"] and w["normalWindow"]
+                              and not w.get("own")]
                     c(f"{app.name}: no extra untracked normal windows", not others, [label(w) for w in others])
                 else:
                     c(f"{app.name}: floating window keeps its own size (not fought)",
