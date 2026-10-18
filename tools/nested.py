@@ -74,6 +74,7 @@ class NestedKwin:
         kwinrc: str | None = None,
         name: str | None = None,
         prepare=None,
+        kwin_bin: str = "kwin_wayland",
     ) -> None:
         self.name = name or f"s{os.getpid()}-{_monotonic_ns() % 10**8}"
         self.root = SHORT_BASE / self.name
@@ -85,6 +86,8 @@ class NestedKwin:
         # Optional callable(session) run after the private tree exists and before
         # KWin starts, e.g. to install packages into the nested data home.
         self.prepare = prepare
+        # The compositor executable (default: kwin_wayland from PATH).
+        self.kwin_bin = kwin_bin
         self.socket = "wl-0"
         self._dbus: subprocess.Popen | None = None
         self._kwin: subprocess.Popen | None = None
@@ -161,7 +164,7 @@ class NestedKwin:
         self._wait(lambda: (self.run_dir / "bus").exists(), 5.0, "private D-Bus socket")
         if self.prepare is not None:
             self.prepare(self)
-        cmd =["kwin_wayland", "--virtual", "--socket", self.socket,
+        cmd = [self.kwin_bin, "--virtual", "--socket", self.socket,
                "--width", str(self.width), "--height", str(self.height),
                "--output-count", str(self.outputs), "--no-lockscreen"]
         if self.xwayland:

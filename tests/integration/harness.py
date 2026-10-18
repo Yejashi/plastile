@@ -111,7 +111,8 @@ class Session:
     """One nested KWin plus the Plastile package and fixture clients."""
 
     def __init__(self, out: Path, outputs: int = 1, config: dict | None = None, width=1280, height=800,
-                 extra_env: dict | None = None, qml: Path = PACKAGE_QML, xwayland: bool = False, kwinrc_extra: str = ""):
+                 extra_env: dict | None = None, qml: Path = PACKAGE_QML, xwayland: bool = False, kwinrc_extra: str = "",
+                 kwin_bin: str = "kwin_wayland"):
         self.out = out
         out.mkdir(parents=True, exist_ok=True)
         self.config = {"diagnostics": "info", **(config or {})}
@@ -119,7 +120,7 @@ class Session:
         self.kwinrc_extra = kwinrc_extra
         self.qml = qml
         self.kw = NestedKwin(out, outputs=outputs, width=width, height=height, kwinrc=self.kwinrc(), extra_env=extra_env,
-                             xwayland=xwayland)
+                             xwayland=xwayland, kwin_bin=kwin_bin)
         self.fixtures: dict[int, Fixture] = {}
         self.loaded = False
 

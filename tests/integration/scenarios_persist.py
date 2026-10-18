@@ -14,6 +14,7 @@ import re
 import json
 import os
 import select
+import shutil
 import struct
 import threading
 import time
@@ -181,6 +182,27 @@ def xdg(base: Path) -> dict:
     (base / "state/plastile").mkdir(parents=True, exist_ok=True)
     (base / "config").mkdir(parents=True, exist_ok=True)
     return {"XDG_STATE_HOME": str(base / "state"), "XDG_CONFIG_HOME": str(base / "config")}
+
+
+def nix_unwrapped_kwin() -> tuple[str, str | None]:
+    """(executable, wrapper): the binary behind a nixpkgs wrapQtAppsHook wrapper of kwin_wayland, or
+    ("kwin_wayland", None) when kwin_wayland is not such a wrapper (distribution packages)."""
+    found = shutil.which("kwin_wayland")
+    if found is None:
+        return "kwin_wayland", None
+    cur = Path(found).resolve()
+    wrapper = None
+    for _ in range(4):  # makeWrapper may wrap a wrapper
+        nxt = cur.parent / f".{cur.name}-wrapped"
+        try:
+            marked = b"NIXPKGS_QT6_QML_IMPORT_PATH" in cur.read_bytes()
+        except OSError:
+            break
+        if not (marked and nxt.exists()):
+            break
+        wrapper = wrapper or str(cur)
+        cur = nxt
+    return (str(cur), wrapper) if wrapper else ("kwin_wayland", None)
 
 
 def psession(out: Path, base: Path, extra_env: dict | None = None, **kw) -> Session:
@@ -497,18 +519,27 @@ def persist_no_qtcore(out: Path, c: Checks):
     (shadow / "qmldir").write_text("module QtCore\nSettings 6.0 Missing.qml\n")
     base = out / "xdg"
     # Qt searches QML2_IMPORT_PATH before QML_IMPORT_PATH (qqmltypeloader.cpp, "5. $QML2_IMPORT_PATH
-    # 6. $QML_IMPORT_PATH"), and some environments (the Nix KWin 6.8 wrapper) set both, so the shadow
+    # 6. $QML_IMPORT_PATH"), and some environments (the Nix KWin 6.8 sandbox) set both, so the shadow
     # goes first on both or the real QtCore is still found.
     paths = {v: os.pathsep.join([str(shadow.parent)] + ([os.environ[v]] if os.environ.get(v) else []))
              for v in ("QML2_IMPORT_PATH", "QML_IMPORT_PATH")}
-    with psession(out / "s", base, extra_env=paths) as s:
+    kwin_bin, wrapper = nix_unwrapped_kwin()
+    if wrapper is not None:
+        # nixpkgs' qtdeclarative adds NIXPKGS_QT6_QML_IMPORT_PATH after both (highest priority), and
+        # wrapQtAppsHook's wrapper prefixes it with qtdeclarative's own qml directory, so no
+        # environment can put the shadow first through the wrapper: run the wrapped binary instead,
+        # with the shadow first on that variable too (run.sh's environment carries everything else).
+        paths["NIXPKGS_QT6_QML_IMPORT_PATH"] = os.pathsep.join(
+            [str(shadow.parent)] + [p for p in (os.environ.get("QML2_IMPORT_PATH"),) if p])
+    with psession(out / "s", base, extra_env=paths, kwin_bin=kwin_bin) as s:
         s.spawn(1); s.spawn(2); s.spawn(3)
         s.load(); s.settle()
         area = s.area()
         diag = s.log_lines(r"plastile warn persistence unavailable")
         c("Q05: tiles without persistence (oracle)", not tiling_errors(s.frames_list(), area, GAP),
           tiling_errors(s.frames_list(), area, GAP))
-        c("Q05: one diagnostic naming the QtCore failure", len(diag) == 1 and "QtCore" in diag[0], diag)
+        c("Q05: one diagnostic naming the QtCore failure", len(diag) == 1 and "QtCore" in diag[0],
+          {"diagnostics": diag, "kwin": kwin_bin, "bypassedWrapper": wrapper})
         w0 = s.frames()[fx(1)]["frame"]["width"]
         s.act(fx(1), "workspace.activeWindow = w")
         a = s.counters()
