@@ -429,6 +429,7 @@ def persist_reload_restart(out: Path, c: Checks):
     c("facts (recorded, always passes)", True, facts)
 
 
+
 # ------------------------------------------------------------- T27: KWin exits
 def master_ratio(snap: dict | None) -> float | None:
     return next((x["masterStack"]["ratio"] for x in (snap or {}).get("contexts", []) if x["outputKey"] == "Virtual-0"
@@ -494,8 +495,13 @@ def persist_kwin_exit(out: Path, c: Checks):
 # --------------------------------------------------------------------- Q06
 @scenario("persist-ambiguous-Q06")
 def persist_ambiguous(out: Path, c: Checks):
-    """A saved float for an application with two live windows is not given to either: both get ordinary insertion.
-    With one window again it is restored (positive control)."""
+    """A saved float for an application with two live windows, neither of them the window it was taken from, is not
+    given to either: both get ordinary insertion. With one window again it is restored (positive control).
+
+    Each saved float also names the window it was taken from, a same-session hint (ADR-020 addendum): while that
+    window is still open it is the one the user floated, so the first reload (a second instance opened while
+    Plastile was disabled) restores the float to it alone. The ambiguity rule is checked after that window closed,
+    when the hint names no live window."""
     base = out / "xdg"
     with psession(out / "s", base) as s:
         s.spawn(1); spawn_app(s, 9)
@@ -507,34 +513,50 @@ def persist_ambiguous(out: Path, c: Checks):
         time.sleep(2.8)
         saved = frame_of(s, 9)
         snap = newest(base)
-        c("precondition: the float is saved (file)", bool(snap) and any(f["appId"] == SOLO for f in snap["floats"]), snap)
+        id9 = window_info(s, fx(9), "String(w.internalId)")
+        c("precondition: the float is saved with the window it was taken from (file)",
+          bool(snap) and any(f["appId"] == SOLO and f["windowHint"] == id9 for f in snap["floats"]),
+          {"snapshot": snap, "id9": id9})
         s.unload()
         spawn_app(s, 10)  # a second instance of the same application
         pload(s); cc = s.settle()
         modes = {i: explain(s, fx(i))["mode"] for i in (9, 10)}
-        frames = [{"caption": fx(i), "frame": frame_of(s, i)} for i in (1, 9, 10)]
-        c("Q06: two live windows of the application: neither gets the saved float, both tile (explain + oracle)",
-          modes == {9: "tiled", 10: "tiled"} and not tiling_errors(frames, s.area(), GAP),
+        frames = [{"caption": fx(i), "frame": frame_of(s, i)} for i in (1, 10)]
+        c("same window: the float goes to the window it was taken from (9), at its rectangle; the second instance tiles "
+          "(explain + oracle)", modes == {9: "floating", 10: "tiled"} and near(frame_of(s, 9) or {}, saved, 1)
+          and not tiling_errors(frames, s.area(), GAP),
+          {"modes": modes, "frame9": frame_of(s, 9), "want": saved, "errors": tiling_errors(frames, s.area(), GAP)})
+        c("same window: one float restored, none ambiguous (counters)", cc["counters"]["restored"] == 1
+          and cc["counters"]["restoreAmbiguous"] == 0, cc["counters"])
+        s.unload()
+        s.kill(9, wait=False)  # the window the float was taken from closes while Plastile is disabled
+        s.wait_for(lambda: frame_of(s, 9) is None, 5, "unmap fixture 9")
+        spawn_app(s, 11)  # two instances again, neither the hinted window
+        pload(s); cc = s.settle()
+        modes = {i: explain(s, fx(i))["mode"] for i in (10, 11)}
+        frames = [{"caption": fx(i), "frame": frame_of(s, i)} for i in (1, 10, 11)]
+        c("Q06: two live windows of the application, neither the hinted one: neither gets the saved float, both tile "
+          "(explain + oracle)", modes == {10: "tiled", 11: "tiled"} and not tiling_errors(frames, s.area(), GAP),
           {"modes": modes, "errors": tiling_errors(frames, s.area(), GAP)})
         c("Q06: counted as ambiguous, nothing restored (counters)", cc["counters"]["restored"] == 0
           and cc["counters"]["restoreAmbiguous"] >= 1, cc["counters"])
         s.unload()
         c("Q06: the saved float is kept for later, not dropped (file)",
           any(f["appId"] == SOLO for f in (newest(base) or {}).get("floats", [])), newest(base))
+        s.kill(11, wait=False)
+        s.wait_for(lambda: frame_of(s, 11) is None, 5, "unmap fixture 11")
+        pload(s); cc = s.settle()
+        c("positive control: with one window again the float is restored by application identity (oracle)",
+          near(frame_of(s, 10) or {}, saved, 1) and explain(s, fx(10))["mode"] == "floating" and cc["counters"]["restored"] == 1,
+          {"want": saved, "got": frame_of(s, 10), "counters": cc["counters"]})
         s.kill(10, wait=False)
         s.wait_for(lambda: frame_of(s, 10) is None, 5, "unmap fixture 10")
-        pload(s); cc = s.settle()
-        c("positive control: with one window again the float is restored (oracle)",
-          near(frame_of(s, 9) or {}, saved, 1) and explain(s, fx(9))["mode"] == "floating" and cc["counters"]["restored"] == 1,
-          {"want": saved, "got": frame_of(s, 9), "counters": cc["counters"]})
-        s.kill(9, wait=False)
-        s.wait_for(lambda: frame_of(s, 9) is None, 5, "unmap fixture 9")
-        spawn_app(s, 11)  # the application opened again in the same session
+        spawn_app(s, 12)  # the application opened again in the same session
         time.sleep(0.3)
         s.settle()
         c("same session: the application's next window floats at the saved rectangle (oracle)",
-          near(frame_of(s, 11) or {}, saved, 1) and explain(s, fx(11))["mode"] == "floating",
-          {"want": saved, "got": frame_of(s, 11)})
+          near(frame_of(s, 12) or {}, saved, 1) and explain(s, fx(12))["mode"] == "floating",
+          {"want": saved, "got": frame_of(s, 12)})
         c("no errors or JS exceptions logged", not unexpected(s), unexpected(s)[:5])
 
 

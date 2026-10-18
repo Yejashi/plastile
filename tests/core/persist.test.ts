@@ -8,9 +8,9 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { rect, rectNear } from "../../src/core/geometry.ts";
 import {
-  buildSnapshot, contentOf, MAX_CONTEXTS, MAX_TEXT, parse, SCHEMA_VERSION, serialize, validate, type Snapshot,
+  buildSnapshot, contentOf, MAX_CONTEXTS, MAX_HINT, MAX_TEXT, parse, SCHEMA_VERSION, serialize, validate, type Snapshot,
 } from "../../src/persist/snapshot.ts";
-import { migrate, type RawSnapshot } from "../../src/persist/migrate.ts";
+import { MIGRATIONS, migrate, type RawSnapshot } from "../../src/persist/migrate.ts";
 import { identityKey, matchFloat } from "../../src/persist/match.ts";
 import { DEBOUNCE_MS, Persister, type StateStore } from "../../src/runtime/persistence.ts";
 import { createRuntime } from "../../src/runtime/main.ts";
@@ -68,16 +68,28 @@ class FakeStore implements StateStore {
 
 // ------------------------------------------------------------------ snapshot
 
-test("T27: a v1 fixture parses, and serializing it gives the same text (canonical form, round trip)", () => {
-  const text = fixture("v1.json").trim();
+test("T27: a current-version fixture parses, and serializing it gives the same text (canonical form, round trip)", () => {
+  assert.equal(SCHEMA_VERSION, 2);
+  const text = fixture("v2-from-v1.json").trim();
   const p = parse(text);
   assert.ok(p.ok, p.ok ? "" : p.reason);
   assert.equal(p.snapshot.schemaVersion, SCHEMA_VERSION);
+  assert.equal(p.migratedFrom, 2);
   assert.equal(p.snapshot.generation, 7);
   assert.deepEqual(p.snapshot.contexts.map((c) => [c.outputKey, c.layout, c.masterStack?.ratio ?? null]),
     [["Virtual-0", null, 0.65], ["edid:Dell/U2720Q/ABC", "bsp", null]]);
   assert.equal(p.snapshot.floats[0].appId, "plastile-solo");
+  assert.equal(p.snapshot.floats[0].windowHint, "");
   assert.equal(serialize(p.snapshot), text);
+});
+
+test("T27: a version-1 file still loads: migrated to version 2, every float without a window hint", () => {
+  const p = parse(fixture("v1.json").trim());
+  assert.ok(p.ok, p.ok ? "" : p.reason);
+  assert.equal(p.migratedFrom, 1);
+  assert.equal(p.snapshot.schemaVersion, 2);
+  assert.deepEqual(p.snapshot.floats.map((f) => f.windowHint), [""]);
+  assert.equal(serialize(p.snapshot), fixture("v2-from-v1.json").trim(), "the same data as the migration's output fixture");
 });
 
 test("T27: buildSnapshot from the engine's preferences round-trips through parse", () => {
@@ -85,11 +97,13 @@ test("T27: buildSnapshot from the engine's preferences round-trips through parse
     [{ key: { output: "DP-1", desktop: DESK, activity: "a1" }, prefs: { layout: "monocle", masterStack: null } },
      { key: { output: "DP-2", desktop: DESK, activity: "a1" }, prefs: { layout: null, masterStack: { ratio: 0.7, masterCount: 2 } } }],
     [{ app: { appId: "org.kde.kate", resourceName: "kate", role: "MainWindow#1" },
-       float: { rect: rect(10.5, 20, 640, 480), output: "DP-1", area: rect(0, 0, 1920, 1050) } }],
+       float: { rect: rect(10.5, 20, 640, 480), output: "DP-1", area: rect(0, 0, 1920, 1050) },
+       window: "{0a1b2c3d-0000-4000-8000-00000000000a}" }],
     3, "2026-10-18T00:00:00.000Z");
   const p = parse(serialize(s));
   assert.ok(p.ok, p.ok ? "" : p.reason);
   assert.deepEqual(p.snapshot, s);
+  assert.equal(p.snapshot.floats[0].windowHint, "{0a1b2c3d-0000-4000-8000-00000000000a}", "the window hint is kept");
   assert.equal(contentOf(serialize(p.snapshot)), contentOf(serialize({ ...s, generation: 99, savedAt: "later" })),
     "content ignores generation and time");
 });
@@ -127,7 +141,7 @@ test("T27/Q07: invalid, partial, empty and oversized texts are rejected as a who
   assert.ok(!parse("").ok);
   assert.ok(!parse(" ".repeat(MAX_TEXT + 1)).ok);
   assert.ok(!parse("[1,2]").ok);
-  const base = JSON.parse(fixture("v1.json")) as RawSnapshot;
+  const base = JSON.parse(fixture("v2-from-v1.json")) as RawSnapshot;
   const variant = (f: (o: any) => void): boolean => { // eslint-disable-line @typescript-eslint/no-explicit-any
     const o = JSON.parse(JSON.stringify(base));
     f(o);
@@ -147,6 +161,16 @@ test("T27/Q07: invalid, partial, empty and oversized texts are rejected as a who
   assert.ok(!variant((o) => { o.floats[0].area.x = "0"; }), "string coordinate");
   assert.ok(!variant((o) => { o.floats.push(o.floats[0]); }), "duplicate application identity");
   assert.ok(!variant((o) => { o.floats[0].appId = ""; }), "no application id");
+  assert.ok(variant((o) => { o.floats[0].windowHint = "{0a1b2c3d-0000-4000-8000-00000000000a}"; }), "a window hint");
+  assert.ok(variant((o) => { o.floats[0].windowHint = "x".repeat(MAX_HINT); }), "a window hint at the length bound");
+  assert.ok(!variant((o) => { o.floats[0].windowHint = "x".repeat(MAX_HINT + 1); }), "a window hint over the bound");
+  assert.ok(!variant((o) => { o.floats[0].windowHint = 7; }), "a window hint that is not a string");
+  assert.ok(!variant((o) => { o.floats[0].windowHint = null; }), "a null window hint");
+  assert.ok(!variant((o) => { delete o.floats[0].windowHint; }), "a version-2 float without its window hint");
+  assert.ok(!variant((o) => { o.schemaVersion = 1; }), "validation is of the current version only (parse migrates first)");
+  const long = JSON.parse(JSON.stringify(base));
+  long.floats[0].windowHint = "x".repeat(MAX_HINT + 1);
+  assert.match((validate(long) as { reason: string }).reason, /^floats\[0\]\.windowHint: must be a string of at most 128 characters$/);
 });
 
 // ----------------------------------------------------------------- migration
@@ -154,13 +178,36 @@ test("T27/Q07: invalid, partial, empty and oversized texts are rejected as a who
 test("T27/Q07: an unknown future schema is rejected as such, never downgraded", () => {
   const p = parse(fixture("future.json"));
   assert.ok(!p.ok && p.future, JSON.stringify(p));
-  assert.match(p.ok ? "" : p.reason, /schema version 99 is newer than this Plastile's 1/);
+  assert.match(p.ok ? "" : p.reason, /schema version 99 is newer than this Plastile's 2/);
+  // The next version up is as unknown: a version-3 file is never read as version 2.
+  const v3 = JSON.parse(fixture("v2-from-v1.json")) as RawSnapshot;
+  v3.schemaVersion = 3;
+  const q = parse(JSON.stringify(v3));
+  assert.ok(!q.ok && q.future, JSON.stringify(q));
+  assert.match(q.ok ? "" : q.reason, /schema version 3 is newer than this Plastile's 2/);
+});
+
+test("T27: migration 1 -> 2 matches its fixtures, adds an empty window hint to every float, and is pure", () => {
+  const v1 = JSON.parse(fixture("v1.json")) as RawSnapshot;
+  const copy = JSON.parse(JSON.stringify(v1));
+  const m = migrate(v1, 2);
+  assert.ok(m.ok);
+  assert.equal(m.from, 1);
+  assert.deepEqual(m.value, JSON.parse(fixture("v2-from-v1.json")), "the output fixture");
+  assert.equal(JSON.stringify(m.value), fixture("v2-from-v1.json").trim(), "key order kept: the canonical text");
+  assert.deepEqual(v1, copy, "the input is not mutated");
+  // Shapes the step does not understand pass through for validation to reject; none throws.
+  const odd = MIGRATIONS[1]({ schemaVersion: 1, floats: [1, null, [], { appId: "a" }] });
+  assert.deepEqual(odd, { schemaVersion: 2, floats: [1, null, [], { appId: "a", windowHint: "" }] });
+  assert.deepEqual(MIGRATIONS[1]({ schemaVersion: 1, floats: "x" }), { schemaVersion: 2, floats: "x" });
+  assert.deepEqual(MIGRATIONS[1]({ schemaVersion: 1 }), { schemaVersion: 2 });
+  assert.ok(!parse(JSON.stringify({ ...v1, floats: "x" })).ok, "and validation rejects them");
 });
 
 test("T27: migrations run in order from the stored version; a missing or broken step rejects", () => {
   const v1 = JSON.parse(fixture("v1.json")) as RawSnapshot;
   assert.deepEqual(migrate(v1, 1), { ok: true, value: v1, from: 1 }, "current version: unchanged");
-  // A synthetic chain (the shipped chain is empty: v1 is the first schema).
+  // A synthetic chain.
   const steps = {
     1: (o: RawSnapshot) => ({ ...o, schemaVersion: 2, renamed: o.contexts }),
     2: (o: RawSnapshot) => { const { renamed, ...rest } = o; return { ...rest, schemaVersion: 3, contexts: renamed }; },
@@ -191,8 +238,9 @@ test("Q06: a saved float matches only when exactly one live window has the appli
   assert.equal(identityKey({ appId: "", resourceName: "kate", role: "" }), null, "no application id: never matched");
 });
 
-function savedFloat(appId: string, r = rect(300, 200, 500, 400)) {
-  return { app: { appId, resourceName: appId, role: "" }, float: { rect: r, output: "O1", area: rect(0, 0, 1280, 800) } };
+/** A saved float preference; `window` is its same-session window hint ("" for none, as from a version-1 file). */
+function savedFloat(appId: string, r = rect(300, 200, 500, 400), window = "") {
+  return { app: { appId, resourceName: appId, role: "" }, float: { rect: r, output: "O1", area: rect(0, 0, 1280, 800) }, window };
 }
 
 test("T27/Q06: restored floats apply to the one live window of their application; two instances keep ordinary insertion", () => {
@@ -292,6 +340,150 @@ test("T27: floating a window records its application's preference; tiling it aga
   assert.equal(changes, before + 1, "a ratio step is");
 });
 
+// ------------------------------------------- same-window hint (ADR-020 addendum)
+
+/** Snapshots of the live mock windows, in creation order (what a new runtime adopts). */
+function live(h: MockHost) {
+  return [...h.windows.values()].filter((w) => w.alive).map((w) => h.snapshot(w));
+}
+
+test("float hint: the same window, restored before the first solve, floats where it is with no write", () => {
+  const h = new MockHost();
+  const at = rect(300, 200, 500, 400);
+  const snaps = [h.make("a"), h.make("solo", { frame: at })].map((w) => h.snapshot(w));
+  const e = new Engine(h, h, {});
+  h.engine = e;
+  e.restoreFloats([savedFloat("solo", at, "solo")]);
+  e.start(snaps);
+  h.drain();
+  assert.equal(e.modeOf("solo"), "floating");
+  assert.ok(rectNear(h.windows.get("solo")!.frame, at), JSON.stringify(h.windows.get("solo")!.frame));
+  assert.equal(h.writesTo("solo"), 0, "already there: no write");
+  assert.equal(e.counters.restored, 1);
+  assert.deepEqual(e.floatPreferences().map((p) => [p.float.rect, p.window]), [[at, "solo"]]);
+});
+
+test("float hint: the same window tiled by the first solve before the reply gets one write back to its start frame", () => {
+  const h = new MockHost();
+  const at = rect(300, 200, 500, 400);
+  const snaps = [h.make("a"), h.make("solo", { frame: at })].map((w) => h.snapshot(w));
+  const e = new Engine(h, h, {});
+  h.engine = e;
+  e.start(snaps);
+  h.drain();
+  assert.equal(e.modeOf("solo"), "tiled", "precondition: tiled with defaults before the saved state arrived");
+  assert.ok(!rectNear(h.windows.get("solo")!.frame, at));
+  const n0 = h.writes.length;
+  e.restoreFloats([savedFloat("solo", at, "solo")]);
+  h.drain();
+  assert.equal(e.modeOf("solo"), "floating");
+  assert.ok(rectNear(h.windows.get("solo")!.frame, at), JSON.stringify(h.windows.get("solo")!.frame));
+  const after = h.writes.slice(n0).filter((w) => w.id === "solo");
+  assert.equal(after.length, 1, JSON.stringify(after));
+  assert.ok(rectNear(after[0].target, at));
+});
+
+test("float hint: a float the user moved while Plastile was disabled keeps the moved position after re-enable", () => {
+  const h = new MockHost();
+  const e1 = h.start();
+  h.open("a"); h.open("solo");
+  h.drain();
+  h.active = "solo";
+  e1.execute("plastile.window.toggle-float");
+  h.drain();
+  const saved = rect(120, 90, 420, 330);
+  h.userSetFrame("solo", saved);
+  // What the first runtime saves at unload, through the stored text.
+  const text = serialize(buildSnapshot(e1.contextPreferences(), e1.floatPreferences(), 1, "t"));
+  const s = parse(text);
+  assert.ok(s.ok && s.snapshot.floats.length === 1 && s.snapshot.floats[0].windowHint === "solo", text);
+  e1.stop();
+  // Disabled: the user moves the window; no Plastile sees it.
+  const moved = rect(480, 260, 400, 300);
+  h.windows.get("solo")!.frame = moved;
+  // Re-enabled: a new runtime adopts the live windows and tiles them; the helper's reply arrives later.
+  const e2 = new Engine(h, h, {});
+  h.engine = e2;
+  e2.start(live(h));
+  h.drain();
+  assert.equal(e2.modeOf("solo"), "tiled", "precondition: tiled before the reply");
+  const n0 = h.writes.length;
+  const store = new FakeStore();
+  store.slots = [text, ""];
+  const p = persister(h, e2, store);
+  e2.onPersistChange = (scope) => p.markDirty(scope);
+  p.load();
+  store.answerRead();
+  h.drain();
+  assert.equal(e2.modeOf("solo"), "floating", "the user's float decision is back");
+  assert.ok(rectNear(h.windows.get("solo")!.frame, moved), `where the user moved it, not the saved ${JSON.stringify(saved)}: `
+    + JSON.stringify(h.windows.get("solo")!.frame));
+  const after = h.writes.slice(n0).filter((w) => w.id === "solo");
+  assert.equal(after.length, 1, "one write, from the tile back to the user's position");
+  assert.ok(rectNear(after[0].target, moved) && !after.some((w) => rectNear(w.target, saved)), JSON.stringify(after));
+  assert.deepEqual(e2.floatPreferences().map((f) => [f.float.rect, f.window]), [[moved, "solo"]], "the preference follows");
+  // ... and that is what the next save stores.
+  h.t += DEBOUNCE_MS;
+  store.fire();
+  store.answerWrite();
+  const next = parse(store.slots[1]);
+  assert.ok(next.ok && rectNear(next.snapshot.floats[0].rect, moved) && next.snapshot.floats[0].windowHint === "solo",
+    store.slots[1]);
+});
+
+test("float hint: a hint naming no live window falls back to the application identity rule (Q06 unchanged)", () => {
+  const saved = rect(300, 200, 500, 400);
+  {
+    // One live window of the application, a different id (relaunched, or a KWin restart): restored by identity.
+    const h = new MockHost();
+    const snaps = [h.make("a"), h.make("solo2", { meta: meta("solo"), frame: rect(40, 40, 300, 200) })].map((w) => h.snapshot(w));
+    const e = new Engine(h, h, {});
+    h.engine = e;
+    e.start(snaps);
+    h.drain();
+    e.restoreFloats([savedFloat("solo", saved, "{gone}")]);
+    h.drain();
+    assert.equal(e.modeOf("solo2"), "floating");
+    assert.ok(rectNear(h.windows.get("solo2")!.frame, saved), "the saved rectangle, not the window's own frame");
+    assert.equal(e.counters.restored, 1);
+    assert.deepEqual(e.floatPreferences().map((f) => f.window), ["solo2"], "the hint now names the window it applied to");
+  }
+  {
+    // Two live windows of the application, neither the hinted one: ambiguous, both keep ordinary insertion.
+    const h = new MockHost();
+    const snaps = ["x1", "x2"].map((id) => h.snapshot(h.make(id, { meta: meta("solo") })));
+    const e = new Engine(h, h, {});
+    h.engine = e;
+    e.start(snaps);
+    h.drain();
+    e.restoreFloats([savedFloat("solo", saved, "{gone}")]);
+    h.drain();
+    assert.deepEqual([e.modeOf("x1"), e.modeOf("x2")], ["tiled", "tiled"]);
+    assert.equal(e.counters.restored, 0);
+    assert.ok(e.counters.restoreAmbiguous >= 1);
+    assert.equal(e.floatPreferences().length, 1, "the preference waits");
+  }
+});
+
+test("float hint: with two windows of the application the hinted one is restored, the other keeps ordinary insertion", () => {
+  for (const order of [["x1", "x2"], ["x2", "x1"]]) {
+    const h = new MockHost();
+    const at = rect(500, 300, 400, 300);
+    const snaps = order.map((id) => h.snapshot(h.make(id, { meta: meta("solo"), frame: id === "x2" ? at : rect(100, 100, 400, 300) })));
+    const e = new Engine(h, h, {});
+    h.engine = e;
+    e.start(snaps);
+    h.drain();
+    e.restoreFloats([savedFloat("solo", rect(300, 200, 500, 400), "x2")]);
+    h.drain();
+    assert.deepEqual([e.modeOf("x1"), e.modeOf("x2")], ["tiled", "floating"], order.join());
+    assert.ok(rectNear(h.windows.get("x2")!.frame, at), JSON.stringify(h.windows.get("x2")!.frame));
+    assert.equal(e.counters.restored, 1);
+    assert.equal(e.counters.restoreAmbiguous, 0, "no ambiguity: the hint says which window it was");
+    assertTiling(new Map([["x1", h.windows.get("x1")!.frame]]), rect(0, 0, 1280, 800));
+  }
+});
+
 // ----------------------------------------------------------------- persister
 
 function model() {
@@ -381,6 +573,44 @@ test("T27/Q07: a newer schema on disk is left alone: read-only, nothing written"
   assert.equal(store.timer, null, "no maintenance deadline");
   p.shutdown();
   assert.deepEqual(store.issued, []);
+});
+
+test("T27: a version-3 slot is read-only too; a version-1 slot loads (migrated) and the next save writes version 2", () => {
+  {
+    const { h, e } = model();
+    const store = new FakeStore();
+    const v3 = JSON.parse(fixture("v2-from-v1.json")) as RawSnapshot;
+    v3.schemaVersion = 3;
+    store.slots = [JSON.stringify(v3), ""];
+    const logs: string[] = [];
+    const p = loaded(h, e, store, logs);
+    assert.equal(p.state, "read-only");
+    assert.match(logs[0], /schema version 3 is newer than this Plastile's 2.*nothing is saved this session/);
+    e.setContextPreferences(K1, { layout: "bsp", masterStack: null });
+    p.markDirty();
+    p.shutdown();
+    assert.deepEqual(store.issued, [], "the newer file is kept intact");
+  }
+  {
+    const { h, e } = model();
+    const store = new FakeStore();
+    store.slots = [fixture("v1.json").trim(), ""];
+    const logs: string[] = [];
+    const p = loaded(h, e, store, logs);
+    assert.equal(p.state, "active");
+    assert.deepEqual(logs.filter((l) => l.startsWith("warn")), [], "no diagnostic for an older version");
+    assert.equal(e.contextPreferences().find((c) => c.key.output === "Virtual-0")?.prefs.masterStack?.ratio, 0.65);
+    assert.deepEqual(e.floatPreferences().map((f) => [f.app.appId, f.window]), [["plastile-solo", ""]], "no window hint");
+    e.setContextPreferences(K1, { layout: "bsp", masterStack: null });
+    p.markDirty();
+    h.t += DEBOUNCE_MS;
+    store.fire();
+    store.answerWrite();
+    assert.equal(store.writes[0].slot, 1, "into the other slot; the version-1 file stays as it was");
+    assert.equal(store.slots[0], fixture("v1.json").trim());
+    const s = parse(store.slots[1]);
+    assert.ok(s.ok && s.migratedFrom === 2 && s.snapshot.generation === 8, store.slots[1]);
+  }
 });
 
 test("T27: no helper: one diagnostic, in-memory operation, no timer, no write and no retry", () => {

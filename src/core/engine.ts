@@ -117,7 +117,6 @@ export interface FloatRect {
   readonly area: Rect;
 }
 
-/** A user's float decision for an application (T27): kept after its window closes, for persistence. */
 /**
  * What a persisted preference change touched (T27): a context's layout preferences, or the float
  * preference of an application identity (identityKey). Persistence keeps these user decisions over
@@ -125,9 +124,16 @@ export interface FloatRect {
  */
 export type PersistScope = { readonly context: ContextKey } | { readonly app: string };
 
+/** A user's float decision for an application (T27): kept after its window closes, for persistence. */
 export interface FloatPreference {
   readonly app: AppIdentity;
   readonly float: FloatRect;
+  /**
+   * The window the rectangle was taken from, or "" (ADR-020 addendum). A same-session hint, never
+   * identity: when a live window has exactly this id it is the window the user floated, and it
+   * keeps the frame it has; otherwise the application identity rule applies (Q06).
+   */
+  readonly window: WindowId;
 }
 
 /** User float decisions kept (newest first out last), as RETAINED_MAX is for contexts. */
@@ -196,6 +202,13 @@ interface Rec {
   rules: WindowRules | null;
   /** Matched once against restored float preferences (T27). */
   restoreChecked: boolean;
+  /**
+   * The frame the window had when this runtime adopted it in start(), before any write; null for
+   * windows that opened later. A float restored to the same window by its hint keeps this frame:
+   * the user may have moved it while Plastile was disabled, and the first solve may have tiled it
+   * before the saved state arrived (ADR-020 addendum).
+   */
+  startFrame: Rect | null;
   /** Activation order (0 = never activated while known): cross-output focus picks the most recent. */
   focusSeq: number;
 }
@@ -320,7 +333,11 @@ export class Engine {
     this.refreshScales();
     this.actCount = this.host.activityCount();
     this.actCurrent = this.host.currentActivity();
-    for (const s of initial) this.add(s, false);
+    for (const s of initial) {
+      this.add(s, false);
+      const r = this.recs.get(s.id);
+      if (r && r.gen === s.gen) r.startFrame = rectOf(s.frame);
+    }
     this.markVisibleDirty();
     this.flushNow();
   }
@@ -404,7 +421,8 @@ export class Engine {
       decision: { mode: "floating", source: "default", reason: "unclassified", ruleIds: [] },
       mode: "pending", userMode: null, ctx: null, suspensions: suspensionsOf(s.states),
       ledger: L.newEntry(rectOf(s.frame)), floatRect: null, insertedAt: ++this.insertSeq, exception: null,
-      readyBy: null, border: null, rules: null, restoreChecked: false, focusSeq: 0, reparks: 0, reparkTarget: null,
+      readyBy: null, border: null, rules: null, restoreChecked: false, startFrame: null, focusSeq: 0, reparks: 0,
+      reparkTarget: null,
     };
     this.recs.set(r.id, r);
     this.counters.adopted++;
@@ -1821,17 +1839,23 @@ export class Engine {
    * output (an unplug, a drag across outputs) before the output change.
    */
   private captureFloat(r: Rec, f: Rect): void {
+    const fr = this.floatRectAt(r, f);
+    if (fr === null) return;
+    r.floatRect = fr;
+    if (r.userMode === "floating") this.rememberFloat(r);
+  }
+
+  /** A frame as a float rectangle: with the output under its centre and that output's work area (null if unknown). */
+  private floatRectAt(r: Rec, f: Rect): FloatRect | null {
     const cx = f.x + f.width / 2, cy = f.y + f.height / 2;
     const under = (g: Rect | undefined): boolean => !!g && cx >= g.x && cx < g.x + g.width && cy >= g.y && cy < g.y + g.height;
     let out = r.membership.output;
     if (out === null || !under(this.outputGeom.get(out))) {
       for (const [id, g] of this.outputGeom) if (under(g)) { out = id; break; }
     }
-    if (out === null) return;
+    if (out === null) return null;
     const area = this.areaOf(out, r);
-    if (area === null) return;
-    r.floatRect = { rect: f, output: out, area };
-    if (r.userMode === "floating") this.rememberFloat(r);
+    return area === null ? null : { rect: f, output: out, area };
   }
 
   /** Record a user-floated window's rectangle as its application's float preference (T27). */
@@ -1839,11 +1863,12 @@ export class Engine {
     const key = identityKey(r.meta);
     if (key === null || r.floatRect === null) return;
     const prev = this.floatPrefs.get(key);
-    if (prev && prev.float.output === r.floatRect.output && rectNear(prev.float.rect, r.floatRect.rect, 0)
+    if (prev && prev.window === r.id && prev.float.output === r.floatRect.output && rectNear(prev.float.rect, r.floatRect.rect, 0)
         && rectNear(prev.float.area, r.floatRect.area, 0)) return;
     this.floatPrefs.delete(key);
     this.pendingFloats.delete(key); // the user's newer decision replaces the saved one
-    this.floatPrefs.set(key, { app: { appId: r.meta.appId, resourceName: r.meta.resourceName, role: r.meta.role }, float: r.floatRect });
+    this.floatPrefs.set(key, { app: { appId: r.meta.appId, resourceName: r.meta.resourceName, role: r.meta.role },
+      float: r.floatRect, window: r.id });
     if (this.floatPrefs.size > FLOATS_MAX) this.floatPrefs.delete(this.floatPrefs.keys().next().value as string);
     this.persistChanged({ app: key });
   }
@@ -1861,9 +1886,12 @@ export class Engine {
   }
 
   /**
-   * Give windows a restored float preference (T27): only when exactly one live window has the
-   * application identity (Q06); otherwise the window keeps its ordinary insertion and the saved
-   * preference waits. Runs in the flush, after every window of a burst (the adoption) is known.
+   * Give windows a restored float preference (T27). A preference whose window hint is this
+   * window's id was taken from this very window (ADR-020 addendum): restoreSameWindow. Otherwise
+   * only when exactly one live window has the application identity (Q06), and never a preference
+   * whose hinted window is live (it belongs to that one); else the window keeps its ordinary
+   * insertion and the saved preference waits. Runs in the flush, after every window of a burst
+   * (the adoption) is known.
    */
   private matchRestores(): void {
     if (this.restoreChecks.size === 0) return;
@@ -1881,9 +1909,12 @@ export class Engine {
         this.restoreChecks.add(id);
         continue;
       }
+      const hinted = this.hintedFloat(r.id);
+      if (hinted !== null) { this.restoreSameWindow(r, hinted.key, hinted.pref); continue; }
       const key = identityKey(r.meta);
       let live = 0;
-      if (key !== null && this.pendingFloats.has(key)) {
+      const p = key === null ? undefined : this.pendingFloats.get(key);
+      if (p !== undefined && !(p.window !== "" && this.recs.has(p.window))) {
         for (const x of this.recs.values()) if (x.mode !== "excluded" && identityKey(x.meta) === key) live++;
       }
       const m = matchFloat(this.pendingFloats, key, live);
@@ -1895,7 +1926,7 @@ export class Engine {
       if (m.kind !== "restore") continue;
       this.pendingFloats.delete(key!);
       this.counters.restored++;
-      this.trace.record(this.svc.now(), "restore-float", r.id);
+      this.trace.record(this.svc.now(), "restore-float", r.id, { by: "app" });
       r.userMode = "floating";
       r.floatRect = m.entry.float;
       this.reclassify(r, "restore");
@@ -1904,6 +1935,34 @@ export class Engine {
         if (t) { L.cancel(r.ledger); this.writeRestore(r, t); this.captureFloat(r, t); }
       } else this.rememberFloat(r);
     }
+  }
+
+  /** The pending preference whose window hint is `id`, with its key (at most 64 entries are scanned). */
+  private hintedFloat(id: WindowId): { key: string; pref: FloatPreference } | null {
+    for (const [key, pref] of this.pendingFloats) if (pref.window === id) return { key, pref };
+    return null;
+  }
+
+  /**
+   * A saved float taken from this very window (its hint is the window's id, so Plastile was
+   * disabled and enabled again in the same KWin session). It floats again at the frame it had when
+   * this runtime started, where the user left it, moved while Plastile was disabled or not, kept
+   * visible by the usual float rules only if needed. The saved rectangle is not used: it was where
+   * the window was at unload. One write only if the window is not there now (the first solve may
+   * have tiled it before the saved state arrived), and that frame becomes the preference. No
+   * ambiguity rule: other windows of the application do not make this one less certain.
+   */
+  private restoreSameWindow(r: Rec, key: string, p: FloatPreference): void {
+    this.pendingFloats.delete(key);
+    this.counters.restored++;
+    r.userMode = "floating";
+    r.floatRect = (r.startFrame ? this.floatRectAt(r, r.startFrame) : null) ?? p.float;
+    this.trace.record(this.svc.now(), "restore-float", r.id, { by: "window", rect: r.floatRect.rect });
+    this.reclassify(r, "restore");
+    if (r.mode === "floating" && r.suspensions.size === 0) {
+      const t = this.floatTarget(r);
+      if (t) { L.cancel(r.ledger); this.writeRestore(r, t); this.captureFloat(r, t); }
+    } else this.rememberFloat(r);
   }
 
   /** Usable area of an output for a window there (cached until the topology or a work area changes). */

@@ -1,5 +1,6 @@
 // The persisted state snapshot (T27, ADR-013): a small, versioned, validated JSON document of
-// layout preferences per context and the user's float rectangles per application. Pure: no I/O.
+// layout preferences per context and the user's float rectangles per application, each with a
+// same-session hint naming the window it was taken from (schema 2). Pure: no I/O.
 // Anything invalid rejects the whole snapshot, so a damaged file means defaults, never a half
 // applied one (CONFIGURATION §8).
 
@@ -8,13 +9,15 @@ import type { ContextKey, LayoutKind } from "../core/types.ts";
 import { migrate } from "./migrate.ts";
 import type { AppIdentity } from "./match.ts";
 
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 /** Bounds of what is kept and accepted (the engine keeps at most 64 retained contexts as well). */
 export const MAX_CONTEXTS = 64;
 export const MAX_FLOATS = 64;
 /** Longest state text parsed at all (a full snapshot is about 25 KB). */
 export const MAX_TEXT = 256 * 1024;
 const MAX_ID = 512;
+/** Longest window hint accepted (a KWin internalId is a 38-character braced UUID). */
+export const MAX_HINT = 128;
 const MAX_COORD = 1e6;
 const LAYOUTS: readonly LayoutKind[] = ["master-stack", "bsp", "monocle", "floating", "scrolling", "zones"];
 const MAX_MASTER_COUNT = 8;
@@ -34,6 +37,12 @@ export interface FloatEntry {
   readonly rect: Rect;
   readonly outputKey: string;
   readonly area: Rect;
+  /**
+   * The id of the window the rectangle was taken from (KWin's internalId), or "". A same-session
+   * hint, never identity: KWin gives every window a new random id, so after a KWin restart or an
+   * application relaunch it names no live window (ADR-020 addendum, schema 2).
+   */
+  readonly windowHint: string;
 }
 
 export interface Snapshot {
@@ -52,6 +61,8 @@ export interface ContextPrefsIn {
 export interface FloatPrefIn {
   readonly app: AppIdentity;
   readonly float: { readonly rect: Rect; readonly output: string; readonly area: Rect };
+  /** The window the preference was taken from ("" for none). */
+  readonly window: string;
 }
 
 export type Parsed =
@@ -73,7 +84,7 @@ export function buildSnapshot(contexts: readonly ContextPrefsIn[], floats: reado
     })),
     floats: floats.slice(0, MAX_FLOATS).map((f) => ({
       appId: f.app.appId, resourceName: f.app.resourceName, role: f.app.role, rect: plainRect(f.float.rect),
-      outputKey: f.float.output, area: plainRect(f.float.area),
+      outputKey: f.float.output, area: plainRect(f.float.area), windowHint: f.window,
     })),
   };
 }
@@ -181,11 +192,15 @@ export function validate(raw: unknown): Parsed {
       const resourceName = text(e.resourceName, "floats", i, ".resourceName", errs), role = text(e.role, "floats", i, ".role", errs);
       const r = rectField(e.rect, "floats", i, ".rect", errs), area = rectField(e.area, "floats", i, ".area", errs);
       const outputKey = id(e.outputKey, "floats", i, ".outputKey", errs);
+      const windowHint = e.windowHint;
+      if (typeof windowHint !== "string" || windowHint.length > MAX_HINT) {
+        errs.push(`${at("floats", i, ".windowHint")}: must be a string of at most ${MAX_HINT} characters`);
+      }
       // Length-prefixed, so distinct identities never share a key.
       const k = appId.length + ":" + appId + resourceName.length + ":" + resourceName + role;
       if (keys.has(k)) errs.push(`${at("floats", i, "")}: duplicate application identity`);
       keys.add(k);
-      if (r && area) floats.push({ appId, resourceName, role, rect: r, outputKey, area });
+      if (r && area && typeof windowHint === "string") floats.push({ appId, resourceName, role, rect: r, outputKey, area, windowHint });
     }
   }
   if (errs.length > 0) return bad(errs[0] + (errs.length > 1 ? ` (and ${errs.length - 1} more)` : ""));
@@ -198,7 +213,7 @@ export function validate(raw: unknown): Parsed {
 const TOP_KEYS = ["schemaVersion", "generation", "savedAt", "contexts", "floats"];
 const CONTEXT_KEYS = ["outputKey", "desktopId", "activity", "layout", "masterStack"];
 const MASTER_KEYS = ["ratio", "masterCount"];
-const FLOAT_KEYS = ["appId", "resourceName", "role", "rect", "outputKey", "area"];
+const FLOAT_KEYS = ["appId", "resourceName", "role", "rect", "outputKey", "area", "windowHint"];
 const RECT_KEYS = ["x", "y", "width", "height"];
 
 function bad(reason: string): Parsed {

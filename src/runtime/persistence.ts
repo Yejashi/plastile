@@ -193,7 +193,7 @@ export class Persister {
         const app = { appId: f.appId, resourceName: f.resourceName, role: f.role };
         const k = identityKey(app);
         if (k !== null && this.touchedApps.has(k)) { kept++; continue; }
-        list.push({ app, float: { rect: f.rect, output: f.outputKey, area: f.area } });
+        list.push({ app, float: { rect: f.rect, output: f.outputKey, area: f.area }, window: f.windowHint });
       }
       if (list.length > 0) this.model.restoreFloats(list);
     }
