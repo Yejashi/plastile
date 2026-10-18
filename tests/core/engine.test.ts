@@ -66,16 +66,41 @@ test("C04: create then remove before the flush performs no writes", () => {
   assert.deepEqual(e.check(), []);
 });
 
-test("C05: two grow commands both apply", () => {
-  const { h, e } = setup(["a", "b"]);
+test("C05: two grow commands during apply both apply, in order", () => {
+  const step = 0.05 * (1280 - 16 - 8);
+  // The second grow arrives while the first is being applied (re-entrantly, from inside its
+  // first frame write) and is queued; the master's client is slow, so the first request is
+  // still outstanding when the queued one runs.
+  const { h, e } = setup(["a", "b"], { a: { delay: 300 }, b: { delay: 300 } });
+  h.advance(1000);
   h.active = "a";
   const w0 = h.windows.get("a")!.frame.width;
-  e.execute("plastile.resize.grow");
-  h.advance(10);
-  e.execute("plastile.resize.grow");
-  h.advance(10);
+  const orig = h.applyFrame.bind(h);
+  let reentered: string | null = null;
+  h.applyFrame = (id, gen, t) => {
+    if (reentered === null) reentered = e.execute("plastile.resize.grow").reason ?? "";
+    return orig(id, gen, t);
+  };
+  assert.equal(e.execute("plastile.resize.grow").status, "accepted");
+  h.applyFrame = orig;
+  assert.equal(reentered, "queued during apply");
+  assert.equal(e.counters.commandsQueued, 1);
+  assert.equal(h.windows.get("a")!.frame.width, w0, "nothing committed yet");
+  assert.ok(e.outstandingCount() >= 1, "the first request is still outstanding");
+  h.drain();                       // the queued grow runs in the next flush
+  h.advance(2000);
   const w2 = h.windows.get("a")!.frame.width;
-  assert.ok(Math.abs(w2 - w0 - 2 * 0.05 * (1280 - 16 - 8)) <= 2, `grew ${w2 - w0}`);
+  assert.ok(Math.abs(w2 - w0 - 2 * step) <= 2, `grew ${w2 - w0}, want ${2 * step}`);
+  assertTiling(tiledFrames(h, ["a", "b"]), AREA);
+  // A second grow issued while the first one's request is outstanding (not queued) applies too.
+  const w3 = w2;
+  e.execute("plastile.resize.grow");
+  h.advance(50);
+  assert.ok(e.outstandingCount() >= 1);
+  e.execute("plastile.resize.grow");
+  h.advance(2000);
+  const w5 = h.windows.get("a")!.frame.width;
+  assert.ok(Math.abs(w5 - w3 - 2 * step) <= 2, `grew ${w5 - w3}, want ${2 * step}`);
 });
 
 test("C06: geometry signals during a write do not re-solve recursively", () => {
@@ -137,10 +162,19 @@ test("C09/C13: a burst across two contexts solves each at most once per flush", 
   h.visible.set("O2", "D1");
   const e = h.start();
   const flushes0 = e.counters.flushes; // start() runs one adoption flush itself
-  for (let i = 0; i < 20; ++i) h.open(`w${i}`, { membership: { output: i % 2 ? "O2" : "O1", desktops: ["D1"], onAllDesktops: false, activities: [] } });
+  const on = (o: string) => ({ membership: { output: o, desktops: ["D1"], onAllDesktops: false, activities: [] } });
+  const ids = { O1: [] as string[], O2: [] as string[] };
+  for (let i = 0; i < 20; ++i) { const o = i % 2 ? "O2" : "O1"; ids[o].push(`w${i}`); h.open(`w${i}`, on(o)); }
   h.drain();
   assert.equal(e.counters.solves, 2);
   assert.equal(e.counters.flushes - flushes0, 1);
+  // No silent structural drop (C13): every window became a member of its context, in arrival
+  // order, and the compositor placed every one of them in its output's area.
+  assert.deepEqual(e.membersOf({ output: "O1", desktop: "D1", activity: "default" }), ids.O1);
+  assert.deepEqual(e.membersOf({ output: "O2", desktop: "D1", activity: "default" }), ids.O2);
+  assertTiling(tiledFrames(h, ids.O1), AREA);
+  assertTiling(tiledFrames(h, ids.O2), rect(1280, 0, 1280, 800));
+  for (const id of [...ids.O1, ...ids.O2]) assert.equal(h.writesTo(id), 1, `${id} written once`);
 });
 
 test("C10: context changes before the flush use the explicit new context", () => {
@@ -529,6 +563,36 @@ test("O01: an external transfer to another output is not written back (frame eve
   assert.ok(rectNear(h.windows.get("a")!.frame, rect(8, 8, 1264, 784)), "source reflowed");
 });
 
+test("O01: send-to-output targets the next output, including one at a negative origin", () => {
+  const h = new MockHost();
+  const left = rect(-1280, -200, 1280, 800);
+  h.outs.push({ id: "O2", name: "O2", geometry: left, scale: 1 });
+  h.visible.set("O2", "D1");
+  const e = h.start();
+  const on2 = { membership: { output: "O2", desktops: ["D1"], onAllDesktops: false, activities: [] } };
+  h.open("a"); h.open("b"); h.open("z", on2);
+  h.drain();
+  h.active = "b";
+  const r = e.execute("plastile.move.output-next");
+  assert.equal(r.status, "accepted");
+  h.drain();
+  const b = h.windows.get("b")!;
+  assert.equal(b.membership.output, "O2", "sent to the output after O1");
+  assertTiling(tiledFrames(h, ["z", "b"]), left);
+  assert.ok(b.frame.x < 0 && b.frame.y < 0, `placed in O2's negative coordinates: ${JSON.stringify(b.frame)}`);
+  assert.deepEqual(e.membersOf({ output: "O2", desktop: "D1", activity: "default" }), ["z", "b"]);
+  assert.ok(rectNear(h.windows.get("a")!.frame, rect(8, 8, 1264, 784)), "the source output reflowed");
+  // And back again: output-next wraps around, output-previous goes the other way.
+  assert.equal(e.execute("plastile.move.output-next").status, "accepted");
+  h.drain();
+  assert.equal(b.membership.output, "O1");
+  assertTiling(tiledFrames(h, ["a", "b"]), AREA);
+  assert.equal(e.execute("plastile.move.output-previous").status, "accepted");
+  h.drain();
+  assert.equal(b.membership.output, "O2");
+  assertTiling(tiledFrames(h, ["z", "b"]), left);
+});
+
 test("I01: a drag keeps the model (no reflow, no writes) and a drop on another tile swaps once", () => {
   const { h, e } = setup(["a", "b", "c"]);
   const slots = tiledFrames(h, ["a", "b", "c"]);
@@ -549,12 +613,16 @@ test("I01: a drag keeps the model (no reflow, no writes) and a drop on another t
 test("I01: a drop outside any tile snaps back with one solve", () => {
   const { h, e } = setup(["a", "b"]);
   const slots = tiledFrames(h, ["a", "b"]);
+  const solves = e.counters.solves, writes = h.writes.length;
   h.setStates("b", { interactive: "move" });
+  for (let i = 0; i < 10; ++i) { h.userSetFrame("b", rect(900 + i * 400, 500 + i * 400, 400, 300)); h.drain(); }
   h.userSetFrame("b", rect(5000, 5000, 400, 300));
   h.setStates("b", { interactive: "none" });
   h.drain();
-  assert.ok(rectNear(h.windows.get("b")!.frame, slots.get("b")!));
-  assert.ok(e.counters.solves >= 1);
+  assert.ok(rectNear(h.windows.get("b")!.frame, slots.get("b")!), "b snapped back to its slot");
+  assert.ok(rectNear(h.windows.get("a")!.frame, slots.get("a")!), "the peer kept its slot");
+  assert.equal(e.counters.solves, solves + 1, "one release commit");
+  assert.deepEqual(h.writes.slice(writes).map((w) => w.id), ["b"], "one write, to the dropped window only");
 });
 
 test("I03: a user resize of the master edge becomes the new ratio", () => {
