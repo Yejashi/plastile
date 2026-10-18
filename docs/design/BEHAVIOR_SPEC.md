@@ -20,6 +20,13 @@ Default insertion is after the focused tiled window within that context, otherwi
 
 Initial policy for windows on all desktops or multiple desktops/activities is floating. This avoids one real frame receiving competing targets. A later pinned-column or per-context membership feature requires a separate decision and tests for one active geometry authority.
 
+*Observed behavior (nested KWin 6.7.5, `membership-*-T24` and `send-activity-switch-T24`; the points above do not specify these):*
+
+- A multi-context window receives no frame request while it is multi-context: none when it becomes one (it stays at its last tiled frame), none on desktop or activity switches, none when peers are sent around it. Plastile's `move.desktop-*` is a no-op for it ("no other desktop") when it is on all desktops or on several, and `window.toggle-float` cannot tile it ("cannot tile: on all desktops" and similar). `move.output-*` and, for a window on one desktop and several activities, `move.desktop-*` are carried out by KWin; the window still floats and Plastile writes nothing.
+- When its membership narrows to one context, it tiles there: one request, issued when that context is shown. When it widens again, it floats where it is, with no restore request.
+- KWin reports a window on both of exactly two activities as on all activities (`activities == []`).
+- A send to another desktop that lands with an activity switch writes nothing after the switch. If KWin reports both before Plastile's next flush (the send made inside the switch's signal), the hidden source context is solved once when shown again. A send made just before the switch is solved while its source is still shown. The switch reaches Plastile only after KWin's round trip to kactivitymanagerd. Either way, each moved window is written once.
+
 ## 3. State transition table
 
 | Trigger | Model action | Geometry/focus result |
