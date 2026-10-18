@@ -20,8 +20,8 @@ These are the keys in `kwinrc` and the fields of the settings dialog. Defaults c
 | `gapInner` | `8` | integer 0–200 (px) | Gap between neighbouring tiles. |
 | `gapOuter` | `8` | integer 0–200 (px) | Gap between tiles and the edge of the usable area, the same on all four sides. The JSON document can set each edge. |
 | `singleWindowGaps` | `true` | `true`, `false` | Keeps the outer gap when a context has a single tiled window. `false` lets a lone window fill the area. |
-| `masterRatio` | `0.55` | strictly between 0 and 1. The dialog offers 0.05–0.95, and the layout clamps to 0.05–0.95. | Width share of the master column in master/stack. |
-| `masterCount` | `1` | integer 0–8 | Windows in the master column. `0` stacks everything. |
+| `masterRatio` | `0.55` | strictly between 0 and 1. The dialog offers 0.05–0.95, and the layout clamps to 0.05–0.95. | Width share of the master column in master/stack. A new value also applies to open contexts, except where you changed the ratio with *Grow*/*Shrink* or a resize. |
+| `masterCount` | `1` | integer 0–8 | Windows in the master column. `0` stacks everything. A new value also applies to open contexts, except where you changed the count with a shortcut. |
 | `masterInsert` | `after-focus` | `after-focus`, `end`, `master` | Where a new window enters the master/stack order. |
 | `bspInsert` | `focused` | `focused`, `last` | Which tile a new window splits in BSP. |
 | `bspAxis` | `alternate` | `alternate`, `longest`, `horizontal`, `vertical` | Split direction for new BSP splits. `horizontal` means side by side; `vertical` means stacked. |
@@ -103,7 +103,7 @@ A rule changes how a window is treated:
 { "id": "float-calc", "priority": 0, "match": { "appId": "org.kde.kcalc" }, "actions": { "mode": "floating" } }
 ```
 
-**`id` and `priority`** work as for overrides. Rules apply in ascending priority, then declaration order. A later rule's action wins per field, and every matching rule's id is recorded (`decision.ruleIds` in the explanation).
+**`id` and `priority`** work as for overrides. Rules apply in ascending priority, then declaration order. A later rule's action wins per field, and every matching rule's id is recorded (`rules.ids` in the explanation, which also names the rule behind each action; `decision.ruleIds` when a rule decided the mode).
 
 **`match`** (required; at least one field; all given fields must match):
 
@@ -253,7 +253,7 @@ All three examples were compiled with the runtime's own `compileConfig` in Node,
 - `rule`
 - `default`
 
-It also records the reason text and, when a rule decided the mode, that rule's id. Every matched rule, including rules that only set a border or an insertion preference, is listed separately in the explanation's `rules` field together with the rule behind each final action. Native tiles and your *Toggle floating* choices show in `mode`, `userMode`, `nativeTile` and `nativeYield` rather than in the source.
+It also records the reason text and, when a rule decided the mode, the ids of the matching rules. Every matched rule, including rules that only set a border or an insertion preference, is listed separately in the explanation's `rules` field together with the rule behind each final action. Native tiles and your *Toggle floating* choices show in `mode`, `userMode`, `nativeTile` and `nativeYield` rather than in the source.
 
 ### Seeing why a window was classified
 

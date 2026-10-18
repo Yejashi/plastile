@@ -833,6 +833,42 @@ test("G08/BEHAVIOR §11: an overflow float is reconsidered when the area, constr
   }
 });
 
+test("BEHAVIOR §12: a configured master ratio/count reaches live contexts; values the user set by command are kept", () => {
+  const conf = (ratio: number, masterCount: number) => ({ ...DEFAULT_SETTINGS, masterStack: { ...DEFAULT_SETTINGS.masterStack, ratio, masterCount } });
+  {
+    let cur = conf(0.55, 1);
+    const h = new MockHost();
+    const e = h.start({ settingsFor: () => cur });
+    for (const id of ["a", "b", "c"]) h.open(id);
+    h.drain();
+    cur = conf(0.7, 2);
+    e.configure({ settingsFor: () => cur });
+    h.drain();
+    const [a, b, c] = ["a", "b", "c"].map((id) => h.windows.get(id)!.frame);
+    assert.ok(a.x === b.x && b.y > a.y, "two masters in the left column");
+    assert.ok(Math.abs(a.width - 0.7 * (1264 - 8)) <= 1, `master width ${a.width}`);
+    assert.ok(c.x > a.x + a.width && c.height > 700, "one stack window");
+    assertTiling(tiledFrames(h, ["a", "b", "c"]), AREA);
+  }
+  {
+    let cur = conf(0.55, 1);
+    const h = new MockHost();
+    const e = h.start({ settingsFor: () => cur });
+    for (const id of ["a", "b", "c"]) h.open(id);
+    h.drain();
+    h.active = "a";
+    e.execute("plastile.resize.grow"); // the user owns the ratio in this context now
+    h.drain();
+    const tuned = h.windows.get("a")!.frame.width;
+    cur = conf(0.7, 2);
+    e.configure({ settingsFor: () => cur });
+    h.drain();
+    const [a, b] = ["a", "b"].map((id) => h.windows.get(id)!.frame);
+    assert.equal(a.width, tuned, "the user's ratio is kept");
+    assert.ok(a.x === b.x && b.y > a.y, "the untouched master count follows the configuration");
+  }
+});
+
 function onActivities(activities: string[]) {
   return { membership: { output: "O1", desktops: ["D1"], onAllDesktops: false, activities } };
 }

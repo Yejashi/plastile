@@ -14,7 +14,7 @@ import { neighbour, type Direction } from "./navigation.ts";
 import type { HostPort, RuntimeServices, WindowSnapshot } from "./ports.ts";
 import * as L from "./reconcile/ledger.ts";
 import type { Layout, LayoutCommand, SolveInput } from "./layouts/layout.ts";
-import { masterStack } from "./layouts/masterStack.ts";
+import { masterStack, type MasterStackState } from "./layouts/masterStack.ts";
 import { bsp, reinsert as bspReinsert } from "./layouts/bsp.ts";
 import { monocle, floating } from "./layouts/monocle.ts";
 import {
@@ -449,15 +449,34 @@ export class Engine {
   /** New configuration activated: settings/rules functions replaced atomically. */
   configure(opts: EngineOptions): void {
     this.trace.record(this.svc.now(), "configure");
+    const before = new Map<Ctx, ContextSettings>();
+    for (const c of this.contexts.values()) if (c.states["master-stack"] !== undefined) before.set(c, this.ctxSettings(c));
     this.opts = { ...this.opts, ...opts, deadlineMs: opts.deadlineMs ?? this.opts.deadlineMs,
                   readinessMs: opts.readinessMs ?? this.opts.readinessMs };
     if (opts.traceCapacity !== undefined && opts.traceCapacity !== this.trace.capacity) this.trace.resize(opts.traceCapacity);
     if (opts.traceEnabled !== undefined) this.trace.enabled = opts.traceEnabled;
     for (const c of this.contexts.values()) c.settings = null;
+    for (const [c, old] of before) this.rebaseMasterStack(c, old);
     for (const r of this.recs.values()) this.reclassify(r, "config");
     for (const c of this.contexts.values()) this.markDirty(c.key);
     this.retryOverflow("*");
     this.ensureFlush();
+  }
+
+  /**
+   * Carry a newly configured master ratio and master count into a live master-stack
+   * state, field by field, unless the user changed that field by command in this
+   * context (it no longer equals the value configured before): session commands own
+   * what they set until a reset (CONFIGURATION §3, BEHAVIOR §12).
+   */
+  private rebaseMasterStack(c: Ctx, old: ContextSettings): void {
+    const ms = c.states["master-stack"] as MasterStackState;
+    const was = masterStack.initial(old), now = masterStack.initial(this.ctxSettings(c));
+    const ratio = ms.ratio === was.ratio ? now.ratio : ms.ratio;
+    const masterCount = ms.masterCount === was.masterCount ? now.masterCount : ms.masterCount;
+    if (ratio === ms.ratio && masterCount === ms.masterCount) return;
+    c.states["master-stack"] = { ...ms, ratio, masterCount };
+    c.revision++;
   }
 
   // ------------------------------------------------------- classification/model
