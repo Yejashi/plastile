@@ -11,7 +11,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createRuntime } from "../../src/runtime/main.ts";
-import { layoutMessage, OSD_IFACE, OSD_PATH, OSD_SERVICE } from "../../src/runtime/osd.ts";
+import { layoutMessage, Osd, OSD_IFACE, OSD_PATH, OSD_SERVICE } from "../../src/runtime/osd.ts";
 import type { BusCall } from "../../src/runtime/shortcuts.ts";
 import type { StateStore } from "../../src/runtime/persistence.ts";
 import { buildSnapshot, serialize } from "../../src/persist/snapshot.ts";
@@ -129,7 +129,7 @@ test("suspend and resume: a notice and the OSD each; explain is a notice too", (
   r.rt.shutdown();
 });
 
-test("no OSD when the option is off, without a bus, or after the service failed once (one debug line, no retry)", () => {
+test("no OSD when the option is off, without a bus, or within 30 s of a failure (one debug line, no retry by itself)", () => {
   const off = rig({ osd: "false" });
   off.qt.drain();
   off.rt.dispatch("plastile.layout.monocle");
@@ -149,10 +149,10 @@ test("no OSD when the option is off, without a bus, or after the service failed 
   r.rt.dispatch("plastile.layout.bsp");
   r.rt.dispatch("plastile.runtime.toggle-suspend");
   r.qt.drain();
-  assert.equal(r.osd().length, 1, "never retried");
+  assert.equal(r.osd().length, 1, "commands right after a failure send nothing");
   r.rt.dispatch("plastile.inspect.counters");
   const counters = JSON.parse(r.f.lines.find((l) => l.startsWith("plastile counters "))!.slice("plastile counters ".length));
-  assert.deepEqual(counters.osd, { state: "absent", sent: 1 });
+  assert.deepEqual(counters.osd, { state: "failed", sent: 1, failures: 1 });
   assert.equal(counters.suspended, true);
   r.rt.shutdown();
 
@@ -171,6 +171,41 @@ test("no OSD when the option is off, without a bus, or after the service failed 
   assert.equal(nobus.osd().length, 0);
   rt.shutdown();
   nobus.rt.shutdown();
+});
+
+test("after a failure the OSD tries again on a command 30 s later (plasmashell started late or restarted); one debug line per streak", () => {
+  let t = 1000;
+  const calls: Array<{ args: readonly unknown[]; done: () => void; fail: () => void }> = [];
+  const later: Array<() => void> = [];
+  const debug: string[] = [];
+  const osd = new Osd((c, done, fail) => { calls.push({ args: c.args ?? [], done: () => done([]), fail }); },
+    (fn) => { if (!later.includes(fn)) later.push(fn); }, () => t, (m) => debug.push(m));
+  const turn = () => { const fs = later.splice(0); for (const f of fs) f(); };
+  const show = (text: string) => { osd.show({ icon: "i", text }); turn(); };
+  show("A");
+  calls[0].fail();                       // at login KWin starts before plasmashell
+  assert.equal(osd.state(), "failed");
+  t += 29999; show("B");                 // inside the window: dropped, nothing sent
+  assert.equal(calls.length, 1);
+  t += 1; show("C");                     // 30 s after the failure: one try
+  assert.deepEqual(calls.map((c) => c.args[1]), ["A", "C"]);
+  calls[1].fail();                       // still absent: same streak, no second debug line
+  assert.equal(debug.length, 1);
+  assert.match(debug[0], /on-screen display unavailable/);
+  t += 10000; show("D");                 // 10 s after the second failure: dropped
+  assert.equal(calls.length, 2);
+  t += 20000; show("E");
+  calls[2].done();                       // plasmashell is back: the streak ends
+  assert.equal(osd.state(), "idle");
+  show("F");
+  assert.deepEqual(calls.map((c) => c.args[1]), ["A", "C", "E", "F"], "no message was ever resent");
+  calls[3].fail();                       // plasmashell restarted: a new streak, a new line
+  assert.equal(debug.length, 2);
+  assert.equal(osd.failures, 3);
+  assert.equal(later.length, 0, "nothing scheduled by itself: no timer, no loop");
+  osd.stop();
+  t += 60000; show("G");
+  assert.equal(calls.length, 4, "nothing after stop");
 });
 
 test("counters show tiled and suspended members per context", () => {

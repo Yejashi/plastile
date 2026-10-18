@@ -6,9 +6,13 @@
 // (plasma-workspace shell/osd.h; introspected read-only on the reference machine, plasmashell
 // 6.7.5). One asynchronous DBusCall (org.kde.kwin 3.0) per message, sent on a later event-loop
 // turn than the command, at most one in flight: a message produced meanwhile replaces the
-// waiting one and goes when the reply arrives. A failed call (no plasmashell, an error reply,
-// a timeout: DBusCall's failed() cannot tell them apart) turns the OSD off for this load with
-// one debug diagnostic and no retry.
+// waiting one and goes when the reply arrives.
+//
+// A failed call (no plasmashell yet: KWin starts before it at login; plasmashell restarting; an
+// error reply or a timeout: DBusCall's failed() cannot tell them apart) drops that message, with
+// one debug line per streak of failures. Messages are then dropped for OSD_RETRY_AFTER_MS; the
+// first one after that tries again. Every message comes from a user command, so nothing retries
+// by itself: there is no timer and no loop.
 
 import type { LayoutKind } from "../core/types.ts";
 import type { Bus } from "./shortcuts.ts";
@@ -16,6 +20,8 @@ import type { Bus } from "./shortcuts.ts";
 export const OSD_SERVICE = "org.kde.plasmashell";
 export const OSD_PATH = "/org/kde/osdService";
 export const OSD_IFACE = "org.kde.osdService";
+/** After a failed call, messages are dropped until this long has passed; the next one then tries again. */
+export const OSD_RETRY_AFTER_MS = 30000;
 
 /** Breeze icon names (present in breeze 6.7 actions/22). */
 const ICONS: Readonly<Record<LayoutKind, string>> = {
@@ -46,13 +52,16 @@ export function pauseMessage(paused: boolean): OsdMessage {
   return paused ? { icon: "media-playback-pause", text: "Tiling paused" } : { icon: "media-playback-start", text: "Tiling resumed" };
 }
 
-export type OsdState = "idle" | "off" | "absent" | "stopped";
+/** "failed": the last call failed; a message at least OSD_RETRY_AFTER_MS later tries again. */
+export type OsdState = "idle" | "off" | "failed" | "stopped";
 
 export class Osd {
-  /** Requests sent (diagnostics). */
+  /** Requests sent, and how many of them failed (diagnostics). */
   sent = 0;
+  failures = 0;
   private enabled = true;
-  private absent = false;
+  /** When the last call failed; null once a call succeeded (or before any failed). */
+  private failedAt: number | null = null;
   private alive = true;
   private inflight = false;
   private waiting: OsdMessage | null = null;
@@ -60,11 +69,13 @@ export class Osd {
   private readonly flushFn = (): void => { this.scheduled = false; this.send(); };
   private readonly bus: Bus | undefined;
   private readonly later: (fn: () => void) => void;
+  private readonly now: () => number;
   private readonly debug: (message: string) => void;
 
-  constructor(bus: Bus | undefined, later: (fn: () => void) => void, debug: (message: string) => void) {
+  constructor(bus: Bus | undefined, later: (fn: () => void) => void, now: () => number, debug: (message: string) => void) {
     this.bus = bus;
     this.later = later;
+    this.now = now;
     this.debug = debug;
   }
 
@@ -73,9 +84,10 @@ export class Osd {
     if (!on) this.waiting = null;
   }
 
-  /** Queue a message for a later turn; nothing at all without a bus, when off, or once the service failed. */
+  /** Queue a message for a later turn; nothing without a bus, when off, or within OSD_RETRY_AFTER_MS of a failure. */
   show(m: OsdMessage): void {
-    if (!this.bus || !this.enabled || this.absent || !this.alive) return;
+    if (!this.bus || !this.enabled || !this.alive) return;
+    if (this.failedAt !== null && this.now() - this.failedAt < OSD_RETRY_AFTER_MS) return;
     this.waiting = m;
     if (this.inflight || this.scheduled) return;
     this.scheduled = true;
@@ -85,26 +97,31 @@ export class Osd {
   private send(): void {
     const m = this.waiting;
     this.waiting = null;
-    if (!m || !this.bus || !this.enabled || this.absent || !this.alive || this.inflight) return;
+    if (!m || !this.bus || !this.enabled || !this.alive || this.inflight) return;
     this.inflight = true;
     this.sent++;
     this.bus({ service: OSD_SERVICE, path: OSD_PATH, iface: OSD_IFACE, method: "showText", args: [m.icon, m.text] },
       () => {
         if (!this.alive) return;
         this.inflight = false;
+        this.failedAt = null; // a streak of failures, if any, is over
         if (this.waiting) this.send();
       },
       () => {
         if (!this.alive) return;
         this.inflight = false;
-        this.absent = true;
-        this.waiting = null;
-        this.debug(`on-screen display unavailable (${OSD_SERVICE} ${OSD_PATH} showText failed); no further OSD requests until Plastile reloads`);
+        this.failures++;
+        if (this.failedAt === null) {
+          this.debug(`on-screen display unavailable (${OSD_SERVICE} ${OSD_PATH} showText failed); messages are dropped, `
+            + `and a command at least ${OSD_RETRY_AFTER_MS / 1000} s later tries again`);
+        }
+        this.failedAt = this.now();
+        this.waiting = null; // dropped with the failed one, never resent
       });
   }
 
   state(): OsdState {
-    return !this.alive ? "stopped" : this.absent ? "absent" : !this.enabled || !this.bus ? "off" : "idle";
+    return !this.alive ? "stopped" : !this.enabled || !this.bus ? "off" : this.failedAt !== null ? "failed" : "idle";
   }
 
   /** Unload: nothing more is sent and late replies are ignored. */

@@ -28,7 +28,7 @@ If nothing appears although the script is enabled:
   - `tiling paused` and `tiling resumed`;
   - the `explain {...}` line of *Explain active window*.
 - **`info`:** also `configuration reload requested`, `configuration activated {"revision": N}`, `shortcut check: no conflicts {...}`, `saved state loaded {...}` and the start-up hold.
-- **`debug`:** also the on-screen display's one `on-screen display unavailable` line when plasmashell does not answer, and one line per command, with its result (`accepted`, `rejected` or `noop`), reason, targets, model revision and whether a placement request was issued.
+- **`debug`:** also `on-screen display unavailable` when plasmashell does not answer (one line per run of failures, not per message), and one line per command, with its result (`accepted`, `rejected` or `noop`), reason, targets, model revision and whether a placement request was issued.
 
 ## Inspect commands
 
@@ -71,7 +71,7 @@ qdbus6 org.kde.kglobalaccel /component/kwin org.kde.kglobalaccel.Component.invok
 | `shortcuts` | The startup shortcut check: `state` (`pending`, `done` or `unavailable`) and the number of `conflicts` ([details](SHORTCUTS.md#conflict-report)). |
 | `inspectorOpen` | Whether the *Explain active window* inspector is open. |
 | `suspended` | `true` while *Suspend/resume tiling* has suspended all tiling. |
-| `osd` | The on-screen display: `state` (`idle`; `off` by the `osd` setting or without D-Bus; `absent` after plasmashell failed to answer once; `stopped`) and the number of messages `sent`. |
+| `osd` | The on-screen display: `state` (`idle`; `off` by the `osd` setting or without D-Bus; `failed` when the last request failed, so messages are dropped for 30 s and the next command after that tries again; `stopped`), the number of messages `sent` and of `failures`. |
 | `counters.restored`, `restoreAmbiguous` | Saved floats given back: to the window they were saved from when it is still open (after a disable and re-enable), otherwise to the one open window of their application; and ones withheld because several windows of the application were open. |
 | `holding` | `true` only right after Plastile starts while it waits for the saved state before its first layout (at most 250 ms). |
 | `persistence` | Saved state: `state` (`loading` until the helper answered; `active`; `memory` when the persistence helper is not installed or did not answer; `read-only` when a newer Plastile's file is present; `off`), the `generation` last loaded or saved, this load's confirmed `writes`, `issued` and `failed` saves, `skipped` (unchanged) saves, and whether a save is pending (`dirty`, `armed`, `inflight`: a request the helper has not answered yet). |
@@ -160,7 +160,7 @@ Check KWin's Window Rules and disable other tiling scripts. Then compare two cou
 | Limitation | Detail | Status |
 |---|---|---|
 | Only some session changes are saved | A layout chosen by command, master ratio and count, and floated windows' positions per application are saved ([saved layout preferences](README.md#saved-layout-preferences)). Window order, BSP structure and per-window choices for applications with several open windows are not. Put lasting choices in the configuration as `defaults` or `overrides`. | By design for now |
-| A save is a synchronous file write in KWin | About 2 to 8 ms per save, up to 20 ms observed, about 2 s after the last change and never during a command or drag (nested measurement). On a slow disk it is longer. | Measured (nested); accepted in ADR-013 |
+| Saving needs the persistence helper | KWin does no file I/O for saved state: a save is one asynchronous D-Bus request to the `plastile-state` helper, about 2 s after the last change and never during a command or drag, costing KWin about 0.2 ms for a typical state and 1.2 ms for the largest (nested measurement). The helper writes the file. Without it, changes stay in memory until the script reloads ([saved layout preferences](README.md#saved-layout-preferences)). | Measured (nested); ADR-020 (the in-process file write of ADR-013 is gone) |
 | Apply in the settings dialog alone does not reach the running script | `ScriptingConfig::reload()` is a TODO in kwin v6.7.5. Press *Reload configuration* after Apply: it asks KWin to re-read `kwinrc`, which also re-reads KWin's other settings. | Observed source; measured |
 | Default shortcuts tested on one keymap | All 20 defaults reach Plastile with real key presses on the default (US) keymap in a nested session; other layouts and installed software (Spectacle is not installed in the test sandbox) are not covered. | Measured (nested, libei) |
 | Activities untested | The matcher and context key include the activity, but every test ran with the single default activity (no Activities service in nested sessions). Switching activities with tiled windows on each is unverified. | Untested |

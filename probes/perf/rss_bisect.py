@@ -75,14 +75,14 @@ def reload_mode(out: Path, cycles: int, oracles: int) -> dict:
                 off = s.kw.mark()
                 s.kw.load_declarative(qml, PLUGIN)
                 if logs:
-                    s.kw.wait_log(r"plastile info started", 10, off)
+                    s.kw.wait_log(r"plastile (info|notice) started", 10, off)
                 else:
                     Session.wait_for(lambda: s.kw.is_loaded(PLUGIN), 5, "loaded")
                 time.sleep(0.05)
                 off = s.kw.mark()
                 s.kw.unload(PLUGIN)
                 if logs:
-                    s.kw.wait_log(r"plastile info stopped", 10, off)
+                    s.kw.wait_log(r"plastile (info|notice) stopped", 10, off)
                 Session.wait_for(lambda: not s.kw.is_loaded(PLUGIN), 5, "unloaded")
                 for _ in range(oracles):
                     s.frames_list()

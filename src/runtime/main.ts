@@ -83,7 +83,7 @@ export function createRuntime(env: RuntimeEnv): Runtime {
     env.print(`plastile ${lv} ${message}${data === undefined ? "" : " " + safeJson(data)}`);
   };
   // On-screen feedback (Plasma's OSD over D-Bus, src/runtime/osd.ts); each configuration load sets whether it is on.
-  const osd = new Osd(env.dbus, (fn) => env.qt.callLater(fn), (m) => log("debug", m));
+  const osd = new Osd(env.dbus, (fn) => env.qt.callLater(fn), () => Date.now(), (m) => log("debug", m));
 
   let revision = 0;
   let snapshot: ConfigSnapshot | null = null;
@@ -309,7 +309,7 @@ export function createRuntime(env: RuntimeEnv): Runtime {
         configRevision: snapshot?.revision ?? null,
         shortcuts: shortcuts ? { state: shortcuts.state, conflicts: shortcuts.conflicts.length } : null,
         inspectorOpen: env.inspector ? env.inspector.isOpen() : null, zoneOverlay: env.zones ? env.zones.state() : null,
-        osd: { state: osd.state(), sent: osd.sent }, suspended: engine.isSuspended(),
+        osd: { state: osd.state(), sent: osd.sent, failures: osd.failures }, suspended: engine.isSuspended(),
         persistence: persister.summary() }));
       return null;
     }
