@@ -117,8 +117,9 @@ export class FakeWorkspace {
       ...o,
     };
     for (const s of WINDOW_SIGNALS) w[s] = new Sig();
+    // Accessors are configurable so a test can poison a destroyed wrapper (adapter.test.ts, T10).
     let desks = w.desktops;
-    Object.defineProperty(w, "desktops", { get: () => desks, set: (v: FakeDesktop[]) => { desks = v; w.desktopsChanged.emit(); } });
+    Object.defineProperty(w, "desktops", { configurable: true, get: () => desks, set: (v: FakeDesktop[]) => { desks = v; w.desktopsChanged.emit(); } });
     let fg: R = { ...frame };
     let margin = o.noBorder === true || !ssd ? 0 : TITLEBAR;
     let noBorder = !!o.noBorder;
@@ -139,15 +140,15 @@ export class FakeWorkspace {
       margin = on ? TITLEBAR : 0;
       w.clientGeometryChanged.emit();
     };
-    Object.defineProperty(w, "frameGeometry", { get: () => ({ ...fg }), set: (r: R) => w._setFrame(r, true) });
+    Object.defineProperty(w, "frameGeometry", { configurable: true, get: () => ({ ...fg }), set: (r: R) => w._setFrame(r, true) });
     // `csdShadow`: an X11 client-side-decorated window (GTK, _GTK_FRAME_EXTENTS): the X window, which
     // KWin reports as the client geometry, extends past the frame by the shadow on every side.
     const shadow = Number(o.csdShadow ?? 0);
-    Object.defineProperty(w, "clientGeometry", {
+    Object.defineProperty(w, "clientGeometry", { configurable: true,
       get: () => shadow > 0 ? { x: fg.x - shadow, y: fg.y - shadow, width: fg.width + 2 * shadow, height: fg.height + 2 * shadow }
         : { x: fg.x, y: fg.y + margin, width: fg.width, height: fg.height - margin },
     });
-    Object.defineProperty(w, "noBorder", {
+    Object.defineProperty(w, "noBorder", { configurable: true,
       get: () => noBorder,
       set: (v: boolean) => { if (v === noBorder) return; noBorder = v; w._setDecorated(!v); },
     });

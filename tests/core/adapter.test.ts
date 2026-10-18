@@ -5,7 +5,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createRuntime } from "../../src/runtime/main.ts";
 import { constraintsOf, KwinAdapter } from "../../src/adapters/kwin/adapter.ts";
-import { desktop, fakeEnv, FakeQt, FakeWorkspace, output, type FakeWindow, type R } from "./fakeKwin.ts";
+import { desktop, fakeEnv, FakeQt, FakeWorkspace, output, Sig, type FakeWindow, type R } from "./fakeKwin.ts";
 
 const GAP = 8;
 
@@ -449,5 +449,203 @@ test("X11 CSD client that resizes itself after KWin's synchronous echo gets its 
   qt.drain();
   assert.equal(w3.frameGeometry.height, 616, `honours the 616 px frame minimum, not the 666 px client one: ${JSON.stringify(w3.frameGeometry)}`);
   assertTiles([...wins, w3], FULL);
+  rt.shutdown();
+});
+
+// ------------------------------------------------- T10 destroyed wrappers, T16 excluded surfaces
+
+/**
+ * From now on every property read or write of `w` (except `allow`) is recorded and throws, as
+ * a destroyed KWin wrapper would fail; its signals can still be emitted. Returns the record.
+ */
+function poison(w: FakeWindow, allow: readonly string[] = []): string[] {
+  const touched: string[] = [];
+  for (const k of Object.getOwnPropertyNames(w)) {
+    if (allow.includes(k)) continue;
+    const d = Object.getOwnPropertyDescriptor(w, k)!;
+    if (d.value instanceof Sig || typeof d.value === "function") continue;
+    const hit = (op: string) => (): never => { touched.push(op + " " + k); throw new Error(`destroyed wrapper: ${op} ${k}`); };
+    Object.defineProperty(w, k, { configurable: true, get: hit("read"), set: hit("write") });
+  }
+  return touched;
+}
+
+function signalsOf(w: FakeWindow): Sig[] {
+  return Object.getOwnPropertyNames(w).map((k) => Object.getOwnPropertyDescriptor(w, k)!.value).filter((v) => v instanceof Sig);
+}
+
+/** An engine stand-in that records every call the adapter makes into it. */
+function recordingEngine() {
+  const calls: Array<{ fn: string; args: unknown[] }> = [];
+  const engine = new Proxy({}, { get: (_t, k) => (...args: unknown[]) => { calls.push({ fn: String(k), args }); } });
+  const added = () => calls.filter((c) => c.fn === "windowAdded").map((c) => c.args[0] as { id: string; gen: number });
+  return { calls, engine, added };
+}
+
+/** Every HostPort operation that takes a window id and generation; all must refuse. */
+function assertRefused(a: KwinAdapter, id: string, gen: number, why: string): void {
+  const r = { x: 0, y: 0, width: 640, height: 480 };
+  assert.equal(a.applyFrame(id, gen, r), null, `applyFrame ${why}`);
+  assert.equal(a.frame(id, gen), null, `frame ${why}`);
+  assert.equal(a.activate(id, gen), false, `activate ${why}`);
+  assert.equal(a.raise(id, gen), false, `raise ${why}`);
+  assert.equal(a.releaseNativeTile(id, gen), false, `releaseNativeTile ${why}`);
+  assert.equal(a.setNoBorder(id, gen, true), false, `setNoBorder ${why}`);
+  assert.equal(a.noBorder(id, gen), null, `noBorder ${why}`);
+  assert.equal(a.sendToOutput(id, gen, "O1"), false, `sendToOutput ${why}`);
+  assert.equal(a.sendToDesktop(id, gen, "desk-D1"), false, `sendToDesktop ${why}`);
+}
+
+test("T10: a removed or deleted window's wrapper is never touched again; a re-added id answers only its new generation", () => {
+  const ws = new FakeWorkspace([output("O1", { x: 0, y: 0, width: 1280, height: 800 })], [desktop("D1")]);
+  const qt = new FakeQt();
+  const a = new KwinAdapter(ws as never, qt as never);
+  const { calls, engine, added } = recordingEngine();
+  a.attach(engine as never, true); // title watching on: captionChanged is hooked as well
+  const base = a.connectionCount();
+  const w = ws.window({ caption: "dead" });
+  ws.add(w);
+  const { id, gen } = added()[0];
+  const sigs = signalsOf(w);
+  assert.ok(sigs.some((s) => s.fns.length > 0), "precondition: the live window is hooked");
+  assert.deepEqual(a.frame(id, gen), w.frameGeometry, "precondition: the live entry answers");
+
+  ws.remove(w);
+  assert.deepEqual(calls.filter((c) => c.fn === "windowRemoved").map((c) => c.args), [[id, gen]]);
+  const touched = poison(w);
+  calls.length = 0;
+  // (a) KWin may still deliver queued signals of the destroyed wrapper.
+  for (const s of sigs) assert.doesNotThrow(() => s.emit(), "a late signal reaches no handler");
+  qt.drain();
+  assert.deepEqual(calls.map((c) => c.fn), [], "no engine work from a removed window's signals");
+  assert.equal(a.connectionCount(), base, "every per-window connection released");
+  // (b) Engine-held handles to the removed window.
+  const writes = ws.writes.length, active = ws.activeWindow;
+  assertRefused(a, id, gen, "after removal");
+  assert.deepEqual(touched, [], "the dead wrapper was not read or written");
+  assert.equal(ws.writes.length, writes);
+  assert.equal(ws.activeWindow, active);
+
+  // The same id registered again (a new wrapper): the old generation is rejected without
+  // touching either wrapper; the new generation works.
+  const w2 = ws.window({ caption: "reborn", internalId: id });
+  ws.add(w2);
+  const gen2 = added()[added().length - 1].gen;
+  assert.ok(gen2 > gen, `new generation ${gen2} > ${gen}`);
+  const fg2 = w2.frameGeometry;
+  assertRefused(a, id, gen, "for the old generation");
+  assert.deepEqual(w2.frameGeometry, fg2, "the new window was not moved by an old-generation call");
+  assert.equal(w2.noBorder, false, "nor its border changed");
+  assert.notEqual(ws.activeWindow, w2, "nor activated");
+  assert.equal(ws.writes.length, writes);
+  const t = { x: 8, y: 8, width: 632, height: 784 };
+  assert.deepEqual(a.applyFrame(id, gen2, t)?.after, t);
+  assert.deepEqual(a.frame(id, gen2), t);
+  assert.equal(a.activate(id, gen2), true);
+  assert.equal(ws.activeWindow, w2);
+  calls.length = 0;
+  for (const s of sigs) s.emit();
+  assert.deepEqual(calls.map((c) => c.fn), [], "the old wrapper's signals still reach nothing");
+  ws.kwinSetFrame(w2, { ...t, x: 20 }); // a move after the answered request: an observation only
+  assert.deepEqual(calls.map((c) => [c.fn, c.args[0], c.args[1]]), [["frameObserved", id, gen2]]);
+
+  // A wrapper KWin marked deleted before windowRemoved arrives: only `deleted` (and the id,
+  // for the removal) may be read.
+  const w3 = ws.window({ caption: "closing" });
+  ws.add(w3);
+  const s3 = added()[added().length - 1];
+  w3.deleted = true;
+  const touched3 = poison(w3, ["deleted", "internalId"]);
+  assertRefused(a, s3.id, s3.gen, "for a deleted wrapper");
+  ws.remove(w3);
+  assert.deepEqual(touched3, [], "the deleted wrapper was not read or written");
+  assert.equal(ws.writes.length, writes + 1, "only the new generation's write");
+  a.detach();
+  assert.equal(a.connectionCount(), 0);
+  assert.deepEqual(touched, []);
+});
+
+/** Frame/client geometry churn plus the signals that only re-read the frame margin, tile or title. */
+function geometryChurn(ws: FakeWorkspace, qt: FakeQt, w: FakeWindow): void {
+  for (let i = 0; i < 5; ++i) {
+    ws.kwinSetFrame(w, { x: 100 + i, y: 40 + i, width: 600 + 10 * i, height: 60 + 10 * i });
+    w.clientGeometryChanged.emit();
+  }
+  for (const s of ["tileChanged", "captionChanged", "maximizeableChanged", "decorationPolicyChanged", "decorationChanged",
+                   "clientGeometryChanged"]) w[s].emit();
+  qt.drain();
+}
+
+/** Every state, membership and metadata signal of `w`, in one event-loop turn. */
+function stateChurn(ws: FakeWorkspace, qt: FakeQt, w: FakeWindow, setStates: boolean): void {
+  const flip = (k: string, on: unknown, off: unknown, s: string) => {
+    if (setStates) w[k] = on;
+    w[s].emit();
+    if (setStates) w[k] = off;
+    w[s].emit();
+  };
+  flip("minimized", true, false, "minimizedChanged");
+  flip("fullScreen", true, false, "fullScreenChanged");
+  flip("maximizeMode", 3, 0, "maximizedChanged");
+  flip("hidden", true, false, "hiddenChanged");
+  if (setStates) w.move = true;
+  w.interactiveMoveResizeStarted.emit();
+  w.moveResizedChanged.emit();
+  ws.kwinSetFrame(w, { x: 300, y: 200, width: 600, height: 60 });
+  if (setStates) w.move = false;
+  w.interactiveMoveResizeFinished.emit();
+  w.moveResizedChanged.emit();
+  for (const s of ["outputChanged", "desktopsChanged", "activitiesChanged", "transientChanged", "modalChanged"]) w[s].emit();
+  qt.drain();
+}
+
+function inspectCounters(rt: { dispatch(id: string): unknown }, lines: string[]) {
+  rt.dispatch("plastile.inspect.counters");
+  return JSON.parse(lines[lines.length - 1].replace(/^plastile counters /, "")) as
+    { counters: { flushes: number; solves: number; writes: number }; connections: number };
+}
+
+test("T16: excluded surfaces (shell app id, passive kinds) incur no solve or write, and no flush for geometry churn", () => {
+  const { ws, qt, wins, rt, f } = setup(1, 2);
+  const tiles = wins.map((w) => w.frameGeometry);
+  const surfaces: Array<{ name: string; w: FakeWindow; passive: boolean }> = [
+    { name: "krunner", passive: false, w: ws.window({ caption: "KRunner", resourceClass: "org.kde.krunner",
+                                                       desktopFileName: "org.kde.krunner", skipTaskbar: true }) },
+    { name: "tooltip", passive: true, w: ws.window({ caption: "", tooltip: true, normalWindow: false }, false) },
+    { name: "osd", passive: true, w: ws.window({ caption: "", onScreenDisplay: true, normalWindow: false }, false) },
+  ];
+  const conns: Record<string, number> = {};
+  for (const s of surfaces) {
+    const c0 = inspectCounters(rt, f.lines);
+    ws.add(s.w);
+    qt.drain();
+    const c1 = inspectCounters(rt, f.lines);
+    conns[s.name] = c1.connections - c0.connections;
+    assert.equal(c1.counters.writes, c0.counters.writes, `${s.name}: mapping it writes nothing`);
+    assert.equal(c1.counters.solves, c0.counters.solves, `${s.name}: mapping it solves nothing`);
+    // A passive surface is not read again after registration: no handler exists to read it.
+    const touched = s.passive ? poison(s.w) : [];
+    geometryChurn(ws, qt, s.w);
+    const c2 = inspectCounters(rt, f.lines);
+    assert.equal(c2.counters.flushes - c1.counters.flushes, 0, `${s.name}: flushes for geometry churn`);
+    assert.equal(c2.counters.solves - c1.counters.solves, 0, `${s.name}: solves for geometry churn`);
+    assert.equal(c2.counters.writes - c1.counters.writes, 0, `${s.name}: writes for geometry churn`);
+    stateChurn(ws, qt, s.w, !s.passive);
+    const c3 = inspectCounters(rt, f.lines);
+    // Measured, not a goal: the engine schedules a flush on any suspension, membership or
+    // metadata change, also of an excluded window (engine.ts statesChanged: ensureFlush()), and
+    // that flush finds no dirty context. One coalesced empty flush per turn at most.
+    assert.ok(c3.counters.flushes - c2.counters.flushes <= (s.passive ? 0 : 1), `${s.name}: flushes for state churn`);
+    assert.equal(c3.counters.solves - c2.counters.solves, 0, `${s.name}: solves for state churn`);
+    assert.equal(c3.counters.writes - c2.counters.writes, 0, `${s.name}: writes for state churn`);
+    assert.deepEqual(touched, [], `${s.name}: never read after registration`);
+  }
+  // Passive kinds get no connection at all (adapter.ts:429, PASSIVE_KINDS at adapter.ts:51-53).
+  // The app-id exclusion is a core decision (classify.ts EXCLUDED_APPS); the adapter hooks by
+  // kind only (adapter.ts:426-431), so a normal-kind shell surface keeps its 17 hooks
+  // (adapter.ts:439-502): windowClassChanged (adapter.ts:486) can turn it into an ordinary
+  // window; while excluded it owns no geometry, so its events queue no solve or write.
+  assert.deepEqual(conns, { krunner: 17, tooltip: 0, osd: 0 });
+  assert.deepEqual(wins.map((w) => w.frameGeometry), tiles, "the tiles were not touched");
   rt.shutdown();
 });
