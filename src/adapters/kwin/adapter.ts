@@ -21,6 +21,10 @@ interface Entry {
   gen: number;
   conns: Conn[];
   meta: WindowMeta;
+  /** Geometry/state signals connected (managed kinds; not panels or passive surfaces). */
+  hooked: boolean;
+  /** captionChanged connection, present only while title rules are active. */
+  caption: Conn | null;
 }
 
 function sameRect(a: Rect, b: Rect): boolean {
@@ -196,9 +200,18 @@ export class KwinAdapter implements HostPort {
 
   windowCount(): number { return this.entries.size; }
 
-  private own(signal: KSignal, fn: (...args: unknown[]) => void, into: Conn[]): void {
+  private own(signal: KSignal, fn: (...args: unknown[]) => void, into: Conn[]): Conn {
     signal.connect(fn);
-    into.push({ signal, fn });
+    const c = { signal, fn };
+    into.push(c);
+    return c;
+  }
+
+  /** Disconnect one owned connection early (it stays owned until then). */
+  private drop(c: Conn, from: Conn[]): void {
+    const i = from.indexOf(c);
+    if (i >= 0) from.splice(i, 1);
+    try { c.signal.disconnect(c.fn); } catch (_e) { /* object already destroyed */ }
   }
 
   private disconnectAll(list: Conn[]): void {
@@ -274,7 +287,7 @@ export class KwinAdapter implements HostPort {
     const id = this.idOf(w);
     if (this.entries.has(id)) return this.snapshot(this.entries.get(id)!);
     const gen = ++this.lastGen;
-    const e: Entry = { w, id, gen, conns: [], meta: metaOf(w) };
+    const e: Entry = { w, id, gen, conns: [], meta: metaOf(w), hooked: false, caption: null };
     this.entries.set(id, e);
     if (e.meta.kind === "dock") {
       // Panels change the usable area; KWin has no script-visible work-area signal.
@@ -287,6 +300,7 @@ export class KwinAdapter implements HostPort {
 
   private hook(e: Entry): void {
     const w = e.w, id = e.id, gen = e.gen;
+    e.hooked = true;
     const eng = () => (this.alive ? this.engine : null);
     this.own(w.frameGeometryChanged, () => { const g = eng(); if (g) g.frameObserved(id, gen, rectOf(w.frameGeometry)); }, e.conns);
     const states = () => { const g = eng(); if (g) g.statesChanged(id, gen, statesOf(w)); };
@@ -305,7 +319,36 @@ export class KwinAdapter implements HostPort {
       g.constraintsChanged(id, gen, constraintsOf(w));
     };
     for (const s of [w.windowClassChanged, w.transientChanged, w.modalChanged]) this.own(s, metadata, e.conns);
-    if (this.watchTitles) this.own(w.captionChanged, metadata, e.conns);
+    this.watchCaption(e, this.watchTitles);
+  }
+
+  private watchCaption(e: Entry, on: boolean): void {
+    if (on && !e.caption) e.caption = this.own(e.w.captionChanged, () => this.onCaption(e), e.conns);
+    else if (!on && e.caption) { this.drop(e.caption, e.conns); e.caption = null; }
+  }
+
+  /** Title-only update: one property read; the engine re-evaluates only when title rules exist. */
+  private onCaption(e: Entry): void {
+    if (!this.alive || !this.engine || this.entries.get(e.id) !== e) return;
+    const title = String(e.w.caption || "");
+    if (title === e.meta.title) return;
+    e.meta = Object.assign({}, e.meta, { title });
+    this.engine.metadataChanged(e.id, e.gen, e.meta);
+  }
+
+  /**
+   * Title rules were activated or removed by a configuration change. On activation the
+   * current captions are read once (they may have changed while unwatched), before the
+   * engine re-classifies with the new configuration.
+   */
+  setWatchTitles(on: boolean): void {
+    if (on === this.watchTitles) return;
+    this.watchTitles = on;
+    for (const e of this.entries.values()) {
+      if (!e.hooked) continue;
+      this.watchCaption(e, on);
+      if (on) this.onCaption(e);
+    }
   }
 
   private release(e: Entry): void { this.disconnectAll(e.conns); }
@@ -345,6 +388,7 @@ export class KwinAdapter implements HostPort {
     if (!e) return;
     this.entries.delete(id);
     this.release(e);
+    e.caption = null;
     if (this.alive && this.engine) {
       this.engine.windowRemoved(id, e.gen);
       if (e.meta.kind === "dock") this.panelChanged(false);

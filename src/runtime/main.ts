@@ -119,6 +119,9 @@ export function createRuntime(env: RuntimeEnv): Runtime {
   const onConfig = (): void => {
     if (!engine.isAlive()) return;
     if (loadConfig()) {
+      // Caption watching follows the active rules; on activation the current titles are read
+      // before the engine re-classifies.
+      adapter.setWatchTitles(snapshot!.usesTitleRules);
       engine.configure(options(snapshot!));
       log("info", "configuration activated", { revision: snapshot!.revision });
     }

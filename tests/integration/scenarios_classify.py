@@ -262,3 +262,60 @@ def classify_rule_border(out: Path, c: Checks):
             "tiled": {k: v["noBorder"] for k, v in fr.items()}, "afterUserChange": {k: v["noBorder"] for k, v in fr2.items()},
             "toggleFloat": {"floating": f_float, "retiled": f_tiled}, "afterUnload": nb, "explain": brief(e1)}
         save(out, "classify-rule-border-Q10-T16")
+
+
+def reconfigure(s: Session, key: str, value: str) -> None:
+    """Write one [Script-plastile] key into the session's kwinrc and make KWin re-read it."""
+    rc = s.kw.root / "config/kwinrc"
+    txt = rc.read_text()
+    assert "[Script-plastile]\n" in txt
+    txt = txt.replace("[Script-plastile]\n", f"[Script-plastile]\n{key}={value}\n", 1)
+    rc.write_text(txt)
+    off = s.kw.mark()
+    s.kw.call("/KWin", "org.kde.KWin", "reconfigure")
+    s.kw.wait_log(r"plastile info configuration activated", 5, off)
+    time.sleep(0.2)
+    s.settle()
+
+
+@scenario("classify-rule-title-reconfigure-T16")
+def classify_rule_title_reconfigure(out: Path, c: Checks):
+    """No title rule at load; FLOAT_TWO activated by a reconfigure must see later caption changes."""
+    with Session(out) as s:
+        three(s)
+        s.load()
+        s.settle()
+        a = s.area()
+        full = a["width"] - 16
+        reconfigure(s, "configJson", FLOAT_TWO)
+        c("configuration accepted (no rejection/warnings)", not rejected(s), rejected(s))
+        fr = s.frames()
+        tiled = [fr["plastile-fixture 1"], fr["plastile-fixture 3"]]
+        c("activation: fixture 2 floats, 1 and 3 split the width", not tiling_errors(tiled, a, 8)
+          and abs(sum(x["frame"]["width"] for x in tiled) - (a["width"] - 24)) <= 2, [x["frame"] for x in tiled])
+        s.fixtures[3].send("title plastile-fixture 2b")
+        s.wait_for(lambda: "plastile-fixture 2b" in s.frames(), 5, "retitle 3")
+        time.sleep(0.2)
+        s.settle()
+        fr = s.frames()
+        c("retitle after reconfigure: former 3 floats, 1 fills the width (oracle)",
+          abs(fr["plastile-fixture 1"]["frame"]["width"] - full) <= 1, fr["plastile-fixture 1"]["frame"])
+        s.spawn(4)
+        s.settle()
+        fr = s.frames()
+        c("a window opened after the reconfigure tiles next to 1", fr["plastile-fixture 1"]["frame"]["width"] < full - 100
+          and not tiling_errors([fr["plastile-fixture 1"], fr["plastile-fixture 4"]], a, 8), fr["plastile-fixture 4"]["frame"])
+        s.fixtures[4].send("title plastile-fixture 2c")
+        s.wait_for(lambda: "plastile-fixture 2c" in s.frames(), 5, "retitle 4")
+        time.sleep(0.2)
+        s.settle()
+        fr = s.frames()
+        c("...and floats after its own retitle: 1 fills the width again (oracle)",
+          abs(fr["plastile-fixture 1"]["frame"]["width"] - full) <= 1, fr["plastile-fixture 1"]["frame"])
+        e4 = explain(s, "plastile-fixture 2c")
+        c("explain: floating by rule float-two", e4.get("mode") == "floating"
+          and (e4.get("decision") or {}).get("ruleIds") == ["float-two"], brief(e4))
+        cz = s.counters()
+        warn = s.log_lines(r"plastile (error|warn)|TypeError|ReferenceError")
+        c("no model errors or JS exceptions", cz["counters"]["errors"] == 0 and not warn, warn[:3])
+

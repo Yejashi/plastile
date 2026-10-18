@@ -177,3 +177,57 @@ test("window generations stay unique when an id is registered again", () => {
   assert.ok(seen[1] > seen[0], `generations ${seen}`);
   a.detach();
 });
+
+// ---------------------------------------------------------------- title rules
+
+const FLOAT_BAR = JSON.stringify({ schemaVersion: 1, rules: [{ id: "bar", match: { title: { glob: "bar*" } }, actions: { mode: "floating" } }] });
+
+test("title rules activated by a reconfigure see later caption changes (existing and new windows)", () => {
+  const { ws, qt, wins, rt, f } = setup(1, 2);
+  const [w1, w2] = wins;
+  assert.ok(w1.frameGeometry.width < 700 && w2.frameGeometry.width < 700, "two tiles side by side");
+  f.cfg.configJson = FLOAT_BAR;
+  f.configChanged.emit();
+  qt.drain();
+  // w2 retitles to match the floating rule: w1 must take the whole area.
+  w2.caption = "bar 1";
+  w2.captionChanged.emit();
+  qt.drain();
+  assert.equal(w1.frameGeometry.width, 1280 - 2 * GAP, "w1 fills the width once w2 floats");
+  // A window opened after the reconfigure is watched as well.
+  const w3 = ws.window({ caption: "w3", resourceClass: "app3" });
+  ws.add(w3);
+  qt.drain();
+  assert.ok(w1.frameGeometry.width < 700, "w3 tiles next to w1");
+  w3.caption = "bar 3";
+  w3.captionChanged.emit();
+  qt.drain();
+  assert.equal(w1.frameGeometry.width, 1280 - 2 * GAP, "w3 floats after its retitle");
+  rt.shutdown();
+});
+
+test("a title rule matches the caption current at activation, not the one seen at registration", () => {
+  const { qt, wins, rt, f } = setup(1, 2);
+  const [w1, w2] = wins;
+  // Caption changed while no title rule was active: nothing is connected, nothing is read.
+  w2.caption = "bar 2";
+  w2.captionChanged.emit();
+  qt.drain();
+  assert.ok(w1.frameGeometry.width < 700);
+  f.cfg.configJson = FLOAT_BAR;
+  f.configChanged.emit();
+  qt.drain();
+  assert.equal(w1.frameGeometry.width, 1280 - 2 * GAP, "w2 floats on activation");
+  rt.shutdown();
+});
+
+test("title watching stops when title rules are removed again", () => {
+  const { qt, wins, rt, f } = setup(1, 2, { configJson: FLOAT_BAR });
+  const w2 = wins[1];
+  assert.ok(w2.captionChanged.fns.length > 0);
+  f.cfg.configJson = "";
+  f.configChanged.emit();
+  qt.drain();
+  assert.equal(w2.captionChanged.fns.length, 0);
+  rt.shutdown();
+});
