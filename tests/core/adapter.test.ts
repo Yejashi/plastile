@@ -231,3 +231,49 @@ test("title watching stops when title rules are removed again", () => {
   assert.equal(w2.captionChanged.fns.length, 0);
   rt.shutdown();
 });
+
+// ------------------------------------------------------------- desktop names
+
+test("renaming a desktop re-resolves desktopName overrides (settings and enabled)", () => {
+  const cfg = { configJson: JSON.stringify({ schemaVersion: 1, overrides: [
+    { id: "wide", match: { desktopName: { glob: "Wide*" } }, set: { gaps: { inner: 40 } } },
+    { id: "chat", match: { desktopName: { glob: "Chat*" } }, set: { enabled: false } },
+  ] }) };
+  const { ws, qt, wins, rt } = setup(1, 2, cfg);
+  const [w1, w2] = wins;
+  const gap = () => w2.frameGeometry.x - (w1.frameGeometry.x + w1.frameGeometry.width);
+  assert.equal(gap(), GAP);
+  const d = ws.desktops[0];
+  d.name = "Wide 1";
+  d.nameChanged.emit();
+  qt.drain();
+  assert.equal(gap(), 40, "the override's inner gap applies after the rename");
+  d.name = "Chat 2";
+  d.nameChanged.emit();
+  qt.drain();
+  // Tiling disabled here: a new window is left where KWin put it and the others keep their frames.
+  const f1 = w1.frameGeometry, f2 = w2.frameGeometry;
+  const w3 = ws.window({ caption: "w3", resourceClass: "app3", frameGeometry: { x: 300, y: 200, width: 500, height: 400 } });
+  ws.add(w3);
+  qt.drain();
+  assert.deepEqual([w1.frameGeometry, w2.frameGeometry, w3.frameGeometry], [f1, f2, { x: 300, y: 200, width: 500, height: 400 }]);
+  d.name = "Desktop 1";
+  d.nameChanged.emit();
+  qt.drain();
+  assertTiles([w1, w2, w3], { x: 0, y: 0, width: 1280, height: 800 });
+  rt.shutdown();
+});
+
+test("desktop rename connections are owned and re-owned when desktops change", () => {
+  const { ws, qt, rt } = setup(1, 1);
+  const d1 = ws.desktops[0];
+  assert.equal(d1.nameChanged.fns.length, 1);
+  const d2 = desktop("D2", 2);
+  ws.desktops = [d1, d2];
+  ws.desktopsChanged.emit();
+  qt.drain();
+  assert.equal(d1.nameChanged.fns.length, 1);
+  assert.equal(d2.nameChanged.fns.length, 1);
+  rt.shutdown();
+  assert.equal(d1.nameChanged.fns.length + d2.nameChanged.fns.length, 0, "teardown disconnects them");
+});

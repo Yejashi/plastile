@@ -24,6 +24,8 @@ export interface KDesktop {
   readonly id: string;
   readonly name: string;
   readonly x11DesktopNumber: number;
+  /** VirtualDesktop NOTIFY for `name` (a rename emits only this; desktopsChanged does not). */
+  readonly nameChanged: KSignal;
 }
 
 export interface KTile {

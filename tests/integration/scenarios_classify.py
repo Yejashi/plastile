@@ -319,3 +319,34 @@ def classify_rule_title_reconfigure(out: Path, c: Checks):
         warn = s.log_lines(r"plastile (error|warn)|TypeError|ReferenceError")
         c("no model errors or JS exceptions", cz["counters"]["errors"] == 0 and not warn, warn[:3])
 
+
+WIDE_GAPS = json.dumps({"schemaVersion": 1, "overrides": [
+    {"id": "wide", "match": {"desktopName": {"glob": "Wide*"}}, "set": {"gaps": {"inner": 40}}}]}, separators=(",", ":"))
+
+
+@scenario("config-desktop-rename-Q02")
+def desktop_rename(out: Path, c: Checks):
+    """A desktopName override takes effect when the desktop is renamed into (and out of) its match."""
+    with Session(out, config={"configJson": WIDE_GAPS}) as s:
+        s.spawn(1)
+        s.spawn(2)
+        s.load()
+        s.settle()
+
+        def gap() -> float:
+            f = s.frames()
+            a, b = f["plastile-fixture 1"]["frame"], f["plastile-fixture 2"]["frame"]
+            return b["x"] - (a["x"] + a["width"])
+
+        c("before: default inner gap 8 (oracle)", abs(gap() - 8) <= 0.5, gap())
+        s.js("workspace.currentDesktop.name = 'Wide 1'; emit({ok: true});")
+        time.sleep(0.3)
+        s.settle()
+        c("rename to 'Wide 1': the override's inner gap 40 applies (oracle)", abs(gap() - 40) <= 0.5, gap())
+        s.js("workspace.currentDesktop.name = 'Desktop 1'; emit({ok: true});")
+        time.sleep(0.3)
+        s.settle()
+        c("rename back: inner gap 8 again (oracle)", abs(gap() - 8) <= 0.5, gap())
+        cz = s.counters()
+        warn = s.log_lines(r"plastile (error|warn)|TypeError|ReferenceError")
+        c("no model errors or JS exceptions", cz["counters"]["errors"] == 0 and not warn, warn[:3])

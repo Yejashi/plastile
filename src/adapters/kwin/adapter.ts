@@ -114,6 +114,7 @@ export class KwinAdapter implements HostPort {
   private lastGen = 0;
   private globals: Conn[] = [];
   private outputConns: Conn[] = [];
+  private desktopConns: Conn[] = [];
   private engine: Engine | null = null;
   private watchTitles = false;
   private alive = true;
@@ -123,6 +124,8 @@ export class KwinAdapter implements HostPort {
   /** Deferred work-area checks still allowed for the current panel event (0: none pending). */
   private areaChecks = 0;
   private deferredQueued = false;
+  /** Desktop names changed (configuration matchers read them); set by the runtime. */
+  onDesktopNamesChanged: (() => void) | null = null;
   /** One coalesced callback for topology and work-area invalidation (stable identity for callLater). */
   private readonly deferredFlush = (): void => {
     this.deferredQueued = false;
@@ -166,11 +169,12 @@ export class KwinAdapter implements HostPort {
     this.own(this.ws.currentDesktopChanged, vis, this.globals);
     this.own(this.ws.currentActivityChanged, vis, this.globals);
     this.own(this.ws.activitiesChanged, () => this.scheduleTopology(), this.globals);
-    this.own(this.ws.desktopsChanged, () => this.scheduleTopology(), this.globals);
+    this.own(this.ws.desktopsChanged, () => { this.watchDesktops(); this.scheduleTopology(); }, this.globals);
     this.own(this.ws.screensChanged, () => { this.watchOutputs(); this.scheduleTopology(); }, this.globals);
     this.own(this.ws.screenOrderChanged, () => this.scheduleTopology(), this.globals);
     this.own(this.ws.virtualScreenGeometryChanged, () => this.scheduleTopology(), this.globals);
     this.watchOutputs();
+    this.watchDesktops();
     this.readAreas();
     const out: WindowSnapshot[] = [];
     const list = this.ws.windows;
@@ -188,12 +192,14 @@ export class KwinAdapter implements HostPort {
     this.entries.clear();
     this.disconnectAll(this.globals);
     this.disconnectAll(this.outputConns);
+    this.disconnectAll(this.desktopConns);
     this.areas.clear();
     this.engine = null;
+    this.onDesktopNamesChanged = null;
   }
 
   connectionCount(): number {
-    let n = this.globals.length + this.outputConns.length;
+    let n = this.globals.length + this.outputConns.length + this.desktopConns.length;
     for (const e of this.entries.values()) n += e.conns.length;
     return n;
   }
@@ -225,6 +231,14 @@ export class KwinAdapter implements HostPort {
     this.disconnectAll(this.outputConns);
     const outs = this.ws.screens;
     for (let i = 0; i < outs.length; ++i) this.own(outs[i].geometryChanged, () => this.scheduleTopology(), this.outputConns);
+  }
+
+  /** Desktop names feed configuration matchers; KWin's desktopsChanged does not cover a rename. */
+  private watchDesktops(): void {
+    this.disconnectAll(this.desktopConns);
+    const ds = this.ws.desktops;
+    const renamed = (): void => { if (this.alive && this.onDesktopNamesChanged) this.onDesktopNamesChanged(); };
+    for (let i = 0; i < ds.length; ++i) if (ds[i].nameChanged) this.own(ds[i].nameChanged, renamed, this.desktopConns);
   }
 
   private queueDeferred(): void {

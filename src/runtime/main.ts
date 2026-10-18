@@ -128,6 +128,11 @@ export function createRuntime(env: RuntimeEnv): Runtime {
   };
   env.options.configChanged.connect(onConfig);
   optionConns.push({ signal: env.options.configChanged, fn: onConfig });
+  // desktopName matchers read the names when contexts and rules resolve: a rename
+  // re-resolves the active configuration (settings and classification), as an activation does.
+  adapter.onDesktopNamesChanged = () => {
+    if (engine.isAlive() && snapshot) engine.configure(options(snapshot));
+  };
 
   const dispatch = (id: string): CommandResult | null => {
     if (!engine.isAlive()) return null;
