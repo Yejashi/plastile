@@ -1,0 +1,2267 @@
+{
+ "description": "Nested dry run of the physical validation kit (tools/physical). NOT a physical measurement: KWin virtual backend, QPainter compositing, synthetic 60 Hz presentation timeline, libei input instead of uinput, shared 4-vCPU cloud container. It shows that the pipeline (injector, correlation, randomized blocks, warmup separation, summarizer, verdict logic, key-delivery check, session guard) works end to end against a real KWin 6.7.5; its latency numbers say nothing about physical input-to-visible latency.",
+ "layer": "nested-dry-run",
+ "environment": {
+  "sandbox": "Ubuntu 26.10 chroot (tools/sandbox)",
+  "kwin": "kwin-wayland 4:6.7.5-0ubuntu1",
+  "qt": "6.11.2",
+  "libei": "1.5.0",
+  "compositing": "QPainter",
+  "implementationCommit": "6ada721c10fa3b1c22ee7710999626bd10248f6d",
+  "captureNote": "Plastile src/ and package/ were at 6ada721 (unchanged by WP-10); the kit ran from its working tree just before commit f500cb8 (implementationDirty=true refers to that); summaries were recomputed from the raw logs with the committed kit (orchestrate.py correlate). Raw logs stay in the gitignored artifacts/physical/."
+ },
+ "guardSelfCheck": {
+  "keytapUinput": {
+   "exitCode": 3,
+   "message": "refusing to run: kwin_wayland (pid 21655) runs nested (--virtual): uinput would reach the host session instead"
+  },
+  "pythonGuard": {
+   "refused": true,
+   "reasons": [
+    "kwin_wayland (pid 21655) runs nested (--virtual); this kit is for the physical session only"
+   ]
+  },
+  "ok": true
+ },
+ "protocolScaleRun": {
+  "command": "tools/physical/nested_dryrun.py --rounds 5 --samples 1000 --warmup 20 --windows 3 --workloads P02-quicktile,P03-ratio --rebind-ratio --bootstrap 1000",
+  "seed": 1,
+  "summary": {
+   "definitions": {
+    "quantile": "nearest-rank",
+    "ci": "percentile bootstrap over runs (blocks)",
+    "bootstrapResamples": 1000,
+    "seed": 1,
+    "p99MinSamples": 5000,
+    "minRuns": 5,
+    "verdictRule": "PERFORMANCE section 4: median diff < 1 interval and p95 diff <= 1 interval vs matched baseline"
+   },
+   "groups": [
+    {
+     "layer": "nested-dry-run",
+     "workload": "P02-quicktile",
+     "condition": "none",
+     "outputName": "Virtual-0",
+     "refreshHzDeclared": 60,
+     "windowCount": 3,
+     "samples": 5000,
+     "successes": 5000,
+     "successRate": 1.0,
+     "runs": 5,
+     "failures": {},
+     "refreshNsObservedMedian": 16666666,
+     "metrics": {
+      "inputToFirstPresentNs": {
+       "pooled": {
+        "n": 5000,
+        "median": 17305480,
+        "p95": 34940623,
+        "p99": 35711545,
+        "max": 86128451,
+        "min": 6740896
+       },
+       "ci95ByRun": {
+        "median": [
+         16762380,
+         19261287
+        ],
+        "p95": [
+         34876761,
+         34997140
+        ],
+        "p99": [
+         35521612,
+         35840186
+        ]
+       },
+       "perRun": {
+        "run1": {
+         "n": 1000,
+         "median": 17356776,
+         "p95": 34850060,
+         "p99": null,
+         "max": 50891778,
+         "min": 7137238,
+         "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+        },
+        "run2": {
+         "n": 1000,
+         "median": 17238883,
+         "p95": 35019984,
+         "p99": null,
+         "max": 66978471,
+         "min": 7152183,
+         "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+        },
+        "run3": {
+         "n": 1000,
+         "median": 16481356,
+         "p95": 35007273,
+         "p99": null,
+         "max": 41198746,
+         "min": 6943446,
+         "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+        },
+        "run4": {
+         "n": 1000,
+         "median": 16873300,
+         "p95": 34876761,
+         "p99": null,
+         "max": 39715708,
+         "min": 6740896,
+         "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+        },
+        "run5": {
+         "n": 1000,
+         "median": 19862100,
+         "p95": 34892008,
+         "p99": null,
+         "max": 86128451,
+         "min": 7021765,
+         "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+        }
+       }
+      },
+      "inputToSettledNs": {
+       "pooled": {
+        "n": 5000,
+        "median": 17305480,
+        "p95": 34940623,
+        "p99": 35711545,
+        "max": 86128451,
+        "min": 6740896
+       },
+       "ci95ByRun": {
+        "median": [
+         16789206,
+         19261287
+        ],
+        "p95": [
+         34876761,
+         34996312
+        ],
+        "p99": [
+         35544256,
+         35840186
+        ]
+       },
+       "perRun": {
+        "run1": {
+         "n": 1000,
+         "median": 17356776,
+         "p95": 34850060,
+         "p99": null,
+         "max": 50891778,
+         "min": 7137238,
+         "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+        },
+        "run2": {
+         "n": 1000,
+         "median": 17238883,
+         "p95": 35019984,
+         "p99": null,
+         "max": 66978471,
+         "min": 7152183,
+         "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+        },
+        "run3": {
+         "n": 1000,
+         "median": 16481356,
+         "p95": 35007273,
+         "p99": null,
+         "max": 41198746,
+         "min": 6943446,
+         "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+        },
+        "run4": {
+         "n": 1000,
+         "median": 16873300,
+         "p95": 34876761,
+         "p99": null,
+         "max": 39715708,
+         "min": 6740896,
+         "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+        },
+        "run5": {
+         "n": 1000,
+         "median": 19862100,
+         "p95": 34892008,
+         "p99": null,
+         "max": 86128451,
+         "min": 7021765,
+         "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+        }
+       }
+      }
+     },
+     "protocol": {
+      "runs": 5,
+      "minRuns": 5,
+      "pooledSuccesses": 5000,
+      "minSamplesForP99": 5000,
+      "met": true
+     }
+    },
+    {
+     "layer": "nested-dry-run",
+     "workload": "P03-ratio",
+     "condition": "plastile",
+     "outputName": "Virtual-0",
+     "refreshHzDeclared": 60,
+     "windowCount": 3,
+     "samples": 5000,
+     "successes": 5000,
+     "successRate": 1.0,
+     "runs": 5,
+     "failures": {},
+     "refreshNsObservedMedian": 16666666,
+     "metrics": {
+      "inputToFirstPresentNs": {
+       "pooled": {
+        "n": 5000,
+        "median": 12716413,
+        "p95": 20345772,
+        "p99": 21773491,
+        "max": 40983451,
+        "min": 3459231
+       },
+       "ci95ByRun": {
+        "median": [
+         12233768,
+         13144706
+        ],
+        "p95": [
+         20193280,
+         20506562
+        ],
+        "p99": [
+         21579565,
+         22060992
+        ]
+       },
+       "perRun": {
+        "run1": {
+         "n": 1000,
+         "median": 12358321,
+         "p95": 20474601,
+         "p99": null,
+         "max": 35308415,
+         "min": 3459231,
+         "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+        },
+        "run2": {
+         "n": 1000,
+         "median": 12111118,
+         "p95": 20159517,
+         "p99": null,
+         "max": 23556217,
+         "min": 3727620,
+         "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+        },
+        "run3": {
+         "n": 1000,
+         "median": 13136450,
+         "p95": 20491007,
+         "p99": null,
+         "max": 26850977,
+         "min": 3914561,
+         "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+        },
+        "run4": {
+         "n": 1000,
+         "median": 12260320,
+         "p95": 20099854,
+         "p99": null,
+         "max": 31858581,
+         "min": 3510351,
+         "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+        },
+        "run5": {
+         "n": 1000,
+         "median": 13401947,
+         "p95": 20507695,
+         "p99": null,
+         "max": 40983451,
+         "min": 3565769,
+         "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+        }
+       }
+      },
+      "inputToSettledNs": {
+       "pooled": {
+        "n": 5000,
+        "median": 24447542,
+        "p95": 37005971,
+        "p99": 38353149,
+        "max": 77882090,
+        "min": 8754684
+       },
+       "ci95ByRun": {
+        "median": [
+         23937065,
+         24848699
+        ],
+        "p95": [
+         36847725,
+         37157673
+        ],
+        "p99": [
+         38246231,
+         38510524
+        ]
+       },
+       "perRun": {
+        "run1": {
+         "n": 1000,
+         "median": 25108679,
+         "p95": 37039337,
+         "p99": null,
+         "max": 77882090,
+         "min": 10230685,
+         "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+        },
+        "run2": {
+         "n": 1000,
+         "median": 23500606,
+         "p95": 36826183,
+         "p99": null,
+         "max": 44094104,
+         "min": 8861877,
+         "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+        },
+        "run3": {
+         "n": 1000,
+         "median": 24590488,
+         "p95": 37173228,
+         "p99": null,
+         "max": 52754026,
+         "min": 10143387,
+         "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+        },
+        "run4": {
+         "n": 1000,
+         "median": 24424689,
+         "p95": 36730047,
+         "p99": null,
+         "max": 44604243,
+         "min": 8754684,
+         "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+        },
+        "run5": {
+         "n": 1000,
+         "median": 24702318,
+         "p95": 37163382,
+         "p99": null,
+         "max": 52852919,
+         "min": 10010202,
+         "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+        }
+       }
+      }
+     },
+     "protocol": {
+      "runs": 5,
+      "minRuns": 5,
+      "pooledSuccesses": 5000,
+      "minSamplesForP99": 5000,
+      "met": true
+     }
+    }
+   ],
+   "comparisons": [
+    {
+     "candidate": "P03-ratio",
+     "baseline": "P02-quicktile",
+     "layer": "nested-dry-run",
+     "outputName": "Virtual-0",
+     "refreshHzDeclared": 60,
+     "windowCount": 3,
+     "metric": "inputToFirstPresentNs",
+     "thresholdNs": 16666666,
+     "matchedBaseline": true,
+     "medianDiffNs": -4589067,
+     "medianDiffCi95": [
+      -6757658,
+      -3891446
+     ],
+     "p95DiffNs": -14594851,
+     "p95DiffCi95": [
+      -14753276,
+      -14399995
+     ],
+     "protocolMet": true,
+     "medianRule": "pass",
+     "p95Rule": "pass",
+     "verdict": "pass"
+    }
+   ],
+   "warmup": [
+    {
+     "layer": "nested-dry-run",
+     "workload": "P03-ratio",
+     "condition": "plastile",
+     "outputName": "Virtual-0",
+     "refreshHzDeclared": 60,
+     "windowCount": 3,
+     "samples": 100,
+     "successes": 100,
+     "inputToFirstPresentNs": {
+      "n": 100,
+      "median": 12355323,
+      "p95": 20698861,
+      "p99": null,
+      "max": 22874425,
+      "min": 4974956,
+      "p99WithheldReason": "n=100 < 5000 (PERFORMANCE section 6.5)"
+     }
+    },
+    {
+     "layer": "nested-dry-run",
+     "workload": "P02-quicktile",
+     "condition": "none",
+     "outputName": "Virtual-0",
+     "refreshHzDeclared": 60,
+     "windowCount": 3,
+     "samples": 100,
+     "successes": 100,
+     "inputToFirstPresentNs": {
+      "n": 100,
+      "median": 16349620,
+      "p95": 34874330,
+      "p99": null,
+      "max": 37699500,
+      "min": 8033376,
+      "p99WithheldReason": "n=100 < 5000 (PERFORMANCE section 6.5)"
+     }
+    }
+   ],
+   "context": {
+    "layer": "nested-dry-run",
+    "inputSource": "libei (the nested KWin's EIS socket) via plastile-keytap-ei",
+    "environmentId": "nested-virtual-kwin",
+    "outputName": "Virtual-0",
+    "refreshHzDeclared": 60,
+    "implementationCommit": "6ada721c10fa3b1c22ee7710999626bd10248f6d",
+    "implementationDirty": true,
+    "clockResolutionNs": 1
+   },
+   "blocks": [
+    {
+     "index": 0,
+     "round": 0,
+     "workload": "P03-ratio",
+     "condition": "plastile",
+     "windowCount": 3,
+     "outcome": "completed",
+     "taps": 1020,
+     "refreshNsObservedAtStart": 16666666,
+     "countersDelta": {
+      "solves": 1020,
+      "flushes": 0,
+      "commands": 1020,
+      "commandsQueued": 0,
+      "writes": 3060,
+      "corrections": 0,
+      "skipOutstanding": 0,
+      "skipNoop": 0,
+      "skipDiverged": 0,
+      "observations": 3060,
+      "observationsDuringApply": 0,
+      "settled": 3060,
+      "stale": 0,
+      "partial": 0,
+      "external": 0,
+      "learned": 0,
+      "diverged": 0,
+      "deadlines": 0,
+      "overflow": 0,
+      "adopted": 0,
+      "removed": 0,
+      "staleEvents": 0,
+      "errors": 0,
+      "raises": 0,
+      "activations": 0
+     },
+     "presentGrid": {
+      "intervals": 1782,
+      "aligned": 1782,
+      "alignedFraction": 1.0,
+      "residualP95Ns": 0,
+      "residualMaxNs": 0,
+      "refreshNs": 16666666
+     }
+    },
+    {
+     "index": 1,
+     "round": 0,
+     "workload": "P02-quicktile",
+     "condition": "none",
+     "windowCount": 3,
+     "outcome": "completed",
+     "taps": 1021,
+     "refreshNsObservedAtStart": 16666666,
+     "countersDelta": null,
+     "presentGrid": {
+      "intervals": 1021,
+      "aligned": 1021,
+      "alignedFraction": 1.0,
+      "residualP95Ns": 0,
+      "residualMaxNs": 0,
+      "refreshNs": 16666666
+     }
+    },
+    {
+     "index": 2,
+     "round": 1,
+     "workload": "P03-ratio",
+     "condition": "plastile",
+     "windowCount": 3,
+     "outcome": "completed",
+     "taps": 1020,
+     "refreshNsObservedAtStart": 16666666,
+     "countersDelta": {
+      "solves": 1020,
+      "flushes": 0,
+      "commands": 1020,
+      "commandsQueued": 0,
+      "writes": 3060,
+      "corrections": 0,
+      "skipOutstanding": 0,
+      "skipNoop": 0,
+      "skipDiverged": 0,
+      "observations": 3060,
+      "observationsDuringApply": 0,
+      "settled": 3060,
+      "stale": 0,
+      "partial": 0,
+      "external": 0,
+      "learned": 0,
+      "diverged": 0,
+      "deadlines": 0,
+      "overflow": 0,
+      "adopted": 0,
+      "removed": 0,
+      "staleEvents": 0,
+      "errors": 0,
+      "raises": 0,
+      "activations": 0
+     },
+     "presentGrid": {
+      "intervals": 1681,
+      "aligned": 1681,
+      "alignedFraction": 1.0,
+      "residualP95Ns": 0,
+      "residualMaxNs": 0,
+      "refreshNs": 16666666
+     }
+    },
+    {
+     "index": 3,
+     "round": 1,
+     "workload": "P02-quicktile",
+     "condition": "none",
+     "windowCount": 3,
+     "outcome": "completed",
+     "taps": 1021,
+     "refreshNsObservedAtStart": 16666666,
+     "countersDelta": null,
+     "presentGrid": {
+      "intervals": 1021,
+      "aligned": 1021,
+      "alignedFraction": 1.0,
+      "residualP95Ns": 0,
+      "residualMaxNs": 0,
+      "refreshNs": 16666666
+     }
+    },
+    {
+     "index": 4,
+     "round": 2,
+     "workload": "P02-quicktile",
+     "condition": "none",
+     "windowCount": 3,
+     "outcome": "completed",
+     "taps": 1021,
+     "refreshNsObservedAtStart": 16666666,
+     "countersDelta": null,
+     "presentGrid": {
+      "intervals": 1022,
+      "aligned": 1022,
+      "alignedFraction": 1.0,
+      "residualP95Ns": 0,
+      "residualMaxNs": 0,
+      "refreshNs": 16666666
+     }
+    },
+    {
+     "index": 5,
+     "round": 2,
+     "workload": "P03-ratio",
+     "condition": "plastile",
+     "windowCount": 3,
+     "outcome": "completed",
+     "taps": 1020,
+     "refreshNsObservedAtStart": 16666666,
+     "countersDelta": {
+      "solves": 1020,
+      "flushes": 0,
+      "commands": 1020,
+      "commandsQueued": 0,
+      "writes": 3060,
+      "corrections": 0,
+      "skipOutstanding": 0,
+      "skipNoop": 0,
+      "skipDiverged": 0,
+      "observations": 3060,
+      "observationsDuringApply": 0,
+      "settled": 3060,
+      "stale": 0,
+      "partial": 0,
+      "external": 0,
+      "learned": 0,
+      "diverged": 0,
+      "deadlines": 0,
+      "overflow": 0,
+      "adopted": 0,
+      "removed": 0,
+      "staleEvents": 0,
+      "errors": 0,
+      "raises": 0,
+      "activations": 0
+     },
+     "presentGrid": {
+      "intervals": 1732,
+      "aligned": 1732,
+      "alignedFraction": 1.0,
+      "residualP95Ns": 0,
+      "residualMaxNs": 0,
+      "refreshNs": 16666666
+     }
+    },
+    {
+     "index": 6,
+     "round": 3,
+     "workload": "P03-ratio",
+     "condition": "plastile",
+     "windowCount": 3,
+     "outcome": "completed",
+     "taps": 1020,
+     "refreshNsObservedAtStart": 16666666,
+     "countersDelta": {
+      "solves": 1020,
+      "flushes": 0,
+      "commands": 1020,
+      "commandsQueued": 0,
+      "writes": 3060,
+      "corrections": 0,
+      "skipOutstanding": 0,
+      "skipNoop": 0,
+      "skipDiverged": 0,
+      "observations": 3060,
+      "observationsDuringApply": 0,
+      "settled": 3060,
+      "stale": 0,
+      "partial": 0,
+      "external": 0,
+      "learned": 0,
+      "diverged": 0,
+      "deadlines": 0,
+      "overflow": 0,
+      "adopted": 0,
+      "removed": 0,
+      "staleEvents": 0,
+      "errors": 0,
+      "raises": 0,
+      "activations": 0
+     },
+     "presentGrid": {
+      "intervals": 1750,
+      "aligned": 1750,
+      "alignedFraction": 1.0,
+      "residualP95Ns": 0,
+      "residualMaxNs": 0,
+      "refreshNs": 16666666
+     }
+    },
+    {
+     "index": 7,
+     "round": 3,
+     "workload": "P02-quicktile",
+     "condition": "none",
+     "windowCount": 3,
+     "outcome": "completed",
+     "taps": 1021,
+     "refreshNsObservedAtStart": 16666666,
+     "countersDelta": null,
+     "presentGrid": {
+      "intervals": 1021,
+      "aligned": 1021,
+      "alignedFraction": 1.0,
+      "residualP95Ns": 0,
+      "residualMaxNs": 0,
+      "refreshNs": 16666666
+     }
+    },
+    {
+     "index": 8,
+     "round": 4,
+     "workload": "P02-quicktile",
+     "condition": "none",
+     "windowCount": 3,
+     "outcome": "completed",
+     "taps": 1021,
+     "refreshNsObservedAtStart": 16666666,
+     "countersDelta": null,
+     "presentGrid": {
+      "intervals": 1021,
+      "aligned": 1021,
+      "alignedFraction": 1.0,
+      "residualP95Ns": 0,
+      "residualMaxNs": 0,
+      "refreshNs": 16666666
+     }
+    },
+    {
+     "index": 9,
+     "round": 4,
+     "workload": "P03-ratio",
+     "condition": "plastile",
+     "windowCount": 3,
+     "outcome": "completed",
+     "taps": 1020,
+     "refreshNsObservedAtStart": 16666666,
+     "countersDelta": {
+      "solves": 1020,
+      "flushes": 0,
+      "commands": 1020,
+      "commandsQueued": 0,
+      "writes": 3060,
+      "corrections": 0,
+      "skipOutstanding": 0,
+      "skipNoop": 0,
+      "skipDiverged": 0,
+      "observations": 3060,
+      "observationsDuringApply": 0,
+      "settled": 3060,
+      "stale": 0,
+      "partial": 0,
+      "external": 0,
+      "learned": 0,
+      "diverged": 0,
+      "deadlines": 0,
+      "overflow": 0,
+      "adopted": 0,
+      "removed": 0,
+      "staleEvents": 0,
+      "errors": 0,
+      "raises": 0,
+      "activations": 0
+     },
+     "presentGrid": {
+      "intervals": 1737,
+      "aligned": 1737,
+      "alignedFraction": 1.0,
+      "residualP95Ns": 0,
+      "residualMaxNs": 0,
+      "refreshNs": 16666666
+     }
+    }
+   ],
+   "blockChecks": []
+  }
+ },
+ "allWorkloadsRun": {
+  "command": "tools/physical/nested_dryrun.py --rounds 2 --samples 40 --warmup 5 --windows 3 --workloads P00-maximize,P02-quicktile,P00-switch,P03-ratio,P03-swap,P03-focus --rebind-ratio",
+  "summary": {
+   "definitions": {
+    "quantile": "nearest-rank",
+    "ci": "percentile bootstrap over runs (blocks)",
+    "bootstrapResamples": 500,
+    "seed": 1,
+    "p99MinSamples": 5000,
+    "minRuns": 5,
+    "verdictRule": "PERFORMANCE section 4: median diff < 1 interval and p95 diff <= 1 interval vs matched baseline"
+   },
+   "groups": [
+    {
+     "layer": "nested-dry-run",
+     "workload": "P00-maximize",
+     "condition": "none",
+     "outputName": "Virtual-0",
+     "refreshHzDeclared": 60,
+     "windowCount": 3,
+     "samples": 80,
+     "successes": 80,
+     "successRate": 1.0,
+     "runs": 2,
+     "failures": {},
+     "refreshNsObservedMedian": 16666666,
+     "metrics": {
+      "inputToFirstPresentNs": {
+       "pooled": {
+        "n": 80,
+        "median": 21353743,
+        "p95": 34918848,
+        "p99": null,
+        "max": 35625889,
+        "min": 11958931,
+        "p99WithheldReason": "n=80 < 5000 (PERFORMANCE section 6.5)"
+       },
+       "ci95ByRun": {
+        "median": [
+         20821734,
+         22688838
+        ],
+        "p95": [
+         27994998,
+         34918848
+        ]
+       },
+       "perRun": {
+        "run1": {
+         "n": 40,
+         "median": 22688838,
+         "p95": 34918848,
+         "p99": null,
+         "max": 35625889,
+         "min": 13187595,
+         "p99WithheldReason": "n=40 < 5000 (PERFORMANCE section 6.5)"
+        },
+        "run2": {
+         "n": 40,
+         "median": 20821734,
+         "p95": 27994998,
+         "p99": null,
+         "max": 34971414,
+         "min": 11958931,
+         "p99WithheldReason": "n=40 < 5000 (PERFORMANCE section 6.5)"
+        }
+       }
+      },
+      "inputToSettledNs": {
+       "pooled": {
+        "n": 80,
+        "median": 21353743,
+        "p95": 34918848,
+        "p99": null,
+        "max": 35625889,
+        "min": 11958931,
+        "p99WithheldReason": "n=80 < 5000 (PERFORMANCE section 6.5)"
+       },
+       "ci95ByRun": {
+        "median": [
+         20821734,
+         22688838
+        ],
+        "p95": [
+         27994998,
+         34918848
+        ]
+       },
+       "perRun": {
+        "run1": {
+         "n": 40,
+         "median": 22688838,
+         "p95": 34918848,
+         "p99": null,
+         "max": 35625889,
+         "min": 13187595,
+         "p99WithheldReason": "n=40 < 5000 (PERFORMANCE section 6.5)"
+        },
+        "run2": {
+         "n": 40,
+         "median": 20821734,
+         "p95": 27994998,
+         "p99": null,
+         "max": 34971414,
+         "min": 11958931,
+         "p99WithheldReason": "n=40 < 5000 (PERFORMANCE section 6.5)"
+        }
+       }
+      }
+     },
+     "protocol": {
+      "runs": 2,
+      "minRuns": 5,
+      "pooledSuccesses": 80,
+      "minSamplesForP99": 5000,
+      "met": false
+     }
+    },
+    {
+     "layer": "nested-dry-run",
+     "workload": "P00-switch",
+     "condition": "none",
+     "outputName": "Virtual-0",
+     "refreshHzDeclared": 60,
+     "windowCount": 3,
+     "samples": 80,
+     "successes": 80,
+     "successRate": 1.0,
+     "runs": 2,
+     "failures": {},
+     "refreshNsObservedMedian": 16666666,
+     "metrics": {
+      "inputToFirstPresentNs": {
+       "pooled": {
+        "n": 80,
+        "median": 18717718,
+        "p95": 31556609,
+        "p99": null,
+        "max": 46470103,
+        "min": 10027712,
+        "p99WithheldReason": "n=80 < 5000 (PERFORMANCE section 6.5)"
+       },
+       "ci95ByRun": {
+        "median": [
+         17494036,
+         22743274
+        ],
+        "p95": [
+         26151009,
+         31761168
+        ]
+       },
+       "perRun": {
+        "run1": {
+         "n": 40,
+         "median": 17494036,
+         "p95": 26151009,
+         "p99": null,
+         "max": 40938672,
+         "min": 10363537,
+         "p99WithheldReason": "n=40 < 5000 (PERFORMANCE section 6.5)"
+        },
+        "run2": {
+         "n": 40,
+         "median": 22743274,
+         "p95": 31761168,
+         "p99": null,
+         "max": 46470103,
+         "min": 10027712,
+         "p99WithheldReason": "n=40 < 5000 (PERFORMANCE section 6.5)"
+        }
+       }
+      },
+      "inputToSettledNs": {
+       "pooled": {
+        "n": 80,
+        "median": 18717718,
+        "p95": 31761168,
+        "p99": null,
+        "max": 46470103,
+        "min": 10027712,
+        "p99WithheldReason": "n=80 < 5000 (PERFORMANCE section 6.5)"
+       },
+       "ci95ByRun": {
+        "median": [
+         17494036,
+         22743274
+        ],
+        "p95": [
+         26151009,
+         35601869
+        ]
+       },
+       "perRun": {
+        "run1": {
+         "n": 40,
+         "median": 17494036,
+         "p95": 26151009,
+         "p99": null,
+         "max": 40938672,
+         "min": 10363537,
+         "p99WithheldReason": "n=40 < 5000 (PERFORMANCE section 6.5)"
+        },
+        "run2": {
+         "n": 40,
+         "median": 22743274,
+         "p95": 35601869,
+         "p99": null,
+         "max": 46470103,
+         "min": 10027712,
+         "p99WithheldReason": "n=40 < 5000 (PERFORMANCE section 6.5)"
+        }
+       }
+      }
+     },
+     "protocol": {
+      "runs": 2,
+      "minRuns": 5,
+      "pooledSuccesses": 80,
+      "minSamplesForP99": 5000,
+      "met": false
+     }
+    },
+    {
+     "layer": "nested-dry-run",
+     "workload": "P02-quicktile",
+     "condition": "none",
+     "outputName": "Virtual-0",
+     "refreshHzDeclared": 60,
+     "windowCount": 3,
+     "samples": 80,
+     "successes": 80,
+     "successRate": 1.0,
+     "runs": 2,
+     "failures": {},
+     "refreshNsObservedMedian": 16666666,
+     "metrics": {
+      "inputToFirstPresentNs": {
+       "pooled": {
+        "n": 80,
+        "median": 20640990,
+        "p95": 34837238,
+        "p99": null,
+        "max": 36434178,
+        "min": 9461599,
+        "p99WithheldReason": "n=80 < 5000 (PERFORMANCE section 6.5)"
+       },
+       "ci95ByRun": {
+        "median": [
+         19141110,
+         21783031
+        ],
+        "p95": [
+         34703252,
+         35184576
+        ]
+       },
+       "perRun": {
+        "run1": {
+         "n": 40,
+         "median": 19141110,
+         "p95": 34703252,
+         "p99": null,
+         "max": 35134538,
+         "min": 9701975,
+         "p99WithheldReason": "n=40 < 5000 (PERFORMANCE section 6.5)"
+        },
+        "run2": {
+         "n": 40,
+         "median": 21783031,
+         "p95": 35184576,
+         "p99": null,
+         "max": 36434178,
+         "min": 9461599,
+         "p99WithheldReason": "n=40 < 5000 (PERFORMANCE section 6.5)"
+        }
+       }
+      },
+      "inputToSettledNs": {
+       "pooled": {
+        "n": 80,
+        "median": 20640990,
+        "p95": 34837238,
+        "p99": null,
+        "max": 36434178,
+        "min": 9461599,
+        "p99WithheldReason": "n=80 < 5000 (PERFORMANCE section 6.5)"
+       },
+       "ci95ByRun": {
+        "median": [
+         19141110,
+         21783031
+        ],
+        "p95": [
+         34703252,
+         35184576
+        ]
+       },
+       "perRun": {
+        "run1": {
+         "n": 40,
+         "median": 19141110,
+         "p95": 34703252,
+         "p99": null,
+         "max": 35134538,
+         "min": 9701975,
+         "p99WithheldReason": "n=40 < 5000 (PERFORMANCE section 6.5)"
+        },
+        "run2": {
+         "n": 40,
+         "median": 21783031,
+         "p95": 35184576,
+         "p99": null,
+         "max": 36434178,
+         "min": 9461599,
+         "p99WithheldReason": "n=40 < 5000 (PERFORMANCE section 6.5)"
+        }
+       }
+      }
+     },
+     "protocol": {
+      "runs": 2,
+      "minRuns": 5,
+      "pooledSuccesses": 80,
+      "minSamplesForP99": 5000,
+      "met": false
+     }
+    },
+    {
+     "layer": "nested-dry-run",
+     "workload": "P03-focus",
+     "condition": "plastile",
+     "outputName": "Virtual-0",
+     "refreshHzDeclared": 60,
+     "windowCount": 3,
+     "samples": 80,
+     "successes": 80,
+     "successRate": 1.0,
+     "runs": 2,
+     "failures": {},
+     "refreshNsObservedMedian": 16666666,
+     "metrics": {
+      "inputToFirstPresentNs": {
+       "pooled": {
+        "n": 80,
+        "median": 20135045,
+        "p95": 31334484,
+        "p99": null,
+        "max": 38768972,
+        "min": 8247000,
+        "p99WithheldReason": "n=80 < 5000 (PERFORMANCE section 6.5)"
+       },
+       "ci95ByRun": {
+        "median": [
+         19737461,
+         20604827
+        ],
+        "p95": [
+         29395178,
+         31334484
+        ]
+       },
+       "perRun": {
+        "run1": {
+         "n": 40,
+         "median": 20604827,
+         "p95": 29395178,
+         "p99": null,
+         "max": 38768972,
+         "min": 8247000,
+         "p99WithheldReason": "n=40 < 5000 (PERFORMANCE section 6.5)"
+        },
+        "run2": {
+         "n": 40,
+         "median": 19737461,
+         "p95": 31334484,
+         "p99": null,
+         "max": 36911699,
+         "min": 11450260,
+         "p99WithheldReason": "n=40 < 5000 (PERFORMANCE section 6.5)"
+        }
+       }
+      },
+      "inputToSettledNs": {
+       "pooled": {
+        "n": 80,
+        "median": 20478766,
+        "p95": 31334484,
+        "p99": null,
+        "max": 38768972,
+        "min": 10386867,
+        "p99WithheldReason": "n=80 < 5000 (PERFORMANCE section 6.5)"
+       },
+       "ci95ByRun": {
+        "median": [
+         19737461,
+         24031376
+        ],
+        "p95": [
+         29395178,
+         31334484
+        ]
+       },
+       "perRun": {
+        "run1": {
+         "n": 40,
+         "median": 24031376,
+         "p95": 29395178,
+         "p99": null,
+         "max": 38768972,
+         "min": 10386867,
+         "p99WithheldReason": "n=40 < 5000 (PERFORMANCE section 6.5)"
+        },
+        "run2": {
+         "n": 40,
+         "median": 19737461,
+         "p95": 31334484,
+         "p99": null,
+         "max": 36911699,
+         "min": 11450260,
+         "p99WithheldReason": "n=40 < 5000 (PERFORMANCE section 6.5)"
+        }
+       }
+      }
+     },
+     "protocol": {
+      "runs": 2,
+      "minRuns": 5,
+      "pooledSuccesses": 80,
+      "minSamplesForP99": 5000,
+      "met": false
+     }
+    },
+    {
+     "layer": "nested-dry-run",
+     "workload": "P03-ratio",
+     "condition": "plastile",
+     "outputName": "Virtual-0",
+     "refreshHzDeclared": 60,
+     "windowCount": 3,
+     "samples": 80,
+     "successes": 80,
+     "successRate": 1.0,
+     "runs": 2,
+     "failures": {},
+     "refreshNsObservedMedian": 16666666,
+     "metrics": {
+      "inputToFirstPresentNs": {
+       "pooled": {
+        "n": 80,
+        "median": 13905147,
+        "p95": 20652635,
+        "p99": null,
+        "max": 22595869,
+        "min": 4097475,
+        "p99WithheldReason": "n=80 < 5000 (PERFORMANCE section 6.5)"
+       },
+       "ci95ByRun": {
+        "median": [
+         12714404,
+         15264739
+        ],
+        "p95": [
+         20511678,
+         20652635
+        ]
+       },
+       "perRun": {
+        "run1": {
+         "n": 40,
+         "median": 12714404,
+         "p95": 20511678,
+         "p99": null,
+         "max": 22595869,
+         "min": 5253895,
+         "p99WithheldReason": "n=40 < 5000 (PERFORMANCE section 6.5)"
+        },
+        "run2": {
+         "n": 40,
+         "median": 15264739,
+         "p95": 20652635,
+         "p99": null,
+         "max": 21422662,
+         "min": 4097475,
+         "p99WithheldReason": "n=40 < 5000 (PERFORMANCE section 6.5)"
+        }
+       }
+      },
+      "inputToSettledNs": {
+       "pooled": {
+        "n": 80,
+        "median": 26837073,
+        "p95": 37319301,
+        "p99": null,
+        "max": 39262535,
+        "min": 14332092,
+        "p99WithheldReason": "n=80 < 5000 (PERFORMANCE section 6.5)"
+       },
+       "ci95ByRun": {
+        "median": [
+         26011288,
+         27878734
+        ],
+        "p95": [
+         37178344,
+         37319301
+        ]
+       },
+       "perRun": {
+        "run1": {
+         "n": 40,
+         "median": 26011288,
+         "p95": 37178344,
+         "p99": null,
+         "max": 39262535,
+         "min": 14332092,
+         "p99WithheldReason": "n=40 < 5000 (PERFORMANCE section 6.5)"
+        },
+        "run2": {
+         "n": 40,
+         "median": 27878734,
+         "p95": 37319301,
+         "p99": null,
+         "max": 38089328,
+         "min": 15437290,
+         "p99WithheldReason": "n=40 < 5000 (PERFORMANCE section 6.5)"
+        }
+       }
+      }
+     },
+     "protocol": {
+      "runs": 2,
+      "minRuns": 5,
+      "pooledSuccesses": 80,
+      "minSamplesForP99": 5000,
+      "met": false
+     }
+    },
+    {
+     "layer": "nested-dry-run",
+     "workload": "P03-swap",
+     "condition": "plastile",
+     "outputName": "Virtual-0",
+     "refreshHzDeclared": 60,
+     "windowCount": 3,
+     "samples": 80,
+     "successes": 80,
+     "successRate": 1.0,
+     "runs": 2,
+     "failures": {},
+     "refreshNsObservedMedian": 16666666,
+     "metrics": {
+      "inputToFirstPresentNs": {
+       "pooled": {
+        "n": 80,
+        "median": 13534202,
+        "p95": 20906275,
+        "p99": null,
+        "max": 22962614,
+        "min": 4575942,
+        "p99WithheldReason": "n=80 < 5000 (PERFORMANCE section 6.5)"
+       },
+       "ci95ByRun": {
+        "median": [
+         13477619,
+         13534202
+        ],
+        "p95": [
+         20690688,
+         21189084
+        ]
+       },
+       "perRun": {
+        "run1": {
+         "n": 40,
+         "median": 13534202,
+         "p95": 20690688,
+         "p99": null,
+         "max": 21992327,
+         "min": 4575942,
+         "p99WithheldReason": "n=40 < 5000 (PERFORMANCE section 6.5)"
+        },
+        "run2": {
+         "n": 40,
+         "median": 13477619,
+         "p95": 21189084,
+         "p99": null,
+         "max": 22962614,
+         "min": 4908558,
+         "p99WithheldReason": "n=40 < 5000 (PERFORMANCE section 6.5)"
+        }
+       }
+      },
+      "inputToSettledNs": {
+       "pooled": {
+        "n": 80,
+        "median": 21575224,
+        "p95": 37357354,
+        "p99": null,
+        "max": 39629280,
+        "min": 10675561,
+        "p99WithheldReason": "n=80 < 5000 (PERFORMANCE section 6.5)"
+       },
+       "ci95ByRun": {
+        "median": [
+         21242608,
+         21575224
+        ],
+        "p95": [
+         35479337,
+         37855750
+        ]
+       },
+       "perRun": {
+        "run1": {
+         "n": 40,
+         "median": 21242608,
+         "p95": 35479337,
+         "p99": null,
+         "max": 37572941,
+         "min": 11160119,
+         "p99WithheldReason": "n=40 < 5000 (PERFORMANCE section 6.5)"
+        },
+        "run2": {
+         "n": 40,
+         "median": 21575224,
+         "p95": 37855750,
+         "p99": null,
+         "max": 39629280,
+         "min": 10675561,
+         "p99WithheldReason": "n=40 < 5000 (PERFORMANCE section 6.5)"
+        }
+       }
+      }
+     },
+     "protocol": {
+      "runs": 2,
+      "minRuns": 5,
+      "pooledSuccesses": 80,
+      "minSamplesForP99": 5000,
+      "met": false
+     }
+    }
+   ],
+   "comparisons": [
+    {
+     "candidate": "P03-ratio",
+     "baseline": "P00-switch",
+     "layer": "nested-dry-run",
+     "outputName": "Virtual-0",
+     "refreshHzDeclared": 60,
+     "windowCount": 3,
+     "metric": "inputToFirstPresentNs",
+     "thresholdNs": 16666666,
+     "matchedBaseline": false,
+     "medianDiffNs": -4812571,
+     "medianDiffCi95": [
+      -10028870,
+      -2229297
+     ],
+     "p95DiffNs": -10903974,
+     "p95DiffCi95": [
+      -11249490,
+      -5498374
+     ],
+     "protocolMet": false,
+     "medianRule": "pass",
+     "p95Rule": "pass",
+     "verdict": "inconclusive",
+     "reason": "protocol not met (needs >= 5 runs and >= 5000 samples per side)"
+    },
+    {
+     "candidate": "P03-ratio",
+     "baseline": "P00-maximize",
+     "layer": "nested-dry-run",
+     "outputName": "Virtual-0",
+     "refreshHzDeclared": 60,
+     "windowCount": 3,
+     "metric": "inputToFirstPresentNs",
+     "thresholdNs": 16666666,
+     "matchedBaseline": false,
+     "medianDiffNs": -7448596,
+     "medianDiffCi95": [
+      -9974434,
+      -5556995
+     ],
+     "p95DiffNs": -14266213,
+     "p95DiffCi95": [
+      -14407170,
+      -7342363
+     ],
+     "protocolMet": false,
+     "medianRule": "pass",
+     "p95Rule": "pass",
+     "verdict": "inconclusive",
+     "reason": "protocol not met (needs >= 5 runs and >= 5000 samples per side)"
+    },
+    {
+     "candidate": "P03-ratio",
+     "baseline": "P02-quicktile",
+     "layer": "nested-dry-run",
+     "outputName": "Virtual-0",
+     "refreshHzDeclared": 60,
+     "windowCount": 3,
+     "metric": "inputToFirstPresentNs",
+     "thresholdNs": 16666666,
+     "matchedBaseline": true,
+     "medianDiffNs": -6735843,
+     "medianDiffCi95": [
+      -9068627,
+      -3876371
+     ],
+     "p95DiffNs": -14184603,
+     "p95DiffCi95": [
+      -14672898,
+      -14050617
+     ],
+     "protocolMet": false,
+     "medianRule": "pass",
+     "p95Rule": "pass",
+     "verdict": "inconclusive",
+     "reason": "protocol not met (needs >= 5 runs and >= 5000 samples per side)"
+    },
+    {
+     "candidate": "P03-focus",
+     "baseline": "P00-switch",
+     "layer": "nested-dry-run",
+     "outputName": "Virtual-0",
+     "refreshHzDeclared": 60,
+     "windowCount": 3,
+     "metric": "inputToFirstPresentNs",
+     "thresholdNs": 16666666,
+     "matchedBaseline": true,
+     "medianDiffNs": 1417327,
+     "medianDiffCi95": [
+      -3005813,
+      3110791
+     ],
+     "p95DiffNs": -222125,
+     "p95DiffCi95": [
+      -2365990,
+      5183475
+     ],
+     "protocolMet": false,
+     "medianRule": "pass",
+     "p95Rule": "pass",
+     "verdict": "inconclusive",
+     "reason": "protocol not met (needs >= 5 runs and >= 5000 samples per side)"
+    },
+    {
+     "candidate": "P03-focus",
+     "baseline": "P00-maximize",
+     "layer": "nested-dry-run",
+     "outputName": "Virtual-0",
+     "refreshHzDeclared": 60,
+     "windowCount": 3,
+     "metric": "inputToFirstPresentNs",
+     "thresholdNs": 16666666,
+     "matchedBaseline": false,
+     "medianDiffNs": -1218698,
+     "medianDiffCi95": [
+      -2951377,
+      -216907
+     ],
+     "p95DiffNs": -3584364,
+     "p95DiffCi95": [
+      -5523670,
+      3339486
+     ],
+     "protocolMet": false,
+     "medianRule": "pass",
+     "p95Rule": "pass",
+     "verdict": "inconclusive",
+     "reason": "protocol not met (needs >= 5 runs and >= 5000 samples per side)"
+    },
+    {
+     "candidate": "P03-focus",
+     "baseline": "P02-quicktile",
+     "layer": "nested-dry-run",
+     "outputName": "Virtual-0",
+     "refreshHzDeclared": 60,
+     "windowCount": 3,
+     "metric": "inputToFirstPresentNs",
+     "thresholdNs": 16666666,
+     "matchedBaseline": false,
+     "medianDiffNs": -505945,
+     "medianDiffCi95": [
+      -2045570,
+      1463717
+     ],
+     "p95DiffNs": -3502754,
+     "p95DiffCi95": [
+      -5789398,
+      -3368768
+     ],
+     "protocolMet": false,
+     "medianRule": "pass",
+     "p95Rule": "pass",
+     "verdict": "inconclusive",
+     "reason": "protocol not met (needs >= 5 runs and >= 5000 samples per side)"
+    },
+    {
+     "candidate": "P03-swap",
+     "baseline": "P00-switch",
+     "layer": "nested-dry-run",
+     "outputName": "Virtual-0",
+     "refreshHzDeclared": 60,
+     "windowCount": 3,
+     "metric": "inputToFirstPresentNs",
+     "thresholdNs": 16666666,
+     "matchedBaseline": false,
+     "medianDiffNs": -5183516,
+     "medianDiffCi95": [
+      -9265655,
+      -3959834
+     ],
+     "p95DiffNs": -10650334,
+     "p95DiffCi95": [
+      -11070480,
+      -4961925
+     ],
+     "protocolMet": false,
+     "medianRule": "pass",
+     "p95Rule": "pass",
+     "verdict": "inconclusive",
+     "reason": "protocol not met (needs >= 5 runs and >= 5000 samples per side)"
+    },
+    {
+     "candidate": "P03-swap",
+     "baseline": "P00-maximize",
+     "layer": "nested-dry-run",
+     "outputName": "Virtual-0",
+     "refreshHzDeclared": 60,
+     "windowCount": 3,
+     "metric": "inputToFirstPresentNs",
+     "thresholdNs": 16666666,
+     "matchedBaseline": false,
+     "medianDiffNs": -7819541,
+     "medianDiffCi95": [
+      -9211219,
+      -7287532
+     ],
+     "p95DiffNs": -14012573,
+     "p95DiffCi95": [
+      -14228160,
+      -6805914
+     ],
+     "protocolMet": false,
+     "medianRule": "pass",
+     "p95Rule": "pass",
+     "verdict": "inconclusive",
+     "reason": "protocol not met (needs >= 5 runs and >= 5000 samples per side)"
+    },
+    {
+     "candidate": "P03-swap",
+     "baseline": "P02-quicktile",
+     "layer": "nested-dry-run",
+     "outputName": "Virtual-0",
+     "refreshHzDeclared": 60,
+     "windowCount": 3,
+     "metric": "inputToFirstPresentNs",
+     "thresholdNs": 16666666,
+     "matchedBaseline": true,
+     "medianDiffNs": -7106788,
+     "medianDiffCi95": [
+      -8305412,
+      -5606908
+     ],
+     "p95DiffNs": -13930963,
+     "p95DiffCi95": [
+      -14493888,
+      -13514168
+     ],
+     "protocolMet": false,
+     "medianRule": "pass",
+     "p95Rule": "pass",
+     "verdict": "inconclusive",
+     "reason": "protocol not met (needs >= 5 runs and >= 5000 samples per side)"
+    }
+   ],
+   "warmup": [
+    {
+     "layer": "nested-dry-run",
+     "workload": "P00-switch",
+     "condition": "none",
+     "outputName": "Virtual-0",
+     "refreshHzDeclared": 60,
+     "windowCount": 3,
+     "samples": 10,
+     "successes": 10,
+     "inputToFirstPresentNs": {
+      "n": 10,
+      "median": 18521422,
+      "p95": 27993918,
+      "p99": null,
+      "max": 27993918,
+      "min": 11153162,
+      "p99WithheldReason": "n=10 < 5000 (PERFORMANCE section 6.5)"
+     }
+    },
+    {
+     "layer": "nested-dry-run",
+     "workload": "P03-ratio",
+     "condition": "plastile",
+     "outputName": "Virtual-0",
+     "refreshHzDeclared": 60,
+     "windowCount": 3,
+     "samples": 10,
+     "successes": 10,
+     "inputToFirstPresentNs": {
+      "n": 10,
+      "median": 12469469,
+      "p95": 18622962,
+      "p99": null,
+      "max": 18622962,
+      "min": 6146631,
+      "p99WithheldReason": "n=10 < 5000 (PERFORMANCE section 6.5)"
+     }
+    },
+    {
+     "layer": "nested-dry-run",
+     "workload": "P03-focus",
+     "condition": "plastile",
+     "outputName": "Virtual-0",
+     "refreshHzDeclared": 60,
+     "windowCount": 3,
+     "samples": 10,
+     "successes": 10,
+     "inputToFirstPresentNs": {
+      "n": 10,
+      "median": 19470216,
+      "p95": 26591770,
+      "p99": null,
+      "max": 26591770,
+      "min": 12141707,
+      "p99WithheldReason": "n=10 < 5000 (PERFORMANCE section 6.5)"
+     }
+    },
+    {
+     "layer": "nested-dry-run",
+     "workload": "P00-maximize",
+     "condition": "none",
+     "outputName": "Virtual-0",
+     "refreshHzDeclared": 60,
+     "windowCount": 3,
+     "samples": 10,
+     "successes": 10,
+     "inputToFirstPresentNs": {
+      "n": 10,
+      "median": 24752697,
+      "p95": 35251326,
+      "p99": null,
+      "max": 35251326,
+      "min": 15552781,
+      "p99WithheldReason": "n=10 < 5000 (PERFORMANCE section 6.5)"
+     }
+    },
+    {
+     "layer": "nested-dry-run",
+     "workload": "P03-swap",
+     "condition": "plastile",
+     "outputName": "Virtual-0",
+     "refreshHzDeclared": 60,
+     "windowCount": 3,
+     "samples": 10,
+     "successes": 10,
+     "inputToFirstPresentNs": {
+      "n": 10,
+      "median": 14979457,
+      "p95": 21950327,
+      "p99": null,
+      "max": 21950327,
+      "min": 5252587,
+      "p99WithheldReason": "n=10 < 5000 (PERFORMANCE section 6.5)"
+     }
+    },
+    {
+     "layer": "nested-dry-run",
+     "workload": "P02-quicktile",
+     "condition": "none",
+     "outputName": "Virtual-0",
+     "refreshHzDeclared": 60,
+     "windowCount": 3,
+     "samples": 10,
+     "successes": 10,
+     "inputToFirstPresentNs": {
+      "n": 10,
+      "median": 23267003,
+      "p95": 25717580,
+      "p99": null,
+      "max": 25717580,
+      "min": 11384359,
+      "p99WithheldReason": "n=10 < 5000 (PERFORMANCE section 6.5)"
+     }
+    }
+   ],
+   "context": {
+    "layer": "nested-dry-run",
+    "inputSource": "libei (the nested KWin's EIS socket) via plastile-keytap-ei",
+    "environmentId": "nested-virtual-kwin",
+    "outputName": "Virtual-0",
+    "refreshHzDeclared": 60,
+    "implementationCommit": "6ada721c10fa3b1c22ee7710999626bd10248f6d",
+    "implementationDirty": true,
+    "clockResolutionNs": 1
+   },
+   "blocks": [
+    {
+     "index": 0,
+     "round": 0,
+     "workload": "P00-switch",
+     "condition": "none",
+     "windowCount": 3,
+     "outcome": "completed",
+     "taps": 45,
+     "refreshNsObservedAtStart": 16666666,
+     "countersDelta": null,
+     "presentGrid": {
+      "intervals": 46,
+      "aligned": 46,
+      "alignedFraction": 1.0,
+      "residualP95Ns": 0,
+      "residualMaxNs": 0,
+      "refreshNs": 16666666
+     }
+    },
+    {
+     "index": 1,
+     "round": 0,
+     "workload": "P03-ratio",
+     "condition": "plastile",
+     "windowCount": 3,
+     "outcome": "completed",
+     "taps": 45,
+     "refreshNsObservedAtStart": 16666666,
+     "countersDelta": {
+      "solves": 45,
+      "flushes": 0,
+      "commands": 45,
+      "commandsQueued": 0,
+      "writes": 135,
+      "corrections": 0,
+      "skipOutstanding": 0,
+      "skipNoop": 0,
+      "skipDiverged": 0,
+      "observations": 135,
+      "observationsDuringApply": 0,
+      "settled": 135,
+      "stale": 0,
+      "partial": 0,
+      "external": 0,
+      "learned": 0,
+      "diverged": 0,
+      "deadlines": 0,
+      "overflow": 0,
+      "adopted": 0,
+      "removed": 0,
+      "staleEvents": 0,
+      "errors": 0,
+      "raises": 0,
+      "activations": 0
+     },
+     "presentGrid": {
+      "intervals": 82,
+      "aligned": 82,
+      "alignedFraction": 1.0,
+      "residualP95Ns": 0,
+      "residualMaxNs": 0,
+      "refreshNs": 16666666
+     }
+    },
+    {
+     "index": 2,
+     "round": 0,
+     "workload": "P03-focus",
+     "condition": "plastile",
+     "windowCount": 3,
+     "outcome": "completed",
+     "taps": 45,
+     "refreshNsObservedAtStart": 16666666,
+     "countersDelta": {
+      "solves": 0,
+      "flushes": 0,
+      "commands": 45,
+      "commandsQueued": 0,
+      "writes": 0,
+      "corrections": 0,
+      "skipOutstanding": 0,
+      "skipNoop": 0,
+      "skipDiverged": 0,
+      "observations": 0,
+      "observationsDuringApply": 0,
+      "settled": 0,
+      "stale": 0,
+      "partial": 0,
+      "external": 0,
+      "learned": 0,
+      "diverged": 0,
+      "deadlines": 0,
+      "overflow": 0,
+      "adopted": 0,
+      "removed": 0,
+      "staleEvents": 0,
+      "errors": 0,
+      "raises": 0,
+      "activations": 45
+     },
+     "presentGrid": {
+      "intervals": 49,
+      "aligned": 49,
+      "alignedFraction": 1.0,
+      "residualP95Ns": 0,
+      "residualMaxNs": 0,
+      "refreshNs": 16666666
+     }
+    },
+    {
+     "index": 3,
+     "round": 0,
+     "workload": "P00-maximize",
+     "condition": "none",
+     "windowCount": 3,
+     "outcome": "completed",
+     "taps": 45,
+     "refreshNsObservedAtStart": 16666666,
+     "countersDelta": null,
+     "presentGrid": {
+      "intervals": 46,
+      "aligned": 46,
+      "alignedFraction": 1.0,
+      "residualP95Ns": 0,
+      "residualMaxNs": 0,
+      "refreshNs": 16666666
+     }
+    },
+    {
+     "index": 4,
+     "round": 0,
+     "workload": "P03-swap",
+     "condition": "plastile",
+     "windowCount": 3,
+     "outcome": "completed",
+     "taps": 45,
+     "refreshNsObservedAtStart": 16666666,
+     "countersDelta": {
+      "solves": 45,
+      "flushes": 0,
+      "commands": 45,
+      "commandsQueued": 0,
+      "writes": 90,
+      "corrections": 0,
+      "skipOutstanding": 0,
+      "skipNoop": 45,
+      "skipDiverged": 0,
+      "observations": 90,
+      "observationsDuringApply": 0,
+      "settled": 90,
+      "stale": 0,
+      "partial": 0,
+      "external": 0,
+      "learned": 0,
+      "diverged": 0,
+      "deadlines": 0,
+      "overflow": 0,
+      "adopted": 0,
+      "removed": 0,
+      "staleEvents": 0,
+      "errors": 0,
+      "raises": 0,
+      "activations": 0
+     },
+     "presentGrid": {
+      "intervals": 67,
+      "aligned": 67,
+      "alignedFraction": 1.0,
+      "residualP95Ns": 0,
+      "residualMaxNs": 0,
+      "refreshNs": 16666666
+     }
+    },
+    {
+     "index": 5,
+     "round": 0,
+     "workload": "P02-quicktile",
+     "condition": "none",
+     "windowCount": 3,
+     "outcome": "completed",
+     "taps": 46,
+     "refreshNsObservedAtStart": 16666666,
+     "countersDelta": null,
+     "presentGrid": {
+      "intervals": 47,
+      "aligned": 47,
+      "alignedFraction": 1.0,
+      "residualP95Ns": 0,
+      "residualMaxNs": 0,
+      "refreshNs": 16666666
+     }
+    },
+    {
+     "index": 6,
+     "round": 1,
+     "workload": "P00-maximize",
+     "condition": "none",
+     "windowCount": 3,
+     "outcome": "completed",
+     "taps": 45,
+     "refreshNsObservedAtStart": 16666666,
+     "countersDelta": null,
+     "presentGrid": {
+      "intervals": 46,
+      "aligned": 46,
+      "alignedFraction": 1.0,
+      "residualP95Ns": 0,
+      "residualMaxNs": 0,
+      "refreshNs": 16666666
+     }
+    },
+    {
+     "index": 7,
+     "round": 1,
+     "workload": "P02-quicktile",
+     "condition": "none",
+     "windowCount": 3,
+     "outcome": "completed",
+     "taps": 46,
+     "refreshNsObservedAtStart": 16666666,
+     "countersDelta": null,
+     "presentGrid": {
+      "intervals": 46,
+      "aligned": 46,
+      "alignedFraction": 1.0,
+      "residualP95Ns": 0,
+      "residualMaxNs": 0,
+      "refreshNs": 16666666
+     }
+    },
+    {
+     "index": 8,
+     "round": 1,
+     "workload": "P00-switch",
+     "condition": "none",
+     "windowCount": 3,
+     "outcome": "completed",
+     "taps": 45,
+     "refreshNsObservedAtStart": 16666666,
+     "countersDelta": null,
+     "presentGrid": {
+      "intervals": 46,
+      "aligned": 46,
+      "alignedFraction": 1.0,
+      "residualP95Ns": 0,
+      "residualMaxNs": 0,
+      "refreshNs": 16666666
+     }
+    },
+    {
+     "index": 9,
+     "round": 1,
+     "workload": "P03-swap",
+     "condition": "plastile",
+     "windowCount": 3,
+     "outcome": "completed",
+     "taps": 45,
+     "refreshNsObservedAtStart": 16666666,
+     "countersDelta": {
+      "solves": 45,
+      "flushes": 0,
+      "commands": 45,
+      "commandsQueued": 0,
+      "writes": 90,
+      "corrections": 0,
+      "skipOutstanding": 0,
+      "skipNoop": 45,
+      "skipDiverged": 0,
+      "observations": 90,
+      "observationsDuringApply": 0,
+      "settled": 90,
+      "stale": 0,
+      "partial": 0,
+      "external": 0,
+      "learned": 0,
+      "diverged": 0,
+      "deadlines": 0,
+      "overflow": 0,
+      "adopted": 0,
+      "removed": 0,
+      "staleEvents": 0,
+      "errors": 0,
+      "raises": 0,
+      "activations": 0
+     },
+     "presentGrid": {
+      "intervals": 70,
+      "aligned": 70,
+      "alignedFraction": 1.0,
+      "residualP95Ns": 0,
+      "residualMaxNs": 0,
+      "refreshNs": 16666666
+     }
+    },
+    {
+     "index": 10,
+     "round": 1,
+     "workload": "P03-focus",
+     "condition": "plastile",
+     "windowCount": 3,
+     "outcome": "completed",
+     "taps": 45,
+     "refreshNsObservedAtStart": 16666666,
+     "countersDelta": {
+      "solves": 0,
+      "flushes": 0,
+      "commands": 45,
+      "commandsQueued": 0,
+      "writes": 0,
+      "corrections": 0,
+      "skipOutstanding": 0,
+      "skipNoop": 0,
+      "skipDiverged": 0,
+      "observations": 0,
+      "observationsDuringApply": 0,
+      "settled": 0,
+      "stale": 0,
+      "partial": 0,
+      "external": 0,
+      "learned": 0,
+      "diverged": 0,
+      "deadlines": 0,
+      "overflow": 0,
+      "adopted": 0,
+      "removed": 0,
+      "staleEvents": 0,
+      "errors": 0,
+      "raises": 0,
+      "activations": 45
+     },
+     "presentGrid": {
+      "intervals": 45,
+      "aligned": 45,
+      "alignedFraction": 1.0,
+      "residualP95Ns": 0,
+      "residualMaxNs": 0,
+      "refreshNs": 16666666
+     }
+    },
+    {
+     "index": 11,
+     "round": 1,
+     "workload": "P03-ratio",
+     "condition": "plastile",
+     "windowCount": 3,
+     "outcome": "completed",
+     "taps": 45,
+     "refreshNsObservedAtStart": 16666666,
+     "countersDelta": {
+      "solves": 45,
+      "flushes": 0,
+      "commands": 45,
+      "commandsQueued": 0,
+      "writes": 135,
+      "corrections": 0,
+      "skipOutstanding": 0,
+      "skipNoop": 0,
+      "skipDiverged": 0,
+      "observations": 135,
+      "observationsDuringApply": 0,
+      "settled": 135,
+      "stale": 0,
+      "partial": 0,
+      "external": 0,
+      "learned": 0,
+      "diverged": 0,
+      "deadlines": 0,
+      "overflow": 0,
+      "adopted": 0,
+      "removed": 0,
+      "staleEvents": 0,
+      "errors": 0,
+      "raises": 0,
+      "activations": 0
+     },
+     "presentGrid": {
+      "intervals": 79,
+      "aligned": 79,
+      "alignedFraction": 1.0,
+      "residualP95Ns": 0,
+      "residualMaxNs": 0,
+      "refreshNs": 16666666
+     }
+    }
+   ],
+   "blockChecks": []
+  }
+ },
+ "keysDefaultBindings": {
+  "delivered": [
+   "plastile.focus.down",
+   "plastile.focus.left",
+   "plastile.focus.next",
+   "plastile.focus.previous",
+   "plastile.focus.right",
+   "plastile.focus.up",
+   "plastile.layout.monocle",
+   "plastile.layout.next",
+   "plastile.master.decrease",
+   "plastile.master.increase",
+   "plastile.move.output-next",
+   "plastile.swap.down",
+   "plastile.swap.left",
+   "plastile.swap.master",
+   "plastile.swap.right",
+   "plastile.swap.up",
+   "plastile.window.toggle-float"
+  ],
+  "notDelivered": [
+   "plastile.resize.grow",
+   "plastile.resize.shrink"
+  ],
+  "unknown": [],
+  "skipped": [
+   "plastile.runtime.toggle-suspend"
+  ],
+  "bindings": {
+   "plastile.focus.down": "Meta+Shift+J",
+   "plastile.focus.left": "Meta+Shift+H",
+   "plastile.focus.next": "Meta+Shift+N",
+   "plastile.focus.previous": "Meta+Shift+P",
+   "plastile.focus.right": "Meta+Shift+L",
+   "plastile.focus.up": "Meta+Shift+K",
+   "plastile.layout.monocle": "Meta+Shift+M",
+   "plastile.layout.next": "Meta+Shift+Space",
+   "plastile.master.decrease": "Meta+Shift+D",
+   "plastile.master.increase": "Meta+Shift+I",
+   "plastile.move.output-next": "Meta+Shift+O",
+   "plastile.resize.grow": "Meta+Shift+=",
+   "plastile.resize.shrink": "Meta+Shift+-",
+   "plastile.swap.down": "Meta+Ctrl+J",
+   "plastile.swap.left": "Meta+Ctrl+H",
+   "plastile.swap.master": "Meta+Shift+Return",
+   "plastile.swap.right": "Meta+Ctrl+L",
+   "plastile.swap.up": "Meta+Ctrl+K",
+   "plastile.window.toggle-float": "Meta+Shift+F"
+  }
+ },
+ "keysWithReboundGrowShrink": {
+  "delivered": [
+   "plastile.focus.down",
+   "plastile.focus.left",
+   "plastile.focus.next",
+   "plastile.focus.previous",
+   "plastile.focus.right",
+   "plastile.focus.up",
+   "plastile.layout.monocle",
+   "plastile.layout.next",
+   "plastile.master.decrease",
+   "plastile.master.increase",
+   "plastile.move.output-next",
+   "plastile.resize.grow",
+   "plastile.resize.shrink",
+   "plastile.swap.down",
+   "plastile.swap.left",
+   "plastile.swap.master",
+   "plastile.swap.right",
+   "plastile.swap.up",
+   "plastile.window.toggle-float"
+  ],
+  "notDelivered": [],
+  "unknown": [],
+  "skipped": [
+   "plastile.runtime.toggle-suspend"
+  ],
+  "bindings": {
+   "plastile.focus.down": "Meta+Shift+J",
+   "plastile.focus.left": "Meta+Shift+H",
+   "plastile.focus.next": "Meta+Shift+N",
+   "plastile.focus.previous": "Meta+Shift+P",
+   "plastile.focus.right": "Meta+Shift+L",
+   "plastile.focus.up": "Meta+Shift+K",
+   "plastile.layout.monocle": "Meta+Shift+M",
+   "plastile.layout.next": "Meta+Shift+Space",
+   "plastile.master.decrease": "Meta+Shift+D",
+   "plastile.master.increase": "Meta+Shift+I",
+   "plastile.move.output-next": "Meta+Shift+O",
+   "plastile.resize.grow": "Meta+Ctrl+=",
+   "plastile.resize.shrink": "Meta+Ctrl+-",
+   "plastile.swap.down": "Meta+Ctrl+J",
+   "plastile.swap.left": "Meta+Ctrl+H",
+   "plastile.swap.master": "Meta+Shift+Return",
+   "plastile.swap.right": "Meta+Ctrl+L",
+   "plastile.swap.up": "Meta+Ctrl+K",
+   "plastile.window.toggle-float": "Meta+Shift+F"
+  }
+ }
+}

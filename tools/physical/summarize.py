@@ -259,7 +259,7 @@ def render(summary: dict) -> str:
                      f"in {g['runs']} runs" + ("" if g["protocol"]["met"] else "  (protocol NOT met)"))
         for m, v in g["metrics"].items():
             p = v["pooled"]
-            p99 = fmt_ms(p["p99"]) if p["p99"] is not None else f"withheld (n={p['n']}<{P99_MIN_SAMPLES})"
+            p99 = f"{fmt_ms(p['p99'])} ms" if p["p99"] is not None else f"withheld (n={p['n']}<{P99_MIN_SAMPLES})"
             ci = v["ci95ByRun"].get("median")
             ci_s = f" median CI95 [{fmt_ms(ci[0])}, {fmt_ms(ci[1])}]" if ci else ""
             lines.append(f"    {m}: median {fmt_ms(p['median'])} ms, p95 {fmt_ms(p['p95'])} ms, p99 {p99}, "

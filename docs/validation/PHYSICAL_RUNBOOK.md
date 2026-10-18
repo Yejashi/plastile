@@ -22,6 +22,8 @@ The kit was built in a cloud container without a desktop or GPU. Everything that
 
 Run the unit tests anywhere (no desktop needed): `python3 -m unittest discover -s tools/physical/tests`. A nested dry run of the latency pipeline (never a physical result; every record says `"layer": "nested-dry-run"`): `tools/sandbox/run.sh -- python3 tools/physical/nested_dryrun.py --keys --rebind-ratio` after `make -C tools/physical all ei` inside the sandbox.
 
+Nested dry-run results are summarized in [evidence/physical-kit-nested-dryrun.json](../status/evidence/physical-kit-nested-dryrun.json) (Ubuntu 26.10 sandbox, KWin 6.7.5, QPainter, synthetic 60 Hz timeline). The protocol-scale run (P02-quicktile and P03-ratio, 3 windows, 5 runs × 1000 samples each in randomized order) completed all 10,000 samples successfully; the summarizer reported p99 because each workload reached 5000 samples, produced a `pass` verdict, and Plastile's counters showed one write per window per command and no corrections. That exercises the whole pipeline end to end; as a nested measurement it says nothing about physical latency. A six-workload run (2 runs × 40 samples) covered every workload, and the key-delivery check is described in the table above.
+
 A uinput device cannot reach a nested virtual-backend KWin: kernel input goes to the compositor of the physical seat. That is why the uinput backend refuses to start when the compositor serving `WAYLAND_DISPLAY` runs with `--virtual`, `--wayland-display` or `--x11-display`, and why the nested dry run substitutes the libei backend.
 
 ## 2. Prerequisites
@@ -49,7 +51,7 @@ python3 tools/physical/checklist.py new "$RUN"
 
 ## 3. Consent points and safety rules
 
-Each consent point changes something in your session. Decide on each one explicitly; the tools ask before acting, and none of them performs a consent step silently.
+Each consent point changes something in your session. Decide on each one explicitly. The tools that inject input or load and unload Plastile print what they will do and ask before acting; no tool performs a consent step silently.
 
 | # | What | What it changes | Persists? | How to undo |
 |---|---|---|---|---|
@@ -250,6 +252,8 @@ Consent: C2 (if you rebind), C3, and C4 only if you choose `--toggle dbus`.
 - `inputToSettledNs`: presentation of the commit answering the last configure of every affected window, the slowest window (t9_settled).
 
 It excludes keyboard hardware and USB polling before the write, and the panel's response after KWin's reported presentation time; a photodiode or high-speed camera would be needed for those. VRR is not covered: the reference machine reports VRR as incapable.
+
+Keep your desktop effects as they are, identical for every workload ([PERFORMANCE §6](PERFORMANCE.md#6-experimental-protocol): do not disable features for one side only). KWin effects that animate maximize or tiling transitions (the reference machine loads `maximize`, among others) can delay the *visual* end of a P00/P02 transition after the first presentation; the session report lists the loaded effects so the comparison can be interpreted.
 
 **Workloads** ([`tools/physical/workloads.json`](../../tools/physical/workloads.json)), all on the same N fixture windows:
 
