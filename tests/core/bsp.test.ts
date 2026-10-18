@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { inset, rect, type Rect } from "../../src/core/geometry.ts";
+import { contains, inset, rect, type Rect } from "../../src/core/geometry.ts";
 import { bsp, checkBsp, leaves, reinsert, type BspNode, type BspBranch, type BspState } from "../../src/core/layouts/bsp.ts";
 import type { BspSettings, Constraints, ContextSettings, WindowId } from "../../src/core/types.ts";
 import type { LayoutCommand, SolveInput } from "../../src/core/layouts/layout.ts";
@@ -37,19 +37,20 @@ function cmd(st: BspState, c: LayoutCommand, inp: SolveInput) {
  * boundary or faces another slot exactly `gap` away (span overlap allowing for a gap
  * junction opposite a tiny slot), and no two slots that share a span are closer
  * than `gap`. Holds for any guillotine tiling with shared cuts; catches lost pixels
- * and wrong gaps.
+ * and wrong gaps. `eps` is floating-point slack for fractional areas.
  */
-function assertGaps(slots: Map<WindowId, Rect>, inner: Rect, gap: number) {
+function assertGaps(slots: Map<WindowId, Rect>, inner: Rect, gap: number, eps = 0) {
   const list = [...slots.entries()];
-  const overlaps = (a0: number, a1: number, b0: number, b1: number) => Math.min(a1, b1) - Math.max(a0, b0) > 0;
+  const near = (a: number, b: number) => Math.abs(a - b) <= eps;
+  const overlaps = (a0: number, a1: number, b0: number, b1: number) => Math.min(a1, b1) - Math.max(a0, b0) > eps;
   for (const [id, r] of list) {
     const ySpan = (s: Rect) => overlaps(r.y - gap, r.y + r.height + gap, s.y, s.y + s.height);
     const xSpan = (s: Rect) => overlaps(r.x - gap, r.x + r.width + gap, s.x, s.x + s.width);
     const checks: Array<[string, boolean, (s: Rect) => boolean]> = [
-      ["right", r.x + r.width === inner.x + inner.width, (s) => s.x === r.x + r.width + gap && ySpan(s)],
-      ["left", r.x === inner.x, (s) => s.x + s.width + gap === r.x && ySpan(s)],
-      ["bottom", r.y + r.height === inner.y + inner.height, (s) => s.y === r.y + r.height + gap && xSpan(s)],
-      ["top", r.y === inner.y, (s) => s.y + s.height + gap === r.y && xSpan(s)],
+      ["right", near(r.x + r.width, inner.x + inner.width), (s) => near(s.x, r.x + r.width + gap) && ySpan(s)],
+      ["left", near(r.x, inner.x), (s) => near(s.x + s.width + gap, r.x) && ySpan(s)],
+      ["bottom", near(r.y + r.height, inner.y + inner.height), (s) => near(s.y, r.y + r.height + gap) && xSpan(s)],
+      ["top", near(r.y, inner.y), (s) => near(s.y + s.height + gap, r.y) && xSpan(s)],
     ];
     for (const [edge, onBoundary, faces] of checks) {
       if (onBoundary) continue;
@@ -61,17 +62,17 @@ function assertGaps(slots: Map<WindowId, Rect>, inner: Rect, gap: number) {
       const [ia, a] = list[i], [ib, b] = list[j];
       const dx = Math.max(a.x, b.x) - Math.min(a.x + a.width, b.x + b.width);
       const dy = Math.max(a.y, b.y) - Math.min(a.y + a.height, b.y + b.height);
-      if (dy < 0) assert.ok(dx >= gap, `${ia} and ${ib} are ${dx} px apart horizontally`);
-      if (dx < 0) assert.ok(dy >= gap, `${ia} and ${ib} are ${dy} px apart vertically`);
+      if (dy < -eps) assert.ok(dx >= gap - eps, `${ia} and ${ib} are ${dx} px apart horizontally`);
+      if (dx < -eps) assert.ok(dy >= gap - eps, `${ia} and ${ib} are ${dy} px apart vertically`);
     }
 }
 
-function assertMinima(slots: Map<WindowId, Rect>, constraints: Map<WindowId, Constraints>) {
+function assertMinima(slots: Map<WindowId, Rect>, constraints: Map<WindowId, Constraints>, eps = 0) {
   for (const [id, s] of slots) {
     const c = constraints.get(id);
     if (!c) continue;
-    assert.ok(s.width >= c.minFrame.width, `${id} width ${s.width} below minimum ${c.minFrame.width}`);
-    assert.ok(s.height >= c.minFrame.height, `${id} height ${s.height} below minimum ${c.minFrame.height}`);
+    assert.ok(s.width >= c.minFrame.width - eps, `${id} width ${s.width} below minimum ${c.minFrame.width}`);
+    assert.ok(s.height >= c.minFrame.height - eps, `${id} height ${s.height} below minimum ${c.minFrame.height}`);
   }
 }
 
@@ -186,6 +187,67 @@ test("solve: odd sizes and negative origins tile exactly (G01/G02)", () => {
       }
     }
   }
+});
+
+/**
+ * Minimum size of a subtree from the definition (BEHAVIOR §5): a horizontal branch
+ * needs the sum of its sides' widths plus the gap and the larger height; a side
+ * without participants drops out with its gap; every slot is at least 1 px.
+ */
+function needOf(n: BspNode, live: ReadonlySet<WindowId>, constraints: Map<WindowId, Constraints>, gap: number): { width: number; height: number } | null {
+  if (n.kind === "leaf") {
+    if (!live.has(n.window)) return null;
+    const m = constraints.get(n.window)?.minFrame;
+    return { width: Math.max(1, m?.width ?? 0), height: Math.max(1, m?.height ?? 0) };
+  }
+  const a = needOf(n.a, live, constraints, gap), b = needOf(n.b, live, constraints, gap);
+  if (!a || !b) return a ?? b;
+  return n.axis === "horizontal" ? { width: a.width + gap + b.width, height: Math.max(a.height, b.height) }
+    : { width: Math.max(a.width, b.width), height: a.height + gap + b.height };
+}
+
+test("solve: feasible trees on fractional work areas with fractional minima are not overflowed (G03)", () => {
+  // KWin's logical work area is RectF(pos, mode / scale): 2560x1440 at 150 % is 1706.667 x 960.
+  const area = rect(0, 0, 2560 / 1.5, 1440 / 1.5);
+  const inner = inset(area, S.gaps.outer);
+  const ab = grow(["a", "b"], S, area);
+  const constraints = new Map([["b", minC(900, 0)]]);
+  const r = bsp.solve(ab, input(["a", "b"], { area, constraints }));
+  assert.deepEqual(r.overflow, [], r.notes.join("; "));
+  assertGaps(r.slots, inner, S.gaps.inner, 1e-6);
+  assertMinima(r.slots, constraints);
+  assert.ok(Number.isInteger(r.slots.get("b")!.x), "inner cut on a whole pixel");
+
+  const areas = [area, rect(0, 0, 1366 / 1.25, 768 / 1.25), rect(1920, 0, 1920 / 1.75, 1080 / 1.75),
+    rect(-1280, 44.667, 2560 / 2, 1600 / 2 - 44.667)];
+  const rnd = prng(1092);
+  let feasible = 0;
+  for (let iter = 0; iter < 1500; ++iter) {
+    const area = areas[iter % areas.length];
+    const inner = inset(area, S.gaps.outer);
+    const s = bspSettings({ axis: (["alternate", "longest", "horizontal", "vertical"] as const)[iter % 4] });
+    const n = 2 + Math.floor(rnd() * 5);
+    const ids = Array.from({ length: n }, (_, i) => `w${i}`);
+    let st = bsp.initial(s);
+    for (const id of ids) {
+      const ls = leaves(st);
+      st = bsp.insert(st, id, ls.length ? ls[Math.floor(rnd() * ls.length)] : null, input(ls, { settings: s, area }));
+    }
+    const frac = () => (rnd() < 0.5 ? 0 : [0.333, 0.571, 0.667][Math.floor(rnd() * 3)]);
+    const constraints = new Map(ids.filter(() => rnd() < 0.6)
+      .map((id) => [id, minC(Math.floor(rnd() * inner.width / 2) + frac(), Math.floor(rnd() * inner.height / 2) + frac())] as const));
+    const r = bsp.solve(st, input(ids, { area, settings: s, constraints }));
+    assert.equal(r.slots.size + r.overflow.length, n);
+    const need = needOf(st.root!, new Set(ids), constraints, s.gaps.inner)!;
+    if (need.width <= inner.width && need.height <= inner.height) {
+      ++feasible;
+      assert.deepEqual(r.overflow, [], `feasible tree overflowed: ${r.notes.join("; ")}`);
+    }
+    assertMinima(r.slots, constraints, 1e-6);
+    assertGaps(r.slots, inner, s.gaps.inner, 1e-6);
+    for (const slot of r.slots.values()) assert.ok(contains(inner, slot, 1e-6), `${JSON.stringify(slot)} outside ${JSON.stringify(inner)}`);
+  }
+  assert.ok(feasible > 300, `only ${feasible} feasible samples`);
 });
 
 test("single window gaps follow settings.singleWindowGaps", () => {

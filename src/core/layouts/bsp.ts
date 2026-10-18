@@ -247,8 +247,9 @@ const NO_MIN: Size = { width: 0, height: 0 };
 
 function leafMin(input: SolveInput, window: WindowId, useMinima: boolean): Size {
   const m = useMinima ? input.constraints.get(window)?.minFrame ?? NO_MIN : NO_MIN;
-  // allocate() never yields a slot below 1 px; ceil keeps aggregation integral.
-  return { width: Math.max(1, Math.ceil(m.width)), height: Math.max(1, Math.ceil(m.height)) };
+  // allocate() never yields a slot below 1 px. Minima stay exact (frame minima are
+  // fractional at fractional scales); allocate() places cuts for fractional minima.
+  return { width: Math.max(1, m.width), height: Math.max(1, m.height) };
 }
 
 /** Bottom-up minima. Subtrees without participants are absent (virtually collapsed). */
@@ -290,7 +291,8 @@ function layOut(root: BspNode | null, ids: readonly WindowId[], input: SolveInpu
   const g = input.settings.gaps;
   const area = participants === 1 && !input.settings.singleWindowGaps ? input.area : inset(input.area, g.outer);
   const need = minima.get(root)!;
-  if (need.width > area.width || need.height > area.height) {
+  // Same slack as allocate(): fractional minima sum with rounding noise.
+  if (need.width > area.width + 1e-9 || need.height > area.height + 1e-9) {
     return done(`tree needs ${need.width}x${need.height} px, has ${area.width}x${area.height}`);
   }
 
