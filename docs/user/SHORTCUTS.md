@@ -83,7 +83,9 @@ Every default binding is pressed with real key events, injected with libei into 
 | Grow focused tile | `Meta+Shift+=` | Never reached Plastile (nested sessions in both environments). On a US layout, Shift+`=` produces `+`, so the registered sequence is not what the keyboard sends; KWin's Zoom effect binds `Meta++` and `Meta+=` (observed source: `src/plugins/zoom/zoom.cpp`). | `Meta+Ctrl+=` |
 | Shrink focused tile | `Meta+Shift+-` | Never reached Plastile (nested sessions in both environments). Shift+`-` produces `_`. | `Meta+Ctrl+-` |
 
-If you had bound the old sequences yourself, KGlobalAccel keeps your binding. A unit test (`tests/core/package.test.ts`) rejects defaults that combine Shift with punctuation, and the sequences known to be taken by stock software.
+**If you upgraded from a version with the old defaults, you still have them.** KGlobalAccel keeps the key stored for a command, whether you chose it or the older version registered it, and Plastile registers its keys without marking them as defaults (KWin's `ShortcutHandler` calls `KGlobalAccel::setShortcut` only; observed source: kwin `src/scripting/shortcuthandler.cpp`). Measured in nested KWin 6.7.5 (`package-upgrade-bindings-T26-T32`): after an upgrade from a package built before the change and a KWin restart, the three commands were still bound to `Meta+Shift+S`, `Meta+Shift+=` and `Meta+Shift+-`. Where Spectacle is installed, the [conflict report](#conflict-report) then names `Meta+Shift+S` (observed on the reference host). Rebind the three commands to the new defaults, or to keys of your choice, in the shortcut settings. Plastile does not change them for you ([it never changes a binding](#conflict-report)). For the same reason, *Reset to default* in the shortcut settings may clear a Plastile command instead of restoring the key in this table (inference: KGlobalAccel reports no default key for Plastile's commands, measured).
+
+A unit test (`tests/core/package.test.ts`) rejects defaults that combine Shift with punctuation, and the sequences known to be taken by stock software.
 
 Not measured: Spectacle is not installed in the Ubuntu sandbox, so its absence of conflicts with the new defaults comes from its published shortcut list, not from a run. Other keyboard layouts may produce different symbols for `=` and `-` with Ctrl held (untested).
 
@@ -98,7 +100,7 @@ Pressed and confirmed to reach Plastile:
 2. Choose the **KWin** component and search for "Plastile". Each row of the table appears under its label.
 3. Assign, change or clear bindings there.
 
-KGlobalAccel stores your choice in `~/.config/kglobalshortcutsrc`. A stored user binding normally survives script reloads and upgrades; that is KGlobalAccel's behaviour. Plastile's suite measured that a user binding of another action on a Plastile default key is kept ([conflict report](#conflict-report)); a rebound Plastile command surviving an upgrade was not tested.
+KGlobalAccel stores your choice in `~/.config/kglobalshortcutsrc`, and your bindings survive script reloads and upgrades. Measured in nested KWin 6.7.5 (scenario `package-upgrade-bindings-T26-T32`, the bindings set over D-Bus with `setForeignShortcutKeys`, the call the shortcut settings page makes by inference, not clicked through): *Focus next* rebound to `Meta+Alt+N`, *Focus previous* to `Meta+Alt+P`, *Log counters* (unbound by default) bound to `Meta+Alt+C` and *Swap with master* cleared all stayed so after a package upgrade, a script restart and a KWin restart. Each rebound key, pressed with real key events, ran its command exactly once; `Meta+Shift+N` and `Meta+Shift+Return` ran nothing. A user binding of another action on a Plastile default key is kept as well ([conflict report](#conflict-report)). An upgrade also keeps keys you never touched, including [replaced old defaults](#default-bindings-measured-with-real-key-presses).
 
 Unbound commands (*unbound* in the table) appear in the same list and only need a binding.
 
@@ -149,7 +151,7 @@ Plastile does not override `Meta+T` and does not take over KWin's own quick-tile
 
 ## Things to know
 
-- **Leftover entries:** shortcut registrations are KWin-wide and **persist in `kglobalshortcutsrc` after the script is disabled or uninstalled** (measured in nested KWin). They are harmless entries without a handler; remove them in the shortcuts settings if you want a clean file.
+- **Leftover entries:** shortcut registrations are KWin-wide and **persist in `kglobalshortcutsrc` after the script is disabled or uninstalled** (measured in nested KWin). They are harmless entries without a handler, and they keep your bindings for a reinstall. To drop them, see [INSTALL](INSTALL.md#6-uninstall-cleanly) step 4 (editing the file while you are logged in does not work).
 - **Screens:** directional focus, swap and move never cross screens. Use *Send window to next output* to change screens.
 - **Unbound diagnostics:** *Reload configuration*, *Explain active window*, *Log counters* and *Log trace* are unbound by default. Bind them if you change settings or need to debug ([TROUBLESHOOTING](TROUBLESHOOTING.md)).
 

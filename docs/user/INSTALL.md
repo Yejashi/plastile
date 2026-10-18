@@ -60,10 +60,26 @@ This copies the package to `~/.local/share/kwin/scripts/plastile/` (or `$XDG_DAT
 What was measured (nested KWin 6.7.5, kpackagetool6 2.0, package installed into the session's private data directory):
 
 - **Install before KWin starts:** the package installs, is autoloaded when KWin starts with `[Plugins] plastileEnabled=true`, and tiles windows.
-- **Disable/enable and upgrade:** disabling and re-enabling through the `Plugins` key plus `org.kde.kwin.Scripting.start` works, as do upgrade and removal.
+- **Disable/enable and upgrade:** disabling and re-enabling through the `Plugins` key plus `org.kde.kwin.Scripting.start` works, as do upgrade and removal. An upgrade takes effect only after KWin restarts ([Updating](#updating)).
 - **Install while KWin runs:** the package was not found by `Scripting.start` immediately. In one run, five attempts over the first 16.5 s failed and the attempt at 20.6 s loaded it (a cached package listing is the likely cause, by inference). If Plastile does not appear in System Settings, or does not start after you enable it, wait half a minute and try again, or log out and back in. Do **not** run `kwin_wayland --replace`: on Wayland that ends your session.
 
 **Leftover shortcut entries.** While the script is loaded, it registers one global shortcut per command in `~/.config/kglobalshortcutsrc`. These entries stay after the script is disabled or removed (measured). They are inert without the script.
+
+### Updating
+
+1. Install the new package over the old one: `kpackagetool6 --type KWin/Script --upgrade package` (or `tools/install.sh upgrade`, or either of them with a `dist/plastile-<version>.kwinscript` archive). This works while KWin runs.
+2. **Log out and back in.** The running KWin keeps executing the version it loaded until KWin itself restarts. Unticking and re-ticking Plastile in KWin Scripts is not enough, and neither is disabling it before the upgrade and enabling it after.
+3. Check the version: the log line `plastile info started <version>`, or `kpackagetool6 --type KWin/Script --show plastile` for what is installed.
+
+Measured in nested KWin 6.7.5 (scenario `package-upgrade-bindings-T26-T32`): a package built from an older commit and labelled 0.0.1 was upgraded to 0.1.0 while it ran. After a disable and re-enable through `[Plugins]` plus `Scripting.start`, KWin started 0.0.1 again, although the 0.0.1 files were no longer on disk; the same happened with the script disabled during the upgrade. A KWin restart over the same configuration, data and cache directories started 0.1.0; the cache directory still held the first KWin's QML disk cache (`$XDG_CACHE_HOME/kwin/qmlcache`), as `~/.cache` does after a re-login, and it did not bring the older version back (kpackagetool6 gives the installed files the install time, not the archive's dates, measured). The cause, from KWin's source (observed: v6.7.5 `src/scripting/scripting.cpp`): every declarative script is loaded into one QML engine shared by all scripts, by the same file URL, and KWin never clears that engine's component cache. On Wayland, restarting KWin means ending the session; do **not** run `kwin_wayland --replace`.
+
+What an upgrade keeps (same scenario, after the script restart and after the KWin restart):
+
+- **Settings:** the `[Script-plastile]` group in `kwinrc` is untouched; the new version applied the non-default gaps and master ratio it found there (measured on the windows' frames).
+- **Your shortcut bindings:** two rebound commands, a binding given to a command that has none by default, and a cleared default all stayed as you set them, in KGlobalAccel and in `kglobalshortcutsrc`. The rebound keys, pressed for real, ran their command once each; the old keys and the cleared key ran nothing. `Meta+T` stayed KWin's tile editor.
+- **Old defaults, too.** A command you never touched keeps the key the older version registered, even when the new version has a different default. See [Changed defaults](SHORTCUTS.md#default-bindings-measured-with-real-key-presses): after upgrading from a version that bound *Suspend/resume tiling* to `Meta+Shift+S`, it is still `Meta+Shift+S`, which collides with Spectacle; rebind it in the shortcut settings.
+
+Not measured: an upgrade in a physical session, and an upgrade between two released versions (there is no release yet).
 
 ## 3. Enable in System Settings
 
@@ -153,7 +169,14 @@ The `configJson` key holds the JSON document as a single KConfig string. The set
 
 1. Untick Plastile in KWin Scripts and Apply. This releases windows, borders and connections.
 2. Run `kpackagetool6 --type KWin/Script --remove plastile`.
-3. Optionally, delete the `[Script-plastile]` group and the `plastileEnabled` line from `~/.config/kwinrc`, and the `plastile.*` entries from `~/.config/kglobalshortcutsrc` (they are under the `[kwin]` group).
-4. Optionally, delete `~/.local/state/plastile/`, which holds saved layout preferences ([details](README.md#saved-layout-preferences)).
+3. Optionally, delete the `[Script-plastile]` group and the `plastileEnabled` line from `~/.config/kwinrc`.
+4. Optionally, drop the leftover `plastile.*` shortcut entries (under `[kwin]` in `~/.config/kglobalshortcutsrc`). They keep your bindings for a later reinstall, and they do nothing without the script. Do not edit the file while you are logged in: KGlobalAccel runs inside KWin, keeps the registrations in memory and rewrites the file at its next save, which brought all 68 entries back in a nested session (measured). Instead, after step 2, run:
+
+   ```sh
+   qdbus6 org.kde.kglobalaccel /component/kwin org.kde.kglobalaccel.Component.cleanUp
+   ```
+
+   It removes every KWin shortcut registration that has no live action. Measured in nested KWin 6.7.5 (`package-upgrade-bindings-T26-T32`): with Plastile running it removed no Plastile entry; after the removal it removed all of them, from KGlobalAccel and from the file, and nothing else (235 KWin registrations before, 167 after: the 68 of Plastile). It is not limited to Plastile: the leftovers of other removed KWin scripts go too, and so, by inference, would the registrations of any KWin action that is not registered at that moment (a disabled script's shortcuts, for example), with the bindings you gave them. Or edit the file from a session where KWin is not running.
+5. Optionally, delete `~/.local/state/plastile/`, which holds saved layout preferences ([details](README.md#saved-layout-preferences)).
 
 Windows keep the geometry they had at unload. Nothing is restored to a pre-Plastile arrangement, because no such arrangement is stored.

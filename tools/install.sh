@@ -99,9 +99,11 @@ cmd_upgrade() {
     cat <<EOF
 
 Upgraded: $TARGET
-A running KWin keeps executing the previously loaded script until it is disabled and
-re-enabled (System Settings > Window Management > KWin Scripts, or kwriteconfig6 +
-Scripting.start as printed by 'install'). This script does not do that for you.
+A running KWin keeps executing the previously loaded version until KWin itself restarts:
+log out and back in. Disabling and re-enabling the script (System Settings > Window
+Management > KWin Scripts, or kwriteconfig6 + Scripting.start) is not enough: KWin 6.7.5
+starts the older version again from its QML cache (measured in a nested session).
+Settings in kwinrc and your shortcut bindings are kept. This script restarts nothing.
 EOF
 }
 

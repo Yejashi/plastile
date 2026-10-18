@@ -239,6 +239,9 @@ jobs:
     timeout-minutes: 75
     steps:
       - uses: actions/checkout@v7
+        with:
+          # package-upgrade-bindings-T26-T32 builds the older package from a past commit.
+          fetch-depth: 0
 
       - name: Create the KWin sandbox (debootstrap Ubuntu 26.10)
         run: |
@@ -297,6 +300,9 @@ jobs:
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@v7
+        with:
+          # package-upgrade-bindings-T26-T32 builds the older package from a past commit.
+          fetch-depth: 0
 
       - uses: actions/setup-node@v7
         with:
