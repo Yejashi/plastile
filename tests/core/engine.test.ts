@@ -564,3 +564,32 @@ test("G09: a client that rounds its size down (character cells) is accepted, and
   h.advance(5000);
   assert.equal(h.writes.length, settled, "converged after growing");
 });
+
+test("G11 after reload: a window adopted already at its slot is corrected when the app resizes itself", () => {
+  const first = setup(["a", "b"]).h;
+  const fa = first.windows.get("a")!.frame, fb = first.windows.get("b")!.frame;
+  const h = new MockHost();
+  const snaps = [h.snapshot(h.make("a", { frame: fa })), h.snapshot(h.make("b", { frame: fb }))];
+  const e = h.start({}, snaps);
+  h.drain();
+  assert.equal(h.writes.length, 0, "reload writes nothing");
+  h.userSetFrame("b", rect(fb.x, fb.y, 300, 300));
+  h.advance(5000);
+  assert.ok(rectNear(h.windows.get("b")!.frame, fb), `b back in its slot: ${JSON.stringify(h.windows.get("b")!.frame)}`);
+  assert.ok(e.counters.corrections >= 1 && e.counters.corrections <= 2);
+});
+
+test("G11 after I03: the window resized by the user is still corrected when the app resizes itself", () => {
+  const { h, e } = setup(["a", "b"]);
+  const a0 = h.windows.get("a")!.frame;
+  h.setStates("a", { interactive: "resize" });
+  h.userSetFrame("a", rect(a0.x, a0.y, a0.width + 100, a0.height));
+  h.setStates("a", { interactive: "none" });
+  h.drain();
+  const a1 = { ...h.windows.get("a")!.frame };
+  const corrections = e.counters.corrections;
+  h.userSetFrame("a", rect(a1.x, a1.y, 300, 300));
+  h.advance(5000);
+  assert.ok(rectNear(h.windows.get("a")!.frame, a1), `a back in its slot: ${JSON.stringify(h.windows.get("a")!.frame)}`);
+  assert.ok(e.counters.corrections > corrections);
+});

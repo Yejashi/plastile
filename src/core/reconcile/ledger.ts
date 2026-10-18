@@ -86,10 +86,20 @@ export function setDesired(e: LedgerEntry, target: Rect): void {
   }
 }
 
-/** Mark a no-op target as settled without issuing a request. */
-export function acceptNoop(e: LedgerEntry, target: Rect): void {
+/**
+ * Mark a no-op target as settled without issuing a request. It is recorded as the
+ * settled request (seq 0: nothing was written) so a later change by the application is
+ * observed as external and corrected, as for a target Plastile wrote itself.
+ */
+export function acceptNoop(e: LedgerEntry, target: Rect, now: number): void {
   setDesired(e, target);
-  if (!e.outstanding) e.status = "settled";
+  if (e.outstanding) return;
+  e.status = "settled";
+  if (!e.request || !rectNear(e.request.rect, target, e.tol)) {
+    e.request = { rect: target, seq: 0, issuedAt: now, reason: "noop" };
+    e.history.push({ rect: target, seen: true });
+    if (e.history.length > HISTORY) e.history.shift();
+  }
 }
 
 /**

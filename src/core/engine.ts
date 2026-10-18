@@ -727,7 +727,7 @@ export class Engine {
     const dec = L.decideWrite(r.ledger, target, now);
     switch (dec) {
       case "skip-outstanding": this.counters.skipOutstanding++; L.setDesired(r.ledger, target); return;
-      case "skip-noop": this.counters.skipNoop++; L.acceptNoop(r.ledger, target); return;
+      case "skip-noop": this.counters.skipNoop++; L.acceptNoop(r.ledger, target, this.svc.now()); return;
       case "skip-diverged": this.counters.skipDiverged++; return;
       default: this.write(r, target, r.ledger.request && rectNear(r.ledger.request.rect, target, r.ledger.tol) ? "correction" : "plan");
     }
