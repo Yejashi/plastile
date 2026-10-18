@@ -83,6 +83,17 @@ def plan(seed: int) -> list[dict]:
                                    "--seed", str(seed)]})
     random.Random(seed + 1).shuffle(extra)
     units += extra
+    # The P14 RssAnon bisection (rss_bisect.py), in its own order after the rest.
+    bis = [{"id": "rss-reload", "family": "rss-bisect", "timeoutS": 1200,
+            "argv": [PY, "probes/perf/rss_bisect.py", "reload", "--cycles", "100"]},
+           {"id": "rss-reload-oracles15", "family": "rss-bisect", "timeoutS": 1800,
+            "argv": [PY, "probes/perf/rss_bisect.py", "reload", "--cycles", "100", "--oracles", "15"]},
+           {"id": "rss-cycle", "family": "rss-bisect", "timeoutS": 2400,
+            "argv": [PY, "probes/perf/rss_bisect.py", "cycle", "--cycles", "100"]},
+           {"id": "rss-long", "family": "rss-bisect", "timeoutS": 1800,
+            "argv": [PY, "probes/perf/rss_bisect.py", "long", "--commands", "8000"]}]
+    random.Random(seed + 2).shuffle(bis)
+    units += bis
     for i, u in enumerate(units):
         u["order"] = i
     return units
@@ -96,7 +107,7 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--seed", type=int, default=20261018)
     ap.add_argument("--only", default="", help="comma list of families to keep (qualify,qualify-diag,baseline,upstream,p05,boundary,"
-                                                "workloads,churn,gc-rate)")
+                                                "workloads,churn,gc-rate,rss-bisect)")
     ap.add_argument("--plan", action="store_true")
     ap.add_argument("--out", type=Path, default=None)
     ap.add_argument("--resume", type=Path, default=None)
