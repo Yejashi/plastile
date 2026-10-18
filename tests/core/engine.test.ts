@@ -435,3 +435,43 @@ test("O01: an external transfer to another output is not written back (frame eve
   assert.ok(rectNear(b.frame, rect(1288, 8, 1264, 784)), "tiled on the destination output");
   assert.ok(rectNear(h.windows.get("a")!.frame, rect(8, 8, 1264, 784)), "source reflowed");
 });
+
+test("I01: a drag keeps the model (no reflow, no writes) and a drop on another tile swaps once", () => {
+  const { h, e } = setup(["a", "b", "c"]);
+  const slots = tiledFrames(h, ["a", "b", "c"]);
+  const solves = e.counters.solves, writes = h.writes.length;
+  h.setStates("c", { interactive: "move" });
+  for (let i = 0; i < 20; ++i) { h.userSetFrame("c", rect(700 - i * 30, 400 - i * 10, 400, 300)); h.drain(); }
+  assert.equal(e.counters.solves, solves, "no solve during the drag");
+  assert.equal(h.writes.length, writes, "no write during the drag");
+  assert.ok(rectNear(h.windows.get("b")!.frame, slots.get("b")!), "peer not reflowed");
+  h.userSetFrame("c", rect(150, 300, 400, 300)); // centre over a's slot
+  h.setStates("c", { interactive: "none" });
+  h.drain();
+  assert.equal(e.counters.solves, solves + 1, "one release commit");
+  assert.ok(rectNear(h.windows.get("c")!.frame, slots.get("a")!), "c took a's slot");
+  assert.ok(rectNear(h.windows.get("a")!.frame, slots.get("c")!), "a took c's slot");
+});
+
+test("I01: a drop outside any tile snaps back with one solve", () => {
+  const { h, e } = setup(["a", "b"]);
+  const slots = tiledFrames(h, ["a", "b"]);
+  h.setStates("b", { interactive: "move" });
+  h.userSetFrame("b", rect(5000, 5000, 400, 300));
+  h.setStates("b", { interactive: "none" });
+  h.drain();
+  assert.ok(rectNear(h.windows.get("b")!.frame, slots.get("b")!));
+  assert.ok(e.counters.solves >= 1);
+});
+
+test("I03: a user resize of the master edge becomes the new ratio", () => {
+  const { h } = setup(["a", "b"]);
+  const a0 = h.windows.get("a")!.frame;
+  h.setStates("a", { interactive: "resize" });
+  h.userSetFrame("a", rect(a0.x, a0.y, a0.width + 100, a0.height));
+  h.setStates("a", { interactive: "none" });
+  h.drain();
+  const a1 = h.windows.get("a")!.frame, b1 = h.windows.get("b")!.frame;
+  assert.ok(Math.abs(a1.width - (a0.width + 100)) <= 1, `master width ${a1.width}`);
+  assert.equal(b1.x, a1.x + a1.width + 8, "peer follows the divider");
+});

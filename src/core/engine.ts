@@ -119,6 +119,7 @@ export class Engine {
   private contexts = new Map<ContextId, Ctx>();
   private dirty = new Set<ContextId>();
   private corrections = new Set<WindowId>();
+  private endedInteractions = new Map<WindowId, "move" | "resize">();
   private queued: Array<{ id: string; arg: unknown }> = [];
   private applying = 0;
   private flushScheduled = false;
@@ -163,6 +164,7 @@ export class Engine {
     this.contexts.clear();
     this.dirty.clear();
     this.corrections.clear();
+    this.endedInteractions.clear();
     this.queued = [];
   }
 
@@ -250,6 +252,7 @@ export class Engine {
     L.cancel(r.ledger);
     this.leaveContext(r);
     this.corrections.delete(r.id);
+    this.endedInteractions.delete(r.id);
     this.recs.delete(r.id);
   }
 
@@ -288,11 +291,19 @@ export class Engine {
     const next = suspensionsOf(st);
     const changed = !sameSet(next, r.suspensions);
     r.suspensions = next;
-    if (prevInteractive !== "none" && st.interactive === "none") this.interactionEnded(r, prevInteractive);
     if (changed) {
       this.trace.record(this.svc.now(), "suspensions", id, [...next]);
-      if (next.size > 0) L.cancel(r.ledger); // KWin owns the frame now; never fight it
-      if (r.ctx && r.mode === "tiled") this.markDirty(r.ctx);
+      if (next.size > 0) L.cancel(r.ledger); // KWin or the user owns the frame now; never fight it
+      const onlyInteractive = (x: Set<Suspension>) => x.size === 0 || (x.size === 1 && x.has("interactive"));
+      const prevSet = suspensionsOf({ ...st, interactive: prevInteractive });
+      // Starting a drag changes no slot; its end is interpreted once by interactionEnded.
+      if (!(onlyInteractive(prevSet) && onlyInteractive(next)) && r.ctx && r.mode === "tiled") this.markDirty(r.ctx);
+      this.ensureFlush();
+    }
+    if (prevInteractive !== "none" && st.interactive === "none") {
+      // Interpret the drop in the next flush: on Escape KWin reports the end of the
+      // interaction before restoring the start geometry (measured with real input).
+      this.endedInteractions.set(id, prevInteractive);
       this.ensureFlush();
     }
   }
@@ -331,6 +342,7 @@ export class Engine {
     if (this.applying > 0) this.counters.observationsDuringApply++;
     if (r.mode === "floating" && r.suspensions.size === 0 && r.ledger.status !== "pending") r.floatRect = f;
     if (r.mode !== "tiled") { L.observe(r.ledger, f); return; }
+    if (r.suspensions.has("interactive")) return; // the user owns the frame during the drag
     const o = L.observe(r.ledger, f);
     switch (o) {
       case "settled":
@@ -532,13 +544,24 @@ export class Engine {
     this.markDirty(c.key);
   }
 
+  /**
+   * Takes part in the solve. An interactive move/resize keeps its slot (the model is
+   * preserved during the drag, BEHAVIOR §8); only KWin-owned states remove it.
+   */
   private participates(r: Rec): boolean {
-    return r.mode === "tiled" && r.suspensions.size === 0 && r.ctx !== null;
+    if (r.mode !== "tiled" || r.ctx === null) return false;
+    for (const s of r.suspensions) if (s !== "interactive") return false;
+    return true;
   }
 
-  /** Participates and its context actually places windows (the floating layout does not). */
+  /** Participates and may receive frame requests (the user owns the frame while dragging). */
+  private writable(r: Rec): boolean {
+    return this.participates(r) && !r.suspensions.has("interactive");
+  }
+
+  /** Writable and its context actually places windows (the floating layout does not). */
   private ownsGeometry(r: Rec): boolean {
-    if (!this.participates(r)) return false;
+    if (!this.writable(r)) return false;
     const c = this.contexts.get(contextId(r.ctx!));
     return !!c && this.layoutKind(c) !== "floating";
   }
@@ -572,7 +595,15 @@ export class Engine {
       const queued = this.queued;
       this.queued = [];
       for (const q of queued) this.execute(q.id, q.arg);
-      if (this.suspended) { this.dirty.clear(); this.corrections.clear(); return; }
+      if (this.suspended) { this.dirty.clear(); this.corrections.clear(); this.endedInteractions.clear(); return; }
+      if (this.endedInteractions.size) {
+        const ended = [...this.endedInteractions];
+        this.endedInteractions.clear();
+        for (const [id, kind] of ended) {
+          const r = this.recs.get(id);
+          if (r && r.states.interactive === "none") this.interactionEnded(r, kind);
+        }
+      }
       this.runCorrections();
       const ids = [...this.dirty];
       this.dirty.clear();
@@ -662,7 +693,7 @@ export class Engine {
     try {
       for (const [id, target] of res.slots) {
         const r = this.recs.get(id);
-        if (!r || !this.participates(r)) continue;
+        if (!r || !this.writable(r)) continue;
         this.applyTarget(r, target);
       }
       for (const id of res.raise) {

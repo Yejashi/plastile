@@ -19,7 +19,12 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 from harness import FIXTURE, PACKAGE_QML, ROOT  # noqa: E402
+import importlib  # noqa: E402
 from scenarios import SCENARIOS, Checks  # noqa: E402
+
+# Additional scenario modules (tests/integration/scenarios_*.py) register into SCENARIOS.
+for _mod in sorted(HERE.glob("scenarios_*.py")):
+    importlib.import_module(_mod.stem)
 
 
 def main() -> int:

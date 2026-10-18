@@ -414,3 +414,208 @@ def suspend_idle(out: Path, c: Checks):
         s.cmd("runtime.toggle-suspend"); time.sleep(0.5); s.settle()
         f = s.frames_list()
         c("resume: retiled", not tiling_errors(f, s.area(), 8), tiling_errors(f, s.area(), 8))
+
+
+def kscreen(s: Session, *args: str) -> None:
+    import subprocess
+    r = subprocess.run(["kscreen-doctor", *args], env=s.kw.client_env(), capture_output=True, text=True, timeout=15)
+    if r.returncode != 0:
+        raise RuntimeError(f"kscreen-doctor {args}: {r.stderr[-200:]}")
+
+
+def on_output(s: Session, name: str) -> list[dict]:
+    return [f for f in s.frames_list() if f["output"] == name]
+
+
+@scenario("fractional-scale-G03")
+def fractional_scale(out: Path, c: Checks):
+    with Session(out, outputs=2) as s:
+        three(s)
+        s.load(); s.settle()
+        for cap in ("plastile-fixture 2", "plastile-fixture 3"):
+            s.act(cap, "workspace.activeWindow = w")
+            s.cmd("move.output-next"); s.settle()
+        for scale in ("1.25", "1.5", "1.75", "2"):
+            kscreen(s, f"output.Virtual-1.scale.{scale}")
+            time.sleep(0.8)
+            a = s.settle()
+            area = s.area(1)
+            f = on_output(s, "Virtual-1")
+            c(f"G03 scale {scale}: two tiles inside the new area without overlap",
+              len(f) == 2 and not tiling_errors(f, area, 8), (area, [x["frame"] for x in f]))
+            time.sleep(1.5)
+            b = s.counters()
+            c(f"G03 scale {scale}: converged, no repeated corrections", delta(a, b).get("writes", 0) == 0 and
+              b["outstanding"] == 0, delta(a, b))
+
+
+@scenario("rotation-portrait-O02")
+def rotation(out: Path, c: Checks):
+    with Session(out) as s:
+        three(s)
+        s.load(); s.settle()
+        kscreen(s, "output.Virtual-0.rotation.left")
+        time.sleep(0.8); s.settle()
+        area = s.area(0)
+        f = s.frames_list()
+        c("O02 portrait: area rotated", area["height"] > area["width"], area)
+        c("O02 portrait: retiled inside the rotated area", not tiling_errors(f, area, 8), tiling_errors(f, area, 8))
+        kscreen(s, "output.Virtual-0.rotation.normal")
+        time.sleep(0.8); s.settle()
+        area = s.area(0)
+        c("O02 back to landscape: retiled", not tiling_errors(s.frames_list(), area, 8))
+
+
+@scenario("unplug-O04")
+def unplug(out: Path, c: Checks):
+    with Session(out, outputs=2) as s:
+        s.spawn(1); s.spawn(2)
+        s.spawn(3, "--configure-delay-ms", "400"); s.spawn(4, "--configure-delay-ms", "400")
+        s.load(); s.settle()
+        for cap in ("plastile-fixture 3", "plastile-fixture 4"):
+            s.act(cap, "workspace.activeWindow = w")
+            s.cmd("move.output-next"); s.settle()
+        c("setup: two windows on Virtual-1", len(on_output(s, "Virtual-1")) == 2, [(f["caption"], f["output"]) for f in s.frames_list()])
+        s.act("plastile-fixture 3", "workspace.activeWindow = w")
+        s.cmd("resize.grow")  # pending requests on the output about to disappear
+        time.sleep(0.05)
+        off = s.kw.mark()
+        kscreen(s, "output.Virtual-1.disable")
+        time.sleep(1.5); s.settle()
+        area = s.area(0)
+        f = s.frames_list()
+        c("O04: all windows visible on the surviving output", all(x["output"] == "Virtual-0" for x in f) and len(f) == 4,
+          [(x["caption"], x["output"], x["frame"]) for x in f])
+        c("O04: retiled without overlap", not tiling_errors(f, area, 8), tiling_errors(f, area, 8))
+        errs = s.log_lines(r"plastile (error|warn)|TypeError|ReferenceError", off)
+        c("O04: no errors from stale output callbacks", not errs, errs[:3])
+        kscreen(s, "output.Virtual-1.enable")
+        time.sleep(1.0); s.settle()
+        for name in ("Virtual-0", "Virtual-1"):
+            ws = on_output(s, name)
+            if ws:
+                c(f"O05 replug: {name} tiled without overlap", not tiling_errors(ws, s.area(0 if name == "Virtual-0" else 1), 8))
+        c("O05 replug: no errors", not s.log_lines(r"plastile (error|warn)|TypeError", off))
+
+
+@scenario("reconcile")
+def reconcile(out: Path, c: Checks):
+    with Session(out) as s:
+        three(s)
+        s.load(); s.settle()
+        a = s.counters()
+        s.cmd("runtime.reconcile")
+        b = s.settle()
+        c("reconcile: unchanged state writes nothing", delta(a, b).get("writes", 0) == 0, delta(a, b))
+        c("reconcile: still three tiled", not tiling_errors(s.frames_list(), s.area(), 8))
+
+
+@scenario("drag-I01-I02")
+def drag(out: Path, c: Checks):
+    from harness import Input, centre, KEY_ESC
+    with Session(out) as s:
+        three(s)
+        s.load(); s.settle()
+        inp = Input(s)
+        try:
+            f = s.frames()
+            slot = {k: v["frame"] for k, v in f.items()}
+            a = s.counters()
+            x0, y0 = centre(slot["plastile-fixture 3"]); x1, y1 = centre(slot["plastile-fixture 1"])
+            inp.drag(x0, y0, x1, y1, release=False)
+            time.sleep(0.2)
+            mid = s.frames()
+            b = s.counters()
+            c("I01: no solve or write while dragging", delta(a, b).get("solves", 0) == 0 and delta(a, b).get("writes", 0) == 0, delta(a, b))
+            c("I01: peers untouched during the drag", near(mid["plastile-fixture 2"]["frame"], slot["plastile-fixture 2"], 1.0))
+            c("I01: dragged window follows the pointer", not near(mid["plastile-fixture 3"]["frame"], slot["plastile-fixture 3"], 1.0))
+            inp.do("release left", "key 125 up")
+            time.sleep(0.5); s.settle()
+            g = s.frames()
+            d = delta(b, s.counters())
+            c("I01: drop on a tile swaps", near(g["plastile-fixture 3"]["frame"], slot["plastile-fixture 1"], 1.0) and
+              near(g["plastile-fixture 1"]["frame"], slot["plastile-fixture 3"], 1.0), {k: v["frame"] for k, v in g.items()})
+            c("I01: one release commit", d.get("solves", 0) == 1, d)
+            # Drop with the window centre in the inner gap between columns (no tile there, and
+            # away from screen edges, where KWin's own drag-to-maximize/quick-tile would apply).
+            slot = {k: v["frame"] for k, v in s.frames().items()}
+            x0, y0 = centre(slot["plastile-fixture 2"])
+            m = slot["plastile-fixture 3"]  # current master after the swap
+            gap_x = m["x"] + m["width"] + 4
+            inp.drag(x0, y0, gap_x, y0 + 200)
+            time.sleep(0.5); s.settle()
+            g = s.frames()
+            c("I01: drop outside tiles snaps back", near(g["plastile-fixture 2"]["frame"], slot["plastile-fixture 2"], 1.0), g["plastile-fixture 2"]["frame"])
+            # Escape cancels a KWin Move action (pointer Meta+drags are not cancellable by Escape
+            # in KWin 6.7.5, measured): KWin restores the start geometry; the model is unchanged.
+            slot = {k: v["frame"] for k, v in s.frames().items()}
+            x0, y0 = centre(slot["plastile-fixture 2"]); x1, y1 = centre(slot["plastile-fixture 1"])
+            inp.do(f"move {x0} {y0}")
+            s.act("plastile-fixture 2", "workspace.activeWindow = w; workspace.slotWindowMove()")
+            for i in range(1, 9):
+                inp.do(f"move {x0 + (x1 - x0) * i / 8} {y0 + (y1 - y0) * i / 8}")
+                time.sleep(0.015)
+            inp.do(f"key {KEY_ESC} down", f"key {KEY_ESC} up")
+            time.sleep(0.5); s.settle()
+            g = s.frames()
+            c("I02: escape cancels without a swap", all(near(g[k]["frame"], slot[k], 1.0) for k in slot), {k: v["frame"] for k, v in g.items()})
+        finally:
+            inp.close()
+
+
+@scenario("resize-I03")
+def resize(out: Path, c: Checks):
+    from harness import Input
+    with Session(out) as s:
+        s.spawn(1); s.spawn(2)
+        s.load(); s.settle()
+        inp = Input(s)
+        try:
+            f = s.frames()
+            m = f["plastile-fixture 1"]["frame"]
+            # Meta+right-drag resizes from the nearest corner: grab near the master's bottom-right.
+            x0, y0 = m["x"] + m["width"] - 20, m["y"] + m["height"] - 20
+            a = s.counters()
+            inp.drag(x0, y0, x0 + 120, y0, button="right")
+            time.sleep(0.6); s.settle()
+            g = s.frames()
+            m1, s1 = g["plastile-fixture 1"]["frame"], g["plastile-fixture 2"]["frame"]
+            c("I03: master widened by the drag", m1["width"] > m["width"] + 60, (m, m1))
+            c("I03: peer follows the divider, no overlap", abs(s1["x"] - (m1["x"] + m1["width"] + 8)) <= 1 and
+              not tiling_errors(s.frames_list(), s.area(), 8), (m1, s1))
+            c("I03: master keeps full height", abs(m1["height"] - m["height"]) <= 1, m1)
+            d = delta(a, s.counters())
+            c("I03: bounded work", d.get("solves", 0) <= 2 and d.get("corrections", 0) == 0, d)
+        finally:
+            inp.close()
+
+
+@scenario("drag-teardown-I04")
+def drag_teardown(out: Path, c: Checks):
+    from harness import Input, centre
+    with Session(out) as s:
+        three(s)
+        s.load(); s.settle()
+        inp = Input(s)
+        try:
+            f = s.frames()
+            x0, y0 = centre(f["plastile-fixture 3"]["frame"])
+            off = s.kw.mark()
+            inp.drag(x0, y0, x0 - 300, y0 - 100, release=False)
+            s.kill(3, wait=True)
+            inp.do("release left", "key 125 up")
+            time.sleep(0.5); s.settle()
+            c("I04: window closed mid-drag: two tiled, no errors",
+              not tiling_errors(s.frames_list(), s.area(), 8) and len(s.frames_list()) == 2 and
+              not s.log_lines(r"plastile (error|warn)|TypeError|ReferenceError", off), s.log_lines(r"plastile (error|warn)|TypeError", off)[:3])
+            f = s.frames()
+            x0, y0 = centre(f["plastile-fixture 2"]["frame"])
+            inp.drag(x0, y0, x0 - 200, y0, release=False)
+            s.unload()
+            inp.do("release left", "key 125 up")
+            time.sleep(0.4)
+            c("I04/I06: unload mid-drag leaves no errors", not s.log_lines(r"plastile (error|warn)|TypeError|ReferenceError", off))
+            s.load(); s.settle()
+            c("I04: reload after mid-drag unload tiles again", not tiling_errors(s.frames_list(), s.area(), 8))
+        finally:
+            inp.close()

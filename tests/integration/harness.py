@@ -184,6 +184,64 @@ class Session:
         raise NestedError(f"timed out: {what}")
 
 
+INPUT = ROOT / "build/input/plastile-input"
+KEY_LEFTMETA = 125
+KEY_ESC = 1
+
+
+class Input:
+    """Real compositor input through KWin's EIS RemoteDesktop endpoint on the nested bus."""
+
+    def __init__(self, s: "Session"):
+        import dbus
+        conn = s.kw._bus_connection()
+        obj = conn.get_object("org.kde.KWin", "/org/kde/KWin/EIS/RemoteDesktop")
+        fd, self.cookie = obj.connectToEIS(1 | 2, dbus_interface="org.kde.KWin.EIS.RemoteDesktop")
+        raw = fd.take() if isinstance(fd, dbus.types.UnixFd) else int(fd)
+        self.proc = subprocess.Popen([str(INPUT), str(raw)], env=s.kw.client_env(), stdin=subprocess.PIPE,
+                                     stdout=subprocess.PIPE, text=True, pass_fds=(raw,))
+        import os
+        os.close(raw)
+        line = self.proc.stdout.readline().strip()
+        if line != "ready":
+            raise NestedError(f"input injector not ready: {line!r}")
+
+    def do(self, *lines: str) -> None:
+        for line in lines:
+            self.proc.stdin.write(line + "\n")
+            self.proc.stdin.flush()
+            reply = self.proc.stdout.readline().strip()
+            if not reply.startswith("ok "):
+                raise NestedError(f"input {line!r}: {reply!r}")
+
+    def drag(self, x0, y0, x1, y1, steps=12, button="left", modifier: int | None = KEY_LEFTMETA, pause=0.012,
+             release=True) -> None:
+        if modifier is not None:
+            self.do(f"key {modifier} down")
+        self.do(f"move {x0} {y0}")
+        time.sleep(pause)
+        self.do(f"press {button}")
+        for i in range(1, steps + 1):
+            time.sleep(pause)
+            self.do(f"move {x0 + (x1 - x0) * i / steps} {y0 + (y1 - y0) * i / steps}")
+        time.sleep(pause)
+        if release:
+            self.do(f"release {button}")
+            if modifier is not None:
+                self.do(f"key {modifier} up")
+
+    def close(self) -> None:
+        try:
+            self.proc.stdin.close()
+            self.proc.wait(timeout=3)
+        except Exception:
+            self.proc.kill()
+
+
+def centre(r: dict) -> tuple[float, float]:
+    return r["x"] + r["width"] / 2, r["y"] + r["height"] / 2
+
+
 def delta(a: dict, b: dict) -> dict:
     ca, cb = a["counters"], b["counters"]
     return {k: cb[k] - ca[k] for k in cb if cb[k] != ca[k]}
