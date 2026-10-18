@@ -39,7 +39,10 @@ export interface WindowRules {
   readonly mode?: "tiled" | "floating" | "excluded";
   readonly border?: "normal" | "none" | "keep";
   readonly insert?: "end" | "after-focus" | "master";
+  /** Every matched rule, in evaluation order. */
   readonly ruleIds: readonly string[];
+  /** Field-level reasons: which rule set each final action (CONFIGURATION §4). */
+  readonly reasons?: Readonly<Record<string, string>>;
 }
 
 export interface EngineOptions {
@@ -1268,7 +1271,7 @@ export class Engine {
     const c = r.ctx ? this.contexts.get(contextId(r.ctx)) : undefined;
     return {
       id: r.id, appId: r.meta.appId, kind: r.meta.kind, mode: r.mode, userMode: r.userMode,
-      decision: r.decision, context: r.ctx, layout: c ? this.layoutKind(c) : null,
+      decision: r.decision, rules: r.rules ? explainRules(r.rules) : null, context: r.ctx, layout: c ? this.layoutKind(c) : null,
       suspensions: [...r.suspensions], constraints: this.effectiveConstraints(r),
       learnedMin: r.learnedMin, learnedMax: r.learnedMax, ledger: { status: r.ledger.status, outstanding: r.ledger.outstanding,
         desired: r.ledger.desired, corrections: r.ledger.corrections }, slot: c?.plan.get(r.id) ?? null,
@@ -1316,6 +1319,15 @@ export class Engine {
     for (const r of this.recs.values()) if (r.ledger.outstanding) n++;
     return n;
   }
+}
+
+/** Matched rules, final rule actions and their per-field reasons (the decision covers mode only). */
+function explainRules(w: WindowRules): Record<string, unknown> {
+  const actions: Record<string, string> = {};
+  if (w.mode !== undefined) actions.mode = w.mode;
+  if (w.border !== undefined) actions.border = w.border;
+  if (w.insert !== undefined) actions.insert = w.insert;
+  return { ids: w.ruleIds.slice(), actions, reasons: { ...(w.reasons ?? {}) } };
 }
 
 function suspensionsOf(s: WindowStates): Set<Suspension> {

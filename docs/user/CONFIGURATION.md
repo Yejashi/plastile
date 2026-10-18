@@ -253,7 +253,7 @@ All three examples were compiled with the runtime's own `compileConfig` in Node,
 - `rule`
 - `default`
 
-It also records the reason text and the ids of matching rules. Native tiles and your *Toggle floating* choices show in `mode`, `userMode` and `nativeTile` rather than in the source.
+It also records the reason text and, when a rule decided the mode, that rule's id. Every matched rule, including rules that only set a border or an insertion preference, is listed separately in the explanation's `rules` field together with the rule behind each final action. Native tiles and your *Toggle floating* choices show in `mode`, `userMode`, `nativeTile` and `nativeYield` rather than in the source.
 
 ### Seeing why a window was classified
 
@@ -274,7 +274,8 @@ The line is `plastile info explain {...}` with these fields:
 | `id`, `appId`, `kind` | Window identity and type. |
 | `mode` | `tiled`, `floating`, `excluded`, `native` or `pending`. |
 | `userMode` | Your *Toggle floating* choice, if any. |
-| `decision` | `mode`, `source`, `reason` and `ruleIds`. |
+| `decision` | `mode`, `source`, `reason` and `ruleIds` (the rules that decided the mode). |
+| `rules` | `null` when no rule matches; otherwise `ids` (every matched rule, in evaluation order), the final `actions` (`mode`, `border`, `insert`) and `reasons` (which rule set each action). |
 | `context` | Output name, desktop id and activity. |
 | `layout` | The context's current layout. |
 | `suspensions` | Any of `minimized`, `fullscreen`, `maximized`, `interactive`, `hidden`. |
@@ -284,6 +285,7 @@ The line is `plastile info explain {...}` with these fields:
 | `slot` | The planned rectangle. |
 | `exception` | Why Plastile gave up on the window, for example `did not reach its target after bounded corrections` or `overflow: ...`. |
 | `nativeTile` | Whether KWin's native tile holds the window. |
+| `nativeYield` | Whether a native tile action made Plastile yield the window. It stays yielded after KWin releases the tile, until *Adopt natively tiled window* or *Toggle floating*. |
 
 **Where the log goes.** In the nested tests, the line was read from the compositor's captured stderr. Without `QT_FORCE_STDERR_LOGGING`, Qt sends script log output to the user journal (observed during environment discovery, [ENVIRONMENT](../status/ENVIRONMENT.md)). Reading it with `journalctl` in a physical Plasma session is untested ([TROUBLESHOOTING](TROUBLESHOOTING.md#reading-the-log)).
 

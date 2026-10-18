@@ -662,6 +662,21 @@ test("L08/L13: toggle-float on a window that cannot tile is a no-op without side
   assert.equal(e2.explain("y")!.userMode, null);
 });
 
+test("Q10/T16: explain lists every matched rule and the rule behind each action, not only the mode rule", () => {
+  const h = new MockHost();
+  const e = h.start({ rulesFor: (m) => (m.appId === "a"
+    ? { border: "none", insert: "end", ruleIds: ["no-borders", "append"], reasons: { border: "rule no-borders", insert: "rule append" } }
+    : null) });
+  h.open("a");
+  h.open("b");
+  h.drain();
+  const ex = e.explain("a")!;
+  assert.equal(h.windows.get("a")!.noBorder, true, "the border rule applies");
+  assert.deepEqual(ex.rules, { ids: ["no-borders", "append"], actions: { border: "none", insert: "end" },
+                               reasons: { border: "rule no-borders", insert: "rule append" } });
+  assert.equal(e.explain("b")!.rules, null);
+});
+
 function onActivities(activities: string[]) {
   return { membership: { output: "O1", desktops: ["D1"], onAllDesktops: false, activities } };
 }
