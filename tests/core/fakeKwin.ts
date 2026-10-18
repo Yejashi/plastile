@@ -36,7 +36,7 @@ export function output(name: string, g: R): FakeOutput {
 const WINDOW_SIGNALS = ["frameGeometryChanged", "clientGeometryChanged", "minimizedChanged", "fullScreenChanged",
   "maximizedChanged", "moveResizedChanged", "interactiveMoveResizeStarted", "interactiveMoveResizeFinished", "outputChanged",
   "desktopsChanged", "activitiesChanged", "tileChanged", "captionChanged", "windowClassChanged", "transientChanged",
-  "hiddenChanged", "modalChanged", "maximizeableChanged", "decorationChanged", "decorationPolicyChanged"] as const;
+  "hiddenChanged", "modalChanged", "maximizeableChanged", "decorationChanged", "decorationPolicyChanged", "damaged"] as const;
 
 let uid = 0;
 

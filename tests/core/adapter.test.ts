@@ -113,6 +113,42 @@ test("O07: a panel on one output re-solves only that output (zero writes to the 
   rt.shutdown();
 });
 
+test("O07: a panel that only changes its exclusive zone (auto-hide, dodge) re-solves from its repaint", () => {
+  const { ws, qt, wins, rt } = setup();
+  const reduced = { x: 0, y: 0, width: 1280, height: 760 };
+  const full = { x: 0, y: 0, width: 1280, height: 800 };
+  ws.areas.set("O1", reduced);
+  const panel = ws.panel({ frameGeometry: { x: 0, y: 760, width: 1280, height: 40 } });
+  ws.add(panel);
+  qt.drain();
+  assertTiles(wins, reduced);
+  // Dodge windows: the panel repaints with its frame unchanged; KWin's rearrange applies the
+  // full area after the adapter's first deferred turn (worst case, as measured).
+  let before = ws.writes.length;
+  panel.damaged.emit();
+  qt.turn();
+  ws.areas.delete("O1");
+  qt.drain();
+  assertTiles(wins, full);
+  assert.equal(Math.max(...wins.map((w) => bottomOf(w.frameGeometry))), 800 - GAP, "the tiles use the grown area");
+  for (const [cap, n] of writesPerWindow(ws, before)) assert.ok(n <= 1, `${cap} written ${n} times`);
+  // Auto-hide off: hiddenChanged, then the reduced area again.
+  before = ws.writes.length;
+  panel.hiddenChanged.emit();
+  qt.turn();
+  ws.areas.set("O1", reduced);
+  qt.drain();
+  assertTiles(wins, reduced);
+  assert.equal(Math.max(...wins.map((w) => bottomOf(w.frameGeometry))), 760 - GAP, "the tiles left the panel again");
+  for (const [cap, n] of writesPerWindow(ws, before)) assert.ok(n <= 1, `${cap} written ${n} times`);
+  // A repaint that changed nothing writes nothing.
+  before = ws.writes.length;
+  panel.damaged.emit();
+  qt.drain();
+  assert.equal(ws.writes.length, before);
+  rt.shutdown();
+});
+
 test("O07: a panel's own frame change without an area change writes nothing", () => {
   const { ws, qt, rt } = setup();
   ws.areas.set("O1", { x: 48, y: 0, width: 1232, height: 800 });

@@ -99,6 +99,12 @@ export interface KWindow {
   readonly windowClassChanged: KSignal;
   readonly transientChanged: KSignal;
   readonly hiddenChanged: KSignal;
+  /**
+   * The window's surface was repainted. Watched on panels only: a panel that changes its
+   * exclusive zone without moving (auto-hide, dodge windows) repaints, and nothing else a
+   * script can see fires (measured with plasmashell, nested 6.7.5). Absent on old fakes.
+   */
+  readonly damaged?: KSignal;
   readonly modalChanged: KSignal;
   /** Emitted on every xdg-toplevel min/max size change; X11: when the maximize action flips (measured, 6.7.5). */
   readonly maximizeableChanged: KSignal;

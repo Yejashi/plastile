@@ -424,8 +424,16 @@ export class KwinAdapter implements HostPort {
     const e: Entry = { w, id, gen, conns: [], meta: metaOf(w), hooked: false, caption: null, req: null, margin: null };
     this.entries.set(id, e);
     if (e.meta.kind === "dock") {
-      // Panels change the usable area; KWin has no script-visible work-area signal.
-      this.own(w.frameGeometryChanged, () => this.panelChanged(false), e.conns);
+      // Panels change the usable area; KWin has no script-visible work-area signal. A panel
+      // that only changes its exclusive zone keeps its frame: plasmashell's auto-hide emits
+      // hiddenChanged, "dodge windows" nothing but a repaint, and KWin applies the new area
+      // later on its rearrange timer (Workspace::scheduleRearrange; measured: the area is
+      // still the old one inside both handlers). Each of these queues the same coalesced
+      // two-turn comparison; a repaint that changed nothing costs one area read per turn.
+      const changed = () => this.panelChanged(false);
+      this.own(w.frameGeometryChanged, changed, e.conns);
+      if (w.hiddenChanged) this.own(w.hiddenChanged, changed, e.conns);
+      if (w.damaged) this.own(w.damaged, changed, e.conns);
     } else if (!PASSIVE_KINDS.has(e.meta.kind) && e.meta.kind !== "desktop") {
       this.hook(e);
     }
