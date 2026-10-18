@@ -519,7 +519,7 @@ export class Engine {
     }
     if (mode === "tiled" && !(this.settingsFor(key!).enabled)) mode = "floating";
     this.transition(r, mode, key, why);
-    this.applyBorderPolicy(r);
+    if (!this.suspended) this.applyBorderPolicy(r); // suspended: no owned property writes
   }
 
   /** Why an explicit tile request cannot be honoured (null when it can), from the current decision. */
@@ -993,6 +993,12 @@ export class Engine {
       if (action === "toggle-suspend") {
         if (!this.suspended) { this.suspended = true; this.releaseOwnership(); return ok(); }
         this.suspended = false;
+        // Adopt the live state again: owned borders, the readiness waits the suspension
+        // cancelled, and one solve per visible context.
+        for (const w of this.recs.values()) {
+          this.applyBorderPolicy(w);
+          if (w.readyBy !== null) this.armDeadline(w.readyBy);
+        }
         for (const c of this.contexts.values()) { c.revision++; this.markDirty(c.key); }
         this.ensureFlush();
         return ok();

@@ -677,6 +677,45 @@ test("Q10/T16: explain lists every matched rule and the rule behind each action,
   assert.equal(e.explain("b")!.rules, null);
 });
 
+test("C14/Q10: suspended means no owned border writes; resume re-applies the border rule", () => {
+  const h = new MockHost();
+  const e = h.start({ rulesFor: (m) => (m.appId.startsWith("x") ? { border: "none", ruleIds: ["r1"] } : null) });
+  h.open("x1");
+  h.open("b");
+  h.drain();
+  assert.equal(h.windows.get("x1")!.noBorder, true);
+  h.active = "b";
+  e.execute("plastile.runtime.toggle-suspend");
+  assert.equal(h.windows.get("x1")!.noBorder, false, "suspend restores the owned border");
+  h.open("x2");
+  e.configure({ rulesFor: (m) => (m.appId.startsWith("x") ? { border: "none", ruleIds: ["r1"] } : null) });
+  h.drain();
+  assert.equal(h.windows.get("x2")!.noBorder, false, "no border written while suspended");
+  assert.equal(h.windows.get("x1")!.noBorder, false);
+  e.execute("plastile.runtime.toggle-suspend");
+  h.drain();
+  assert.equal(h.windows.get("x1")!.noBorder, true, "resume re-applies");
+  assert.equal(h.windows.get("x2")!.noBorder, true);
+  e.stop();
+  assert.equal(h.windows.get("x2")!.noBorder, false, "owned after resume, restored at stop");
+});
+
+test("late metadata: suspending during the readiness wait does not leave the window pending forever", () => {
+  const h = new MockHost();
+  const e = h.start();
+  h.open("a");
+  h.open("late", { meta: meta("", {}) });
+  h.drain();
+  h.active = "a";
+  e.execute("plastile.runtime.toggle-suspend");
+  h.advance(100);
+  e.execute("plastile.runtime.toggle-suspend");
+  h.advance(1000);
+  assert.equal(e.modeOf("late"), "tiled");
+  h.advance(60_000);
+  assert.equal(e.outstandingCount(), 0);
+});
+
 function onActivities(activities: string[]) {
   return { membership: { output: "O1", desktops: ["D1"], onAllDesktops: false, activities } };
 }
