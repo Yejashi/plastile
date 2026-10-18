@@ -83,7 +83,9 @@ Supported initial match fields:
 | Output | Stable ID or explicit name matcher | Output membership/topology change |
 | Desktop/activity | ID or name matcher | Membership/name/config change |
 
-Actions initially cover mode, preferred layout/context placement where supported, minimum usable slot preference, border policy, insertion preference, and overflow override. Do not make every KWin property a generic rule action. Geometry, maximize/fullscreen, stacking, focus, and native window rules can conflict; each supported action needs a precedence and yield policy.
+Actions initially cover mode, preferred layout/context placement where supported, minimum usable slot preference, border policy, insertion preference, and overflow override. Do not make every KWin property a generic rule action.
+
+*Implementation note (T25).* Implemented: `mode`, `border`, `insert`, and `minSize` (the minimum usable slot: an extra layout minimum, clamped to the client's maximum, whose infeasibility goes through the overflow policy). Context matchers (`outputName`, `desktopName`, `desktopId`, `activityId`) are memoized per context, separately from the metadata matchers, so a membership change re-runs only them. Not implemented, and rejected with an error naming the alternative: a per-window `layout` (layouts belong to contexts; use an override), context placement (`output`/`desktop`/`activity`: a script-side send at adoption would race the client's own placement and re-enter the engine from KWin's synchronous membership signals; KWin's own window rules already place windows before Plastile classifies them), and `overflow` (only `float-new` exists, so an override has nothing to select). Geometry, maximize/fullscreen, stacking, focus, and native window rules can conflict; each supported action needs a precedence and yield policy.
 
 A rule result includes its rule IDs and field-level reasons. `explain-window` returns the normalized metadata, context, matched rules, final actions, constraint exceptions, and ownership state. Titles are redacted from exported diagnostics by default.
 

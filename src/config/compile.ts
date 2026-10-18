@@ -30,8 +30,13 @@ export function compileConfig(flat: Readonly<Record<string, unknown>>, revision:
 
     const diag = doc ? doc.diagnostics : {};
     const rules = doc ? ordered(doc.rules) : [];
-    let usesTitleRules = false;
-    for (const r of rules) if (r.title) usesTitleRules = true;
+    const overrides = doc ? ordered(doc.overrides) : [];
+    let usesTitleRules = false, usesDesktopNames = false;
+    for (const r of rules) {
+      if (r.title) usesTitleRules = true;
+      if (r.desktopName) usesDesktopNames = true;
+    }
+    for (const o of overrides) if (o.desktopName) usesDesktopNames = true;
 
     const snapshot: ConfigSnapshot = Object.freeze({
       revision,
@@ -41,12 +46,15 @@ export function compileConfig(flat: Readonly<Record<string, unknown>>, revision:
       diagnostics: diag.level !== undefined ? diag.level
         : f.diagnostics.level !== undefined ? f.diagnostics.level : DEFAULT_DIAGNOSTICS,
       usesTitleRules,
+      usesDesktopNames,
       compiled: Object.freeze({
-        overrides: Object.freeze(doc ? ordered(doc.overrides) : []),
+        overrides: Object.freeze(overrides),
         rules: Object.freeze(rules),
+        contextualRules: Object.freeze(rules.filter((r) => r.contextual)),
         baseChain: Object.freeze(chain),
         ruleCache: new Map(),
         contextCache: new Map(),
+        ruleContextCache: new Map(),
       }),
     });
     return { ok: true, snapshot, warnings: s.warnings };

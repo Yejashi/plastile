@@ -6,7 +6,7 @@ import type { BspSettings, LayoutKind, MasterStackSettings, WindowKind } from ".
 import { compileStringMatcher } from "./matchers.ts";
 import type { CompiledOverride, CompiledRule, DiagnosticsLevel, RuleActions, SettingsPatch, StringMatcher } from "./types.ts";
 import {
-  MAX_GAP, MAX_JSON_LENGTH, MAX_MASTER_COUNT, MAX_OVERRIDES, MAX_RULES, MAX_TRACE, MIN_TRACE,
+  MAX_GAP, MAX_JSON_LENGTH, MAX_MASTER_COUNT, MAX_MIN_SIZE, MAX_OVERRIDES, MAX_RULES, MAX_TRACE, MIN_TRACE,
   at, bool, err, expected, finite, has, idx, intIn, objectWith, oneOf, openRatio, ratioStep, str, warn, type Sink,
 } from "./validate.ts";
 
@@ -314,7 +314,7 @@ function readOverride(s: Sink, o: Record<string, unknown>, path: string, id: str
   const errorsBefore = s.errors.length;
   const mp = at(path, "match");
   if (!has(o, "match")) return err(s, mp, "required");
-  const m = objectWith(s, o.match, mp, ["outputName", "desktopName", "desktopId", "activityId"]);
+  const m = objectWith(s, o.match, mp, CONTEXT_MATCH);
   if (!m) return null;
   if (Object.keys(m).length === 0) return err(s, mp, "empty match would apply everywhere; use defaults instead");
   const outputName = optMatcher(s, m, mp, "outputName");
@@ -328,17 +328,40 @@ function readOverride(s: Sink, o: Record<string, unknown>, path: string, id: str
   return { id, outputName, desktopName, desktopId, activityId, set };
 }
 
+/** Matcher fields for the window's context, shared by overrides and rules (CONFIGURATION §4). */
+const CONTEXT_MATCH = ["outputName", "desktopName", "desktopId", "activityId"];
+
+const PLACEMENT = "not supported: Plastile does not move windows to another output, desktop or activity on its own. " +
+  "Use a KWin window rule (System Settings, Window Rules: Screen, Virtual Desktop, Activities); Plastile then tiles " +
+  "the window where KWin placed it, and a rule here can match that place with outputName, desktopName or activityId";
+
+/**
+ * Rule actions named in CONFIGURATION §4 that this version does not implement, each with
+ * what to use instead. Reported as errors rather than "unknown key", so the fix is in the message.
+ */
+const UNSUPPORTED_ACTIONS: Readonly<Record<string, string>> = {
+  layout: "not a window action: a layout belongs to an output or desktop; use overrides[].set.layout with a match",
+  output: PLACEMENT, outputName: PLACEMENT, screen: PLACEMENT, desktop: PLACEMENT, desktopName: PLACEMENT,
+  desktopId: PLACEMENT, activity: PLACEMENT, activityId: PLACEMENT,
+  overflow: "not supported per window: float-new is the only overflow policy in this version; " +
+    "use minSize to float a window instead of giving it a tile smaller than it can use",
+};
+
 function readRule(s: Sink, o: Record<string, unknown>, path: string, id: string): CompiledRule | null {
   if (!objectWith(s, o, path, ["id", "priority", "match", "actions"])) return null;
   const errorsBefore = s.errors.length;
   const mp = at(path, "match");
   if (!has(o, "match")) return err(s, mp, "required");
-  const m = objectWith(s, o.match, mp, ["appId", "resourceName", "title", "windowType", "transient"]);
+  const m = objectWith(s, o.match, mp, ["appId", "resourceName", "title", "windowType", "transient", ...CONTEXT_MATCH]);
   if (!m) return null;
   if (Object.keys(m).length === 0) return err(s, mp, "empty match would apply to every window; give at least one field");
   const appId = optMatcher(s, m, mp, "appId");
   const resourceName = optMatcher(s, m, mp, "resourceName");
   const title = optMatcher(s, m, mp, "title");
+  const outputName = optMatcher(s, m, mp, "outputName");
+  const desktopName = optMatcher(s, m, mp, "desktopName");
+  const desktopId = optMatcher(s, m, mp, "desktopId");
+  const activityId = optMatcher(s, m, mp, "activityId");
   let windowType: Set<WindowKind> | null = null;
   if (has(m, "windowType")) {
     const tp = at(mp, "windowType");
@@ -357,13 +380,29 @@ function readRule(s: Sink, o: Record<string, unknown>, path: string, id: string)
 
   const ap = at(path, "actions");
   if (!has(o, "actions")) return err(s, ap, "required");
-  const a = objectWith(s, o.actions, ap, ["mode", "border", "insert"]);
+  const a = objectWith(s, o.actions, ap, ["mode", "border", "insert", "minSize", ...Object.keys(UNSUPPORTED_ACTIONS)]);
   if (!a) return null;
-  const actions: { mode?: RuleActions["mode"]; border?: RuleActions["border"]; insert?: RuleActions["insert"] } = {};
+  for (const k of Object.keys(UNSUPPORTED_ACTIONS)) if (has(a, k)) err(s, at(ap, k), UNSUPPORTED_ACTIONS[k]);
+  const actions: { mode?: RuleActions["mode"]; border?: RuleActions["border"]; insert?: RuleActions["insert"];
+                   minSize?: RuleActions["minSize"] } = {};
   if (has(a, "mode")) { const x = oneOf(s, a.mode, at(ap, "mode"), MODES); if (x !== null) actions.mode = x; }
   if (has(a, "border")) { const x = oneOf(s, a.border, at(ap, "border"), BORDERS); if (x !== null) actions.border = x; }
   if (has(a, "insert")) { const x = oneOf(s, a.insert, at(ap, "insert"), MS_INSERT); if (x !== null) actions.insert = x; }
+  if (has(a, "minSize")) {
+    // Minimum usable slot: a frame size below which the tile is not worth having (overflow floats it).
+    const zp = at(ap, "minSize");
+    const z = objectWith(s, a.minSize, zp, ["width", "height"]);
+    if (z) {
+      const dim = (k: string): number | null =>
+        has(z, k) ? intIn(s, finite(s, z[k], at(zp, k)), at(zp, k), 1, MAX_MIN_SIZE) : 0;
+      const width = dim("width"), height = dim("height");
+      if (!has(z, "width") && !has(z, "height")) err(s, zp, "give width, height or both (logical pixels)");
+      else if (width !== null && height !== null) actions.minSize = { width, height };
+    }
+  }
   if (s.errors.length !== errorsBefore) return null;
   if (Object.keys(actions).length === 0) warn(s, ap, "empty actions have no effect");
-  return { id, appId, resourceName, title, windowType, transient, actions };
+  const contextual = outputName !== null || desktopName !== null || desktopId !== null || activityId !== null;
+  return { id, appId, resourceName, title, windowType, transient, outputName, desktopName, desktopId, activityId, contextual,
+           actions };
 }

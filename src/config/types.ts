@@ -21,6 +21,8 @@ export interface RuleActions {
   readonly mode?: "tiled" | "floating" | "excluded";
   readonly border?: "normal" | "none" | "keep";
   readonly insert?: "end" | "after-focus" | "master";
+  /** Minimum usable frame size for the window's tile (logical px, 0 = no preference); a smaller slot overflows. */
+  readonly minSize?: { readonly width: number; readonly height: number };
 }
 
 export interface WindowRuleResult {
@@ -44,6 +46,8 @@ export interface ConfigSnapshot {
   readonly diagnostics: DiagnosticsLevel;
   /** False lets the engine skip rule re-evaluation on title changes (Q03). */
   readonly usesTitleRules: boolean;
+  /** Some override or rule matches desktop names: a desktop rename must re-resolve. */
+  readonly usesDesktopNames: boolean;
   /** @internal compiled overrides/rules and caches; not part of the public contract. */
   readonly compiled: CompiledConfig;
 }
@@ -86,24 +90,42 @@ export interface CompiledRule {
   readonly title: StringMatcher | null;
   readonly windowType: ReadonlySet<WindowKind> | null;
   readonly transient: boolean | null;
+  /** Context matchers (CONFIGURATION §4), tested against the window's single context only. */
+  readonly outputName: StringMatcher | null;
+  readonly desktopName: StringMatcher | null;
+  readonly desktopId: StringMatcher | null;
+  readonly activityId: StringMatcher | null;
+  /** At least one context matcher is set. */
+  readonly contextual: boolean;
   readonly actions: RuleActions;
 }
 
-/** Title-free part of a window's rule resolution: the shared cache entry (no titles in it). */
+/**
+ * Metadata part of a window's rule resolution: the shared cache entry. Neither titles nor
+ * contexts enter it, so a title or membership change re-runs only the matchers that read them.
+ */
 export interface RuleBase {
-  /** Rules whose title-free matchers passed, in application order; some may still test the title. */
+  /** Rules whose metadata matchers passed, in application order; some may still test the title or context. */
   readonly matched: readonly CompiledRule[];
-  /** The final result when none of `matched` tests the title; null otherwise. */
+  /** The final result when none of `matched` tests the title or the context; null otherwise. */
   readonly result: WindowRuleResult | null;
+  readonly titled: boolean;
+  readonly contextual: boolean;
+  /** Without title rules: results per context key (bounded; mutated only by resolveWindow). */
+  readonly byContext: Map<string, WindowRuleResult> | null;
 }
 
 export interface CompiledConfig {
   /** Sorted by priority ascending, then declaration order. */
   readonly overrides: readonly CompiledOverride[];
   readonly rules: readonly CompiledRule[];
+  /** The rules with context matchers, in application order. */
+  readonly contextualRules: readonly CompiledRule[];
   /** Base explanation chain for `defaults`, e.g. ["builtin", "flat", "json.defaults"]. */
   readonly baseChain: readonly string[];
   /** Bounded memo tables; mutated only by resolve functions, cleared when full. */
   readonly ruleCache: Map<string, RuleBase>;
   readonly contextCache: Map<string, { readonly settings: ContextSettings; readonly chain: readonly string[] }>;
+  /** Per context key: the contextual rules whose context matchers pass there. */
+  readonly ruleContextCache: Map<string, ReadonlySet<CompiledRule>>;
 }

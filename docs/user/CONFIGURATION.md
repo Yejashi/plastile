@@ -49,7 +49,7 @@ These are the keys in `kwinrc` and the fields of the settings dialog. Defaults c
 | `schemaVersion` | yes | Must be `1`. Any other value is rejected, including newer ones. |
 | `defaults` | no | A settings patch applied on top of the flat keys, for every context. |
 | `overrides` | no | Up to 64 per-context settings patches, selected by output, desktop or activity. |
-| `rules` | no | Up to 256 window rules, selected by application id, resource name, title, window type or transience. |
+| `rules` | no | Up to 256 window rules, selected by application id, resource name, title, window type, transience, output, desktop or activity. |
 | `diagnostics` | no | `level` and `traceCapacity`, with the same values as the flat keys. The JSON wins when both are set. |
 
 ### Settings patch
@@ -93,7 +93,7 @@ An override changes settings for the contexts it matches:
   - **`activityId`:** the activity UUID, also when only one activity exists. Without the activity service (kactivitymanagerd not running), the context uses the literal value `default`; contexts move to the real activity when the service starts.
 - **`set`** (required) is a settings patch. An empty `set` is a warning.
 
-The **override engine** (matching, priority order, field merging) is unit-tested in Node. Settings from flat keys were measured live in nested KWin. A per-desktop or per-output override has **not** been exercised end to end in nested KWin. Activities are **untested**.
+The **override engine** (matching, priority order, field merging) is unit-tested in Node. Settings from flat keys were measured live in nested KWin, and so was a `desktopName` override following a desktop rename (scenario `config-desktop-rename-Q02`). A per-output override has **not** been exercised end to end in nested KWin. Activity matchers are unit-tested only.
 
 ### Rules
 
@@ -112,6 +112,7 @@ A rule changes how a window is treated:
 - **`title`:** a string matcher against the window caption. Plastile watches captions only while at least one rule uses `title`, including title rules activated later by a reconfigure (the current captions are read at that moment). With no title rules it never re-evaluates on caption changes. A caption change re-tests only the rules that use `title`; the other matchers' results for that window are reused.
 - **`windowType`:** one value, or a list, from `normal`, `dialog`, `utility`, `toolbar`, `menu`, `splash`, `dock`, `desktop`, `notification`, `tooltip`, `popup`, `osd`, `applet-popup`, `dnd-icon`, `other`.
 - **`transient`:** a boolean. `true` matches windows that have a parent window.
+- **`outputName`, `desktopName`, `desktopId`, `activityId`:** string matchers against the window's context, with the same meaning as in [overrides](#overrides). `outputName` is the connector name, which is also the output's identity in this version. These fields match only a window that belongs to exactly one context; a window on all desktops, on several desktops or activities, or without an output is never matched by them. When the window moves to another desktop, output or activity, only these matchers are re-tested (once per context; the other matchers' results for that window are reused), and renaming a desktop re-tests `desktopName`.
 
 **`actions`** (required; empty is a warning):
 
@@ -121,10 +122,19 @@ A rule changes how a window is treated:
 - **`border`:** `normal`, `none` or `keep` (the default).
   - `none` removes the decoration while the window is tiled, and restores it when the window leaves the layout or Plastile unloads. If you changed the border yourself in between, your change wins.
   - `normal` forces the decoration on while tiled.
-  - This action is covered by a unit test only, not by a nested KWin scenario.
-- **`insert`:** `after-focus`, `end` or `master`. It sets where this window enters a master/stack order, replacing `masterInsert` for that window. This action is **untested** beyond validation.
+  - Measured in nested KWin (scenario `classify-rule-border-Q10-T16`), including a user's own border change winning.
+- **`insert`:** `after-focus`, `end` or `master`. It sets where this window enters the context's order, replacing `masterInsert` for that window. The order is what master/stack lays out and what monocle cycles through; in BSP the new window splits the tile chosen by `bsp.insert`. This action is **untested** beyond validation.
+- **`minSize`:** `{ "width": W, "height": H }` in logical pixels (each 1–8192; either may be omitted). The smallest tile this window is useful in. Layouts treat it as the window's minimum size, so a tile is never made smaller; when the layout cannot give it that much room, the window floats as an overflow (`exception: overflow: ...`) and gets a new attempt when room may have appeared (another window closes, the work area or the configuration changes). It never exceeds the application's own maximum size. Measured in nested KWin (scenario `rules-context-T25`) and unit-tested with the mock compositor.
 
-Rules cannot yet depend on the screen or desktop a window is on, and overrides cannot change rules.
+Actions that are **not supported** in this version are rejected with a message that names the alternative:
+
+| Action | Why not, and what to use instead |
+|---|---|
+| `layout` | A layout belongs to an output or desktop, not a window. Use an override: `overrides[].set.layout` with a `match`. |
+| `output`, `outputName`, `screen`, `desktop`, `desktopName`, `desktopId`, `activity`, `activityId` | Plastile does not move windows between outputs, desktops or activities on its own. Use a KWin window rule (System Settings, *Window Rules*: *Screen*, *Virtual Desktop*, *Activities*); KWin applies it before Plastile classifies the window, and a Plastile rule can then match that place with `outputName`, `desktopName` or `activityId`. |
+| `overflow` | `float-new` is the only overflow policy, so there is nothing to override per window. Use `minSize` to make a window float instead of taking a tile smaller than it can use. |
+
+Overrides cannot change rules.
 
 ### String matchers
 
@@ -242,7 +252,7 @@ All three examples were compiled with the runtime's own `compileConfig` in Node,
 
 ## How windows are classified
 
-**When.** The decision is made when a window appears. It is made again when the window's application id or resource name, transience or modality, or its desktop or output membership change, when a new configuration is activated, and when a desktop is renamed. A title change re-evaluates only if some rule uses `title`. The window type is read with the other metadata at those moments; KWin does not report a later type change.
+**When.** The decision is made when a window appears. It is made again when the window's application id or resource name, transience or modality, or its desktop or output membership change, when a new configuration is activated, and when a desktop is renamed while some override or rule uses `desktopName`. A title change re-evaluates only if some rule uses `title`. The window type is read with the other metadata at those moments; KWin does not report a later type change.
 
 **Size constraints** (minimum and maximum size, fixed size) have no change notification in KWin 6.7.5. Plastile re-reads them, and re-classifies if they changed, at these points only:
 
@@ -283,7 +293,7 @@ The line is `plastile info explain {...}` with these fields:
 | `mode` | `tiled`, `floating`, `excluded`, `native` or `pending`. |
 | `userMode` | Your *Toggle floating* choice, if any. |
 | `decision` | `mode`, `source`, `reason` and `ruleIds` (the rules that decided the mode). |
-| `rules` | `null` when no rule matches; otherwise `ids` (every matched rule, in evaluation order), the final `actions` (`mode`, `border`, `insert`) and `reasons` (which rule set each action). |
+| `rules` | `null` when no rule matches; otherwise `ids` (every matched rule, in evaluation order), the final `actions` (`mode`, `border`, `insert`, `minSize` as `WxH`) and `reasons` (which rule set each action). |
 | `context` | Output name, desktop id and activity. |
 | `layout` | The context's current layout. |
 | `suspensions` | Any of `minimized`, `fullscreen`, `maximized`, `interactive`, `hidden`. |
@@ -312,6 +322,8 @@ The line is `plastile info explain {...}` with these fields:
 - matchers with none or several of `exact`, `glob` and `regex`
 - unsupported regex flags, or patterns that do not compile
 - `followOnSend`, `multiContextWindows` or `animation` at any non-inert value
+- a rule action this version does not support (`layout`, placement on an output, desktop or activity, `overflow`), each with the alternative in the message
+- a `minSize` with neither `width` nor `height`, or a value outside 1–8192
 
 **Warnings** (the configuration still activates): an empty `set`, empty `actions`. (Unknown flat keys would be a warning too, but in KWin they never reach the validator; see [Flat keys](#flat-keys).)
 

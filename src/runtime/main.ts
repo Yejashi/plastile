@@ -5,7 +5,9 @@ import { Engine, type EngineOptions } from "../core/engine.ts";
 import { COMMANDS, type CommandResult } from "../core/commands.ts";
 import type { RuntimeServices } from "../core/ports.ts";
 import type { ContextKey } from "../core/types.ts";
-import { compileConfig, FLAT_KEYS, formatError, resolveContext, resolveWindow, type ConfigSnapshot } from "../config/index.ts";
+import {
+  compileConfig, FLAT_KEYS, formatError, resolveContext, resolveWindow, type ConfigSnapshot, type ContextInfo,
+} from "../config/index.ts";
 import { KwinAdapter } from "../adapters/kwin/adapter.ts";
 import type { KKWin, KOptions, KQt, KSignal, KWorkspace } from "../adapters/kwin/kwinTypes.ts";
 
@@ -94,22 +96,7 @@ export function createRuntime(env: RuntimeEnv): Runtime {
   };
 
   const adapter = new KwinAdapter(env.workspace, env.qt);
-  const options = (snap: ConfigSnapshot): EngineOptions => ({
-    settingsFor: (key: ContextKey) => resolveContext(snap, {
-      outputName: key.output, desktopId: key.desktop, desktopName: adapter.desktopNameOf(key.desktop), activityId: key.activity,
-    }).settings,
-    rulesFor: (meta, key) => {
-      const r = resolveWindow(snap, meta, key ? {
-        outputName: key.output, desktopId: key.desktop, desktopName: adapter.desktopNameOf(key.desktop), activityId: key.activity,
-      } : null);
-      if (r.ruleIds.length === 0) return null;
-      return { mode: r.actions.mode, border: r.actions.border, insert: r.actions.insert, ruleIds: r.ruleIds, reasons: r.reasons };
-    },
-    titleRules: snap.usesTitleRules,
-    clockNs: env.clockNs,
-    traceCapacity: snap.traceCapacity,
-    traceEnabled: snap.diagnostics !== "off",
-  });
+  const options = (snap: ConfigSnapshot): EngineOptions => ({ ...engineOptions(snap, adapter), clockNs: env.clockNs });
 
   const engine = new Engine(adapter, svc, options(snapshot!));
   const initial = adapter.attach(engine, snapshot!.usesTitleRules);
@@ -131,9 +118,10 @@ export function createRuntime(env: RuntimeEnv): Runtime {
   env.options.configChanged.connect(onConfig);
   optionConns.push({ signal: env.options.configChanged, fn: onConfig });
   // desktopName matchers read the names when contexts and rules resolve: a rename
-  // re-resolves the active configuration (settings and classification), as an activation does.
+  // re-resolves the active configuration (settings and classification), as an activation
+  // does. Without such matchers a rename changes nothing and costs nothing.
   adapter.onDesktopNamesChanged = () => {
-    if (engine.isAlive() && snapshot) engine.configure(options(snapshot));
+    if (engine.isAlive() && snapshot && snapshot.usesDesktopNames) engine.configure(options(snapshot));
   };
 
   const dispatch = (id: string): CommandResult | null => {
@@ -191,6 +179,34 @@ export function createRuntime(env: RuntimeEnv): Runtime {
       adapter.detach();
       log("info", "stopped");
     },
+  };
+}
+
+/** Context names for configuration matchers (the adapter in KWin; a table in tests). */
+export interface ContextNames {
+  desktopNameOf(id: string): string;
+}
+
+/**
+ * Engine options for a configuration snapshot: precedence-resolved settings per context and
+ * rule actions per window in its context (CONFIGURATION §3-§4). Output identity is the
+ * connector name, so the context's output id is also its outputName.
+ */
+export function engineOptions(snap: ConfigSnapshot, names: ContextNames): EngineOptions {
+  const info = (key: ContextKey): ContextInfo => ({
+    outputName: key.output, desktopId: key.desktop, desktopName: names.desktopNameOf(key.desktop), activityId: key.activity,
+  });
+  return {
+    settingsFor: (key) => resolveContext(snap, info(key)).settings,
+    rulesFor: (meta, key) => {
+      const r = resolveWindow(snap, meta, key ? info(key) : null);
+      if (r.ruleIds.length === 0) return null;
+      return { mode: r.actions.mode, border: r.actions.border, insert: r.actions.insert, minSize: r.actions.minSize,
+               ruleIds: r.ruleIds, reasons: r.reasons };
+    },
+    titleRules: snap.usesTitleRules,
+    traceCapacity: snap.traceCapacity,
+    traceEnabled: snap.diagnostics !== "off",
   };
 }
 

@@ -11,6 +11,7 @@ export const MAX_ERRORS = 100;
 export const MAX_JSON_LENGTH = 524288; // 512 KiB of configJson text
 export const MAX_GAP = 200;
 export const MAX_MASTER_COUNT = 8;
+export const MAX_MIN_SIZE = 8192; // rule minSize, logical px per dimension
 export const MAX_RATIO_STEP = 0.5;
 export const MIN_TRACE = 64;
 export const MAX_TRACE = 65536;

@@ -39,6 +39,8 @@ export interface WindowRules {
   readonly mode?: "tiled" | "floating" | "excluded";
   readonly border?: "normal" | "none" | "keep";
   readonly insert?: "end" | "after-focus" | "master";
+  /** Minimum usable frame size for the tile (0 = none); a smaller slot overflows (CONFIGURATION §4). */
+  readonly minSize?: Size;
   /** Every matched rule, in evaluation order. */
   readonly ruleIds: readonly string[];
   /** Field-level reasons: which rule set each final action (CONFIGURATION §4). */
@@ -543,23 +545,31 @@ export class Engine {
   }
 
   private effectiveConstraints(r: Rec): Constraints {
-    if (!r.learnedMin && !r.learnedMax) return r.base;
+    // A rule's minSize is a preference (minimum usable slot), never above what the client allows.
+    const pref = r.rules?.minSize;
+    if (!r.learnedMin && !r.learnedMax && !pref) return r.base;
+    const maxW = Math.min(r.base.maxFrame.width, r.learnedMax?.width ?? Infinity);
+    const maxH = Math.min(r.base.maxFrame.height, r.learnedMax?.height ?? Infinity);
     return {
       minFrame: {
-        width: Math.max(r.base.minFrame.width, r.learnedMin?.width ?? 0),
-        height: Math.max(r.base.minFrame.height, r.learnedMin?.height ?? 0),
+        width: Math.max(r.base.minFrame.width, r.learnedMin?.width ?? 0, Math.min(pref?.width ?? 0, maxW)),
+        height: Math.max(r.base.minFrame.height, r.learnedMin?.height ?? 0, Math.min(pref?.height ?? 0, maxH)),
       },
-      maxFrame: {
-        width: Math.min(r.base.maxFrame.width, r.learnedMax?.width ?? Infinity),
-        height: Math.min(r.base.maxFrame.height, r.learnedMax?.height ?? Infinity),
-      },
+      maxFrame: { width: maxW, height: maxH },
       fixed: r.base.fixed,
     };
   }
 
   private reclassify(r: Rec, why: string): void {
     const key = this.singleContextKey(r.membership);
+    const prevMin = r.rules?.minSize;
     r.rules = this.opts.rulesFor ? this.opts.rulesFor(r.meta, key) : null;
+    const nextMin = r.rules?.minSize;
+    if (prevMin !== nextMin && (!prevMin || !nextMin || prevMin.width !== nextMin.width || prevMin.height !== nextMin.height)) {
+      // Rule minSize changed (e.g. a title or context rule started to match): the tile's constraints changed.
+      if (r.mode === "tiled" && r.ctx) { this.markDirty(r.ctx); this.retryOverflow(contextId(r.ctx)); }
+      else if (isOverflow(r)) this.retryOverflow(null, r.id);
+    }
     r.decision = classify({
       meta: r.meta, membership: r.membership, constraints: r.base, frameSize: r.frame,
       singleContext: key !== null, rule: r.rules,
@@ -1455,6 +1465,7 @@ function explainRules(w: WindowRules): Record<string, unknown> {
   if (w.mode !== undefined) actions.mode = w.mode;
   if (w.border !== undefined) actions.border = w.border;
   if (w.insert !== undefined) actions.insert = w.insert;
+  if (w.minSize !== undefined) actions.minSize = `${w.minSize.width}x${w.minSize.height}`;
   return { ids: w.ruleIds.slice(), actions, reasons: { ...(w.reasons ?? {}) } };
 }
 

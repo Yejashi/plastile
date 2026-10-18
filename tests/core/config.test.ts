@@ -394,6 +394,125 @@ test("a title change evaluates only title rules and does not churn the shared ca
   assert.deepEqual(osd.reasons, { mode: "builtin kind:osd; ignored rule pip", border: "ignored (builtin kind:osd): rule kde" });
 });
 
+test("rule context matchers: output, desktop name/id, activity, in priority order (T25, Q02)", () => {
+  const s = json({ schemaVersion: 1, rules: [
+    { id: "dp2-float", match: { outputName: { glob: "DP-*" } }, actions: { mode: "floating" } },
+    { id: "writing-kate", match: { appId: "org.kde.kate", desktopName: "Writing" }, actions: { border: "none", mode: "tiled" } },
+    { id: "by-desktop-id", match: { desktopId: "d-uuid-2" }, actions: { insert: "master" } },
+    { id: "by-activity", priority: -1, match: { activityId: { regex: "^a-uuid-" } }, actions: { insert: "end", border: "normal" } },
+    { id: "kate-min", match: { appId: "org.kde.kate" }, actions: { minSize: { width: 600 } } },
+  ] });
+  const kate = meta({ appId: "org.kde.kate", resourceName: "kate" });
+  const main = resolveWindow(s, kate, CTX);
+  assert.deepEqual(main.ruleIds, ["by-activity", "kate-min"], "only the activity matcher passes on HDMI-A-1/Main");
+  assert.deepEqual(main.actions, { insert: "end", border: "normal", minSize: { width: 600, height: 0 } });
+  const writing = resolveWindow(s, kate, { ...CTX, desktopName: "Writing", desktopId: "d-uuid-2" });
+  assert.deepEqual(writing.ruleIds, ["by-activity", "writing-kate", "by-desktop-id", "kate-min"]);
+  assert.deepEqual(writing.actions, { insert: "master", border: "none", mode: "tiled", minSize: { width: 600, height: 0 } });
+  assert.deepEqual(writing.reasons, { insert: "rule by-desktop-id", border: "rule writing-kate", mode: "rule writing-kate",
+                                      minSize: "rule kate-min" });
+  const dp2 = resolveWindow(s, kate, { ...CTX, outputName: "DP-2", desktopName: "Writing" });
+  assert.equal(dp2.actions.mode, "tiled", "a later rule wins per field over the output rule");
+  assert.deepEqual(dp2.ruleIds, ["by-activity", "dp2-float", "writing-kate", "kate-min"]);
+  assert.equal(resolveWindow(s, meta(), { ...CTX, outputName: "DP-2" }).actions.mode, "floating");
+  // No single context (all desktops, several activities): context rules never apply.
+  assert.deepEqual(resolveWindow(s, kate, null).ruleIds, ["kate-min"]);
+  // Context matchers with a built-in exclusion: the exclusion still wins, the attempt is explained.
+  const dock = resolveWindow(s, meta({ kind: "dock" }), { ...CTX, outputName: "DP-1" });
+  assert.deepEqual(dock.actions, { mode: "excluded" });
+  assert.equal(dock.reasons.mode, "builtin kind:dock; ignored rule dp2-float");
+});
+
+test("rule context matchers are memoized per context, metadata matchers per metadata (T25, CONFIGURATION §4)", () => {
+  const s = json({ schemaVersion: 1, rules: [
+    { id: "kde", match: { appId: { regex: "^org\\.kde\\." } }, actions: { border: "none" } },
+    { id: "dp", match: { outputName: { regex: "^DP-" } }, actions: { mode: "floating" } },
+    { id: "writing", match: { desktopName: { regex: "^Writing$" }, appId: { glob: "org.kde.*" } }, actions: { insert: "master" } },
+  ] });
+  const counts = { app: 0, out: 0, desk: 0 };
+  const test0 = RegExp.prototype.test;
+  RegExp.prototype.test = function (this: RegExp, v: string) {
+    if (this.source === "^org\\.kde\\.") counts.app++;
+    if (this.source === "^DP-") counts.out++;
+    if (this.source === "^Writing$") counts.desk++;
+    return test0.call(this, v);
+  };
+  const konsole = (title: string) => meta({ appId: "org.kde.konsole", resourceName: "konsole", title });
+  const dp1: ContextInfo = { ...CTX, outputName: "DP-1", desktopName: "Writing" };
+  let first, again, other;
+  try {
+    first = resolveWindow(s, konsole("a"), dp1);
+    for (let i = 0; i < 500; ++i) again = resolveWindow(s, konsole(`t${i}`), dp1);
+    assert.deepEqual(counts, { app: 1, out: 1, desk: 1 }, "unchanged metadata and context: every matcher ran once");
+    assert.equal(again, first, "the per-context result is memoized (identical object)");
+    // Metadata changes in the same context: metadata matchers run per new metadata, context matchers never.
+    for (let i = 0; i < 50; ++i) resolveWindow(s, meta({ appId: `org.kde.app${i}`, resourceName: `app${i}` }), dp1);
+    assert.deepEqual(counts, { app: 51, out: 1, desk: 1 }, "a metadata change re-runs no context matcher");
+    // Membership change (another context): only the context matchers run, once per new context.
+    other = resolveWindow(s, konsole("b"), CTX);
+    for (let i = 0; i < 20; ++i) resolveWindow(s, konsole(`u${i}`), CTX);
+    assert.deepEqual(counts, { app: 51, out: 2, desk: 2 }, "a context change re-runs no metadata matcher");
+  } finally {
+    RegExp.prototype.test = test0;
+  }
+  assert.deepEqual(first!.ruleIds, ["kde", "dp", "writing"]);
+  assert.deepEqual(first!.actions, { border: "none", mode: "floating", insert: "master" });
+  assert.deepEqual(other!.ruleIds, ["kde"]);
+  assert.ok(Object.isFrozen(first) && Object.isFrozen(first!.actions));
+  // A context + title rule combination: context from the memo, title re-tested per call.
+  const t = json({ schemaVersion: 1, rules: [
+    { id: "dp-busy", match: { outputName: "DP-1", title: { glob: "busy*" } }, actions: { mode: "floating" } }] });
+  assert.deepEqual(resolveWindow(t, konsole("busy: make"), dp1).ruleIds, ["dp-busy"]);
+  assert.deepEqual(resolveWindow(t, konsole("idle"), dp1).ruleIds, []);
+  assert.deepEqual(resolveWindow(t, konsole("busy: make"), CTX).ruleIds, []);
+  // Bounded memo tables.
+  for (let i = 0; i < 300; ++i) resolveWindow(s, konsole("x"), { ...CTX, desktopId: `d${i}` });
+  assert.ok(s.compiled.ruleContextCache.size <= 64);
+  assert.deepEqual(resolveWindow(s, konsole("x"), dp1).ruleIds, ["kde", "dp", "writing"]);
+});
+
+test("rule actions: minSize validation and actionable errors for unsupported actions (T25)", () => {
+  const s = json({ schemaVersion: 1, rules: [
+    { id: "w", match: { appId: "a" }, actions: { minSize: { width: 640, height: 400 } } },
+    { id: "h", match: { appId: "b" }, actions: { minSize: { height: 300 } } }] });
+  assert.deepEqual(resolveWindow(s, meta({ appId: "a" }), CTX).actions.minSize, { width: 640, height: 400 });
+  assert.deepEqual(resolveWindow(s, meta({ appId: "b" }), CTX).actions.minSize, { width: 0, height: 300 });
+  const e = docErrors({ schemaVersion: 1, rules: [
+    { id: "a", match: { appId: "a" }, actions: { minSize: {} } },
+    { id: "b", match: { appId: "a" }, actions: { minSize: { width: 0, depth: 2 } } },
+    { id: "c", match: { appId: "a" }, actions: { minSize: { width: 1.5, height: 9000 } } },
+    { id: "d", match: { appId: "a" }, actions: { layout: "monocle" } },
+    { id: "e", match: { appId: "a" }, actions: { desktop: "Writing", output: "DP-1" } },
+    { id: "f", match: { appId: "a" }, actions: { overflow: "float-new" } },
+    { id: "g", match: { outputName: { glob: "DP-*", regex: "x" }, activityId: 3 }, actions: { mode: "floating" } },
+    { id: "h", match: { desktopName: { regex: "(" } }, actions: { mode: "floating" } },
+  ] });
+  for (const p of [
+    "rules[0].actions.minSize: give width, height or both",
+    "rules[1].actions.minSize.width: must be an integer in 1..8192",
+    "rules[1].actions.minSize.depth: unknown key",
+    "rules[2].actions.minSize.width: must be an integer in 1..8192",
+    "rules[2].actions.minSize.height: must be an integer in 1..8192",
+    "rules[3].actions.layout: not a window action: a layout belongs to an output or desktop; use overrides[].set.layout",
+    "rules[4].actions.desktop: not supported: Plastile does not move windows",
+    "rules[4].actions.output: not supported: Plastile does not move windows",
+    "rules[5].actions.overflow: not supported per window: float-new is the only overflow policy",
+    "rules[6].match.outputName: matcher needs exactly one of",
+    "rules[6].match.activityId: must be a string",
+    "rules[7].match.desktopName.regex: invalid regex",
+  ]) hasError(e, p);
+  assert.ok(e.some((x) => x.includes("KWin window rule")), "placement errors name the KWin alternative");
+  assert.ok(!e.some((x) => x.endsWith("unknown key") && /actions\.(layout|desktop|output|overflow)/.test(x)),
+    "documented-but-unsupported actions are explained, not reported as unknown");
+});
+
+test("usesDesktopNames reports whether a desktop rename can change any resolution", () => {
+  assert.equal(json({ schemaVersion: 1, rules: [{ id: "r", match: { desktopId: "x" }, actions: { mode: "floating" } }] }).usesDesktopNames, false);
+  assert.equal(json({ schemaVersion: 1, rules: [{ id: "r", match: { desktopName: "x" }, actions: { mode: "floating" } }] }).usesDesktopNames, true);
+  assert.equal(json({ schemaVersion: 1, overrides: [{ id: "o", match: { desktopName: "x" }, set: { layout: "bsp" } }] }).usesDesktopNames, true);
+  assert.equal(ok(compileConfig({}, 1)).usesDesktopNames, false);
+});
+
 test("warnings for inert entries do not block activation", () => {
   const r = compileConfig({ configJson: JSON.stringify({
     schemaVersion: 1,
