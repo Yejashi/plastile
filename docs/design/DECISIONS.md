@@ -164,6 +164,81 @@ unload.
 leaves Plastile working in memory and reports one diagnostic. Configuration stays in KConfig (`readConfig`).
 The persisted file is state, not configuration: deleting it resets layout preferences only.
 
+### Implementation (T27, 2026-10-18)
+
+`package/contents/ui/Persistence.qml` creates two QtCore `Settings` objects inside `Qt.createQmlObject`, so a
+missing or broken module throws there and Plastile runs in memory with one diagnostic. Each has an explicit
+location, `StandardPaths.GenericStateLocation` + `/plastile/state-0.ini` and `state-1.ini`, and one value,
+`[plastile] snapshot`. The snapshot (`src/persist/snapshot.ts`) is `{schemaVersion, generation, savedAt,
+contexts: [{outputKey, desktopId, activity, layout, masterStack}], floats: [{appId, resourceName, role, rect,
+outputKey, area}]}`, at most 64 entries of each. Contexts come from `Engine.contextPreferences()`. Floats are
+recorded only when the user floats a window with *Toggle floating*, and are forgotten when the user tiles it again.
+Any invalid field rejects the whole snapshot. Migrations (`src/persist/migrate.ts`) are pure per-version steps.
+Version 1 is the first schema, so the chain is still empty, and a newer schema is rejected.
+
+At load the runtime reads both slots before the first solve and applies the valid one with the highest generation.
+It logs one line if any slot was rejected. If a slot holds a newer schema, nothing is written that session, which
+keeps that file intact for the newer Plastile. A saved float is given to a window only when exactly one live window
+has its `appId`/`resourceName`/`role` (Q06, `src/persist/match.ts`). Otherwise the window gets ordinary insertion
+and the saved float waits.
+
+A change only marks the state dirty. A one-shot timer writes the snapshot 2 s after the last change: it is re-armed
+on later changes, never periodic, and also re-armed while a window is being moved or resized. A clean unload writes
+once. A write goes to the slot not loaded or last written, with the next generation, and is skipped when the content
+is unchanged. A torn or damaged slot therefore leaves the previous one usable. QSettings itself replaces the file
+atomically: inotify shows the text written to an `O_TMPFILE` and then linked (new file) or renamed (existing file)
+onto the slot, never written in place (scenarios `persist-reload-restart-T27`, `persist-reload-cycles-Q09`).
+
+### Measured addendum: the cost of in-process saves (2026-10-18)
+
+The numbers come from `probes/persistence/cost/run.py` ([evidence](../status/evidence/persistence-t27-cost.json)).
+The setup was nested KWin 6.7.5 with Qt 6.11.2, the virtual backend and the production `Persistence.qml`. State
+files were on ext4 on a virtio disk. The clock was `CLOCK_MONOTONIC` from `tools/measure`. Another nested suite may
+have shared the 4 CPUs.
+
+| What | p50 | p95 | p99 | max | n |
+|---|---|---|---|---|---|
+| `setValue` (any size) | 0.01 ms | | | 0.15 ms | 750 |
+| `sync()`, 1 KiB text | 1.59 ms | 2.17 ms | 3.63 ms | 10.7 ms | 250 |
+| `sync()`, 16 KiB | 2.19 ms | 4.04 ms | 5.55 ms | 7.3 ms | 250 |
+| `sync()`, 64 KiB | 3.60 ms | 6.03 ms | 7.85 ms | 13.2 ms | 250 |
+| Production save (277-byte snapshot) | 3.6 ms | | | 19.5 ms | 3 |
+| Load: `open()` (first load in a KWin process) / both slot reads | 3.2 ms / 0.12 ms | | | | 1 |
+| Load on reload, two 64 KiB slots: `open()` / reads | 0.78 / 0.09 ms | 0.96 / 0.32 ms | | 1.09 / 1.06 ms | 19 |
+
+Every one of the 750 measured `sync()` calls took longer than 1 ms. The cost is mostly fixed. A 1 KiB text already
+costs 1.6 ms, consistent with the `fsync` that `QSaveFile::commit` performs (inference: `fsync` itself was not timed).
+A full snapshot is about 25 KB under the 64-entry caps.
+
+Commands do no file I/O. Over 123 preference-changing commands in three bursts, no event in the state directory fell
+inside a command handler's measured interval or within 1.5 s after one. Each burst produced exactly one save, about
+2 s after its last command. Handler time, `markDirty` included, was p50 0.48 ms and p99 1.21 ms. The scenario
+`persist-reload-restart-T27` repeats the inotify check.
+
+Lock behaviour: QSettings takes a `QLockFile` (`state-N.ini.lock`) for each save. With a stale lock (dead process)
+the save took 2.5 ms. With the lock held by a live process of the matching name, the save blocked the compositor
+thread for **31.9 s**, QLockFile's 30 s stale-lock time (n=1).
+
+**Decision.** In-process saves stay (option A), with these costs on record. They exceed the 1 ms target the gap
+analysis proposed for this choice.
+
+- A save stalls the compositor thread for about 2–8 ms, up to 20 ms observed. That is enough to miss a frame when
+  it lands on a frame deadline.
+- A save never runs inside a command (measured), never while a window is dragged, and never when nothing changed.
+  It runs at most once per quiet period after a preference change: typically a few times per session, not per
+  keypress.
+- KWin saves its own tile layouts the same way: a 2 s single-shot timer, then `KConfig::sync()` on the compositor
+  thread (observed source: kwin v6.7.5 `src/tiles/tilemanager.cpp:61-64, 390-404`).
+- A held lock needs another live process holding Plastile's own lock file. In practice that is a second Plastile on
+  the same state directory stopped during its save, or a lock planted on purpose. It is a 30 s freeze when it happens.
+
+The asynchronous D-Bus helper (option B) would remove both costs but needs packaging beyond `kpackagetool` and an
+asynchronous restore. The store interface (`StateStore` in `src/runtime/persistence.ts`) keeps that switch local.
+
+**Revisit if** a physical-session check shows a visible hitch at saves, saves need to be more frequent, or lock
+stalls are reported. All these numbers come from one virtual disk in a nested session. An HDD or a busy filesystem
+will be slower, and no physical-session measurement exists.
+
 ## ADR-014: Start M8/M9 as experimental opt-in layouts before G3 physical sign-off
 
 **Status:** accepted deviation from the roadmap's ordering (2026-10-18).

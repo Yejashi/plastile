@@ -1,0 +1,399 @@
+{
+ "experiment": "T27 cost of in-process QtCore Settings saves (ADR-013 addendum)",
+ "layer": "nested KWin virtual backend (not physical)",
+ "measuredAt": "2026-10-18T06:44:11",
+ "implementationCommit": "02f38591f72bf885534a5936940ba69cee0b994e",
+ "implementationDirty": false,
+ "kwin": "kwin 6.7.5",
+ "qtcoreQmlModule": "libqt6qml6 6.11.2+dfsg-2ubuntu1",
+ "cpus": 4,
+ "clock": "CLOCK_MONOTONIC via tools/measure (inside KWin) and time.monotonic (harness, inotify)",
+ "note": "Another nested-KWin suite may have been running on this 4-CPU machine; tails include that noise.",
+ "cost": {
+  "stateFilesystem": "ext4 /dev/vda[/home/user/plastile] rw,relatime,discard,no_prefetch_block_bitmaps,resv_strict,resuid=65534,resgid=65534",
+  "loads": {
+   "firstInProcess": {
+    "kind": "load",
+    "openNs": 3168354,
+    "readNs": 122631,
+    "chars": 0,
+    "error": "",
+    "location": "file:///home/user/plastile/.claude/worktrees/agent-a32f643d0d0011d7d/artifacts/persistence-cost/20261018T064411/cost-state/plastile/state-0.ini",
+    "clockResolutionNs": 1
+   },
+   "reloadsWith64KiBSlots": {
+    "openUs": {
+     "n": 19,
+     "min": 560.3,
+     "p50": 778.7,
+     "p95": 959.3,
+     "p99": 959.3,
+     "max": 1092.7,
+     "mean": 773.0
+    },
+    "readUs": {
+     "n": 19,
+     "min": 56.2,
+     "p50": 94.2,
+     "p95": 323.0,
+     "p99": 323.0,
+     "max": 1064.5,
+     "mean": 209.4
+    },
+    "chars": 131072
+   },
+   "secondLoadAfterWrites": {
+    "kind": "load",
+    "openNs": 731900,
+    "readNs": 352527,
+    "chars": 131072,
+    "error": "",
+    "location": "file:///home/user/plastile/.claude/worktrees/agent-a32f643d0d0011d7d/artifacts/persistence-cost/20261018T064411/cost-state/plastile/state-0.ini",
+    "clockResolutionNs": 1
+   }
+  },
+  "writes": {
+   "1KiB": {
+    "chars": 1024,
+    "syncUs": {
+     "n": 250,
+     "min": 1126.8,
+     "p50": 1591.9,
+     "p95": 2172.4,
+     "p99": 3632.0,
+     "max": 10655.2,
+     "mean": 1722.0
+    },
+    "setValueUs": {
+     "n": 250,
+     "min": 7.6,
+     "p50": 9.4,
+     "p95": 11.8,
+     "p99": 15.3,
+     "max": 38.5,
+     "mean": 9.8
+    },
+    "totalUs": {
+     "n": 250,
+     "min": 1135.4,
+     "p50": 1601.3,
+     "p95": 2183.8,
+     "p99": 3640.8,
+     "max": 10664.5,
+     "mean": 1731.8
+    },
+    "over1ms": 250
+   },
+   "16KiB": {
+    "chars": 16384,
+    "syncUs": {
+     "n": 250,
+     "min": 1676.0,
+     "p50": 2189.8,
+     "p95": 4035.9,
+     "p99": 5550.7,
+     "max": 7330.4,
+     "mean": 2407.0
+    },
+    "setValueUs": {
+     "n": 250,
+     "min": 7.0,
+     "p50": 8.9,
+     "p95": 12.8,
+     "p99": 35.5,
+     "max": 150.0,
+     "mean": 10.2
+    },
+    "totalUs": {
+     "n": 250,
+     "min": 1683.7,
+     "p50": 2200.5,
+     "p95": 4045.6,
+     "p99": 5560.4,
+     "max": 7339.4,
+     "mean": 2417.2
+    },
+    "over1ms": 250
+   },
+   "64KiB": {
+    "chars": 65536,
+    "syncUs": {
+     "n": 250,
+     "min": 3031.4,
+     "p50": 3600.7,
+     "p95": 6025.6,
+     "p99": 7854.7,
+     "max": 13208.2,
+     "mean": 4025.9
+    },
+    "setValueUs": {
+     "n": 250,
+     "min": 7.8,
+     "p50": 9.9,
+     "p95": 13.0,
+     "p99": 22.3,
+     "max": 51.1,
+     "mean": 10.7
+    },
+    "totalUs": {
+     "n": 250,
+     "min": 3042.6,
+     "p50": 3610.4,
+     "p95": 6036.3,
+     "p99": 7864.8,
+     "max": 13218.2,
+     "mean": 4036.6
+    },
+    "over1ms": 250
+   }
+  },
+  "warmupWrites": [
+   {
+    "kb": 1,
+    "totalUs": 1644.0,
+    "createsFile": true
+   },
+   {
+    "kb": 1,
+    "totalUs": 1490.0,
+    "createsFile": true
+   },
+   {
+    "kb": 1,
+    "totalUs": 1751.5,
+    "createsFile": false
+   },
+   {
+    "kb": 1,
+    "totalUs": 1875.2,
+    "createsFile": false
+   },
+   {
+    "kb": 1,
+    "totalUs": 1505.4,
+    "createsFile": false
+   },
+   {
+    "kb": 1,
+    "totalUs": 1513.0,
+    "createsFile": false
+   },
+   {
+    "kb": 1,
+    "totalUs": 2924.8,
+    "createsFile": false
+   },
+   {
+    "kb": 1,
+    "totalUs": 1444.9,
+    "createsFile": false
+   },
+   {
+    "kb": 1,
+    "totalUs": 1928.2,
+    "createsFile": false
+   },
+   {
+    "kb": 1,
+    "totalUs": 1586.8,
+    "createsFile": false
+   },
+   {
+    "kb": 16,
+    "totalUs": 2256.7,
+    "createsFile": false
+   },
+   {
+    "kb": 16,
+    "totalUs": 1800.2,
+    "createsFile": false
+   },
+   {
+    "kb": 16,
+    "totalUs": 1986.6,
+    "createsFile": false
+   },
+   {
+    "kb": 16,
+    "totalUs": 2344.6,
+    "createsFile": false
+   },
+   {
+    "kb": 16,
+    "totalUs": 2609.4,
+    "createsFile": false
+   },
+   {
+    "kb": 16,
+    "totalUs": 1966.0,
+    "createsFile": false
+   },
+   {
+    "kb": 16,
+    "totalUs": 2312.5,
+    "createsFile": false
+   },
+   {
+    "kb": 16,
+    "totalUs": 2440.8,
+    "createsFile": false
+   },
+   {
+    "kb": 16,
+    "totalUs": 2364.8,
+    "createsFile": false
+   },
+   {
+    "kb": 16,
+    "totalUs": 2920.4,
+    "createsFile": false
+   },
+   {
+    "kb": 64,
+    "totalUs": 3391.1,
+    "createsFile": false
+   },
+   {
+    "kb": 64,
+    "totalUs": 3160.3,
+    "createsFile": false
+   },
+   {
+    "kb": 64,
+    "totalUs": 5158.3,
+    "createsFile": false
+   },
+   {
+    "kb": 64,
+    "totalUs": 4988.1,
+    "createsFile": false
+   },
+   {
+    "kb": 64,
+    "totalUs": 3735.7,
+    "createsFile": false
+   },
+   {
+    "kb": 64,
+    "totalUs": 3464.5,
+    "createsFile": false
+   },
+   {
+    "kb": 64,
+    "totalUs": 3702.8,
+    "createsFile": false
+   },
+   {
+    "kb": 64,
+    "totalUs": 3831.1,
+    "createsFile": false
+   },
+   {
+    "kb": 64,
+    "totalUs": 4562.0,
+    "createsFile": false
+   },
+   {
+    "kb": 64,
+    "totalUs": 3783.8,
+    "createsFile": false
+   }
+  ],
+  "slotFileBytesAfter": {
+   "state-0.ini": 65571,
+   "state-1.ini": 65571
+  }
+ },
+ "lock": {
+  "stale": {
+   "writeMs": 2.484,
+   "lockFileAfter": false,
+   "slotWritten": true
+  },
+  "held": {
+   "writeMs": 31904.974,
+   "lockFileAfter": false,
+   "slotWritten": true
+  }
+ },
+ "commands": {
+  "bursts": 3,
+  "commandsPerBurst": 40,
+  "commands": [
+   "resize.grow",
+   "resize.shrink",
+   "master.increase",
+   "master.decrease",
+   "layout.bsp",
+   "layout.master-stack"
+  ],
+  "commandHandlers": 123,
+  "accepted": 123,
+  "dispatchToReturnUs": {
+   "n": 123,
+   "min": 395.7,
+   "p50": 475.7,
+   "p95": 906.0,
+   "p99": 1206.2,
+   "max": 1277.7,
+   "mean": 535.0
+  },
+  "stateFileEvents": 38,
+  "eventsInsideCommandHandlers": 0,
+  "eventsWithin1500msAfterACommand": 0,
+  "saves": 3,
+  "savesLogged": [
+   {
+    "reason": "deadline",
+    "slot": 0,
+    "generation": 1,
+    "bytes": 277,
+    "writeNs": 3586036
+   },
+   {
+    "reason": "deadline",
+    "slot": 1,
+    "generation": 2,
+    "bytes": 277,
+    "writeNs": 19488812
+   },
+   {
+    "reason": "deadline",
+    "slot": 0,
+    "generation": 3,
+    "bytes": 277,
+    "writeNs": 3561482
+   }
+  ],
+  "productionWriteUs": {
+   "n": 3,
+   "min": 3561.5,
+   "p50": 3586.0,
+   "p95": 3586.0,
+   "p99": 3586.0,
+   "max": 19488.8,
+   "mean": 8878.8
+  },
+  "secondsFromBurstEndToSave": [
+   1.604,
+   1.762,
+   1.715
+  ],
+  "eventSample": [
+   "+0.000s open #1892715",
+   "+0.000s close_write #1892715",
+   "+0.000s create state-0.ini.lock",
+   "+0.000s open state-0.ini.lock",
+   "+0.000s modify state-0.ini.lock",
+   "+0.003s open #1892716",
+   "+0.003s modify #1892716",
+   "+0.003s create state-0.ini",
+   "+0.003s close_write #1892716",
+   "+0.003s attrib state-0.ini",
+   "+0.003s delete state-0.ini.lock",
+   "+0.003s close_write state-0.ini.lock",
+   "+13.543s open #1892724",
+   "+13.543s close_write #1892724"
+  ]
+ }
+}

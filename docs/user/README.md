@@ -32,7 +32,8 @@ The 23 core integration scenarios in `tests/integration/scenarios.py` passed: 10
 - Clients that resize themselves, ignore requested sizes or clamp them. Plastile corrects such a client at most twice per target, then leaves it alone with an explanation. A slow client (300 ms) that reverses a grow/shrink still ends where the model says.
 - Fullscreen, maximize and minimize are respected: KWin keeps ownership while the state lasts, peers reflow, and the window returns to its slot afterwards. Overlapping states are handled.
 - Native quick tiling (`Meta+arrow`) is kept and not snapped back. *Adopt natively tiled window* brings the window back into the layout.
-- Toggling a window floating and back to tiled; the last floating rectangle is restored.
+- Toggling a window floating and back to tiled; the last floating rectangle is restored, on the window's current screen when it moved to another one (two screens).
+- Saved layout preferences (a master ratio, a floated window's position) survive script reloads and a KWin restart; a damaged state file falls back to defaults with one log line (scenario files `scenarios_persist.py`, run separately from the 23 scenarios counted above).
 - Transient dialogs float; main windows tile.
 - Two outputs: send a window to the other output, output scale changes from 1.25 to 2, portrait rotation, unplugging an output with requests in flight, and replugging it. A layout chosen for a screen comes back when the screen is replugged. Screens are identified by the monitor's manufacturer, model and serial number when KWin reports them, so that also holds on another connector (unit-tested only: the nested virtual outputs report none and are identified by connector name). Two identical monitors are told apart by connector.
 - Sending a window to another desktop without following it; that desktop is tiled when it is first shown. With `followOnSend`, the desktop is shown on the window's screen and the window activated (two screens, per-screen desktops).
@@ -119,7 +120,7 @@ The full logic is in [CONFIGURATION](CONFIGURATION.md#how-windows-are-classified
 
 Plastile does not fight you or the application indefinitely:
 
-- **Toggle floating** (`Meta+Shift+F`, measured to work as a real key press) takes a window out of the layout and gives it back its last floating rectangle. Plastile then leaves it to you until you tile it again. Floating windows are ordinary KDE windows: move, resize and maximize them as usual.
+- **Toggle floating** (`Meta+Shift+F`, measured to work as a real key press) takes a window out of the layout and gives it back its last floating rectangle. A rectangle from another screen, including one that has since been unplugged, is placed at the same relative position on the window's current screen, inside its usable area. A window that never floated gets a centred rectangle of 60% of the screen's usable area, within the window's own size limits. Plastile then leaves it to you until you tile it again. Floating windows are ordinary KDE windows: move, resize and maximize them as usual.
 - **Native quick tiling** (`Meta+Left/Right/Up/Down`, or dragging to a screen edge) is respected. The window is released to KWin's tile, the remaining windows re-solve without it, and nothing snaps back. *Adopt natively tiled window* or *Toggle floating* puts it back in the layout. KWin's tile editor (`Meta+T`) is untouched.
 - **Maximize and fullscreen** suspend Plastile's placement for that window. Leaving the state returns the window to its slot. A window that opened already fullscreen joins the layout when it leaves fullscreen, like any other window of its kind (KWin reports every window as not resizable while fullscreen is requested, so Plastile reads that again when the state ends).
 - **Interactive move:** dragging a tile re-tiles nothing while you drag. Dropping it on another tile swaps the two; dropping it anywhere else snaps it back. Meta+right-drag resizing moves the shared divider.
@@ -127,6 +128,23 @@ Plastile does not fight you or the application indefinitely:
 
 Plastile never sets a window maximized, minimized, fullscreen or kept-above to make a layout fit. It never changes KWin's focus policy and never moves the cursor. The window state it writes is limited to: frame geometry, activation and raising (focus commands, monocle), the output and desktop (send commands), releasing a native quick tile (adopt), and the border, when a rule asks for `border` (measured in nested KWin). Its only window of its own is the inspector, which is never tiled.
 
+## Saved layout preferences
+
+Plastile remembers some of what you change with its commands across script reloads, KWin restarts and logins:
+
+- **Per screen, desktop and activity:** a layout you chose with a layout command, and a master ratio or master count you changed with *Grow*/*Shrink*, *More*/*Fewer masters* or by dragging the divider. *Reset context* removes them for that screen and desktop.
+- **Per application:** where you put a window you floated with *Toggle floating*. The application is identified by its application id, resource name and window role, never by its title. When that application next has exactly one window open, the window floats there again (placed on its current screen if that is another one). With two or more windows of the application open, none of them gets the saved position, and they tile as usual. Tiling the window again with *Toggle floating* forgets the application's saved position.
+
+Window order, BSP split structure, quick-tile and maximize states, and per-window choices for applications with several windows are not saved. Your configuration (gaps, rules, overrides) is not part of this state either. It stays in `kwinrc`.
+
+**Where:** `~/.local/state/plastile/state-0.ini` and `state-1.ini` (or under `$XDG_STATE_HOME`). The two files hold alternate saves, so an interrupted save leaves the previous one usable. A damaged file or a file from a newer Plastile is ignored with one `plastile warn saved state rejected` line in the log. A newer Plastile's file is left untouched.
+
+**When:** about 2 seconds after your last change, and when the script stops cleanly. Never while a command runs or while you drag a window. Each save is a short synchronous file write inside KWin. It measured 2 to 8 ms in nested sessions, and up to 20 ms ([ADR-013](../design/DECISIONS.md#adr-013-persist-session-preferences-through-qtcore-settings)). Unchanged state is not rewritten.
+
+**Reset:** disable Plastile, delete `~/.local/state/plastile/`, and enable it again. Deleting the files while Plastile runs is not enough: the next change saves the in-memory state again.
+
+Saving needs Qt's `QtCore` QML module, which Plasma's own QML depends on. Without it Plastile tiles normally, logs `plastile warn persistence unavailable` once, and forgets your changes at the next reload.
+
 ## Where this project is going
 
-The user-visible scope today is the automatic tiler described above. Scrolling layouts, manual zones, drag previews, animations and persistence of session layout changes are later milestones ([roadmap](../implementation/ROADMAP.md)). Nothing in this guide is a promise about them. Design intent beyond what is implemented lives in the [behaviour specification](../design/BEHAVIOR_SPEC.md). Where that document and this guide disagree, this guide describes the code.
+The user-visible scope today is the automatic tiler described above. Scrolling layouts, manual zones, drag previews and animations are later milestones ([roadmap](../implementation/ROADMAP.md)). Nothing in this guide is a promise about them. Design intent beyond what is implemented lives in the [behaviour specification](../design/BEHAVIOR_SPEC.md). Where that document and this guide disagree, this guide describes the code.
