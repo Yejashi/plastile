@@ -151,7 +151,7 @@ cmd_remove_helper() {
     rm -f "$SERVICE_FILE"
     case "$exe" in
         */plastile-state) rm -f "$exe" ;;
-        *) printf 'install.sh: %s named %s, which was left alone\n' "$SERVICE_FILE" "$exe" >&2 ;;
+        *) printf 'install.sh: %s named %s, which was left alone\n' "$SERVICE_FILE" "$exe" >&2; exe= ;;
     esac
     reload_bus
     cat <<EOF
