@@ -1,0 +1,3074 @@
+{
+ "format": "plastile-replay/1",
+ "name": "output-unplug-replug",
+ "description": "Two outputs, two windows each (the second output's clients commit 400 ms late); a grow leaves requests outstanding, the second output is disabled and enabled again with kscreen-doctor (unplug-O04 shape).",
+ "captured": {
+  "kwin": "6.7.5",
+  "qt": "6.12.0",
+  "compositing": "OpenGL",
+  "layer": "nested KWin, virtual backend (tools/nested.py), not a physical session",
+  "how": "python3 tests/integration/scenarios_replay.py --only output-unplug-replug (recording root tools/replay/record.qml)",
+  "implementationCommit": "c08c9b50cfae0a91e7310aca4187ee283b958eee",
+  "implementationDirty": true,
+  "bundleSha256": "b5583908c814751973b6c5f958112a71a4f3f04823b2894a6552acb9b26010a5",
+  "date": "2026-10-18"
+ },
+ "titles": "redacted",
+ "truncated": false,
+ "anomalies": 0,
+ "nodes": 71,
+ "config": {
+  "layout": "",
+  "gapInner": "",
+  "gapOuter": "",
+  "masterRatio": "",
+  "masterCount": "",
+  "masterInsert": "",
+  "bspInsert": "",
+  "bspAxis": "",
+  "singleWindowGaps": "",
+  "ratioStep": "",
+  "traceCapacity": "",
+  "diagnostics": "info",
+  "configJson": ""
+ },
+ "events": [
+  {
+   "k": "start",
+   "t": 1001,
+   "a": [
+    [
+     {
+      "id": "w1",
+      "gen": 1,
+      "meta": {
+       "appId": "plastile-fixture",
+       "resourceName": "plastile-fixture",
+       "title": "[title]",
+       "role": "",
+       "kind": "normal",
+       "transient": false,
+       "transientFor": null,
+       "modal": false,
+       "special": false,
+       "managed": true,
+       "resizeable": true,
+       "moveable": true,
+       "skipTaskbar": false,
+       "pid": 1,
+       "own": false
+      },
+      "membership": {
+       "output": "o1",
+       "desktops": [
+        "d1"
+       ],
+       "onAllDesktops": false,
+       "activities": []
+      },
+      "states": {
+       "minimized": false,
+       "fullscreen": false,
+       "maximized": false,
+       "interactive": "none",
+       "hidden": false
+      },
+      "constraints": {
+       "minFrame": {
+        "width": 150,
+        "height": 178
+       },
+       "maxFrame": {
+        "width": "Infinity",
+        "height": "Infinity"
+       },
+       "fixed": false
+      },
+      "frame": {
+       "x": 440,
+       "y": 236,
+       "width": 400,
+       "height": 328
+      },
+      "nativeTile": false
+     },
+     {
+      "id": "w2",
+      "gen": 2,
+      "meta": {
+       "appId": "plastile-fixture",
+       "resourceName": "plastile-fixture",
+       "title": "[title]",
+       "role": "",
+       "kind": "normal",
+       "transient": false,
+       "transientFor": null,
+       "modal": false,
+       "special": false,
+       "managed": true,
+       "resizeable": true,
+       "moveable": true,
+       "skipTaskbar": false,
+       "pid": 1,
+       "own": false
+      },
+      "membership": {
+       "output": "o1",
+       "desktops": [
+        "d1"
+       ],
+       "onAllDesktops": false,
+       "activities": []
+      },
+      "states": {
+       "minimized": false,
+       "fullscreen": false,
+       "maximized": false,
+       "interactive": "none",
+       "hidden": false
+      },
+      "constraints": {
+       "minFrame": {
+        "width": 150,
+        "height": 178
+       },
+       "maxFrame": {
+        "width": "Infinity",
+        "height": "Infinity"
+       },
+       "fixed": false
+      },
+      "frame": {
+       "x": 466.6666666666667,
+       "y": 252.66666666666666,
+       "width": 400.00000000000006,
+       "height": 328
+      },
+      "nativeTile": false
+     },
+     {
+      "id": "w3",
+      "gen": 3,
+      "meta": {
+       "appId": "plastile-fixture",
+       "resourceName": "plastile-fixture",
+       "title": "[title]",
+       "role": "",
+       "kind": "normal",
+       "transient": false,
+       "transientFor": null,
+       "modal": false,
+       "special": false,
+       "managed": true,
+       "resizeable": true,
+       "moveable": true,
+       "skipTaskbar": false,
+       "pid": 1,
+       "own": false
+      },
+      "membership": {
+       "output": "o1",
+       "desktops": [
+        "d1"
+       ],
+       "onAllDesktops": false,
+       "activities": []
+      },
+      "states": {
+       "minimized": false,
+       "fullscreen": false,
+       "maximized": false,
+       "interactive": "none",
+       "hidden": false
+      },
+      "constraints": {
+       "minFrame": {
+        "width": 150,
+        "height": 178
+       },
+       "maxFrame": {
+        "width": "Infinity",
+        "height": "Infinity"
+       },
+       "fixed": false
+      },
+      "frame": {
+       "x": 493.33333333333337,
+       "y": 269.3333333333333,
+       "width": 400,
+       "height": 327.99999999999994
+      },
+      "nativeTile": false
+     },
+     {
+      "id": "w4",
+      "gen": 4,
+      "meta": {
+       "appId": "plastile-fixture",
+       "resourceName": "plastile-fixture",
+       "title": "[title]",
+       "role": "",
+       "kind": "normal",
+       "transient": false,
+       "transientFor": null,
+       "modal": false,
+       "special": false,
+       "managed": true,
+       "resizeable": true,
+       "moveable": true,
+       "skipTaskbar": false,
+       "pid": 1,
+       "own": false
+      },
+      "membership": {
+       "output": "o1",
+       "desktops": [
+        "d1"
+       ],
+       "onAllDesktops": false,
+       "activities": []
+      },
+      "states": {
+       "minimized": false,
+       "fullscreen": false,
+       "maximized": false,
+       "interactive": "none",
+       "hidden": false
+      },
+      "constraints": {
+       "minFrame": {
+        "width": 150,
+        "height": 178
+       },
+       "maxFrame": {
+        "width": "Infinity",
+        "height": "Infinity"
+       },
+       "fixed": false
+      },
+      "frame": {
+       "x": 520,
+       "y": 286,
+       "width": 400,
+       "height": 328
+      },
+      "nativeTile": false
+     }
+    ]
+   ],
+   "q": [
+    [
+     "outputs",
+     0,
+     [
+      {
+       "id": "o1",
+       "name": "Virtual-0",
+       "geometry": {
+        "x": 0,
+        "y": 0,
+        "width": 1280,
+        "height": 800
+       },
+       "scale": 1,
+       "identity": "connector"
+      },
+      {
+       "id": "o2",
+       "name": "Virtual-1",
+       "geometry": {
+        "x": 1280,
+        "y": 0,
+        "width": 1280,
+        "height": 800
+       },
+       "scale": 1,
+       "identity": "connector"
+      }
+     ]
+    ],
+    [
+     "activityCount",
+     0,
+     1
+    ],
+    [
+     "currentActivity",
+     0,
+     "default"
+    ],
+    [
+     "now",
+     0,
+     1002
+    ],
+    [
+     "outputName|o1",
+     0,
+     "Virtual-0"
+    ],
+    [
+     "desktopName|d1",
+     0,
+     "Desktop 1"
+    ],
+    [
+     "activeWindow",
+     0,
+     "w4"
+    ],
+    [
+     "now",
+     5,
+     1003
+    ],
+    [
+     "visibleDesktop|o1",
+     0,
+     "d1"
+    ],
+    [
+     "workArea|o1|d1",
+     0,
+     {
+      "x": 0,
+      "y": 0,
+      "width": 1280,
+      "height": 800
+     }
+    ],
+    [
+     "frame|w1|1",
+     0,
+     {
+      "x": 440,
+      "y": 236,
+      "width": 400,
+      "height": 328
+     }
+    ],
+    [
+     "now",
+     9,
+     1004
+    ],
+    [
+     "frame|w2|2",
+     0,
+     {
+      "x": 466.6666666666667,
+      "y": 252.66666666666666,
+      "width": 400.00000000000006,
+      "height": 328
+     }
+    ],
+    [
+     "frame|w3|3",
+     0,
+     {
+      "x": 493.33333333333337,
+      "y": 269.3333333333333,
+      "width": 400,
+      "height": 327.99999999999994
+     }
+    ],
+    [
+     "frame|w4|4",
+     0,
+     {
+      "x": 520,
+      "y": 286,
+      "width": 400,
+      "height": 328
+     }
+    ]
+   ],
+   "c": [
+    {
+     "h": "applyFrame",
+     "a": [
+      "w1",
+      1,
+      {
+       "x": 8,
+       "y": 8,
+       "width": 691,
+       "height": 784
+      }
+     ],
+     "r": {
+      "before": {
+       "x": 440,
+       "y": 236,
+       "width": 400,
+       "height": 328
+      },
+      "after": {
+       "x": 440,
+       "y": 236,
+       "width": 400,
+       "height": 328
+      }
+     }
+    },
+    {
+     "h": "deadline",
+     "a": [
+      750
+     ],
+     "r": null
+    },
+    {
+     "h": "applyFrame",
+     "a": [
+      "w2",
+      2,
+      {
+       "x": 707,
+       "y": 8,
+       "width": 565,
+       "height": 256
+      }
+     ],
+     "r": {
+      "before": {
+       "x": 466.6666666666667,
+       "y": 252.66666666666666,
+       "width": 400.00000000000006,
+       "height": 328
+      },
+      "after": {
+       "x": 466.6666666666667,
+       "y": 252.66666666666666,
+       "width": 400.00000000000006,
+       "height": 328
+      }
+     }
+    },
+    {
+     "h": "applyFrame",
+     "a": [
+      "w3",
+      3,
+      {
+       "x": 707,
+       "y": 272,
+       "width": 565,
+       "height": 256
+      }
+     ],
+     "r": {
+      "before": {
+       "x": 493.33333333333337,
+       "y": 269.3333333333333,
+       "width": 400,
+       "height": 327.99999999999994
+      },
+      "after": {
+       "x": 493.33333333333337,
+       "y": 269.3333333333333,
+       "width": 400,
+       "height": 327.99999999999994
+      }
+     }
+    },
+    {
+     "h": "applyFrame",
+     "a": [
+      "w4",
+      4,
+      {
+       "x": 707,
+       "y": 536,
+       "width": 565,
+       "height": 256
+      }
+     ],
+     "r": {
+      "before": {
+       "x": 520,
+       "y": 286,
+       "width": 400,
+       "height": 328
+      },
+      "after": {
+       "x": 520,
+       "y": 286,
+       "width": 400,
+       "height": 328
+      }
+     }
+    }
+   ]
+  },
+  {
+   "k": "frameObserved",
+   "t": 1013,
+   "a": [
+    "w2",
+    2,
+    {
+     "x": 707,
+     "y": 8,
+     "width": 565,
+     "height": 256
+    }
+   ],
+   "q": [
+    [
+     "now",
+     0,
+     1013
+    ]
+   ]
+  },
+  {
+   "k": "frameObserved",
+   "t": 1015,
+   "a": [
+    "w1",
+    1,
+    {
+     "x": 8,
+     "y": 8,
+     "width": 691,
+     "height": 784
+    }
+   ],
+   "q": [
+    [
+     "now",
+     0,
+     1015
+    ]
+   ]
+  },
+  {
+   "k": "frameObserved",
+   "t": 1331,
+   "a": [
+    "w3",
+    3,
+    {
+     "x": 707,
+     "y": 272,
+     "width": 565,
+     "height": 256
+    }
+   ],
+   "q": [
+    [
+     "now",
+     0,
+     1331
+    ]
+   ]
+  },
+  {
+   "k": "frameObserved",
+   "t": 1333,
+   "a": [
+    "w4",
+    4,
+    {
+     "x": 707,
+     "y": 536,
+     "width": 565,
+     "height": 256
+    }
+   ],
+   "q": [
+    [
+     "now",
+     0,
+     1333
+    ]
+   ]
+  },
+  {
+   "k": "activeChanged",
+   "t": 1530,
+   "a": [
+    "w3"
+   ]
+  },
+  {
+   "k": "command",
+   "t": 1540,
+   "a": [
+    "plastile.move.output-next"
+   ],
+   "q": [
+    [
+     "activeWindow",
+     0,
+     "w3"
+    ],
+    [
+     "now",
+     0,
+     1541
+    ]
+   ],
+   "c": [
+    {
+     "h": "sendToOutput",
+     "a": [
+      "w3",
+      3,
+      "o2"
+     ],
+     "r": true,
+     "n": [
+      {
+       "k": "frameObserved",
+       "t": 1540,
+       "a": [
+        "w3",
+        3,
+        {
+         "x": 1987,
+         "y": 272,
+         "width": 565,
+         "height": 256
+        }
+       ],
+       "q": [
+        [
+         "now",
+         0,
+         1540
+        ]
+       ]
+      },
+      {
+       "k": "membershipChanged",
+       "t": 1540,
+       "a": [
+        "w3",
+        3,
+        {
+         "output": "o2",
+         "desktops": [
+          "d1"
+         ],
+         "onAllDesktops": false,
+         "activities": []
+        }
+       ],
+       "q": [
+        [
+         "outputName|o2",
+         0,
+         "Virtual-1"
+        ]
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "k": "turn",
+   "t": 1541,
+   "a": [
+    2
+   ],
+   "q": [
+    [
+     "frame|w1|1",
+     0,
+     {
+      "x": 8,
+      "y": 8,
+      "width": 691,
+      "height": 784
+     }
+    ],
+    [
+     "frame|w2|2",
+     0,
+     {
+      "x": 707,
+      "y": 8,
+      "width": 565,
+      "height": 256
+     }
+    ],
+    [
+     "frame|w4|4",
+     0,
+     {
+      "x": 707,
+      "y": 536,
+      "width": 565,
+      "height": 256
+     }
+    ],
+    [
+     "visibleDesktop|o2",
+     0,
+     "d1"
+    ],
+    [
+     "workArea|o2|d1",
+     0,
+     {
+      "x": 1280,
+      "y": 0,
+      "width": 1280,
+      "height": 800
+     }
+    ],
+    [
+     "frame|w3|3",
+     0,
+     {
+      "x": 1987,
+      "y": 272,
+      "width": 565,
+      "height": 256
+     }
+    ]
+   ],
+   "c": [
+    {
+     "h": "applyFrame",
+     "a": [
+      "w2",
+      2,
+      {
+       "x": 707,
+       "y": 8,
+       "width": 565,
+       "height": 388
+      }
+     ],
+     "r": {
+      "before": {
+       "x": 707,
+       "y": 8,
+       "width": 565,
+       "height": 256
+      },
+      "after": {
+       "x": 707,
+       "y": 8,
+       "width": 565,
+       "height": 256
+      }
+     }
+    },
+    {
+     "h": "deadline",
+     "a": [
+      750
+     ],
+     "r": null
+    },
+    {
+     "h": "applyFrame",
+     "a": [
+      "w4",
+      4,
+      {
+       "x": 707,
+       "y": 404,
+       "width": 565,
+       "height": 388
+      }
+     ],
+     "r": {
+      "before": {
+       "x": 707,
+       "y": 536,
+       "width": 565,
+       "height": 256
+      },
+      "after": {
+       "x": 707,
+       "y": 536,
+       "width": 565,
+       "height": 256
+      }
+     }
+    },
+    {
+     "h": "applyFrame",
+     "a": [
+      "w3",
+      3,
+      {
+       "x": 1288,
+       "y": 8,
+       "width": 1264,
+       "height": 784
+      }
+     ],
+     "r": {
+      "before": {
+       "x": 1987,
+       "y": 272,
+       "width": 565,
+       "height": 256
+      },
+      "after": {
+       "x": 1987,
+       "y": 272,
+       "width": 565,
+       "height": 256
+      }
+     }
+    }
+   ]
+  },
+  {
+   "k": "frameObserved",
+   "t": 1542,
+   "a": [
+    "w2",
+    2,
+    {
+     "x": 707,
+     "y": 8,
+     "width": 565,
+     "height": 388
+    }
+   ],
+   "q": [
+    [
+     "now",
+     0,
+     1542
+    ]
+   ]
+  },
+  {
+   "k": "frameObserved",
+   "t": 1933,
+   "a": [
+    "w4",
+    4,
+    {
+     "x": 707,
+     "y": 404,
+     "width": 565,
+     "height": 388
+    }
+   ],
+   "q": [
+    [
+     "now",
+     0,
+     1933
+    ]
+   ]
+  },
+  {
+   "k": "frameObserved",
+   "t": 1935,
+   "a": [
+    "w3",
+    3,
+    {
+     "x": 1288,
+     "y": 8,
+     "width": 1264,
+     "height": 784
+    }
+   ],
+   "q": [
+    [
+     "now",
+     0,
+     1935
+    ]
+   ]
+  },
+  {
+   "k": "activeChanged",
+   "t": 2177,
+   "a": [
+    "w4"
+   ]
+  },
+  {
+   "k": "command",
+   "t": 2188,
+   "a": [
+    "plastile.move.output-next"
+   ],
+   "q": [
+    [
+     "activeWindow",
+     0,
+     "w4"
+    ]
+   ],
+   "c": [
+    {
+     "h": "sendToOutput",
+     "a": [
+      "w4",
+      4,
+      "o2"
+     ],
+     "r": true,
+     "n": [
+      {
+       "k": "frameObserved",
+       "t": 2188,
+       "a": [
+        "w4",
+        4,
+        {
+         "x": 1987,
+         "y": 404,
+         "width": 565,
+         "height": 388
+        }
+       ],
+       "q": [
+        [
+         "now",
+         0,
+         2188
+        ]
+       ]
+      },
+      {
+       "k": "membershipChanged",
+       "t": 2188,
+       "a": [
+        "w4",
+        4,
+        {
+         "output": "o2",
+         "desktops": [
+          "d1"
+         ],
+         "onAllDesktops": false,
+         "activities": []
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "k": "turn",
+   "t": 2188,
+   "a": [
+    2
+   ],
+   "q": [
+    [
+     "now",
+     0,
+     2189
+    ],
+    [
+     "frame|w2|2",
+     0,
+     {
+      "x": 707,
+      "y": 8,
+      "width": 565,
+      "height": 388
+     }
+    ],
+    [
+     "frame|w3|3",
+     0,
+     {
+      "x": 1288,
+      "y": 8,
+      "width": 1264,
+      "height": 784
+     }
+    ],
+    [
+     "frame|w4|4",
+     0,
+     {
+      "x": 1987,
+      "y": 404,
+      "width": 565,
+      "height": 388
+     }
+    ]
+   ],
+   "c": [
+    {
+     "h": "applyFrame",
+     "a": [
+      "w2",
+      2,
+      {
+       "x": 707,
+       "y": 8,
+       "width": 565,
+       "height": 784
+      }
+     ],
+     "r": {
+      "before": {
+       "x": 707,
+       "y": 8,
+       "width": 565,
+       "height": 388
+      },
+      "after": {
+       "x": 707,
+       "y": 8,
+       "width": 565,
+       "height": 388
+      }
+     }
+    },
+    {
+     "h": "deadline",
+     "a": [
+      750
+     ],
+     "r": null
+    },
+    {
+     "h": "applyFrame",
+     "a": [
+      "w3",
+      3,
+      {
+       "x": 1288,
+       "y": 8,
+       "width": 691,
+       "height": 784
+      }
+     ],
+     "r": {
+      "before": {
+       "x": 1288,
+       "y": 8,
+       "width": 1264,
+       "height": 784
+      },
+      "after": {
+       "x": 1288,
+       "y": 8,
+       "width": 1264,
+       "height": 784
+      }
+     }
+    },
+    {
+     "h": "applyFrame",
+     "a": [
+      "w4",
+      4,
+      {
+       "x": 1987,
+       "y": 8,
+       "width": 565,
+       "height": 784
+      }
+     ],
+     "r": {
+      "before": {
+       "x": 1987,
+       "y": 404,
+       "width": 565,
+       "height": 388
+      },
+      "after": {
+       "x": 1987,
+       "y": 404,
+       "width": 565,
+       "height": 388
+      }
+     }
+    }
+   ]
+  },
+  {
+   "k": "frameObserved",
+   "t": 2191,
+   "a": [
+    "w2",
+    2,
+    {
+     "x": 707,
+     "y": 8,
+     "width": 565,
+     "height": 784
+    }
+   ],
+   "q": [
+    [
+     "now",
+     0,
+     2191
+    ]
+   ]
+  },
+  {
+   "k": "frameObserved",
+   "t": 2580,
+   "a": [
+    "w4",
+    4,
+    {
+     "x": 1987,
+     "y": 8,
+     "width": 565,
+     "height": 784
+    }
+   ],
+   "q": [
+    [
+     "now",
+     0,
+     2580
+    ]
+   ]
+  },
+  {
+   "k": "frameObserved",
+   "t": 2583,
+   "a": [
+    "w3",
+    3,
+    {
+     "x": 1288,
+     "y": 8,
+     "width": 691,
+     "height": 784
+    }
+   ],
+   "q": [
+    [
+     "now",
+     0,
+     2583
+    ]
+   ]
+  },
+  {
+   "k": "activeChanged",
+   "t": 2753,
+   "a": [
+    "w3"
+   ]
+  },
+  {
+   "k": "command",
+   "t": 2764,
+   "a": [
+    "plastile.resize.grow"
+   ],
+   "q": [
+    [
+     "activeWindow",
+     0,
+     "w3"
+    ],
+    [
+     "now",
+     0,
+     2765
+    ],
+    [
+     "frame|w3|3",
+     0,
+     {
+      "x": 1288,
+      "y": 8,
+      "width": 691,
+      "height": 784
+     }
+    ],
+    [
+     "frame|w4|4",
+     0,
+     {
+      "x": 1987,
+      "y": 8,
+      "width": 565,
+      "height": 784
+     }
+    ]
+   ],
+   "c": [
+    {
+     "h": "applyFrame",
+     "a": [
+      "w3",
+      3,
+      {
+       "x": 1288,
+       "y": 8,
+       "width": 754,
+       "height": 784
+      }
+     ],
+     "r": {
+      "before": {
+       "x": 1288,
+       "y": 8,
+       "width": 691,
+       "height": 784
+      },
+      "after": {
+       "x": 1288,
+       "y": 8,
+       "width": 691,
+       "height": 784
+      }
+     }
+    },
+    {
+     "h": "deadline",
+     "a": [
+      750
+     ],
+     "r": null
+    },
+    {
+     "h": "applyFrame",
+     "a": [
+      "w4",
+      4,
+      {
+       "x": 2050,
+       "y": 8,
+       "width": 502,
+       "height": 784
+      }
+     ],
+     "r": {
+      "before": {
+       "x": 1987,
+       "y": 8,
+       "width": 565,
+       "height": 784
+      },
+      "after": {
+       "x": 1987,
+       "y": 8,
+       "width": 565,
+       "height": 784
+      }
+     }
+    }
+   ]
+  },
+  {
+   "k": "membershipChanged",
+   "t": 2834,
+   "a": [
+    "w4",
+    4,
+    {
+     "output": "o1",
+     "desktops": [
+      "d1"
+     ],
+     "onAllDesktops": false,
+     "activities": []
+    }
+   ],
+   "q": [
+    [
+     "now",
+     0,
+     2835
+    ]
+   ]
+  },
+  {
+   "k": "membershipChanged",
+   "t": 2835,
+   "a": [
+    "w3",
+    3,
+    {
+     "output": "o1",
+     "desktops": [
+      "d1"
+     ],
+     "onAllDesktops": false,
+     "activities": []
+    }
+   ]
+  },
+  {
+   "k": "topologyChanged",
+   "t": 2842,
+   "a": [],
+   "q": [
+    [
+     "now",
+     0,
+     2842
+    ],
+    [
+     "outputs",
+     0,
+     [
+      {
+       "id": "o1",
+       "name": "Virtual-0",
+       "geometry": {
+        "x": 0,
+        "y": 0,
+        "width": 1280,
+        "height": 800
+       },
+       "scale": 1,
+       "identity": "connector"
+      }
+     ]
+    ]
+   ]
+  },
+  {
+   "k": "turn",
+   "t": 2842,
+   "a": [
+    2
+   ],
+   "q": [
+    [
+     "visibleDesktop|o2",
+     0,
+     null
+    ],
+    [
+     "now",
+     0,
+     2843
+    ],
+    [
+     "frame|w2|2",
+     0,
+     {
+      "x": 707,
+      "y": 8,
+      "width": 565,
+      "height": 784
+     }
+    ]
+   ],
+   "c": [
+    {
+     "h": "applyFrame",
+     "a": [
+      "w2",
+      2,
+      {
+       "x": 707,
+       "y": 8,
+       "width": 565,
+       "height": 256
+      }
+     ],
+     "r": {
+      "before": {
+       "x": 707,
+       "y": 8,
+       "width": 565,
+       "height": 784
+      },
+      "after": {
+       "x": 707,
+       "y": 8,
+       "width": 565,
+       "height": 784
+      }
+     }
+    },
+    {
+     "h": "applyFrame",
+     "a": [
+      "w4",
+      4,
+      {
+       "x": 707,
+       "y": 272,
+       "width": 565,
+       "height": 256
+      }
+     ],
+     "r": {
+      "before": {
+       "x": 1987,
+       "y": 8,
+       "width": 565,
+       "height": 784
+      },
+      "after": {
+       "x": 1987,
+       "y": 8,
+       "width": 565,
+       "height": 784
+      }
+     }
+    },
+    {
+     "h": "applyFrame",
+     "a": [
+      "w3",
+      3,
+      {
+       "x": 707,
+       "y": 536,
+       "width": 565,
+       "height": 256
+      }
+     ],
+     "r": {
+      "before": {
+       "x": 1288,
+       "y": 8,
+       "width": 691,
+       "height": 784
+      },
+      "after": {
+       "x": 1288,
+       "y": 8,
+       "width": 691,
+       "height": 784
+      }
+     }
+    }
+   ]
+  },
+  {
+   "k": "frameObserved",
+   "t": 2844,
+   "a": [
+    "w2",
+    2,
+    {
+     "x": 707,
+     "y": 8,
+     "width": 565,
+     "height": 256
+    }
+   ],
+   "q": [
+    [
+     "now",
+     0,
+     2844
+    ]
+   ]
+  },
+  {
+   "k": "frameObserved",
+   "t": 3155,
+   "a": [
+    "w3",
+    3,
+    {
+     "x": 707,
+     "y": 536,
+     "width": 565,
+     "height": 256
+    }
+   ],
+   "q": [
+    [
+     "now",
+     0,
+     3155
+    ]
+   ]
+  },
+  {
+   "k": "frameObserved",
+   "t": 3155,
+   "a": [
+    "w4",
+    4,
+    {
+     "x": 707,
+     "y": 272,
+     "width": 565,
+     "height": 256
+    }
+   ]
+  },
+  {
+   "k": "topologyChanged",
+   "t": 4590,
+   "a": [],
+   "q": [
+    [
+     "now",
+     0,
+     4590
+    ],
+    [
+     "outputs",
+     0,
+     [
+      {
+       "id": "o1",
+       "name": "Virtual-0",
+       "geometry": {
+        "x": 0,
+        "y": 0,
+        "width": 1280,
+        "height": 800
+       },
+       "scale": 1,
+       "identity": "connector"
+      },
+      {
+       "id": "o2",
+       "name": "Virtual-1",
+       "geometry": {
+        "x": 1280,
+        "y": 0,
+        "width": 1280,
+        "height": 800
+       },
+       "scale": 1,
+       "identity": "connector"
+      }
+     ]
+    ]
+   ]
+  },
+  {
+   "k": "turn",
+   "t": 4590,
+   "a": [
+    2
+   ],
+   "q": [
+    [
+     "frame|w2|2",
+     0,
+     {
+      "x": 707,
+      "y": 8,
+      "width": 565,
+      "height": 256
+     }
+    ],
+    [
+     "frame|w4|4",
+     0,
+     {
+      "x": 707,
+      "y": 272,
+      "width": 565,
+      "height": 256
+     }
+    ],
+    [
+     "frame|w3|3",
+     0,
+     {
+      "x": 707,
+      "y": 536,
+      "width": 565,
+      "height": 256
+     }
+    ]
+   ]
+  },
+  {
+   "k": "frameObserved",
+   "t": 4591,
+   "a": [
+    "w2",
+    2,
+    {
+     "x": 707,
+     "y": 8,
+     "width": 565,
+     "height": 784
+    }
+   ],
+   "q": [
+    [
+     "now",
+     0,
+     4591
+    ]
+   ]
+  },
+  {
+   "k": "turn",
+   "t": 4591,
+   "a": [
+    2
+   ],
+   "c": [
+    {
+     "h": "applyFrame",
+     "a": [
+      "w2",
+      2,
+      {
+       "x": 707,
+       "y": 8,
+       "width": 565,
+       "height": 256
+      }
+     ],
+     "r": {
+      "before": {
+       "x": 707,
+       "y": 8,
+       "width": 565,
+       "height": 784
+      },
+      "after": {
+       "x": 707,
+       "y": 8,
+       "width": 565,
+       "height": 784
+      }
+     }
+    },
+    {
+     "h": "deadline",
+     "a": [
+      750
+     ],
+     "r": null
+    }
+   ]
+  },
+  {
+   "k": "frameObserved",
+   "t": 4591,
+   "a": [
+    "w2",
+    2,
+    {
+     "x": 707,
+     "y": 8,
+     "width": 565,
+     "height": 256
+    }
+   ]
+  },
+  {
+   "k": "frameObserved",
+   "t": 4991,
+   "a": [
+    "w4",
+    4,
+    {
+     "x": 1987,
+     "y": 8,
+     "width": 565,
+     "height": 784
+    }
+   ],
+   "q": [
+    [
+     "now",
+     0,
+     4991
+    ]
+   ]
+  },
+  {
+   "k": "membershipChanged",
+   "t": 4991,
+   "a": [
+    "w4",
+    4,
+    {
+     "output": "o2",
+     "desktops": [
+      "d1"
+     ],
+     "onAllDesktops": false,
+     "activities": []
+    }
+   ]
+  },
+  {
+   "k": "frameObserved",
+   "t": 4991,
+   "a": [
+    "w3",
+    3,
+    {
+     "x": 1288,
+     "y": 8,
+     "width": 691,
+     "height": 784
+    }
+   ]
+  },
+  {
+   "k": "membershipChanged",
+   "t": 4991,
+   "a": [
+    "w3",
+    3,
+    {
+     "output": "o2",
+     "desktops": [
+      "d1"
+     ],
+     "onAllDesktops": false,
+     "activities": []
+    }
+   ]
+  },
+  {
+   "k": "turn",
+   "t": 4992,
+   "a": [
+    2
+   ],
+   "q": [
+    [
+     "now",
+     0,
+     4992
+    ],
+    [
+     "now",
+     3,
+     4993
+    ],
+    [
+     "visibleDesktop|o2",
+     0,
+     "d1"
+    ],
+    [
+     "frame|w4|4",
+     0,
+     {
+      "x": 1987,
+      "y": 8,
+      "width": 565,
+      "height": 784
+     }
+    ],
+    [
+     "frame|w3|3",
+     0,
+     {
+      "x": 1288,
+      "y": 8,
+      "width": 691,
+      "height": 784
+     }
+    ]
+   ],
+   "c": [
+    {
+     "h": "applyFrame",
+     "a": [
+      "w2",
+      2,
+      {
+       "x": 707,
+       "y": 8,
+       "width": 565,
+       "height": 784
+      }
+     ],
+     "r": {
+      "before": {
+       "x": 707,
+       "y": 8,
+       "width": 565,
+       "height": 256
+      },
+      "after": {
+       "x": 707,
+       "y": 8,
+       "width": 565,
+       "height": 256
+      }
+     }
+    },
+    {
+     "h": "deadline",
+     "a": [
+      749
+     ],
+     "r": null
+    },
+    {
+     "h": "applyFrame",
+     "a": [
+      "w4",
+      4,
+      {
+       "x": 1288,
+       "y": 8,
+       "width": 754,
+       "height": 784
+      }
+     ],
+     "r": {
+      "before": {
+       "x": 1987,
+       "y": 8,
+       "width": 565,
+       "height": 784
+      },
+      "after": {
+       "x": 1987,
+       "y": 8,
+       "width": 565,
+       "height": 784
+      }
+     }
+    },
+    {
+     "h": "applyFrame",
+     "a": [
+      "w3",
+      3,
+      {
+       "x": 2050,
+       "y": 8,
+       "width": 502,
+       "height": 784
+      }
+     ],
+     "r": {
+      "before": {
+       "x": 1288,
+       "y": 8,
+       "width": 691,
+       "height": 784
+      },
+      "after": {
+       "x": 1288,
+       "y": 8,
+       "width": 691,
+       "height": 784
+      }
+     }
+    }
+   ]
+  },
+  {
+   "k": "frameObserved",
+   "t": 4994,
+   "a": [
+    "w2",
+    2,
+    {
+     "x": 707,
+     "y": 8,
+     "width": 565,
+     "height": 784
+    }
+   ],
+   "q": [
+    [
+     "now",
+     0,
+     4994
+    ]
+   ]
+  },
+  {
+   "k": "frameObserved",
+   "t": 5395,
+   "a": [
+    "w3",
+    3,
+    {
+     "x": 2050,
+     "y": 8,
+     "width": 502,
+     "height": 784
+    }
+   ],
+   "q": [
+    [
+     "now",
+     0,
+     5395
+    ]
+   ]
+  },
+  {
+   "k": "frameObserved",
+   "t": 5397,
+   "a": [
+    "w4",
+    4,
+    {
+     "x": 1288,
+     "y": 8,
+     "width": 754,
+     "height": 784
+    }
+   ],
+   "q": [
+    [
+     "now",
+     0,
+     5397
+    ]
+   ]
+  },
+  {
+   "k": "stop",
+   "t": 5811,
+   "a": []
+  }
+ ],
+ "writes": [
+  {
+   "id": "w1",
+   "gen": 1,
+   "target": {
+    "x": 8,
+    "y": 8,
+    "width": 691,
+    "height": 784
+   }
+  },
+  {
+   "id": "w2",
+   "gen": 2,
+   "target": {
+    "x": 707,
+    "y": 8,
+    "width": 565,
+    "height": 256
+   }
+  },
+  {
+   "id": "w3",
+   "gen": 3,
+   "target": {
+    "x": 707,
+    "y": 272,
+    "width": 565,
+    "height": 256
+   }
+  },
+  {
+   "id": "w4",
+   "gen": 4,
+   "target": {
+    "x": 707,
+    "y": 536,
+    "width": 565,
+    "height": 256
+   }
+  },
+  {
+   "id": "w2",
+   "gen": 2,
+   "target": {
+    "x": 707,
+    "y": 8,
+    "width": 565,
+    "height": 388
+   }
+  },
+  {
+   "id": "w4",
+   "gen": 4,
+   "target": {
+    "x": 707,
+    "y": 404,
+    "width": 565,
+    "height": 388
+   }
+  },
+  {
+   "id": "w3",
+   "gen": 3,
+   "target": {
+    "x": 1288,
+    "y": 8,
+    "width": 1264,
+    "height": 784
+   }
+  },
+  {
+   "id": "w2",
+   "gen": 2,
+   "target": {
+    "x": 707,
+    "y": 8,
+    "width": 565,
+    "height": 784
+   }
+  },
+  {
+   "id": "w3",
+   "gen": 3,
+   "target": {
+    "x": 1288,
+    "y": 8,
+    "width": 691,
+    "height": 784
+   }
+  },
+  {
+   "id": "w4",
+   "gen": 4,
+   "target": {
+    "x": 1987,
+    "y": 8,
+    "width": 565,
+    "height": 784
+   }
+  },
+  {
+   "id": "w3",
+   "gen": 3,
+   "target": {
+    "x": 1288,
+    "y": 8,
+    "width": 754,
+    "height": 784
+   }
+  },
+  {
+   "id": "w4",
+   "gen": 4,
+   "target": {
+    "x": 2050,
+    "y": 8,
+    "width": 502,
+    "height": 784
+   }
+  },
+  {
+   "id": "w2",
+   "gen": 2,
+   "target": {
+    "x": 707,
+    "y": 8,
+    "width": 565,
+    "height": 256
+   }
+  },
+  {
+   "id": "w4",
+   "gen": 4,
+   "target": {
+    "x": 707,
+    "y": 272,
+    "width": 565,
+    "height": 256
+   }
+  },
+  {
+   "id": "w3",
+   "gen": 3,
+   "target": {
+    "x": 707,
+    "y": 536,
+    "width": 565,
+    "height": 256
+   }
+  },
+  {
+   "id": "w2",
+   "gen": 2,
+   "target": {
+    "x": 707,
+    "y": 8,
+    "width": 565,
+    "height": 256
+   }
+  },
+  {
+   "id": "w2",
+   "gen": 2,
+   "target": {
+    "x": 707,
+    "y": 8,
+    "width": 565,
+    "height": 784
+   }
+  },
+  {
+   "id": "w4",
+   "gen": 4,
+   "target": {
+    "x": 1288,
+    "y": 8,
+    "width": 754,
+    "height": 784
+   }
+  },
+  {
+   "id": "w3",
+   "gen": 3,
+   "target": {
+    "x": 2050,
+    "y": 8,
+    "width": 502,
+    "height": 784
+   }
+  }
+ ],
+ "expect": {
+  "model": {
+   "windows": {
+    "w1": {
+     "id": "w1",
+     "appId": "plastile-fixture",
+     "kind": "normal",
+     "mode": "tiled",
+     "userMode": null,
+     "decision": {
+      "mode": "tiled",
+      "source": "default",
+      "reason": "normal resizable window",
+      "ruleIds": []
+     },
+     "rules": null,
+     "context": {
+      "output": "o1",
+      "desktop": "d1",
+      "activity": "default"
+     },
+     "layout": "master-stack",
+     "suspensions": [],
+     "constraints": {
+      "minFrame": {
+       "width": 150,
+       "height": 178
+      },
+      "maxFrame": {
+       "width": "Infinity",
+       "height": "Infinity"
+      },
+      "fixed": false
+     },
+     "learnedMin": null,
+     "learnedMax": null,
+     "ledger": {
+      "status": "settled",
+      "outstanding": false,
+      "desired": {
+       "x": 8,
+       "y": 8,
+       "width": 691,
+       "height": 784
+      },
+      "corrections": 0
+     },
+     "slot": {
+      "x": 8,
+      "y": 8,
+      "width": 691,
+      "height": 784
+     },
+     "exception": null,
+     "nativeTile": false,
+     "nativeYield": false,
+     "parked": false,
+     "zone": null
+    },
+    "w2": {
+     "id": "w2",
+     "appId": "plastile-fixture",
+     "kind": "normal",
+     "mode": "tiled",
+     "userMode": null,
+     "decision": {
+      "mode": "tiled",
+      "source": "default",
+      "reason": "normal resizable window",
+      "ruleIds": []
+     },
+     "rules": null,
+     "context": {
+      "output": "o1",
+      "desktop": "d1",
+      "activity": "default"
+     },
+     "layout": "master-stack",
+     "suspensions": [],
+     "constraints": {
+      "minFrame": {
+       "width": 150,
+       "height": 178
+      },
+      "maxFrame": {
+       "width": "Infinity",
+       "height": "Infinity"
+      },
+      "fixed": false
+     },
+     "learnedMin": null,
+     "learnedMax": null,
+     "ledger": {
+      "status": "settled",
+      "outstanding": false,
+      "desired": {
+       "x": 707,
+       "y": 8,
+       "width": 565,
+       "height": 784
+      },
+      "corrections": 0
+     },
+     "slot": {
+      "x": 707,
+      "y": 8,
+      "width": 565,
+      "height": 784
+     },
+     "exception": null,
+     "nativeTile": false,
+     "nativeYield": false,
+     "parked": false,
+     "zone": null
+    },
+    "w3": {
+     "id": "w3",
+     "appId": "plastile-fixture",
+     "kind": "normal",
+     "mode": "tiled",
+     "userMode": null,
+     "decision": {
+      "mode": "tiled",
+      "source": "default",
+      "reason": "normal resizable window",
+      "ruleIds": []
+     },
+     "rules": null,
+     "context": {
+      "output": "o2",
+      "desktop": "d1",
+      "activity": "default"
+     },
+     "layout": "master-stack",
+     "suspensions": [],
+     "constraints": {
+      "minFrame": {
+       "width": 150,
+       "height": 178
+      },
+      "maxFrame": {
+       "width": "Infinity",
+       "height": "Infinity"
+      },
+      "fixed": false
+     },
+     "learnedMin": null,
+     "learnedMax": null,
+     "ledger": {
+      "status": "settled",
+      "outstanding": false,
+      "desired": {
+       "x": 2050,
+       "y": 8,
+       "width": 502,
+       "height": 784
+      },
+      "corrections": 0
+     },
+     "slot": {
+      "x": 2050,
+      "y": 8,
+      "width": 502,
+      "height": 784
+     },
+     "exception": null,
+     "nativeTile": false,
+     "nativeYield": false,
+     "parked": false,
+     "zone": null
+    },
+    "w4": {
+     "id": "w4",
+     "appId": "plastile-fixture",
+     "kind": "normal",
+     "mode": "tiled",
+     "userMode": null,
+     "decision": {
+      "mode": "tiled",
+      "source": "default",
+      "reason": "normal resizable window",
+      "ruleIds": []
+     },
+     "rules": null,
+     "context": {
+      "output": "o2",
+      "desktop": "d1",
+      "activity": "default"
+     },
+     "layout": "master-stack",
+     "suspensions": [],
+     "constraints": {
+      "minFrame": {
+       "width": 150,
+       "height": 178
+      },
+      "maxFrame": {
+       "width": "Infinity",
+       "height": "Infinity"
+      },
+      "fixed": false
+     },
+     "learnedMin": null,
+     "learnedMax": null,
+     "ledger": {
+      "status": "settled",
+      "outstanding": false,
+      "desired": {
+       "x": 1288,
+       "y": 8,
+       "width": 754,
+       "height": 784
+      },
+      "corrections": 0
+     },
+     "slot": {
+      "x": 1288,
+      "y": 8,
+      "width": 754,
+      "height": 784
+     },
+     "exception": null,
+     "nativeTile": false,
+     "nativeYield": false,
+     "parked": false,
+     "zone": null
+    }
+   },
+   "contexts": [
+    {
+     "id": "o1\u241fd1\u241fdefault",
+     "layout": "master-stack",
+     "members": 2,
+     "revision": 10,
+     "applied": 10,
+     "order": [
+      "w1",
+      "w2"
+     ]
+    },
+    {
+     "id": "o2\u241fd1\u241fdefault",
+     "layout": "master-stack",
+     "members": 2,
+     "revision": 2,
+     "applied": 2,
+     "order": [
+      "w4",
+      "w3"
+     ]
+    }
+   ]
+  },
+  "counters": {
+   "solves": 10,
+   "flushes": 7,
+   "commands": 3,
+   "commandsQueued": 0,
+   "writes": 19,
+   "corrections": 1,
+   "skipOutstanding": 0,
+   "skipNoop": 8,
+   "skipDiverged": 0,
+   "observations": 22,
+   "observationsDuringApply": 0,
+   "settled": 17,
+   "stale": 0,
+   "superseded": 0,
+   "partial": 0,
+   "external": 5,
+   "learned": 0,
+   "accepted": 0,
+   "diverged": 0,
+   "deadlines": 0,
+   "overflow": 0,
+   "reclassified": 10,
+   "adopted": 4,
+   "removed": 0,
+   "staleEvents": 0,
+   "errors": 0,
+   "raises": 0,
+   "activations": 0,
+   "liveSolves": 0,
+   "restored": 0,
+   "restoreAmbiguous": 0,
+   "reparks": 0,
+   "invalidSlots": 0
+  },
+  "trace": [
+   {
+    "t": 1002,
+    "kind": "add",
+    "id": "w1"
+   },
+   {
+    "t": 1002,
+    "kind": "mode",
+    "id": "w1",
+    "data": {
+     "mode": "tiled",
+     "why": "added",
+     "source": "default"
+    }
+   },
+   {
+    "t": 1002,
+    "kind": "add",
+    "id": "w2"
+   },
+   {
+    "t": 1002,
+    "kind": "mode",
+    "id": "w2",
+    "data": {
+     "mode": "tiled",
+     "why": "added",
+     "source": "default"
+    }
+   },
+   {
+    "t": 1002,
+    "kind": "add",
+    "id": "w3"
+   },
+   {
+    "t": 1003,
+    "kind": "mode",
+    "id": "w3",
+    "data": {
+     "mode": "tiled",
+     "why": "added",
+     "source": "default"
+    }
+   },
+   {
+    "t": 1003,
+    "kind": "add",
+    "id": "w4"
+   },
+   {
+    "t": 1003,
+    "kind": "mode",
+    "id": "w4",
+    "data": {
+     "mode": "tiled",
+     "why": "added",
+     "source": "default"
+    }
+   },
+   {
+    "t": 1003,
+    "kind": "solve",
+    "id": "o1\u241fd1\u241fdefault",
+    "data": {
+     "kind": "master-stack",
+     "n": 4,
+     "notes": 0
+    }
+   },
+   {
+    "t": 1004,
+    "kind": "write",
+    "id": "w1",
+    "data": {
+     "reason": "plan",
+     "seq": 1,
+     "settled": false
+    }
+   },
+   {
+    "t": 1004,
+    "kind": "write",
+    "id": "w2",
+    "data": {
+     "reason": "plan",
+     "seq": 2,
+     "settled": false
+    }
+   },
+   {
+    "t": 1004,
+    "kind": "write",
+    "id": "w3",
+    "data": {
+     "reason": "plan",
+     "seq": 3,
+     "settled": false
+    }
+   },
+   {
+    "t": 1004,
+    "kind": "write",
+    "id": "w4",
+    "data": {
+     "reason": "plan",
+     "seq": 4,
+     "settled": false
+    }
+   },
+   {
+    "t": 1013,
+    "kind": "settled",
+    "id": "w2"
+   },
+   {
+    "t": 1015,
+    "kind": "settled",
+    "id": "w1"
+   },
+   {
+    "t": 1331,
+    "kind": "settled",
+    "id": "w3"
+   },
+   {
+    "t": 1333,
+    "kind": "settled",
+    "id": "w4"
+   },
+   {
+    "t": 1540,
+    "kind": "external",
+    "id": "w3",
+    "data": {
+     "frame": {
+      "x": 1987,
+      "y": 272,
+      "width": 565,
+      "height": 256
+     },
+     "desired": {
+      "x": 707,
+      "y": 272,
+      "width": 565,
+      "height": 256
+     }
+    }
+   },
+   {
+    "t": 1540,
+    "kind": "mode",
+    "id": "w3",
+    "data": {
+     "mode": "tiled",
+     "why": "membership",
+     "source": "default"
+    }
+   },
+   {
+    "t": 1541,
+    "kind": "command",
+    "data": {
+     "id": "plastile.move.output-next",
+     "status": "accepted"
+    }
+   },
+   {
+    "t": 1541,
+    "kind": "solve",
+    "id": "o1\u241fd1\u241fdefault",
+    "data": {
+     "kind": "master-stack",
+     "n": 3,
+     "notes": 0
+    }
+   },
+   {
+    "t": 1541,
+    "kind": "write",
+    "id": "w2",
+    "data": {
+     "reason": "plan",
+     "seq": 5,
+     "settled": false
+    }
+   },
+   {
+    "t": 1541,
+    "kind": "write",
+    "id": "w4",
+    "data": {
+     "reason": "plan",
+     "seq": 6,
+     "settled": false
+    }
+   },
+   {
+    "t": 1541,
+    "kind": "solve",
+    "id": "o2\u241fd1\u241fdefault",
+    "data": {
+     "kind": "master-stack",
+     "n": 1,
+     "notes": 0
+    }
+   },
+   {
+    "t": 1541,
+    "kind": "write",
+    "id": "w3",
+    "data": {
+     "reason": "plan",
+     "seq": 7,
+     "settled": false
+    }
+   },
+   {
+    "t": 1542,
+    "kind": "settled",
+    "id": "w2"
+   },
+   {
+    "t": 1933,
+    "kind": "settled",
+    "id": "w4"
+   },
+   {
+    "t": 1935,
+    "kind": "settled",
+    "id": "w3"
+   },
+   {
+    "t": 2188,
+    "kind": "external",
+    "id": "w4",
+    "data": {
+     "frame": {
+      "x": 1987,
+      "y": 404,
+      "width": 565,
+      "height": 388
+     },
+     "desired": {
+      "x": 707,
+      "y": 404,
+      "width": 565,
+      "height": 388
+     }
+    }
+   },
+   {
+    "t": 2188,
+    "kind": "mode",
+    "id": "w4",
+    "data": {
+     "mode": "tiled",
+     "why": "membership",
+     "source": "default"
+    }
+   },
+   {
+    "t": 2188,
+    "kind": "command",
+    "data": {
+     "id": "plastile.move.output-next",
+     "status": "accepted"
+    }
+   },
+   {
+    "t": 2189,
+    "kind": "solve",
+    "id": "o1\u241fd1\u241fdefault",
+    "data": {
+     "kind": "master-stack",
+     "n": 2,
+     "notes": 0
+    }
+   },
+   {
+    "t": 2189,
+    "kind": "write",
+    "id": "w2",
+    "data": {
+     "reason": "plan",
+     "seq": 8,
+     "settled": false
+    }
+   },
+   {
+    "t": 2189,
+    "kind": "solve",
+    "id": "o2\u241fd1\u241fdefault",
+    "data": {
+     "kind": "master-stack",
+     "n": 2,
+     "notes": 0
+    }
+   },
+   {
+    "t": 2189,
+    "kind": "write",
+    "id": "w3",
+    "data": {
+     "reason": "plan",
+     "seq": 9,
+     "settled": false
+    }
+   },
+   {
+    "t": 2189,
+    "kind": "write",
+    "id": "w4",
+    "data": {
+     "reason": "plan",
+     "seq": 10,
+     "settled": false
+    }
+   },
+   {
+    "t": 2191,
+    "kind": "settled",
+    "id": "w2"
+   },
+   {
+    "t": 2580,
+    "kind": "settled",
+    "id": "w4"
+   },
+   {
+    "t": 2583,
+    "kind": "settled",
+    "id": "w3"
+   },
+   {
+    "t": 2765,
+    "kind": "solve",
+    "id": "o2\u241fd1\u241fdefault",
+    "data": {
+     "kind": "master-stack",
+     "n": 2,
+     "notes": 0
+    }
+   },
+   {
+    "t": 2765,
+    "kind": "write",
+    "id": "w3",
+    "data": {
+     "reason": "plan",
+     "seq": 11,
+     "settled": false
+    }
+   },
+   {
+    "t": 2765,
+    "kind": "write",
+    "id": "w4",
+    "data": {
+     "reason": "plan",
+     "seq": 12,
+     "settled": false
+    }
+   },
+   {
+    "t": 2765,
+    "kind": "command",
+    "data": {
+     "id": "plastile.resize.grow",
+     "status": "accepted"
+    }
+   },
+   {
+    "t": 2835,
+    "kind": "mode",
+    "id": "w4",
+    "data": {
+     "mode": "tiled",
+     "why": "membership",
+     "source": "default"
+    }
+   },
+   {
+    "t": 2835,
+    "kind": "mode",
+    "id": "w3",
+    "data": {
+     "mode": "tiled",
+     "why": "membership",
+     "source": "default"
+    }
+   },
+   {
+    "t": 2842,
+    "kind": "topology"
+   },
+   {
+    "t": 2843,
+    "kind": "solve",
+    "id": "o1\u241fd1\u241fdefault",
+    "data": {
+     "kind": "master-stack",
+     "n": 4,
+     "notes": 0
+    }
+   },
+   {
+    "t": 2843,
+    "kind": "write",
+    "id": "w2",
+    "data": {
+     "reason": "plan",
+     "seq": 13,
+     "settled": false
+    }
+   },
+   {
+    "t": 2843,
+    "kind": "write",
+    "id": "w4",
+    "data": {
+     "reason": "plan",
+     "seq": 14,
+     "settled": false
+    }
+   },
+   {
+    "t": 2843,
+    "kind": "write",
+    "id": "w3",
+    "data": {
+     "reason": "plan",
+     "seq": 15,
+     "settled": false
+    }
+   },
+   {
+    "t": 2844,
+    "kind": "settled",
+    "id": "w2"
+   },
+   {
+    "t": 3155,
+    "kind": "settled",
+    "id": "w3"
+   },
+   {
+    "t": 3155,
+    "kind": "settled",
+    "id": "w4"
+   },
+   {
+    "t": 4590,
+    "kind": "topology"
+   },
+   {
+    "t": 4590,
+    "kind": "solve",
+    "id": "o1\u241fd1\u241fdefault",
+    "data": {
+     "kind": "master-stack",
+     "n": 4,
+     "notes": 0
+    }
+   },
+   {
+    "t": 4591,
+    "kind": "external",
+    "id": "w2",
+    "data": {
+     "frame": {
+      "x": 707,
+      "y": 8,
+      "width": 565,
+      "height": 784
+     },
+     "desired": {
+      "x": 707,
+      "y": 8,
+      "width": 565,
+      "height": 256
+     }
+    }
+   },
+   {
+    "t": 4591,
+    "kind": "write",
+    "id": "w2",
+    "data": {
+     "reason": "correction",
+     "seq": 16,
+     "settled": false
+    }
+   },
+   {
+    "t": 4591,
+    "kind": "settled",
+    "id": "w2"
+   },
+   {
+    "t": 4991,
+    "kind": "external",
+    "id": "w4",
+    "data": {
+     "frame": {
+      "x": 1987,
+      "y": 8,
+      "width": 565,
+      "height": 784
+     },
+     "desired": {
+      "x": 707,
+      "y": 272,
+      "width": 565,
+      "height": 256
+     }
+    }
+   },
+   {
+    "t": 4991,
+    "kind": "mode",
+    "id": "w4",
+    "data": {
+     "mode": "tiled",
+     "why": "membership",
+     "source": "default"
+    }
+   },
+   {
+    "t": 4991,
+    "kind": "external",
+    "id": "w3",
+    "data": {
+     "frame": {
+      "x": 1288,
+      "y": 8,
+      "width": 691,
+      "height": 784
+     },
+     "desired": {
+      "x": 707,
+      "y": 536,
+      "width": 565,
+      "height": 256
+     }
+    }
+   },
+   {
+    "t": 4991,
+    "kind": "mode",
+    "id": "w3",
+    "data": {
+     "mode": "tiled",
+     "why": "membership",
+     "source": "default"
+    }
+   },
+   {
+    "t": 4992,
+    "kind": "solve",
+    "id": "o1\u241fd1\u241fdefault",
+    "data": {
+     "kind": "master-stack",
+     "n": 2,
+     "notes": 0
+    }
+   },
+   {
+    "t": 4992,
+    "kind": "write",
+    "id": "w2",
+    "data": {
+     "reason": "plan",
+     "seq": 17,
+     "settled": false
+    }
+   },
+   {
+    "t": 4993,
+    "kind": "solve",
+    "id": "o2\u241fd1\u241fdefault",
+    "data": {
+     "kind": "master-stack",
+     "n": 2,
+     "notes": 0
+    }
+   },
+   {
+    "t": 4993,
+    "kind": "write",
+    "id": "w4",
+    "data": {
+     "reason": "plan",
+     "seq": 18,
+     "settled": false
+    }
+   },
+   {
+    "t": 4993,
+    "kind": "write",
+    "id": "w3",
+    "data": {
+     "reason": "plan",
+     "seq": 19,
+     "settled": false
+    }
+   },
+   {
+    "t": 4994,
+    "kind": "settled",
+    "id": "w2"
+   },
+   {
+    "t": 5395,
+    "kind": "settled",
+    "id": "w3"
+   },
+   {
+    "t": 5397,
+    "kind": "settled",
+    "id": "w4"
+   }
+  ]
+ },
+ "oracle": {
+  "w1": {
+   "fixture": 1,
+   "frame": {
+    "x": 8,
+    "y": 8,
+    "width": 691,
+    "height": 784
+   }
+  },
+  "w2": {
+   "fixture": 2,
+   "frame": {
+    "x": 707,
+    "y": 8,
+    "width": 565,
+    "height": 784
+   }
+  },
+  "w3": {
+   "fixture": 3,
+   "frame": {
+    "x": 2050,
+    "y": 8,
+    "width": 502,
+    "height": 784
+   }
+  },
+  "w4": {
+   "fixture": 4,
+   "frame": {
+    "x": 1288,
+    "y": 8,
+    "width": 754,
+    "height": 784
+   }
+  }
+ }
+}

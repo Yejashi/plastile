@@ -14,6 +14,11 @@ import type { KDesktop, KOutput, KQt, KSignal, KWindow, KWorkspace } from "./kwi
 
 const UNBOUNDED = 2147483647;
 
+/** The engine events this adapter delivers (a replay recorder may stand in for the engine: src/runtime/replay.ts). */
+export type EngineSink = Pick<Engine, "windowAdded" | "windowRemoved" | "metadataChanged" | "membershipChanged" |
+  "statesChanged" | "constraintsChanged" | "nativeTileChanged" | "frameObserved" | "activeChanged" | "visibilityChanged" |
+  "topologyChanged" | "outputsRekeyed" | "workAreaChanged">;
+
 interface Conn { signal: KSignal; fn: (...args: unknown[]) => void }
 
 interface Entry {
@@ -188,7 +193,7 @@ export class KwinAdapter implements HostPort {
   private globals: Conn[] = [];
   private outputConns: Conn[] = [];
   private desktopConns: Conn[] = [];
-  private engine: Engine | null = null;
+  private engine: EngineSink | null = null;
   private watchTitles = false;
   private alive = true;
   /** Last usable area (MaximizeArea) per output key; KWin keeps one per output, not per desktop. */
@@ -243,7 +248,7 @@ export class KwinAdapter implements HostPort {
   }
 
   // ----------------------------------------------------------------- lifecycle
-  attach(engine: Engine, watchTitles: boolean): WindowSnapshot[] {
+  attach(engine: EngineSink, watchTitles: boolean): WindowSnapshot[] {
     this.engine = engine;
     this.watchTitles = watchTitles;
     this.own(this.ws.windowAdded, (w) => this.onAdded(w as KWindow), this.globals);
