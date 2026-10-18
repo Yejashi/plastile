@@ -1,0 +1,146 @@
+{
+ "task": "T16, T22",
+ "layer": "nested KWin virtual backend (not physical)",
+ "kwin": "kwin 6.7.5",
+ "implementationCommit": "507fc243d4764cd25b349614d4726f7fcf2eb053",
+ "implementationDirty": false,
+ "integration": {
+  "runs": 3,
+  "perRun": [
+   {
+    "transient-parent-minimize-T16": {
+     "pass": true,
+     "checks": 12,
+     "failedChecks": []
+    },
+    "transient-parent-desktop-T16": {
+     "pass": true,
+     "checks": 12,
+     "failedChecks": []
+    },
+    "transient-parent-close-T16": {
+     "pass": true,
+     "checks": 13,
+     "failedChecks": []
+    },
+    "monocle-unload-T22": {
+     "pass": true,
+     "checks": 20,
+     "failedChecks": []
+    }
+   },
+   {
+    "transient-parent-minimize-T16": {
+     "pass": true,
+     "checks": 12,
+     "failedChecks": []
+    },
+    "transient-parent-desktop-T16": {
+     "pass": true,
+     "checks": 12,
+     "failedChecks": []
+    },
+    "transient-parent-close-T16": {
+     "pass": true,
+     "checks": 13,
+     "failedChecks": []
+    },
+    "monocle-unload-T22": {
+     "pass": true,
+     "checks": 20,
+     "failedChecks": []
+    }
+   },
+   {
+    "transient-parent-minimize-T16": {
+     "pass": true,
+     "checks": 12,
+     "failedChecks": []
+    },
+    "transient-parent-desktop-T16": {
+     "pass": true,
+     "checks": 12,
+     "failedChecks": []
+    },
+    "transient-parent-close-T16": {
+     "pass": true,
+     "checks": 13,
+     "failedChecks": []
+    },
+    "monocle-unload-T22": {
+     "pass": true,
+     "checks": 20,
+     "failedChecks": []
+    }
+   }
+  ]
+ },
+ "kwinNativeBehaviour": {
+  "note": "Measured in a nested KWin without Plastile (the same steps as the Plastile run); Plastile's run matched it at every step.",
+  "dialogVisibilityPerMinimizeStep": {
+   "initial": {
+    "minimized": false,
+    "hidden": false,
+    "desktops": [
+     1
+    ]
+   },
+   "parent minimized": {
+    "minimized": true,
+    "hidden": false,
+    "desktops": [
+     1
+    ]
+   },
+   "parent restored": {
+    "minimized": false,
+    "hidden": false,
+    "desktops": [
+     1
+    ]
+   },
+   "dialog minimized alone": {
+    "minimized": true,
+    "hidden": false,
+    "desktops": [
+     1
+    ]
+   },
+   "dialog restored": {
+    "minimized": false,
+    "hidden": false,
+    "desktops": [
+     1
+    ]
+   }
+  },
+  "parentMovedToDesktop2": "the dialog moves to desktop 2 with its parent",
+  "dialogSentAlone": "only the dialog moves; the parent stays",
+  "parentDestroyedDialogKept": {
+   "transient": true,
+   "transientFor": null,
+   "minimized": false
+  }
+ },
+ "mutationChecks": {
+  "note": "Each mutation was applied to src/, rebuilt, run once in a nested session and reverted (dirty tree); the counts are failed checks.",
+  "classify: transients no longer float (src/core/classify.ts)": {
+   "transient-parent-minimize-T16": 3,
+   "transient-parent-desktop-T16": 7,
+   "transient-parent-close-T16": 4
+  },
+  "adapter raise also sets keepAbove (src/adapters/kwin/adapter.ts)": {
+   "monocle-unload-T22": 7
+  },
+  "adapter raise also sets opacity 0.9": {
+   "monocle-unload-T22": 5
+  },
+  "monocle activation moves the window to the front of the members (src/core/engine.ts)": {
+   "monocle-unload-T22": "3 (master/stack order check, and focus commands no longer reach the expected member); BSP keeps its own tree and is unaffected"
+  }
+ },
+ "observations": [
+  "A tiled window that leaves a desktop and comes back is appended to the end of the context (the parent returns to the bottom stack slot, not its old slot). Recorded, not asserted; it is the current re-join policy, not a T16 defect.",
+  "A saved float is restored only when exactly one live window has the application's identity (T27); the T22 scenario gives its float its own app id for that reason."
+ ]
+}
