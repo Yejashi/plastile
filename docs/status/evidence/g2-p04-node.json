@@ -1,0 +1,473 @@
+{
+ "purpose": "P04 pure-core scaling (PERFORMANCE \u00a75): production engine + mock compositor in Node",
+ "label": "Node V8 with a mock host: informs algorithm and queue scaling only; it is not QV4, not KWin, and proves nothing about desktop latency",
+ "layer": "pure core + mock compositor in Node (V8), not QV4/KWin",
+ "node": "v26.11.1",
+ "samples": 5000,
+ "warmup": 200,
+ "bursts": 20,
+ "counts": {
+  "32": {
+   "ratio": {
+    "executeNs": {
+     "n": 5000,
+     "min": 16150,
+     "p50": 21380,
+     "p95": 67770,
+     "p99": 143090,
+     "max": 4768064
+    },
+    "solveNs": {
+     "n": 5000,
+     "min": 5820,
+     "p50": 6940,
+     "p95": 22480,
+     "p99": 38010,
+     "max": 4627354
+    },
+    "writesPerCommand": {
+     "n": 5000,
+     "min": 32,
+     "p50": 32,
+     "p95": 32,
+     "p99": 32,
+     "max": 32
+    },
+    "solvesPerCommand": 1,
+    "corrections": 0,
+    "errors": 0
+   },
+   "swap": {
+    "executeNs": {
+     "n": 5000,
+     "min": 11410,
+     "p50": 13300,
+     "p95": 25530,
+     "p99": 33010,
+     "max": 1013178
+    },
+    "solveNs": {
+     "n": 5000,
+     "min": 5820,
+     "p50": 6220,
+     "p95": 12160,
+     "p99": 14200,
+     "max": 987638
+    },
+    "writesPerCommand": {
+     "n": 5000,
+     "min": 2,
+     "p50": 2,
+     "p95": 2,
+     "p99": 2,
+     "max": 2
+    },
+    "solvesPerCommand": 1,
+    "corrections": 0,
+    "errors": 0
+   },
+   "layout": {
+    "executeNs": {
+     "n": 5000,
+     "min": 15190,
+     "p50": 18500,
+     "p95": 35990,
+     "p99": 47900,
+     "max": 2129128
+    },
+    "solveNs": {
+     "n": 5000,
+     "min": 5850,
+     "p50": 6390,
+     "p95": 13530,
+     "p99": 16320,
+     "max": 1325329
+    },
+    "writesPerCommand": {
+     "n": 5000,
+     "min": 32,
+     "p50": 32,
+     "p95": 32,
+     "p99": 32,
+     "max": 32
+    },
+    "solvesPerCommand": 1,
+    "corrections": 0,
+    "errors": 0
+   },
+   "focus": {
+    "executeNs": {
+     "n": 5000,
+     "min": 2510,
+     "p50": 2650,
+     "p95": 5530,
+     "p99": 7350,
+     "max": 931179
+    },
+    "solveNs": null,
+    "writesPerCommand": {
+     "n": 5000,
+     "min": 0,
+     "p50": 0,
+     "p95": 0,
+     "p99": 0,
+     "max": 0
+    },
+    "solvesPerCommand": 0,
+    "corrections": 0,
+    "errors": 0
+   },
+   "burst": {
+    "openAndFlushNs": {
+     "n": 20,
+     "min": 101700,
+     "p50": 158919,
+     "p95": 266930,
+     "p99": 266930,
+     "max": 283720
+    },
+    "solvesPerOpenBurst": {
+     "n": 20,
+     "min": 1,
+     "p50": 1,
+     "p95": 1,
+     "p99": 1,
+     "max": 1
+    },
+    "writesPerOpenBurst": {
+     "n": 20,
+     "min": 32,
+     "p50": 32,
+     "p95": 32,
+     "p99": 32,
+     "max": 32
+    },
+    "closeAndFlushNs": {
+     "n": 20,
+     "min": 41680,
+     "p50": 70010,
+     "p95": 116580,
+     "p99": 116580,
+     "max": 120610
+    },
+    "solvesPerCloseBurst": {
+     "n": 20,
+     "min": 0,
+     "p50": 0,
+     "p95": 0,
+     "p99": 0,
+     "max": 0
+    },
+    "warmupBursts": 2
+   }
+  },
+  "100": {
+   "ratio": {
+    "executeNs": {
+     "n": 5000,
+     "min": 52950,
+     "p50": 61360,
+     "p95": 99540,
+     "p99": 130300,
+     "max": 1540377
+    },
+    "solveNs": {
+     "n": 5000,
+     "min": 15960,
+     "p50": 18140,
+     "p95": 31480,
+     "p99": 37480,
+     "max": 1275938
+    },
+    "writesPerCommand": {
+     "n": 5000,
+     "min": 100,
+     "p50": 100,
+     "p95": 100,
+     "p99": 100,
+     "max": 100
+    },
+    "solvesPerCommand": 1,
+    "corrections": 0,
+    "errors": 0
+   },
+   "swap": {
+    "executeNs": {
+     "n": 5000,
+     "min": 31160,
+     "p50": 35020,
+     "p95": 56660,
+     "p99": 71780,
+     "max": 844989
+    },
+    "solveNs": {
+     "n": 5000,
+     "min": 15640,
+     "p50": 17190,
+     "p95": 29540,
+     "p99": 35640,
+     "max": 820329
+    },
+    "writesPerCommand": {
+     "n": 5000,
+     "min": 2,
+     "p50": 2,
+     "p95": 2,
+     "p99": 2,
+     "max": 2
+    },
+    "solvesPerCommand": 1,
+    "corrections": 0,
+    "errors": 0
+   },
+   "layout": {
+    "executeNs": {
+     "n": 5000,
+     "min": 55660,
+     "p50": 63340,
+     "p95": 95420,
+     "p99": 155250,
+     "max": 3222206
+    },
+    "solveNs": {
+     "n": 5000,
+     "min": 15880,
+     "p50": 17380,
+     "p95": 28320,
+     "p99": 37390,
+     "max": 1151678
+    },
+    "writesPerCommand": {
+     "n": 5000,
+     "min": 100,
+     "p50": 100,
+     "p95": 100,
+     "p99": 100,
+     "max": 100
+    },
+    "solvesPerCommand": 1,
+    "corrections": 0,
+    "errors": 0
+   },
+   "focus": {
+    "executeNs": {
+     "n": 5000,
+     "min": 5900,
+     "p50": 6390,
+     "p95": 11590,
+     "p99": 14570,
+     "max": 936299
+    },
+    "solveNs": null,
+    "writesPerCommand": {
+     "n": 5000,
+     "min": 0,
+     "p50": 0,
+     "p95": 0,
+     "p99": 0,
+     "max": 0
+    },
+    "solvesPerCommand": 0,
+    "corrections": 0,
+    "errors": 0
+   },
+   "burst": {
+    "openAndFlushNs": {
+     "n": 20,
+     "min": 537170,
+     "p50": 550650,
+     "p95": 955668,
+     "p99": 955668,
+     "max": 997428
+    },
+    "solvesPerOpenBurst": {
+     "n": 20,
+     "min": 1,
+     "p50": 1,
+     "p95": 1,
+     "p99": 1,
+     "max": 1
+    },
+    "writesPerOpenBurst": {
+     "n": 20,
+     "min": 100,
+     "p50": 100,
+     "p95": 100,
+     "p99": 100,
+     "max": 100
+    },
+    "closeAndFlushNs": {
+     "n": 20,
+     "min": 88409,
+     "p50": 90759,
+     "p95": 126160,
+     "p99": 126160,
+     "max": 172540
+    },
+    "solvesPerCloseBurst": {
+     "n": 20,
+     "min": 0,
+     "p50": 0,
+     "p95": 0,
+     "p99": 0,
+     "max": 0
+    },
+    "warmupBursts": 2
+   }
+  },
+  "250": {
+   "ratio": {
+    "executeNs": {
+     "n": 5000,
+     "min": 125950,
+     "p50": 149170,
+     "p95": 212580,
+     "p99": 1074909,
+     "max": 3486425
+    },
+    "solveNs": {
+     "n": 5000,
+     "min": 37710,
+     "p50": 45879,
+     "p95": 69000,
+     "p99": 85510,
+     "max": 1480688
+    },
+    "writesPerCommand": {
+     "n": 5000,
+     "min": 250,
+     "p50": 250,
+     "p95": 250,
+     "p99": 250,
+     "max": 250
+    },
+    "solvesPerCommand": 1,
+    "corrections": 0,
+    "errors": 0
+   },
+   "swap": {
+    "executeNs": {
+     "n": 5000,
+     "min": 74270,
+     "p50": 83960,
+     "p95": 131460,
+     "p99": 178320,
+     "max": 1099629
+    },
+    "solveNs": {
+     "n": 5000,
+     "min": 36550,
+     "p50": 40800,
+     "p95": 69360,
+     "p99": 88500,
+     "max": 1020599
+    },
+    "writesPerCommand": {
+     "n": 5000,
+     "min": 2,
+     "p50": 2,
+     "p95": 2,
+     "p99": 2,
+     "max": 2
+    },
+    "solvesPerCommand": 1,
+    "corrections": 0,
+    "errors": 0
+   },
+   "layout": {
+    "executeNs": {
+     "n": 5000,
+     "min": 162890,
+     "p50": 185229,
+     "p95": 266750,
+     "p99": 1367768,
+     "max": 5482762
+    },
+    "solveNs": {
+     "n": 5000,
+     "min": 36810,
+     "p50": 44610,
+     "p95": 68200,
+     "p99": 92990,
+     "max": 1715878
+    },
+    "writesPerCommand": {
+     "n": 5000,
+     "min": 248,
+     "p50": 248,
+     "p95": 248,
+     "p99": 248,
+     "max": 248
+    },
+    "solvesPerCommand": 1,
+    "corrections": 0,
+    "errors": 0
+   },
+   "focus": {
+    "executeNs": {
+     "n": 5000,
+     "min": 12560,
+     "p50": 14280,
+     "p95": 26620,
+     "p99": 33750,
+     "max": 776519
+    },
+    "solveNs": null,
+    "writesPerCommand": {
+     "n": 5000,
+     "min": 0,
+     "p50": 0,
+     "p95": 0,
+     "p99": 0,
+     "max": 0
+    },
+    "solvesPerCommand": 0,
+    "corrections": 0,
+    "errors": 0
+   },
+   "burst": {
+    "openAndFlushNs": {
+     "n": 20,
+     "min": 2570177,
+     "p50": 2962767,
+     "p95": 3571145,
+     "p99": 3571145,
+     "max": 3984165
+    },
+    "solvesPerOpenBurst": {
+     "n": 20,
+     "min": 1,
+     "p50": 1,
+     "p95": 1,
+     "p99": 1,
+     "max": 1
+    },
+    "writesPerOpenBurst": {
+     "n": 20,
+     "min": 250,
+     "p50": 250,
+     "p95": 250,
+     "p99": 250,
+     "max": 250
+    },
+    "closeAndFlushNs": {
+     "n": 20,
+     "min": 219520,
+     "p50": 231590,
+     "p95": 276860,
+     "p99": 276860,
+     "max": 292690
+    },
+    "solvesPerCloseBurst": {
+     "n": 20,
+     "min": 0,
+     "p50": 0,
+     "p95": 0,
+     "p99": 0,
+     "max": 0
+    },
+    "warmupBursts": 2
+   }
+  }
+ }
+}

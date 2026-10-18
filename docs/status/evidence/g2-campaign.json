@@ -1,0 +1,2510 @@
+{
+ "purpose": "G2 (T20/T34/T04) measurement campaign provenance",
+ "main": {
+  "seed": 20261018,
+  "implementationCommit": "320cf72bd7444f188e043b52d11bff70802f1321",
+  "implementationDirty": false,
+  "environment": {
+   "cpu": "AMD Ryzen 5 5600X 6-Core Processor",
+   "cpus": 12,
+   "memTotalKiB": 32733824,
+   "os": "NAME=\"Arch Linux\"",
+   "kwin": "kwin 6.7.5",
+   "packages": {
+    "kwin": "6.7.5-3",
+    "qt6-base": "6.12.0-2",
+    "qt6-declarative": "6.12.0-1",
+    "kglobalaccel": "6.30.0-1",
+    "kactivitymanagerd": "6.7.5-1",
+    "wayland": "1.26.0-1",
+    "mesa": "1:26.2.4-1"
+   },
+   "kernel": "7.2.9-arch1-1",
+   "python": "3.14.8",
+   "node": "v26.11.1"
+  },
+  "unitsPlanned": 83,
+  "unitsRun": 83,
+  "unitsFailed": [],
+  "allUnitsFromCleanTree": true,
+  "allUnitsSameCommit": true,
+  "otherNestedKwinAtUnitStart": [],
+  "load1mAtUnitStart": {
+   "min": 2.2,
+   "max": 5.16,
+   "mean": 3.02
+  },
+  "cpuGovernor": [
+   "powersave"
+  ],
+  "energyPerformancePreference": [
+   "balance_performance"
+  ],
+  "backgroundProcessesSeenBusy": {
+   "ksystemstats": 86,
+   "polkitd": 83,
+   "tailscaled": 83,
+   "gdm": 83,
+   "systemd": 83,
+   "NetworkManager": 83,
+   "dbus-broker": 80,
+   "plasmashell": 31,
+   "Isolated Web Co": 16,
+   "openclaw-gatewa": 8,
+   "claude": 7,
+   "WebExtensions": 7
+  },
+  "units": [
+   {
+    "order": 0,
+    "id": "qualify-n32-diag-gc",
+    "rc": 0,
+    "seconds": 120.5,
+    "start": 1792338788.1394136,
+    "load1m": "2.85",
+    "busy": [
+     "polkitd:80.2",
+     "tailscaled:31.7",
+     "gdm:20.8",
+     "systemd:17.8"
+    ]
+   },
+   {
+    "order": 1,
+    "id": "qualify-n32-instrumented-r0",
+    "rc": 0,
+    "seconds": 119.0,
+    "start": 1792338910.2076235,
+    "load1m": "3.21",
+    "busy": [
+     "polkitd:80.1",
+     "tailscaled:30.7",
+     "gdm:20.8",
+     "systemd:17.8"
+    ]
+   },
+   {
+    "order": 2,
+    "id": "qualify-n8-instrumented-r1",
+    "rc": 0,
+    "seconds": 115.8,
+    "start": 1792339030.7878287,
+    "load1m": "5.16",
+    "busy": [
+     "polkitd:78.0",
+     "tailscaled:30.6",
+     "gdm:19.7",
+     "systemd:17.8"
+    ]
+   },
+   {
+    "order": 3,
+    "id": "workloads-p07-p12-p13-teardown",
+    "rc": 0,
+    "seconds": 26.2,
+    "start": 1792339148.1456296,
+    "load1m": "2.98",
+    "busy": [
+     "polkitd:79.1",
+     "tailscaled:31.7",
+     "gdm:20.8",
+     "systemd:16.8"
+    ]
+   },
+   {
+    "order": 4,
+    "id": "qualify-n4-uninstrumented-r2",
+    "rc": 0,
+    "seconds": 114.8,
+    "start": 1792339175.8565164,
+    "load1m": "2.51",
+    "busy": [
+     "polkitd:80.1",
+     "tailscaled:30.6",
+     "gdm:20.8",
+     "systemd:17.8"
+    ]
+   },
+   {
+    "order": 5,
+    "id": "upstream-plastile-r1",
+    "rc": 0,
+    "seconds": 115.7,
+    "start": 1792339292.1971138,
+    "load1m": "3.65",
+    "busy": [
+     "polkitd:79.2",
+     "tailscaled:30.7",
+     "gdm:20.8",
+     "systemd:17.8"
+    ]
+   },
+   {
+    "order": 6,
+    "id": "qualify-n32-uninstrumented-r1",
+    "rc": 0,
+    "seconds": 118.7,
+    "start": 1792339409.4503012,
+    "load1m": "3.18",
+    "busy": [
+     "polkitd:79.1",
+     "tailscaled:30.7",
+     "gdm:21.8",
+     "systemd:17.8"
+    ]
+   },
+   {
+    "order": 7,
+    "id": "churn-p14",
+    "rc": 0,
+    "seconds": 109.3,
+    "start": 1792339529.720487,
+    "load1m": "3.44",
+    "busy": [
+     "polkitd:79.1",
+     "tailscaled:30.7",
+     "gdm:20.8",
+     "systemd:16.8"
+    ]
+   },
+   {
+    "order": 8,
+    "id": "qualify-n4-instrumented-r2",
+    "rc": 0,
+    "seconds": 115.2,
+    "start": 1792339640.5568469,
+    "load1m": "3.41",
+    "busy": [
+     "polkitd:79.0",
+     "tailscaled:31.6",
+     "gdm:20.7",
+     "systemd:16.8"
+    ]
+   },
+   {
+    "order": 9,
+    "id": "upstream-polonium-r4",
+    "rc": 0,
+    "seconds": 115.8,
+    "start": 1792339757.2962673,
+    "load1m": "3.17",
+    "busy": [
+     "polkitd:80.0",
+     "tailscaled:30.6",
+     "gdm:20.7",
+     "systemd:17.8"
+    ]
+   },
+   {
+    "order": 10,
+    "id": "qualify-n2-uninstrumented-r1",
+    "rc": 0,
+    "seconds": 114.7,
+    "start": 1792339874.6911106,
+    "load1m": "3.62",
+    "busy": [
+     "polkitd:80.0",
+     "tailscaled:30.6",
+     "gdm:21.7",
+     "systemd:17.8"
+    ]
+   },
+   {
+    "order": 11,
+    "id": "churn-p14-control",
+    "rc": 0,
+    "seconds": 8.5,
+    "start": 1792339990.9346676,
+    "load1m": "2.70",
+    "busy": [
+     "polkitd:80.2",
+     "tailscaled:31.7",
+     "gdm:21.8",
+     "systemd:18.8"
+    ]
+   },
+   {
+    "order": 12,
+    "id": "upstream-plastile-r0",
+    "rc": 0,
+    "seconds": 115.7,
+    "start": 1792340000.9646673,
+    "load1m": "2.67",
+    "busy": [
+     "polkitd:80.0",
+     "tailscaled:30.6",
+     "gdm:21.7",
+     "systemd:17.8"
+    ]
+   },
+   {
+    "order": 13,
+    "id": "p05-n32-r1",
+    "rc": 0,
+    "seconds": 3.8,
+    "start": 1792340118.2578003,
+    "load1m": "2.42",
+    "busy": [
+     "polkitd:81.1",
+     "tailscaled:30.7",
+     "gdm:20.8",
+     "systemd:16.8"
+    ]
+   },
+   {
+    "order": 14,
+    "id": "qualify-n4-uninstrumented-r1",
+    "rc": 0,
+    "seconds": 114.5,
+    "start": 1792340123.6284814,
+    "load1m": "2.80",
+    "busy": [
+     "polkitd:80.0",
+     "tailscaled:31.6",
+     "gdm:21.7",
+     "systemd:17.8"
+    ]
+   },
+   {
+    "order": 15,
+    "id": "qualify-n8-uninstrumented-r0",
+    "rc": 0,
+    "seconds": 114.9,
+    "start": 1792340239.721048,
+    "load1m": "3.04",
+    "busy": [
+     "polkitd:79.0",
+     "openclaw-gatewa:38.5",
+     "tailscaled:31.6",
+     "gdm:21.7"
+    ]
+   },
+   {
+    "order": 16,
+    "id": "qualify-n4-instrumented-r4",
+    "rc": 0,
+    "seconds": 114.9,
+    "start": 1792340356.2172222,
+    "load1m": "2.77",
+    "busy": [
+     "polkitd:80.0",
+     "tailscaled:30.6",
+     "gdm:21.7",
+     "systemd:17.8"
+    ]
+   },
+   {
+    "order": 17,
+    "id": "churn-p15-control",
+    "rc": 0,
+    "seconds": 1204.8,
+    "start": 1792340472.6548855,
+    "load1m": "3.11",
+    "busy": [
+     "polkitd:80.2",
+     "tailscaled:30.7",
+     "gdm:21.8",
+     "systemd:16.8"
+    ]
+   },
+   {
+    "order": 18,
+    "id": "qualify-n32-instrumented-r4",
+    "rc": 0,
+    "seconds": 118.9,
+    "start": 1792341679.0304956,
+    "load1m": "2.79",
+    "busy": [
+     "polkitd:79.1",
+     "tailscaled:29.7",
+     "gdm:20.8",
+     "systemd:17.8"
+    ]
+   },
+   {
+    "order": 19,
+    "id": "qualify-n16-uninstrumented-r3",
+    "rc": 0,
+    "seconds": 116.0,
+    "start": 1792341799.4952314,
+    "load1m": "4.54",
+    "busy": [
+     "polkitd:81.0",
+     "tailscaled:30.6",
+     "gdm:21.7",
+     "systemd:17.8"
+    ]
+   },
+   {
+    "order": 20,
+    "id": "p05-n8-r0",
+    "rc": 0,
+    "seconds": 3.6,
+    "start": 1792341917.0417638,
+    "load1m": "4.07",
+    "busy": [
+     "polkitd:80.2",
+     "tailscaled:29.7",
+     "gdm:21.8",
+     "systemd:16.8"
+    ]
+   },
+   {
+    "order": 21,
+    "id": "upstream-polonium-r2",
+    "rc": 0,
+    "seconds": 115.9,
+    "start": 1792341922.2091982,
+    "load1m": "3.99",
+    "busy": [
+     "polkitd:80.1",
+     "tailscaled:28.7",
+     "gdm:20.8",
+     "systemd:16.8"
+    ]
+   },
+   {
+    "order": 22,
+    "id": "qualify-n8-instrumented-r2",
+    "rc": 0,
+    "seconds": 115.9,
+    "start": 1792342039.6522224,
+    "load1m": "2.67",
+    "busy": [
+     "polkitd:80.0",
+     "tailscaled:30.6",
+     "gdm:21.7",
+     "systemd:16.8"
+    ]
+   },
+   {
+    "order": 23,
+    "id": "qualify-n8-instrumented-r4",
+    "rc": 0,
+    "seconds": 114.7,
+    "start": 1792342157.1442916,
+    "load1m": "2.94",
+    "busy": [
+     "polkitd:80.1",
+     "tailscaled:30.6",
+     "gdm:20.8",
+     "systemd:16.8"
+    ]
+   },
+   {
+    "order": 24,
+    "id": "qualify-n4-instrumented-r0",
+    "rc": 0,
+    "seconds": 114.8,
+    "start": 1792342273.4376361,
+    "load1m": "2.95",
+    "busy": [
+     "polkitd:80.1",
+     "tailscaled:30.7",
+     "gdm:22.8",
+     "systemd:16.8"
+    ]
+   },
+   {
+    "order": 25,
+    "id": "p05-n8-r4",
+    "rc": 0,
+    "seconds": 3.6,
+    "start": 1792342389.8300118,
+    "load1m": "3.05",
+    "busy": [
+     "polkitd:81.1",
+     "tailscaled:30.6",
+     "gdm:20.8",
+     "systemd:18.8"
+    ]
+   },
+   {
+    "order": 26,
+    "id": "qualify-n16-instrumented-r4",
+    "rc": 0,
+    "seconds": 115.9,
+    "start": 1792342394.9999263,
+    "load1m": "3.05",
+    "busy": [
+     "polkitd:80.0",
+     "openclaw-gatewa:40.5",
+     "tailscaled:30.6",
+     "gdm:20.7"
+    ]
+   },
+   {
+    "order": 27,
+    "id": "upstream-plastile-r4",
+    "rc": 0,
+    "seconds": 115.7,
+    "start": 1792342512.4454956,
+    "load1m": "2.37",
+    "busy": [
+     "polkitd:78.1",
+     "tailscaled:29.7",
+     "gdm:19.8",
+     "systemd:17.8"
+    ]
+   },
+   {
+    "order": 28,
+    "id": "p05-n8-r3",
+    "rc": 0,
+    "seconds": 3.7,
+    "start": 1792342629.6908646,
+    "load1m": "2.30",
+    "busy": [
+     "polkitd:79.1",
+     "tailscaled:31.6",
+     "gdm:19.8",
+     "systemd:17.8"
+    ]
+   },
+   {
+    "order": 29,
+    "id": "qualify-n8-uninstrumented-r4",
+    "rc": 0,
+    "seconds": 115.1,
+    "start": 1792342634.9121273,
+    "load1m": "2.20",
+    "busy": [
+     "polkitd:80.1",
+     "tailscaled:29.7",
+     "gdm:21.7",
+     "systemd:16.8"
+    ]
+   },
+   {
+    "order": 30,
+    "id": "qualify-n8-uninstrumented-r2",
+    "rc": 0,
+    "seconds": 115.4,
+    "start": 1792342751.5552688,
+    "load1m": "2.75",
+    "busy": [
+     "polkitd:79.0",
+     "tailscaled:29.6",
+     "gdm:19.8",
+     "systemd:17.8"
+    ]
+   },
+   {
+    "order": 31,
+    "id": "qualify-n32-diag-frames",
+    "rc": 0,
+    "seconds": 120.8,
+    "start": 1792342868.5025892,
+    "load1m": "2.81",
+    "busy": [
+     "Isolated Web Co:100.7",
+     "polkitd:79.0",
+     "openclaw-gatewa:41.5",
+     "tailscaled:31.6"
+    ]
+   },
+   {
+    "order": 32,
+    "id": "qualify-n2-uninstrumented-r3",
+    "rc": 0,
+    "seconds": 114.9,
+    "start": 1792342990.8232822,
+    "load1m": "3.01",
+    "busy": [
+     "Isolated Web Co:100.8",
+     "polkitd:80.0",
+     "tailscaled:30.6",
+     "gdm:20.8"
+    ]
+   },
+   {
+    "order": 33,
+    "id": "qualify-n32-instrumented-r1",
+    "rc": 0,
+    "seconds": 118.7,
+    "start": 1792343107.3174417,
+    "load1m": "3.27",
+    "busy": [
+     "polkitd:79.9",
+     "openclaw-gatewa:38.5",
+     "tailscaled:30.6",
+     "gdm:20.7"
+    ]
+   },
+   {
+    "order": 34,
+    "id": "qualify-n4-instrumented-r3",
+    "rc": 0,
+    "seconds": 115.2,
+    "start": 1792343227.5342603,
+    "load1m": "3.32",
+    "busy": [
+     "polkitd:78.0",
+     "tailscaled:31.6",
+     "gdm:22.7",
+     "systemd:17.8"
+    ]
+   },
+   {
+    "order": 35,
+    "id": "p05-n32-r2",
+    "rc": 0,
+    "seconds": 3.8,
+    "start": 1792343344.3254843,
+    "load1m": "2.77",
+    "busy": [
+     "polkitd:79.1",
+     "tailscaled:29.7",
+     "gdm:19.8",
+     "systemd:18.8"
+    ]
+   },
+   {
+    "order": 36,
+    "id": "baseline-p01-p02-r2",
+    "rc": 0,
+    "seconds": 174.6,
+    "start": 1792343349.6540315,
+    "load1m": "2.79",
+    "busy": [
+     "polkitd:80.0",
+     "tailscaled:30.6",
+     "gdm:21.7",
+     "systemd:17.8"
+    ]
+   },
+   {
+    "order": 37,
+    "id": "qualify-n8-uninstrumented-r1",
+    "rc": 0,
+    "seconds": 115.5,
+    "start": 1792343525.8301888,
+    "load1m": "3.07",
+    "busy": [
+     "polkitd:80.2",
+     "tailscaled:30.7",
+     "gdm:20.8",
+     "systemd:17.8"
+    ]
+   },
+   {
+    "order": 38,
+    "id": "churn-p15",
+    "rc": 0,
+    "seconds": 1570.2,
+    "start": 1792343642.9290137,
+    "load1m": "2.55",
+    "busy": [
+     "polkitd:78.9",
+     "tailscaled:30.6",
+     "gdm:20.7",
+     "systemd:16.8"
+    ]
+   },
+   {
+    "order": 39,
+    "id": "qualify-n16-instrumented-r1",
+    "rc": 0,
+    "seconds": 116.0,
+    "start": 1792345214.6395357,
+    "load1m": "2.58",
+    "busy": [
+     "polkitd:80.1",
+     "tailscaled:30.6",
+     "gdm:20.8",
+     "systemd:17.8"
+    ]
+   },
+   {
+    "order": 40,
+    "id": "qualify-n2-uninstrumented-r2",
+    "rc": 0,
+    "seconds": 115.1,
+    "start": 1792345332.2379317,
+    "load1m": "2.81",
+    "busy": [
+     "polkitd:79.1",
+     "tailscaled:30.7",
+     "gdm:20.8",
+     "systemd:17.8"
+    ]
+   },
+   {
+    "order": 41,
+    "id": "qualify-n16-instrumented-r2",
+    "rc": 0,
+    "seconds": 115.8,
+    "start": 1792345448.87539,
+    "load1m": "3.89",
+    "busy": [
+     "polkitd:79.1",
+     "tailscaled:29.7",
+     "gdm:20.8",
+     "systemd:17.8"
+    ]
+   },
+   {
+    "order": 42,
+    "id": "qualify-n32-uninstrumented-r0",
+    "rc": 0,
+    "seconds": 118.0,
+    "start": 1792345566.2767055,
+    "load1m": "3.02",
+    "busy": [
+     "polkitd:79.0",
+     "tailscaled:30.6",
+     "gdm:20.7",
+     "systemd:17.8"
+    ]
+   },
+   {
+    "order": 43,
+    "id": "qualify-n2-instrumented-r0",
+    "rc": 0,
+    "seconds": 115.3,
+    "start": 1792345685.7812755,
+    "load1m": "3.23",
+    "busy": [
+     "polkitd:80.1",
+     "Isolated Web Co:49.4",
+     "tailscaled:31.6",
+     "gdm:20.8"
+    ]
+   },
+   {
+    "order": 44,
+    "id": "qualify-n4-uninstrumented-r0",
+    "rc": 0,
+    "seconds": 114.6,
+    "start": 1792345802.673753,
+    "load1m": "2.89",
+    "busy": [
+     "polkitd:78.9",
+     "tailscaled:29.6",
+     "gdm:20.7",
+     "systemd:17.8"
+    ]
+   },
+   {
+    "order": 45,
+    "id": "qualify-n32-uninstrumented-r4",
+    "rc": 0,
+    "seconds": 118.3,
+    "start": 1792345918.8141074,
+    "load1m": "2.51",
+    "busy": [
+     "polkitd:79.2",
+     "tailscaled:28.7",
+     "gdm:21.8",
+     "systemd:17.8"
+    ]
+   },
+   {
+    "order": 46,
+    "id": "baseline-p01-p02-r1",
+    "rc": 0,
+    "seconds": 168.8,
+    "start": 1792346038.6216946,
+    "load1m": "3.01",
+    "busy": [
+     "polkitd:79.1",
+     "tailscaled:29.7",
+     "gdm:21.8",
+     "systemd:17.8"
+    ]
+   },
+   {
+    "order": 47,
+    "id": "upstream-polonium-r0",
+    "rc": 0,
+    "seconds": 115.9,
+    "start": 1792346208.9887693,
+    "load1m": "2.48",
+    "busy": [
+     "polkitd:80.2",
+     "Isolated Web Co:78.2",
+     "tailscaled:30.7",
+     "gdm:18.8"
+    ]
+   },
+   {
+    "order": 48,
+    "id": "baseline-p01-p02-r3",
+    "rc": 0,
+    "seconds": 170.8,
+    "start": 1792346326.4328833,
+    "load1m": "3.00",
+    "busy": [
+     "polkitd:80.0",
+     "tailscaled:30.6",
+     "gdm:21.7",
+     "systemd:17.8"
+    ]
+   },
+   {
+    "order": 49,
+    "id": "qualify-n2-uninstrumented-r0",
+    "rc": 0,
+    "seconds": 114.5,
+    "start": 1792346498.8047078,
+    "load1m": "3.09",
+    "busy": [
+     "polkitd:80.0",
+     "tailscaled:30.6",
+     "gdm:20.8",
+     "claude:19.8"
+    ]
+   },
+   {
+    "order": 50,
+    "id": "qualify-n16-uninstrumented-r1",
+    "rc": 0,
+    "seconds": 115.8,
+    "start": 1792346614.8441129,
+    "load1m": "3.19",
+    "busy": [
+     "polkitd:80.2",
+     "tailscaled:29.7",
+     "gdm:20.8",
+     "systemd:16.8"
+    ]
+   },
+   {
+    "order": 51,
+    "id": "upstream-polonium-r3",
+    "rc": 0,
+    "seconds": 115.8,
+    "start": 1792346732.192418,
+    "load1m": "2.59",
+    "busy": [
+     "polkitd:80.1",
+     "tailscaled:30.6",
+     "gdm:20.8",
+     "systemd:16.8"
+    ]
+   },
+   {
+    "order": 52,
+    "id": "qualify-n32-uninstrumented-r3",
+    "rc": 0,
+    "seconds": 118.9,
+    "start": 1792346849.58791,
+    "load1m": "2.84",
+    "busy": [
+     "polkitd:80.0",
+     "tailscaled:29.6",
+     "gdm:21.7",
+     "systemd:17.8"
+    ]
+   },
+   {
+    "order": 53,
+    "id": "p05-n8-r1",
+    "rc": 0,
+    "seconds": 3.7,
+    "start": 1792346970.0507848,
+    "load1m": "3.90",
+    "busy": [
+     "polkitd:80.0",
+     "tailscaled:29.6",
+     "gdm:21.7",
+     "systemd:16.8"
+    ]
+   },
+   {
+    "order": 54,
+    "id": "qualify-n32-instrumented-r2",
+    "rc": 0,
+    "seconds": 118.3,
+    "start": 1792346975.270809,
+    "load1m": "3.83",
+    "busy": [
+     "polkitd:81.1",
+     "tailscaled:31.6",
+     "gdm:20.8",
+     "Isolated Web Co:18.8"
+    ]
+   },
+   {
+    "order": 55,
+    "id": "qualify-n2-uninstrumented-r4",
+    "rc": 0,
+    "seconds": 114.6,
+    "start": 1792347095.0889492,
+    "load1m": "3.49",
+    "busy": [
+     "polkitd:79.1",
+     "tailscaled:30.7",
+     "gdm:20.8",
+     "systemd:17.8"
+    ]
+   },
+   {
+    "order": 56,
+    "id": "p05-n32-r0",
+    "rc": 0,
+    "seconds": 4.0,
+    "start": 1792347211.282757,
+    "load1m": "2.70",
+    "busy": [
+     "polkitd:79.9",
+     "tailscaled:30.6",
+     "gdm:19.7",
+     "systemd:16.8"
+    ]
+   },
+   {
+    "order": 57,
+    "id": "qualify-n16-instrumented-r0",
+    "rc": 0,
+    "seconds": 116.2,
+    "start": 1792347216.8079698,
+    "load1m": "2.81",
+    "busy": [
+     "polkitd:79.0",
+     "tailscaled:31.6",
+     "gdm:20.7",
+     "systemd:17.8"
+    ]
+   },
+   {
+    "order": 58,
+    "id": "baseline-p01-p02-r4",
+    "rc": 0,
+    "seconds": 170.0,
+    "start": 1792347334.5556073,
+    "load1m": "2.64",
+    "busy": [
+     "polkitd:79.0",
+     "tailscaled:31.6",
+     "gdm:21.7",
+     "systemd:17.8"
+    ]
+   },
+   {
+    "order": 59,
+    "id": "qualify-n4-uninstrumented-r3",
+    "rc": 0,
+    "seconds": 115.5,
+    "start": 1792347506.1253662,
+    "load1m": "3.62",
+    "busy": [
+     "polkitd:80.0",
+     "tailscaled:30.6",
+     "gdm:21.7",
+     "systemd:16.8"
+    ]
+   },
+   {
+    "order": 60,
+    "id": "baseline-p01-p02-r0",
+    "rc": 0,
+    "seconds": 171.6,
+    "start": 1792347623.2152903,
+    "load1m": "3.78",
+    "busy": [
+     "polkitd:80.2",
+     "tailscaled:31.7",
+     "gdm:19.8",
+     "systemd:18.8"
+    ]
+   },
+   {
+    "order": 61,
+    "id": "qualify-n32-instrumented-r3",
+    "rc": 0,
+    "seconds": 118.5,
+    "start": 1792347796.338497,
+    "load1m": "2.89",
+    "busy": [
+     "polkitd:80.1",
+     "openclaw-gatewa:39.6",
+     "tailscaled:31.7",
+     "gdm:21.8"
+    ]
+   },
+   {
+    "order": 62,
+    "id": "qualify-n16-instrumented-r3",
+    "rc": 0,
+    "seconds": 116.0,
+    "start": 1792347916.3424778,
+    "load1m": "2.86",
+    "busy": [
+     "polkitd:79.2",
+     "tailscaled:31.7",
+     "gdm:22.8",
+     "systemd:18.8"
+    ]
+   },
+   {
+    "order": 63,
+    "id": "p05-n32-r3",
+    "rc": 0,
+    "seconds": 3.9,
+    "start": 1792348033.9392862,
+    "load1m": "2.70",
+    "busy": [
+     "polkitd:80.2",
+     "tailscaled:30.7",
+     "gdm:20.8",
+     "systemd:17.8"
+    ]
+   },
+   {
+    "order": 64,
+    "id": "qualify-n2-instrumented-r4",
+    "rc": 0,
+    "seconds": 114.6,
+    "start": 1792348039.3619223,
+    "load1m": "2.56",
+    "busy": [
+     "polkitd:79.1",
+     "tailscaled:29.6",
+     "gdm:20.8",
+     "systemd:16.8"
+    ]
+   },
+   {
+    "order": 65,
+    "id": "p05-n32-r4",
+    "rc": 0,
+    "seconds": 3.9,
+    "start": 1792348155.5531507,
+    "load1m": "2.60",
+    "busy": [
+     "polkitd:80.0",
+     "tailscaled:31.6",
+     "gdm:20.7",
+     "systemd:16.8"
+    ]
+   },
+   {
+    "order": 66,
+    "id": "qualify-n4-instrumented-r1",
+    "rc": 0,
+    "seconds": 115.1,
+    "start": 1792348160.9750612,
+    "load1m": "2.55",
+    "busy": [
+     "polkitd:80.1",
+     "tailscaled:31.6",
+     "gdm:20.8",
+     "systemd:18.8"
+    ]
+   },
+   {
+    "order": 67,
+    "id": "qualify-n16-uninstrumented-r0",
+    "rc": 0,
+    "seconds": 115.9,
+    "start": 1792348277.6671345,
+    "load1m": "2.52",
+    "busy": [
+     "polkitd:80.0",
+     "tailscaled:30.6",
+     "gdm:20.7",
+     "systemd:17.8"
+    ]
+   },
+   {
+    "order": 68,
+    "id": "qualify-n2-instrumented-r1",
+    "rc": 0,
+    "seconds": 115.0,
+    "start": 1792348395.1154838,
+    "load1m": "2.84",
+    "busy": [
+     "polkitd:79.1",
+     "tailscaled:30.6",
+     "gdm:21.7",
+     "systemd:17.8"
+    ]
+   },
+   {
+    "order": 69,
+    "id": "upstream-plastile-r3",
+    "rc": 0,
+    "seconds": 115.7,
+    "start": 1792348511.7022076,
+    "load1m": "2.64",
+    "busy": [
+     "Isolated Web Co:85.2",
+     "polkitd:80.2",
+     "tailscaled:30.7",
+     "gdm:20.8"
+    ]
+   },
+   {
+    "order": 70,
+    "id": "p05-boundary-n32",
+    "rc": 0,
+    "seconds": 9.4,
+    "start": 1792348628.9469469,
+    "load1m": "2.42",
+    "busy": [
+     "polkitd:81.1",
+     "tailscaled:30.6",
+     "gdm:21.8",
+     "systemd:16.8"
+    ]
+   },
+   {
+    "order": 71,
+    "id": "qualify-n8-uninstrumented-r3",
+    "rc": 0,
+    "seconds": 115.6,
+    "start": 1792348639.874602,
+    "load1m": "2.65",
+    "busy": [
+     "polkitd:80.1",
+     "tailscaled:30.6",
+     "gdm:20.8",
+     "systemd:17.8"
+    ]
+   },
+   {
+    "order": 72,
+    "id": "qualify-n16-uninstrumented-r2",
+    "rc": 0,
+    "seconds": 115.2,
+    "start": 1792348757.0173619,
+    "load1m": "2.39",
+    "busy": [
+     "polkitd:79.1",
+     "tailscaled:30.7",
+     "gdm:20.8",
+     "systemd:17.8"
+    ]
+   },
+   {
+    "order": 73,
+    "id": "qualify-n16-uninstrumented-r4",
+    "rc": 0,
+    "seconds": 115.6,
+    "start": 1792348873.814366,
+    "load1m": "2.61",
+    "busy": [
+     "polkitd:80.0",
+     "tailscaled:30.6",
+     "gdm:20.7",
+     "systemd:16.8"
+    ]
+   },
+   {
+    "order": 74,
+    "id": "qualify-n2-instrumented-r2",
+    "rc": 0,
+    "seconds": 115.5,
+    "start": 1792348990.9595456,
+    "load1m": "2.94",
+    "busy": [
+     "polkitd:80.1",
+     "tailscaled:31.6",
+     "gdm:21.7",
+     "systemd:16.8"
+    ]
+   },
+   {
+    "order": 75,
+    "id": "qualify-n8-instrumented-r3",
+    "rc": 0,
+    "seconds": 115.6,
+    "start": 1792349108.0532823,
+    "load1m": "2.74",
+    "busy": [
+     "polkitd:80.0",
+     "tailscaled:30.6",
+     "openclaw-gatewa:21.7",
+     "gdm:20.7"
+    ]
+   },
+   {
+    "order": 76,
+    "id": "qualify-n4-uninstrumented-r4",
+    "rc": 0,
+    "seconds": 115.4,
+    "start": 1792349225.2474608,
+    "load1m": "2.59",
+    "busy": [
+     "polkitd:79.9",
+     "tailscaled:30.6",
+     "gdm:20.7",
+     "systemd:16.8"
+    ]
+   },
+   {
+    "order": 77,
+    "id": "p05-n8-r2",
+    "rc": 0,
+    "seconds": 3.7,
+    "start": 1792349342.1886415,
+    "load1m": "4.15",
+    "busy": [
+     "polkitd:79.2",
+     "tailscaled:29.7",
+     "gdm:21.8",
+     "systemd:17.8"
+    ]
+   },
+   {
+    "order": 78,
+    "id": "upstream-plastile-r2",
+    "rc": 0,
+    "seconds": 115.7,
+    "start": 1792349347.4034507,
+    "load1m": "3.97",
+    "busy": [
+     "polkitd:79.2",
+     "tailscaled:30.7",
+     "Isolated Web Co:21.8",
+     "gdm:20.8"
+    ]
+   },
+   {
+    "order": 79,
+    "id": "upstream-polonium-r1",
+    "rc": 0,
+    "seconds": 115.8,
+    "start": 1792349464.693762,
+    "load1m": "3.25",
+    "busy": [
+     "polkitd:79.2",
+     "tailscaled:29.7",
+     "gdm:20.8",
+     "systemd:17.8"
+    ]
+   },
+   {
+    "order": 80,
+    "id": "qualify-n2-instrumented-r3",
+    "rc": 0,
+    "seconds": 114.9,
+    "start": 1792349582.0882022,
+    "load1m": "2.38",
+    "busy": [
+     "polkitd:80.9",
+     "openclaw-gatewa:41.4",
+     "tailscaled:30.6",
+     "gdm:21.7"
+    ]
+   },
+   {
+    "order": 81,
+    "id": "qualify-n32-uninstrumented-r2",
+    "rc": 0,
+    "seconds": 118.4,
+    "start": 1792349698.5777535,
+    "load1m": "2.68",
+    "busy": [
+     "polkitd:79.1",
+     "tailscaled:30.7",
+     "gdm:21.8",
+     "systemd:16.8"
+    ]
+   },
+   {
+    "order": 82,
+    "id": "qualify-n8-instrumented-r0",
+    "rc": 0,
+    "seconds": 115.5,
+    "start": 1792349818.54696,
+    "load1m": "3.48",
+    "busy": [
+     "polkitd:79.9",
+     "tailscaled:29.6",
+     "gdm:19.7",
+     "systemd:17.8"
+    ]
+   }
+  ],
+  "argv": {
+   "qualify-n32-diag-gc": [
+    "probes/perf/qualify.py",
+    "--n",
+    "32",
+    "--mode",
+    "instrumented",
+    "--diag",
+    "gc",
+    "--run",
+    "0",
+    "--seed",
+    "20261018"
+   ],
+   "qualify-n32-instrumented-r0": [
+    "probes/perf/qualify.py",
+    "--n",
+    "32",
+    "--mode",
+    "instrumented",
+    "--run",
+    "0",
+    "--seed",
+    "20261018"
+   ],
+   "qualify-n8-instrumented-r1": [
+    "probes/perf/qualify.py",
+    "--n",
+    "8",
+    "--mode",
+    "instrumented",
+    "--run",
+    "1",
+    "--seed",
+    "20261018"
+   ],
+   "workloads-p07-p12-p13-teardown": [
+    "probes/perf/workloads.py",
+    "--only",
+    "p07,p12,p13,teardown",
+    "--seed",
+    "18"
+   ],
+   "qualify-n4-uninstrumented-r2": [
+    "probes/perf/qualify.py",
+    "--n",
+    "4",
+    "--mode",
+    "uninstrumented",
+    "--run",
+    "2",
+    "--seed",
+    "20261018"
+   ],
+   "upstream-plastile-r1": [
+    "probes/baseline-upstream/run.py",
+    "--tilers",
+    "plastile",
+    "--commands",
+    "1000",
+    "--commands-at",
+    "250=100"
+   ],
+   "qualify-n32-uninstrumented-r1": [
+    "probes/perf/qualify.py",
+    "--n",
+    "32",
+    "--mode",
+    "uninstrumented",
+    "--run",
+    "1",
+    "--seed",
+    "20261018"
+   ],
+   "churn-p14": [
+    "probes/perf/churn.py",
+    "p14",
+    "--cycles",
+    "100"
+   ],
+   "qualify-n4-instrumented-r2": [
+    "probes/perf/qualify.py",
+    "--n",
+    "4",
+    "--mode",
+    "instrumented",
+    "--run",
+    "2",
+    "--seed",
+    "20261018"
+   ],
+   "upstream-polonium-r4": [
+    "probes/baseline-upstream/run.py",
+    "--tilers",
+    "polonium",
+    "--commands",
+    "1000",
+    "--commands-at",
+    "250=100"
+   ],
+   "qualify-n2-uninstrumented-r1": [
+    "probes/perf/qualify.py",
+    "--n",
+    "2",
+    "--mode",
+    "uninstrumented",
+    "--run",
+    "1",
+    "--seed",
+    "20261018"
+   ],
+   "churn-p14-control": [
+    "probes/perf/churn.py",
+    "control",
+    "--cycles",
+    "100"
+   ],
+   "upstream-plastile-r0": [
+    "probes/baseline-upstream/run.py",
+    "--tilers",
+    "plastile",
+    "--commands",
+    "1000",
+    "--commands-at",
+    "250=100"
+   ],
+   "p05-n32-r1": [
+    "probes/perf/workloads.py",
+    "--only",
+    "p05",
+    "--counts",
+    "32"
+   ],
+   "qualify-n4-uninstrumented-r1": [
+    "probes/perf/qualify.py",
+    "--n",
+    "4",
+    "--mode",
+    "uninstrumented",
+    "--run",
+    "1",
+    "--seed",
+    "20261018"
+   ],
+   "qualify-n8-uninstrumented-r0": [
+    "probes/perf/qualify.py",
+    "--n",
+    "8",
+    "--mode",
+    "uninstrumented",
+    "--run",
+    "0",
+    "--seed",
+    "20261018"
+   ],
+   "qualify-n4-instrumented-r4": [
+    "probes/perf/qualify.py",
+    "--n",
+    "4",
+    "--mode",
+    "instrumented",
+    "--run",
+    "4",
+    "--seed",
+    "20261018"
+   ],
+   "churn-p15-control": [
+    "probes/perf/churn.py",
+    "p15control",
+    "--minutes",
+    "20",
+    "--seed",
+    "7"
+   ],
+   "qualify-n32-instrumented-r4": [
+    "probes/perf/qualify.py",
+    "--n",
+    "32",
+    "--mode",
+    "instrumented",
+    "--run",
+    "4",
+    "--seed",
+    "20261018"
+   ],
+   "qualify-n16-uninstrumented-r3": [
+    "probes/perf/qualify.py",
+    "--n",
+    "16",
+    "--mode",
+    "uninstrumented",
+    "--run",
+    "3",
+    "--seed",
+    "20261018"
+   ],
+   "p05-n8-r0": [
+    "probes/perf/workloads.py",
+    "--only",
+    "p05",
+    "--counts",
+    "8"
+   ],
+   "upstream-polonium-r2": [
+    "probes/baseline-upstream/run.py",
+    "--tilers",
+    "polonium",
+    "--commands",
+    "1000",
+    "--commands-at",
+    "250=100"
+   ],
+   "qualify-n8-instrumented-r2": [
+    "probes/perf/qualify.py",
+    "--n",
+    "8",
+    "--mode",
+    "instrumented",
+    "--run",
+    "2",
+    "--seed",
+    "20261018"
+   ],
+   "qualify-n8-instrumented-r4": [
+    "probes/perf/qualify.py",
+    "--n",
+    "8",
+    "--mode",
+    "instrumented",
+    "--run",
+    "4",
+    "--seed",
+    "20261018"
+   ],
+   "qualify-n4-instrumented-r0": [
+    "probes/perf/qualify.py",
+    "--n",
+    "4",
+    "--mode",
+    "instrumented",
+    "--run",
+    "0",
+    "--seed",
+    "20261018"
+   ],
+   "p05-n8-r4": [
+    "probes/perf/workloads.py",
+    "--only",
+    "p05",
+    "--counts",
+    "8"
+   ],
+   "qualify-n16-instrumented-r4": [
+    "probes/perf/qualify.py",
+    "--n",
+    "16",
+    "--mode",
+    "instrumented",
+    "--run",
+    "4",
+    "--seed",
+    "20261018"
+   ],
+   "upstream-plastile-r4": [
+    "probes/baseline-upstream/run.py",
+    "--tilers",
+    "plastile",
+    "--commands",
+    "1000",
+    "--commands-at",
+    "250=100"
+   ],
+   "p05-n8-r3": [
+    "probes/perf/workloads.py",
+    "--only",
+    "p05",
+    "--counts",
+    "8"
+   ],
+   "qualify-n8-uninstrumented-r4": [
+    "probes/perf/qualify.py",
+    "--n",
+    "8",
+    "--mode",
+    "uninstrumented",
+    "--run",
+    "4",
+    "--seed",
+    "20261018"
+   ],
+   "qualify-n8-uninstrumented-r2": [
+    "probes/perf/qualify.py",
+    "--n",
+    "8",
+    "--mode",
+    "uninstrumented",
+    "--run",
+    "2",
+    "--seed",
+    "20261018"
+   ],
+   "qualify-n32-diag-frames": [
+    "probes/perf/qualify.py",
+    "--n",
+    "32",
+    "--mode",
+    "instrumented",
+    "--diag",
+    "frames",
+    "--run",
+    "0",
+    "--seed",
+    "20261018"
+   ],
+   "qualify-n2-uninstrumented-r3": [
+    "probes/perf/qualify.py",
+    "--n",
+    "2",
+    "--mode",
+    "uninstrumented",
+    "--run",
+    "3",
+    "--seed",
+    "20261018"
+   ],
+   "qualify-n32-instrumented-r1": [
+    "probes/perf/qualify.py",
+    "--n",
+    "32",
+    "--mode",
+    "instrumented",
+    "--run",
+    "1",
+    "--seed",
+    "20261018"
+   ],
+   "qualify-n4-instrumented-r3": [
+    "probes/perf/qualify.py",
+    "--n",
+    "4",
+    "--mode",
+    "instrumented",
+    "--run",
+    "3",
+    "--seed",
+    "20261018"
+   ],
+   "p05-n32-r2": [
+    "probes/perf/workloads.py",
+    "--only",
+    "p05",
+    "--counts",
+    "32"
+   ],
+   "baseline-p01-p02-r2": [
+    "probes/timing/baseline.py",
+    "--runs",
+    "1",
+    "--samples",
+    "1000",
+    "--run-index",
+    "2",
+    "--seed",
+    "18"
+   ],
+   "qualify-n8-uninstrumented-r1": [
+    "probes/perf/qualify.py",
+    "--n",
+    "8",
+    "--mode",
+    "uninstrumented",
+    "--run",
+    "1",
+    "--seed",
+    "20261018"
+   ],
+   "churn-p15": [
+    "probes/perf/churn.py",
+    "p15",
+    "--minutes",
+    "20",
+    "--seed",
+    "7",
+    "--idle-seconds",
+    "60",
+    "--idle-pairs",
+    "3"
+   ],
+   "qualify-n16-instrumented-r1": [
+    "probes/perf/qualify.py",
+    "--n",
+    "16",
+    "--mode",
+    "instrumented",
+    "--run",
+    "1",
+    "--seed",
+    "20261018"
+   ],
+   "qualify-n2-uninstrumented-r2": [
+    "probes/perf/qualify.py",
+    "--n",
+    "2",
+    "--mode",
+    "uninstrumented",
+    "--run",
+    "2",
+    "--seed",
+    "20261018"
+   ],
+   "qualify-n16-instrumented-r2": [
+    "probes/perf/qualify.py",
+    "--n",
+    "16",
+    "--mode",
+    "instrumented",
+    "--run",
+    "2",
+    "--seed",
+    "20261018"
+   ],
+   "qualify-n32-uninstrumented-r0": [
+    "probes/perf/qualify.py",
+    "--n",
+    "32",
+    "--mode",
+    "uninstrumented",
+    "--run",
+    "0",
+    "--seed",
+    "20261018"
+   ],
+   "qualify-n2-instrumented-r0": [
+    "probes/perf/qualify.py",
+    "--n",
+    "2",
+    "--mode",
+    "instrumented",
+    "--run",
+    "0",
+    "--seed",
+    "20261018"
+   ],
+   "qualify-n4-uninstrumented-r0": [
+    "probes/perf/qualify.py",
+    "--n",
+    "4",
+    "--mode",
+    "uninstrumented",
+    "--run",
+    "0",
+    "--seed",
+    "20261018"
+   ],
+   "qualify-n32-uninstrumented-r4": [
+    "probes/perf/qualify.py",
+    "--n",
+    "32",
+    "--mode",
+    "uninstrumented",
+    "--run",
+    "4",
+    "--seed",
+    "20261018"
+   ],
+   "baseline-p01-p02-r1": [
+    "probes/timing/baseline.py",
+    "--runs",
+    "1",
+    "--samples",
+    "1000",
+    "--run-index",
+    "1",
+    "--seed",
+    "18"
+   ],
+   "upstream-polonium-r0": [
+    "probes/baseline-upstream/run.py",
+    "--tilers",
+    "polonium",
+    "--commands",
+    "1000",
+    "--commands-at",
+    "250=100"
+   ],
+   "baseline-p01-p02-r3": [
+    "probes/timing/baseline.py",
+    "--runs",
+    "1",
+    "--samples",
+    "1000",
+    "--run-index",
+    "3",
+    "--seed",
+    "18"
+   ],
+   "qualify-n2-uninstrumented-r0": [
+    "probes/perf/qualify.py",
+    "--n",
+    "2",
+    "--mode",
+    "uninstrumented",
+    "--run",
+    "0",
+    "--seed",
+    "20261018"
+   ],
+   "qualify-n16-uninstrumented-r1": [
+    "probes/perf/qualify.py",
+    "--n",
+    "16",
+    "--mode",
+    "uninstrumented",
+    "--run",
+    "1",
+    "--seed",
+    "20261018"
+   ],
+   "upstream-polonium-r3": [
+    "probes/baseline-upstream/run.py",
+    "--tilers",
+    "polonium",
+    "--commands",
+    "1000",
+    "--commands-at",
+    "250=100"
+   ],
+   "qualify-n32-uninstrumented-r3": [
+    "probes/perf/qualify.py",
+    "--n",
+    "32",
+    "--mode",
+    "uninstrumented",
+    "--run",
+    "3",
+    "--seed",
+    "20261018"
+   ],
+   "p05-n8-r1": [
+    "probes/perf/workloads.py",
+    "--only",
+    "p05",
+    "--counts",
+    "8"
+   ],
+   "qualify-n32-instrumented-r2": [
+    "probes/perf/qualify.py",
+    "--n",
+    "32",
+    "--mode",
+    "instrumented",
+    "--run",
+    "2",
+    "--seed",
+    "20261018"
+   ],
+   "qualify-n2-uninstrumented-r4": [
+    "probes/perf/qualify.py",
+    "--n",
+    "2",
+    "--mode",
+    "uninstrumented",
+    "--run",
+    "4",
+    "--seed",
+    "20261018"
+   ],
+   "p05-n32-r0": [
+    "probes/perf/workloads.py",
+    "--only",
+    "p05",
+    "--counts",
+    "32"
+   ],
+   "qualify-n16-instrumented-r0": [
+    "probes/perf/qualify.py",
+    "--n",
+    "16",
+    "--mode",
+    "instrumented",
+    "--run",
+    "0",
+    "--seed",
+    "20261018"
+   ],
+   "baseline-p01-p02-r4": [
+    "probes/timing/baseline.py",
+    "--runs",
+    "1",
+    "--samples",
+    "1000",
+    "--run-index",
+    "4",
+    "--seed",
+    "18"
+   ],
+   "qualify-n4-uninstrumented-r3": [
+    "probes/perf/qualify.py",
+    "--n",
+    "4",
+    "--mode",
+    "uninstrumented",
+    "--run",
+    "3",
+    "--seed",
+    "20261018"
+   ],
+   "baseline-p01-p02-r0": [
+    "probes/timing/baseline.py",
+    "--runs",
+    "1",
+    "--samples",
+    "1000",
+    "--run-index",
+    "0",
+    "--seed",
+    "18"
+   ],
+   "qualify-n32-instrumented-r3": [
+    "probes/perf/qualify.py",
+    "--n",
+    "32",
+    "--mode",
+    "instrumented",
+    "--run",
+    "3",
+    "--seed",
+    "20261018"
+   ],
+   "qualify-n16-instrumented-r3": [
+    "probes/perf/qualify.py",
+    "--n",
+    "16",
+    "--mode",
+    "instrumented",
+    "--run",
+    "3",
+    "--seed",
+    "20261018"
+   ],
+   "p05-n32-r3": [
+    "probes/perf/workloads.py",
+    "--only",
+    "p05",
+    "--counts",
+    "32"
+   ],
+   "qualify-n2-instrumented-r4": [
+    "probes/perf/qualify.py",
+    "--n",
+    "2",
+    "--mode",
+    "instrumented",
+    "--run",
+    "4",
+    "--seed",
+    "20261018"
+   ],
+   "p05-n32-r4": [
+    "probes/perf/workloads.py",
+    "--only",
+    "p05",
+    "--counts",
+    "32"
+   ],
+   "qualify-n4-instrumented-r1": [
+    "probes/perf/qualify.py",
+    "--n",
+    "4",
+    "--mode",
+    "instrumented",
+    "--run",
+    "1",
+    "--seed",
+    "20261018"
+   ],
+   "qualify-n16-uninstrumented-r0": [
+    "probes/perf/qualify.py",
+    "--n",
+    "16",
+    "--mode",
+    "uninstrumented",
+    "--run",
+    "0",
+    "--seed",
+    "20261018"
+   ],
+   "qualify-n2-instrumented-r1": [
+    "probes/perf/qualify.py",
+    "--n",
+    "2",
+    "--mode",
+    "instrumented",
+    "--run",
+    "1",
+    "--seed",
+    "20261018"
+   ],
+   "upstream-plastile-r3": [
+    "probes/baseline-upstream/run.py",
+    "--tilers",
+    "plastile",
+    "--commands",
+    "1000",
+    "--commands-at",
+    "250=100"
+   ],
+   "p05-boundary-n32": [
+    "probes/perf/boundary.py",
+    "--n",
+    "32"
+   ],
+   "qualify-n8-uninstrumented-r3": [
+    "probes/perf/qualify.py",
+    "--n",
+    "8",
+    "--mode",
+    "uninstrumented",
+    "--run",
+    "3",
+    "--seed",
+    "20261018"
+   ],
+   "qualify-n16-uninstrumented-r2": [
+    "probes/perf/qualify.py",
+    "--n",
+    "16",
+    "--mode",
+    "uninstrumented",
+    "--run",
+    "2",
+    "--seed",
+    "20261018"
+   ],
+   "qualify-n16-uninstrumented-r4": [
+    "probes/perf/qualify.py",
+    "--n",
+    "16",
+    "--mode",
+    "uninstrumented",
+    "--run",
+    "4",
+    "--seed",
+    "20261018"
+   ],
+   "qualify-n2-instrumented-r2": [
+    "probes/perf/qualify.py",
+    "--n",
+    "2",
+    "--mode",
+    "instrumented",
+    "--run",
+    "2",
+    "--seed",
+    "20261018"
+   ],
+   "qualify-n8-instrumented-r3": [
+    "probes/perf/qualify.py",
+    "--n",
+    "8",
+    "--mode",
+    "instrumented",
+    "--run",
+    "3",
+    "--seed",
+    "20261018"
+   ],
+   "qualify-n4-uninstrumented-r4": [
+    "probes/perf/qualify.py",
+    "--n",
+    "4",
+    "--mode",
+    "uninstrumented",
+    "--run",
+    "4",
+    "--seed",
+    "20261018"
+   ],
+   "p05-n8-r2": [
+    "probes/perf/workloads.py",
+    "--only",
+    "p05",
+    "--counts",
+    "8"
+   ],
+   "upstream-plastile-r2": [
+    "probes/baseline-upstream/run.py",
+    "--tilers",
+    "plastile",
+    "--commands",
+    "1000",
+    "--commands-at",
+    "250=100"
+   ],
+   "upstream-polonium-r1": [
+    "probes/baseline-upstream/run.py",
+    "--tilers",
+    "polonium",
+    "--commands",
+    "1000",
+    "--commands-at",
+    "250=100"
+   ],
+   "qualify-n2-instrumented-r3": [
+    "probes/perf/qualify.py",
+    "--n",
+    "2",
+    "--mode",
+    "instrumented",
+    "--run",
+    "3",
+    "--seed",
+    "20261018"
+   ],
+   "qualify-n32-uninstrumented-r2": [
+    "probes/perf/qualify.py",
+    "--n",
+    "32",
+    "--mode",
+    "uninstrumented",
+    "--run",
+    "2",
+    "--seed",
+    "20261018"
+   ],
+   "qualify-n8-instrumented-r0": [
+    "probes/perf/qualify.py",
+    "--n",
+    "8",
+    "--mode",
+    "instrumented",
+    "--run",
+    "0",
+    "--seed",
+    "20261018"
+   ]
+  }
+ },
+ "churn": {
+  "seed": 20261018,
+  "implementationCommit": "329f7d3f4da470ca0bdce707cb93dfcaadbf9fd2",
+  "implementationDirty": false,
+  "environment": {
+   "cpu": "AMD Ryzen 5 5600X 6-Core Processor",
+   "cpus": 12,
+   "memTotalKiB": 32733824,
+   "os": "NAME=\"Arch Linux\"",
+   "kwin": "kwin 6.7.5",
+   "packages": {
+    "kwin": "6.7.5-3",
+    "qt6-base": "6.12.0-2",
+    "qt6-declarative": "6.12.0-1",
+    "kglobalaccel": "6.30.0-1",
+    "kactivitymanagerd": "6.7.5-1",
+    "wayland": "1.26.0-1",
+    "mesa": "1:26.2.4-1"
+   },
+   "kernel": "7.2.9-arch1-1",
+   "python": "3.14.8",
+   "node": "v26.11.1"
+  },
+  "unitsPlanned": 4,
+  "unitsRun": 4,
+  "unitsFailed": [],
+  "allUnitsFromCleanTree": true,
+  "allUnitsSameCommit": true,
+  "otherNestedKwinAtUnitStart": [],
+  "load1mAtUnitStart": {
+   "min": 2.81,
+   "max": 4.66,
+   "mean": 3.91
+  },
+  "cpuGovernor": [
+   "powersave"
+  ],
+  "energyPerformancePreference": [
+   "balance_performance"
+  ],
+  "backgroundProcessesSeenBusy": {
+   "polkitd": 4,
+   "tailscaled": 4,
+   "gdm": 4,
+   "systemd": 4,
+   "NetworkManager": 4,
+   "dbus-broker": 4,
+   "ksystemstats": 3,
+   "python3": 2,
+   "plasmashell": 2,
+   "Isolated Web Co": 1
+  },
+  "units": [
+   {
+    "order": 7,
+    "id": "churn-p14",
+    "rc": 0,
+    "seconds": 109.4,
+    "start": 1792350319.4760673,
+    "load1m": "2.81",
+    "busy": [
+     "polkitd:80.0",
+     "tailscaled:30.6",
+     "gdm:20.7",
+     "systemd:16.8"
+    ]
+   },
+   {
+    "order": 11,
+    "id": "churn-p14-control",
+    "rc": 0,
+    "seconds": 8.4,
+    "start": 1792350430.458505,
+    "load1m": "4.51",
+    "busy": [
+     "python3:99.8",
+     "polkitd:80.1",
+     "tailscaled:31.6",
+     "gdm:21.7"
+    ]
+   },
+   {
+    "order": 17,
+    "id": "churn-p15-control",
+    "rc": 0,
+    "seconds": 1204.6,
+    "start": 1792350440.389347,
+    "load1m": "4.66",
+    "busy": [
+     "python3:99.7",
+     "polkitd:80.0",
+     "tailscaled:30.6",
+     "gdm:20.7"
+    ]
+   },
+   {
+    "order": 38,
+    "id": "churn-p15",
+    "rc": 0,
+    "seconds": 1569.3,
+    "start": 1792351646.5271785,
+    "load1m": "3.64",
+    "busy": [
+     "polkitd:81.2",
+     "tailscaled:29.7",
+     "gdm:20.8",
+     "systemd:18.8"
+    ]
+   }
+  ],
+  "argv": {
+   "churn-p14": [
+    "probes/perf/churn.py",
+    "p14",
+    "--cycles",
+    "100"
+   ],
+   "churn-p14-control": [
+    "probes/perf/churn.py",
+    "control",
+    "--cycles",
+    "100"
+   ],
+   "churn-p15-control": [
+    "probes/perf/churn.py",
+    "p15control",
+    "--minutes",
+    "20",
+    "--seed",
+    "7"
+   ],
+   "churn-p15": [
+    "probes/perf/churn.py",
+    "p15",
+    "--minutes",
+    "20",
+    "--seed",
+    "7",
+    "--idle-seconds",
+    "60",
+    "--idle-pairs",
+    "3"
+   ]
+  },
+  "replaces": "churn units of campaign-320cf72 (commit 320cf72) summed the counters of the threads alive at each snapshot, so the first P15 idle pair reported negative wakeups when a KWin thread ended, and they recorded no RssAnon; rerun at 329f7d3"
+ },
+ "gcRate": [
+  {
+   "seed": 20261018,
+   "implementationCommit": "8d3e56aaa2762f2363f29380749fd0458907ae7e",
+   "implementationDirty": false,
+   "environment": {
+    "cpu": "AMD Ryzen 5 5600X 6-Core Processor",
+    "cpus": 12,
+    "memTotalKiB": 32733824,
+    "os": "NAME=\"Arch Linux\"",
+    "kwin": "kwin 6.7.5",
+    "packages": {
+     "kwin": "6.7.5-3",
+     "qt6-base": "6.12.0-2",
+     "qt6-declarative": "6.12.0-1",
+     "kglobalaccel": "6.30.0-1",
+     "kactivitymanagerd": "6.7.5-1",
+     "wayland": "1.26.0-1",
+     "mesa": "1:26.2.4-1"
+    },
+    "kernel": "7.2.9-arch1-1",
+    "python": "3.14.8",
+    "node": "v26.11.1"
+   },
+   "unitsPlanned": 4,
+   "unitsRun": 4,
+   "unitsFailed": [],
+   "allUnitsFromCleanTree": true,
+   "allUnitsSameCommit": true,
+   "otherNestedKwinAtUnitStart": [],
+   "load1mAtUnitStart": {
+    "min": 2.04,
+    "max": 4.03,
+    "mean": 3.34
+   },
+   "cpuGovernor": [
+    "powersave"
+   ],
+   "energyPerformancePreference": [
+    "balance_performance"
+   ],
+   "backgroundProcessesSeenBusy": {
+    "polkitd": 4,
+    "tailscaled": 4,
+    "gdm": 4,
+    "systemd": 4,
+    "NetworkManager": 4,
+    "dbus-broker": 4,
+    "ksystemstats": 4,
+    "plasmashell": 3
+   },
+   "units": [
+    {
+     "order": 83,
+     "id": "gcrate-n32-instrumented-r0",
+     "rc": 0,
+     "seconds": 119.9,
+     "start": 1792353255.7026253,
+     "load1m": "2.04",
+     "busy": [
+      "polkitd:80.9",
+      "tailscaled:29.6",
+      "gdm:21.7",
+      "systemd:16.8"
+     ]
+    },
+    {
+     "order": 84,
+     "id": "gcrate-n32-uninstrumented-r0",
+     "rc": 0,
+     "seconds": 120.0,
+     "start": 1792353377.166181,
+     "load1m": "3.26",
+     "busy": [
+      "polkitd:80.1",
+      "tailscaled:30.7",
+      "gdm:20.8",
+      "systemd:17.8"
+     ]
+    },
+    {
+     "order": 85,
+     "id": "gcrate-n32-instrumented-r1",
+     "rc": 0,
+     "seconds": 119.8,
+     "start": 1792353498.6825678,
+     "load1m": "4.02",
+     "busy": [
+      "polkitd:80.0",
+      "tailscaled:29.6",
+      "gdm:20.7",
+      "systemd:17.8"
+     ]
+    },
+    {
+     "order": 86,
+     "id": "gcrate-n32-uninstrumented-r1",
+     "rc": 0,
+     "seconds": 119.6,
+     "start": 1792353620.048028,
+     "load1m": "4.03",
+     "busy": [
+      "polkitd:79.1",
+      "tailscaled:31.7",
+      "gdm:20.8",
+      "systemd:16.8"
+     ]
+    }
+   ],
+   "argv": {
+    "gcrate-n32-instrumented-r0": [
+     "probes/perf/qualify.py",
+     "--n",
+     "32",
+     "--mode",
+     "instrumented",
+     "--diag",
+     "gc",
+     "--run",
+     "1",
+     "--seed",
+     "20261018"
+    ],
+    "gcrate-n32-uninstrumented-r0": [
+     "probes/perf/qualify.py",
+     "--n",
+     "32",
+     "--mode",
+     "uninstrumented",
+     "--diag",
+     "gc",
+     "--run",
+     "1",
+     "--seed",
+     "20261018"
+    ],
+    "gcrate-n32-instrumented-r1": [
+     "probes/perf/qualify.py",
+     "--n",
+     "32",
+     "--mode",
+     "instrumented",
+     "--diag",
+     "gc",
+     "--run",
+     "2",
+     "--seed",
+     "20261018"
+    ],
+    "gcrate-n32-uninstrumented-r1": [
+     "probes/perf/qualify.py",
+     "--n",
+     "32",
+     "--mode",
+     "uninstrumented",
+     "--diag",
+     "gc",
+     "--run",
+     "2",
+     "--seed",
+     "20261018"
+    ]
+   }
+  }
+ ],
+ "rssBisect": {
+  "seed": 20261018,
+  "implementationCommit": "dadc0b139c824ae2036f214144968b048243c59f",
+  "implementationDirty": false,
+  "environment": {
+   "cpu": "AMD Ryzen 5 5600X 6-Core Processor",
+   "cpus": 12,
+   "memTotalKiB": 32733824,
+   "os": "NAME=\"Arch Linux\"",
+   "kwin": "kwin 6.7.5",
+   "packages": {
+    "kwin": "6.7.5-3",
+    "qt6-base": "6.12.0-2",
+    "qt6-declarative": "6.12.0-1",
+    "kglobalaccel": "6.30.0-1",
+    "kactivitymanagerd": "6.7.5-1",
+    "wayland": "1.26.0-1",
+    "mesa": "1:26.2.4-1"
+   },
+   "kernel": "7.2.9-arch1-1",
+   "python": "3.14.8",
+   "node": "v26.11.1"
+  },
+  "unitsPlanned": 4,
+  "unitsRun": 4,
+  "unitsFailed": [],
+  "allUnitsFromCleanTree": true,
+  "allUnitsSameCommit": true,
+  "otherNestedKwinAtUnitStart": [],
+  "load1mAtUnitStart": {
+   "min": 2.5,
+   "max": 3.71,
+   "mean": 3.21
+  },
+  "cpuGovernor": [
+   "powersave"
+  ],
+  "energyPerformancePreference": [
+   "balance_performance"
+  ],
+  "backgroundProcessesSeenBusy": {
+   "polkitd": 4,
+   "tailscaled": 4,
+   "gdm": 4,
+   "systemd": 4,
+   "NetworkManager": 4,
+   "dbus-broker": 4,
+   "ksystemstats": 3,
+   "plasmashell": 2,
+   "openclaw-gatewa": 1,
+   "Isolated Web Co": 1,
+   "kded6": 1
+  },
+  "units": [
+   {
+    "order": 87,
+    "id": "rss-reload",
+    "rc": 0,
+    "seconds": 35.4,
+    "start": 1792354941.961031,
+    "load1m": "3.08",
+    "busy": [
+     "polkitd:79.9",
+     "tailscaled:29.6",
+     "gdm:21.7",
+     "systemd:16.8"
+    ]
+   },
+   {
+    "order": 88,
+    "id": "rss-reload-oracles15",
+    "rc": 0,
+    "seconds": 103.1,
+    "start": 1792354978.9284146,
+    "load1m": "3.54",
+    "busy": [
+     "polkitd:80.2",
+     "tailscaled:30.7",
+     "gdm:20.8",
+     "systemd:16.8"
+    ]
+   },
+   {
+    "order": 89,
+    "id": "rss-cycle",
+    "rc": 0,
+    "seconds": 256.3,
+    "start": 1792355083.5458283,
+    "load1m": "3.71",
+    "busy": [
+     "polkitd:80.1",
+     "tailscaled:30.7",
+     "gdm:20.8",
+     "systemd:17.8"
+    ]
+   },
+   {
+    "order": 90,
+    "id": "rss-long",
+    "rc": 0,
+    "seconds": 336.1,
+    "start": 1792355341.356294,
+    "load1m": "2.50",
+    "busy": [
+     "polkitd:80.1",
+     "tailscaled:31.6",
+     "gdm:20.8",
+     "systemd:18.8"
+    ]
+   }
+  ],
+  "argv": {
+   "rss-reload": [
+    "probes/perf/rss_bisect.py",
+    "reload",
+    "--cycles",
+    "100"
+   ],
+   "rss-reload-oracles15": [
+    "probes/perf/rss_bisect.py",
+    "reload",
+    "--cycles",
+    "100",
+    "--oracles",
+    "15"
+   ],
+   "rss-cycle": [
+    "probes/perf/rss_bisect.py",
+    "cycle",
+    "--cycles",
+    "100"
+   ],
+   "rss-long": [
+    "probes/perf/rss_bisect.py",
+    "long",
+    "--commands",
+    "8000"
+   ]
+  }
+ }
+}

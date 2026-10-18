@@ -178,21 +178,24 @@ def main() -> int:
     ap.add_argument("--samples", type=int, default=300, help="per workload per run")
     ap.add_argument("--seed", type=int, default=1)
     ap.add_argument("--workloads", default=",".join(WORKLOADS))
+    ap.add_argument("--run-index", type=int, default=0, help="index of the first run (seed and workload rotation), for interleaved campaigns")
+    ap.add_argument("--out", type=Path, default=None, help="artifact directory (default artifacts/baseline/<stamp>)")
     args = ap.parse_args()
     workloads = args.workloads.split(",")
     stamp = time.strftime("%Y%m%dT%H%M%S")
-    out = ROOT / "artifacts/baseline" / stamp
+    out = args.out or ROOT / "artifacts/baseline" / stamp
     out.mkdir(parents=True, exist_ok=True)
     rev = subprocess.run(["git", "-C", str(ROOT), "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip()
     dirty = bool(subprocess.run(["git", "-C", str(ROOT), "status", "--porcelain", "--", "probes", "tools", "fixtures"],
                                 capture_output=True, text=True).stdout.strip())
     all_recs, calibs = [], []
     for r in range(args.runs):
-        rng = random.Random(args.seed * 1000 + r)
-        order = workloads[r % len(workloads):] + workloads[: r % len(workloads)]  # rotate workload order per run
+        ri = args.run_index + r
+        rng = random.Random(args.seed * 1000 + ri)
+        order = workloads[ri % len(workloads):] + workloads[: ri % len(workloads)]  # rotate workload order per run
         recs, calib = run_once(out / f"run-{r}", args.samples, rng, order)
         for rec in recs:
-            rec["run"] = r
+            rec["run"] = ri
         all_recs += recs
         calibs.append(calib)
     with open(out / "samples.jsonl", "w") as f:
@@ -214,7 +217,7 @@ def main() -> int:
             "observationsPerRequest": quantiles([x["observations"] for x in ok]),
             "configuresPerRequest": quantiles([x["configures"] for x in ok]),
             "perRunObservedP50Ns": [quantiles([x["observedNs"] for x in ok if x["run"] == r])["p50"]
-                                    if any(x["run"] == r for x in ok) else None for r in range(args.runs)],
+                                    if any(x["run"] == r for x in ok) else None for r in sorted({x["run"] for x in recs})],
         }
     summary["calibration"] = calibs
     (out / "summary.json").write_text(json.dumps(summary, indent=1))

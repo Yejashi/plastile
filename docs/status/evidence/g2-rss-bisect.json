@@ -1,0 +1,708 @@
+{
+ "purpose": "T34: where P14's anonymous-memory growth comes from (probes/perf/rss_bisect.py)",
+ "layer": "nested KWin virtual backend (not physical)",
+ "units": {
+  "rss-cycle": {
+   "mode": "cycle",
+   "args": {
+    "mode": "cycle",
+    "cycles": "100",
+    "oracles": "0",
+    "commands": "8000"
+   },
+   "implementationCommit": "dadc0b139c824ae2036f214144968b048243c59f",
+   "implementationDirty": false,
+   "metric": "KWin RssAnon (KiB) from /proc/<pid>/status",
+   "result": {
+    "full": {
+     "flags": [
+      "cmd",
+      "counters",
+      "delayed",
+      "openclose"
+     ],
+     "cycles": 100,
+     "anonFirstKiB": 68904,
+     "anonLastKiB": 72048,
+     "slopeKiBPerCycleFrom10": 11.46,
+     "slopeKiBPerCycleSecondHalf": 12.09,
+     "every10": [
+      68904,
+      70544,
+      70784,
+      71244,
+      71552,
+      71976,
+      71220,
+      71616,
+      71776,
+      72160
+     ]
+    },
+    "openclose": {
+     "flags": [
+      "openclose"
+     ],
+     "cycles": 100,
+     "anonFirstKiB": 69188,
+     "anonLastKiB": 71204,
+     "slopeKiBPerCycleFrom10": 9.49,
+     "slopeKiBPerCycleSecondHalf": -2.67,
+     "every10": [
+      69188,
+      70128,
+      70672,
+      70976,
+      71048,
+      71132,
+      71164,
+      71460,
+      71144,
+      71448
+     ]
+    },
+    "cmd": {
+     "flags": [
+      "cmd"
+     ],
+     "cycles": 100,
+     "anonFirstKiB": 67880,
+     "anonLastKiB": 69696,
+     "slopeKiBPerCycleFrom10": 7.91,
+     "slopeKiBPerCycleSecondHalf": 5.51,
+     "every10": [
+      67880,
+      69180,
+      68748,
+      69504,
+      69088,
+      69448,
+      69380,
+      69816,
+      70048,
+      69568
+     ]
+    },
+    "cmd+delayed": {
+     "flags": [
+      "cmd",
+      "delayed"
+     ],
+     "cycles": 100,
+     "anonFirstKiB": 67724,
+     "anonLastKiB": 69676,
+     "slopeKiBPerCycleFrom10": 8.47,
+     "slopeKiBPerCycleSecondHalf": 8.66,
+     "every10": [
+      67724,
+      69040,
+      68824,
+      69492,
+      69156,
+      69092,
+      69340,
+      69912,
+      70008,
+      69680
+     ]
+    },
+    "counters": {
+     "flags": [
+      "counters"
+     ],
+     "cycles": 100,
+     "anonFirstKiB": 67788,
+     "anonLastKiB": 68912,
+     "slopeKiBPerCycleFrom10": -0.7,
+     "slopeKiBPerCycleSecondHalf": 0.47,
+     "every10": [
+      67788,
+      68960,
+      69040,
+      68908,
+      68972,
+      68972,
+      68844,
+      68976,
+      68976,
+      68912
+     ]
+    },
+    "cmd+noreload": {
+     "flags": [
+      "cmd",
+      "noreload"
+     ],
+     "cycles": 100,
+     "anonFirstKiB": 64404,
+     "anonLastKiB": 65440,
+     "slopeKiBPerCycleFrom10": 11.1,
+     "slopeKiBPerCycleSecondHalf": 8.54,
+     "every10": [
+      64404,
+      64476,
+      64532,
+      64692,
+      64968,
+      65024,
+      65076,
+      65212,
+      65272,
+      65324
+     ]
+    },
+    "cmd+nohelper": {
+     "flags": [
+      "cmd",
+      "nohelper"
+     ],
+     "cycles": 100,
+     "anonFirstKiB": 67804,
+     "anonLastKiB": 69888,
+     "slopeKiBPerCycleFrom10": 2.99,
+     "slopeKiBPerCycleSecondHalf": -9.67,
+     "every10": [
+      67804,
+      68720,
+      68984,
+      69796,
+      69536,
+      69900,
+      69424,
+      69824,
+      69132,
+      69268
+     ]
+    }
+   },
+   "load1mAtStart": "3.71"
+  },
+  "rss-long": {
+   "mode": "long",
+   "args": {
+    "mode": "long",
+    "cycles": "100",
+    "oracles": "0",
+    "commands": "8000"
+   },
+   "implementationCommit": "dadc0b139c824ae2036f214144968b048243c59f",
+   "implementationDirty": false,
+   "metric": "KWin RssAnon (KiB) from /proc/<pid>/status",
+   "result": {
+    "helper": {
+     "seriesKiB": [
+      [
+       0,
+       68604
+      ],
+      [
+       250,
+       69864
+      ],
+      [
+       500,
+       70212
+      ],
+      [
+       750,
+       71336
+      ],
+      [
+       1000,
+       71324
+      ],
+      [
+       1250,
+       71276
+      ],
+      [
+       1500,
+       71280
+      ],
+      [
+       1750,
+       70996
+      ],
+      [
+       2000,
+       70940
+      ],
+      [
+       2250,
+       71520
+      ],
+      [
+       2500,
+       71372
+      ],
+      [
+       2750,
+       71340
+      ],
+      [
+       3000,
+       71160
+      ],
+      [
+       3250,
+       70828
+      ],
+      [
+       3500,
+       71532
+      ],
+      [
+       3750,
+       71292
+      ],
+      [
+       4000,
+       71204
+      ],
+      [
+       4250,
+       71828
+      ],
+      [
+       4500,
+       71028
+      ],
+      [
+       4750,
+       70852
+      ],
+      [
+       5000,
+       71360
+      ],
+      [
+       5250,
+       71236
+      ],
+      [
+       5500,
+       71204
+      ],
+      [
+       5750,
+       71668
+      ],
+      [
+       6000,
+       71544
+      ],
+      [
+       6250,
+       71492
+      ],
+      [
+       6500,
+       71216
+      ],
+      [
+       6750,
+       71100
+      ],
+      [
+       7000,
+       71676
+      ],
+      [
+       7250,
+       71596
+      ],
+      [
+       7500,
+       71552
+      ],
+      [
+       7750,
+       71220
+      ],
+      [
+       8000,
+       71068
+      ]
+     ],
+     "slopeKiBPer1000Commands": {
+      "quarter1": 987.7,
+      "quarter2": 12.0,
+      "quarter3": 107.7,
+      "quarter4": -103.5
+     },
+     "after1000": {
+      "min": 70828,
+      "max": 71828
+     }
+    },
+    "nohelper": {
+     "seriesKiB": [
+      [
+       0,
+       67960
+      ],
+      [
+       250,
+       69720
+      ],
+      [
+       500,
+       70364
+      ],
+      [
+       750,
+       71368
+      ],
+      [
+       1000,
+       71280
+      ],
+      [
+       1250,
+       71276
+      ],
+      [
+       1500,
+       71172
+      ],
+      [
+       1750,
+       70948
+      ],
+      [
+       2000,
+       70896
+      ],
+      [
+       2250,
+       71436
+      ],
+      [
+       2500,
+       71272
+      ],
+      [
+       2750,
+       71312
+      ],
+      [
+       3000,
+       71004
+      ],
+      [
+       3250,
+       70916
+      ],
+      [
+       3500,
+       71500
+      ],
+      [
+       3750,
+       71344
+      ],
+      [
+       4000,
+       71220
+      ],
+      [
+       4250,
+       71804
+      ],
+      [
+       4500,
+       71000
+      ],
+      [
+       4750,
+       70876
+      ],
+      [
+       5000,
+       71416
+      ],
+      [
+       5250,
+       71356
+      ],
+      [
+       5500,
+       71316
+      ],
+      [
+       5750,
+       71780
+      ],
+      [
+       6000,
+       71664
+      ],
+      [
+       6250,
+       71452
+      ],
+      [
+       6500,
+       71300
+      ],
+      [
+       6750,
+       71180
+      ],
+      [
+       7000,
+       71728
+      ],
+      [
+       7250,
+       71456
+      ],
+      [
+       7500,
+       71624
+      ],
+      [
+       7750,
+       71304
+      ],
+      [
+       8000,
+       71156
+      ]
+     ],
+     "slopeKiBPer1000Commands": {
+      "quarter1": 1130.1,
+      "quarter2": 72.0,
+      "quarter3": 187.7,
+      "quarter4": -103.5
+     },
+     "after1000": {
+      "min": 70876,
+      "max": 71804
+     }
+    }
+   },
+   "load1mAtStart": "2.50"
+  },
+  "rss-reload": {
+   "mode": "reload",
+   "args": {
+    "mode": "reload",
+    "cycles": "100",
+    "oracles": "0",
+    "commands": "8000"
+   },
+   "implementationCommit": "dadc0b139c824ae2036f214144968b048243c59f",
+   "implementationDirty": false,
+   "metric": "KWin RssAnon (KiB) from /proc/<pid>/status",
+   "result": {
+    "empty": {
+     "cycles": 100,
+     "anonFirstKiB": 55792,
+     "anonLastKiB": 56084,
+     "slopeKiBPerCycleFrom10": 0.06,
+     "slopeKiBPerCycleSecondHalf": 0.11,
+     "every10": [
+      55792,
+      56076,
+      56080,
+      56080,
+      56080,
+      56080,
+      56080,
+      56080,
+      56080,
+      56084
+     ]
+    },
+    "shortcuts": {
+     "cycles": 100,
+     "anonFirstKiB": 64740,
+     "anonLastKiB": 66728,
+     "slopeKiBPerCycleFrom10": -0.06,
+     "slopeKiBPerCycleSecondHalf": 1.73,
+     "every10": [
+      64740,
+      67176,
+      67056,
+      66844,
+      66728,
+      66728,
+      67412,
+      67220,
+      67052,
+      66840
+     ]
+    },
+    "runtime": {
+     "cycles": 100,
+     "anonFirstKiB": 65100,
+     "anonLastKiB": 66676,
+     "slopeKiBPerCycleFrom10": 0.46,
+     "slopeKiBPerCycleSecondHalf": -0.21,
+     "every10": [
+      65100,
+      66792,
+      66676,
+      66628,
+      66868,
+      66804,
+      66564,
+      66868,
+      66804,
+      66756
+     ]
+    },
+    "runtime-persist": {
+     "cycles": 100,
+     "anonFirstKiB": 65136,
+     "anonLastKiB": 66888,
+     "slopeKiBPerCycleFrom10": -0.05,
+     "slopeKiBPerCycleSecondHalf": -0.48,
+     "every10": [
+      65136,
+      67004,
+      66696,
+      66696,
+      67012,
+      66952,
+      66820,
+      67004,
+      66760,
+      66696
+     ]
+    },
+    "production": {
+     "cycles": 100,
+     "anonFirstKiB": 66584,
+     "anonLastKiB": 68840,
+     "slopeKiBPerCycleFrom10": 0.13,
+     "slopeKiBPerCycleSecondHalf": 1.02,
+     "every10": [
+      66584,
+      68504,
+      68568,
+      68312,
+      68632,
+      68440,
+      68444,
+      68316,
+      68896,
+      68828
+     ]
+    }
+   },
+   "load1mAtStart": "3.08"
+  },
+  "rss-reload-oracles15": {
+   "mode": "reload",
+   "args": {
+    "mode": "reload",
+    "cycles": "100",
+    "oracles": "15",
+    "commands": "8000"
+   },
+   "implementationCommit": "dadc0b139c824ae2036f214144968b048243c59f",
+   "implementationDirty": false,
+   "metric": "KWin RssAnon (KiB) from /proc/<pid>/status",
+   "result": {
+    "empty": {
+     "cycles": 100,
+     "anonFirstKiB": 56236,
+     "anonLastKiB": 56268,
+     "slopeKiBPerCycleFrom10": 0.13,
+     "slopeKiBPerCycleSecondHalf": 0.11,
+     "every10": [
+      56236,
+      56256,
+      56260,
+      56260,
+      56260,
+      56264,
+      56264,
+      56264,
+      56264,
+      56268
+     ]
+    },
+    "shortcuts": {
+     "cycles": 100,
+     "anonFirstKiB": 62796,
+     "anonLastKiB": 63016,
+     "slopeKiBPerCycleFrom10": -0.39,
+     "slopeKiBPerCycleSecondHalf": 1.73,
+     "every10": [
+      62796,
+      63652,
+      63344,
+      63132,
+      63016,
+      63016,
+      63700,
+      63508,
+      63340,
+      63128
+     ]
+    },
+    "runtime": {
+     "cycles": 100,
+     "anonFirstKiB": 65900,
+     "anonLastKiB": 66864,
+     "slopeKiBPerCycleFrom10": 0.13,
+     "slopeKiBPerCycleSecondHalf": -0.21,
+     "every10": [
+      65900,
+      66980,
+      66928,
+      66816,
+      67056,
+      66992,
+      66752,
+      67056,
+      66992,
+      66944
+     ]
+    },
+    "runtime-persist": {
+     "cycles": 100,
+     "anonFirstKiB": 65948,
+     "anonLastKiB": 67052,
+     "slopeKiBPerCycleFrom10": -0.64,
+     "slopeKiBPerCycleSecondHalf": -0.38,
+     "every10": [
+      65948,
+      67104,
+      66924,
+      66860,
+      67176,
+      67052,
+      67048,
+      67168,
+      66860,
+      66860
+     ]
+    },
+    "production": {
+     "cycles": 100,
+     "anonFirstKiB": 67436,
+     "anonLastKiB": 68888,
+     "slopeKiBPerCycleFrom10": 0.85,
+     "slopeKiBPerCycleSecondHalf": 2.49,
+     "every10": [
+      67436,
+      68832,
+      68828,
+      68828,
+      68956,
+      68252,
+      68380,
+      68824,
+      68760,
+      68888
+     ]
+    }
+   },
+   "load1mAtStart": "3.54"
+  }
+ }
+}

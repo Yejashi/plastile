@@ -15,16 +15,17 @@ Plastile's own claims; Plastile counters gate the amount of work only.
   instr  n=16 ratio workload, diagnostics=off vs diagnostics=debug
   teardown  the measurement root's own marker connection does not survive unload
 
-The nested virtual backend is not a physical measurement, and the machine is
-shared with other agents while this runs: numbers are indicative, not budgets.
+The nested virtual backend is not a physical measurement. Machine state (load, governor, busy
+processes, other nested sessions) is recorded at the start and end of every run.
 
 Usage: python3 probes/perf/workloads.py [--only p05,p07,p12,p13,instr,teardown] [--samples 200] [--seed 1]
-                                       [--counts 4,8,16,32] [--instr-order off,debug]
+                                       [--counts 4,8,16,32] [--instr-order off,debug] [--out DIR]
 """
 from __future__ import annotations
 
 import argparse
 import json
+import os
 import random
 import re
 import subprocess
@@ -39,8 +40,18 @@ from harness import PLUGIN, Session, delta, near, overlaps, tiling_errors  # noq
 
 PERF = re.compile(r"plastile perf (\{.*\})$")
 LOG_TS = re.compile(r"^\s*(\d+\.\d+) ")
-MEASURE = ROOT / "build/measure/qml"
+# The measurement module must be built against the Qt of the KWin under test (build/measure
+# for the host or the Ubuntu sandbox). PLASTILE_MEASURE_QML selects another build, e.g. one made
+# for another KWin's Qt; none is provided for the KWin 6.8 Nix environment yet.
+MEASURE = Path(os.environ.get("PLASTILE_MEASURE_QML") or ROOT / "build/measure/qml")
 GAP = 8  # default gaps; the oracle checks margins >= GAP
+
+
+def measure_env() -> dict:
+    """QML_IMPORT_PATH for the nested KWin: the measurement module first, then whatever the
+    environment already provides (a Nix environment's QML modules live there)."""
+    paths = [str(MEASURE)] + [p for p in os.environ.get("QML_IMPORT_PATH", "").split(":") if p]
+    return {"QML_IMPORT_PATH": ":".join(paths)}
 
 
 def q(xs):
@@ -75,11 +86,45 @@ class Results:
         return bool(ok)
 
 
-def session(out: Path, n: int, config: dict | None = None) -> Session:
-    # KWin clamps client minimums to >= 150x150 (178 px frame with the titlebar), so n
-    # stacked windows need a tall virtual output to all fit without overflow.
-    return Session(out, width=1920, height=max(1080, n * 186 + 32), extra_env={"QML_IMPORT_PATH": str(MEASURE)},
-                   qml=HERE / "main.qml", config=config)
+# KWin reports a 150x150 minimum size for the fixture (window.minSize, measured in nested
+# KWin 6.7.5) and the server-side titlebar adds 36 px, so a fixture frame is at least 186 px
+# tall. Master/stack with one master stacks n - 1 windows in one column.
+MIN_FRAME_H = 186
+SLACK = 64
+
+
+def stack_output_height(n: int, min_h: int = MIN_FRAME_H, gap: int = GAP) -> int:
+    """Virtual output height that fits n windows in master/stack (one master) above their minima.
+
+    The stack column holds n - 1 rows, with n - 2 inner gaps between them and two outer
+    gaps. The earlier formula n * 186 + 32 left the gaps out: from n = 28 on, the stack no
+    longer fits (n = 32 needs 6022 px, that formula gave 5984), so the newest window was
+    floated by the overflow policy, which is correct behaviour for an infeasible layout.
+    """
+    rows = max(1, n - 1)
+    return max(1080, rows * min_h + (rows - 1) * gap + 2 * gap + SLACK)
+
+
+def stack_feasibility(s: Session, n: int, area: dict, gap: int = GAP) -> dict:
+    """Measured precondition: the column of n - 1 minimum-height frames fits the work area.
+
+    Read from KWin (minSize plus the frame/client margin of one fixture), so a different
+    decoration height (another KWin or theme) shows up as an infeasible workload instead
+    of as an overflow that looks like a product failure.
+    """
+    out = s.js("let r = null; for (const w of workspace.stackingOrder) if (w.caption.indexOf('plastile-fixture') === 0) {"
+               " r = {minH: w.minSize.height, marginH: w.frameGeometry.height - w.clientGeometry.height}; break; } emit(r);")
+    m = json.loads(out[0])
+    min_frame = m["minH"] + m["marginH"] if m else MIN_FRAME_H
+    rows = max(1, n - 1)
+    need = rows * min_frame + (rows - 1) * gap + 2 * gap
+    return {"minFrameHeight": min_frame, "stackRows": rows, "requiredHeight": need, "areaHeight": area["height"],
+            "feasible": need <= area["height"]}
+
+
+def session(out: Path, n: int, config: dict | None = None, qml: Path | None = None) -> Session:
+    return Session(out, width=1920, height=stack_output_height(n), extra_env=measure_env(),
+                   qml=qml or HERE / "main.qml", config=config)
 
 
 def load_quiet(s: Session) -> None:
@@ -183,6 +228,10 @@ def p05(res: Results, out: Path, counts=(4, 8, 16, 32)) -> None:
                 time.sleep(0.02)
             c1 = s.settle(timeout=10)
             d_create = delta(c0, c1)
+            # Measured after the burst so the extra oracle query does not perturb its timing.
+            feas = stack_feasibility(s, n, area)
+            res.check(f"P05 n={n}: workload feasible: {n - 1} stacked minimum frames fit the work area (measured)",
+                      feas["feasible"], feas)
             f = s.frames_list()
             errs = tiling_errors(f, area, GAP)
             evs = fixture_events(s)
@@ -192,6 +241,7 @@ def p05(res: Results, out: Path, counts=(4, 8, 16, 32)) -> None:
             last_mapped = max(mapped) if len(mapped) == n else None
             row = {
                 "n": n,
+                "feasibility": feas,
                 "spawnSpanMs": (t_spawn1 - t_spawn0) / 1e6,
                 "mappedSpanMs": (max(mapped) - min(mapped)) / 1e6 if mapped else None,
                 "mappedCount": len(mapped),
@@ -596,11 +646,16 @@ def main() -> int:
     ap.add_argument("--seed", type=int, default=1)
     ap.add_argument("--counts", default="4,8,16,32")
     ap.add_argument("--instr-order", default="off,debug", help="session order for the instrumentation comparison")
+    ap.add_argument("--out", type=Path, default=None, help="artifact directory (default artifacts/perf/workloads/<stamp>)")
     args = ap.parse_args()
     stamp = time.strftime("%Y%m%dT%H%M%S")
-    out = ROOT / "artifacts/perf/workloads" / stamp
+    out = args.out or ROOT / "artifacts/perf/workloads" / stamp
     out.mkdir(parents=True, exist_ok=True)
-    rev = subprocess.run(["git", "-C", str(ROOT), "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip()
+    sys.path.insert(0, str(HERE))
+    import perfcommon
+    meta = perfcommon.git_meta()
+    rev = meta["implementationCommit"]
+    machine0 = perfcommon.machine_state()
     kwin = subprocess.run(["kwin_wayland", "--version"], capture_output=True, text=True).stdout.strip()
     load1 = Path("/proc/loadavg").read_text().split()[0]
     res = Results()
@@ -623,9 +678,10 @@ def main() -> int:
             res.check(f"{name}: completed without exception", False, str(exc)[-300:])
     load2 = Path("/proc/loadavg").read_text().split()[0]
     summary = {
-        "implementationCommit": rev, "kwin": kwin,
-        "layer": "nested KWin virtual backend (not physical); machine shared with other agents",
-        "loadAvg1mStartEnd": [float(load1), float(load2)],
+        "implementationCommit": rev, "implementationDirty": meta["implementationDirty"], "kwin": kwin,
+        "versions": perfcommon.versions(), "args": {k: str(v) for k, v in vars(args).items() if k != "out"},
+        "layer": "nested KWin virtual backend (not physical)",
+        "loadAvg1mStartEnd": [float(load1), float(load2)], "machineStart": machine0, "machineEnd": perfcommon.machine_state(),
         "clock": "CLOCK_MONOTONIC via the measurement module inside QV4; fixture t_ns and Python monotonic_ns are the same clock;"
                  " KWin log timestamps (%{time boot}) are ms-resolution and calibrated in logClockMinusMonotonicMs",
         "dispatchToReturnNs": "command handler entry -> return after the last frame request was issued (not presentation)",
