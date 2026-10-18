@@ -18,13 +18,13 @@
 | Focus | `Workspace.activeWindow` (R/W), `windowActivated(w)`, `w.active`, `w.activeChanged` | R | Assigning `activeWindow` is used to target the quick-tile slots. |
 | Outputs | `Workspace.screens`, `screenOrder`, `activeScreen`, `screenAt(point)`, `screensChanged`, `screenOrderChanged`, `w.output`, `w.outputChanged` | R | Output object exposes `name, geometry, devicePixelRatio, manufacturer, model, serialNumber`, plus `geometryChanged, scaleChanged, aboutToChange, changed`. It has **no UUID property** (KScreen UUIDs are not script-visible). Output identity must use connector name + manufacturer/model/serial; the virtual backend leaves the last three empty. |
 | Move window to output | `Workspace.sendClientToScreen(w, output)` | R (present) | **`w.output` is read-only:** assignment throws `TypeError: Cannot assign to read-only property "output"`. Transfer behaviour itself is not yet measured (T24). |
-| Desktops | `Workspace.desktops`, `currentDesktop`, `desktopsChanged`, `currentDesktopChanged(prev, cur, output)`; `w.desktops` (R/W list), `w.onAllDesktops`, `w.desktopsChanged` | R/S | `VirtualDesktop.id` is a 36-character UUID string, a stable ID. It also has `name` and `x11DesktopNumber`. |
+| Desktops | `Workspace.desktops`, `currentDesktop`, `desktopsChanged`, `currentDesktopChanged(prev, cur, output)`; `w.desktops` (R/W list), `w.onAllDesktops`, `w.desktopsChanged` | R/S | `VirtualDesktop.id` is a 36-character UUID string, a stable ID. It also has `name` and `x11DesktopNumber`. `VirtualDesktop.nameChanged` lets name-matched overrides follow a rename (scenario `config-desktop-rename-Q02`). |
 | Per-output desktop | `Workspace.currentDesktopForScreen(o)`, `setCurrentDesktopForScreen(d, o)` | R | Present and working; returns the global desktop when per-output desktops are off. The live session has `perOutputVirtualDesktops=false`. |
 | Activities | `Workspace.activities`, `currentActivity`, `activityAdded/Removed`, `currentActivityChanged`; `w.activities` | R | Nested session without the Activities service: list length 1 and `currentActivity === ""`. The all-activities representation is unverified (E08 open). |
 | Usable area | `Workspace.clientArea(option, output, desktop)`, `clientArea(option, window)` | R | Enum values: `Workspace.PlacementArea=0`, `MaximizeArea=2`, `FullScreenArea=4`, `WorkArea=5`. They are **not** on the `KWin` context object. Returns a rect with `x/y/width/height`. No panels exist in the nested session, so panel-reservation behaviour is untested. |
 | Direct frame request | `w.frameGeometry = Qt.rect(...)`; plain `{x,y,width,height}` objects are also accepted | R, M | A **position-only** write emits `frameGeometryChanged` **synchronously inside the setter**, and the readback is updated at once. A **resize** write emits nothing synchronously; readback keeps the old size until the client commits (configure, ack, commit). KWin geometry is **floating point**: values such as `466.666…` and `400.00000000000006` were observed at scale 1. |
-| Frame vs client | `w.frameGeometry`, `w.clientGeometry`, `w.bufferGeometry` | R | With Breeze SSD the frame is the client plus a 28 px titlebar and no side borders. With CSD (or no decoration plugin) frame == client. |
-| Constraints | `w.minSize`, `w.maxSize` (no NOTIFY), `w.resizeable`, `w.moveable`, `w.fullScreenable`, `w.maximizable` | R, M | `minSize`/`maxSize` are in **client** coordinates. Unconstrained max is reported as `2147483647`. **KWin does not clamp script frame requests to `minSize`** (see E07 in the report). |
+| Frame vs client | `w.frameGeometry`, `w.clientGeometry`, `w.bufferGeometry` | R | With Breeze SSD the frame is the client plus a 28 px titlebar and no side borders. With CSD (or no decoration plugin) frame == client. Decoration changes arrive as `w.decorationPolicyChanged`, `w.decorationChanged`, then `w.clientGeometryChanged` (measured order); the margin is current only at that `clientGeometryChanged`, which the adapter uses to refresh frame-space constraints. |
+| Constraints | `w.minSize`, `w.maxSize` (no NOTIFY), `w.resizeable`, `w.moveable`, `w.fullScreenable`, `w.maximizable` | R, M | `minSize`/`maxSize` are in **client** coordinates. Unconstrained max is reported as `2147483647`. **KWin does not clamp script frame requests to `minSize`** (see E07 in the report). Because `minSize`/`maxSize` have no NOTIFY, the adapter re-reads them on `w.maximizeableChanged` (emitted on every xdg-toplevel min/max size change; for X11 only when the maximize action flips, measured 6.7.5). |
 | Maximize / fullscreen / minimize | `w.setMaximize(v, h)`, `w.maximizeMode` (R), `maximizedChanged`; `w.fullScreen` (R/W), `fullScreenChanged`; `w.minimized` (R/W), `minimizedChanged` | R/S | Present. State-transition behaviour is untested (T17). |
 | Interactive move/resize | `w.move`, `w.resize` (R), `moveResizedChanged`, `interactiveMoveResizeStarted/Stepped/Finished` | R | Present. Not yet exercised: there is no input device in the virtual backend, so testing needs EIS/fake input or a physical session. |
 | Native tile root | `Workspace.rootTile(output, desktop)`; `Workspace.tilingForScreen(output).rootTile` | R | Present. The nested default root has 3 children (0.25/0.5/0.25), `padding 4`, `minimumSize {0.15, 0.15}`, `layoutDirection 1`, `canBeRemoved false`. `tilingForScreen(o).rootTile === rootTile(o, currentDesktopForScreen(o))`. |
@@ -36,7 +36,7 @@
 | Deferred work | `Qt.callLater(fn, ...args)` | R, M | Coalesces by **function identity**: 1000 calls with one stable function ran once; 1000 fresh closures ran 1000 times. |
 | Timers | QML `Timer` (`interval`, `repeat`, `restart`, `stop`) | M | Not quantized to a 16 ms animation tick in this configuration (see the report). |
 | Timestamps | `Date.now()` only (1 ms steps) | R | **No `performance.now()`, `setTimeout`, `queueMicrotask` or `globalThis`.** Sub-millisecond timing needs the measurement-only `Plastile.Measure` module (nested sessions only). |
-| Loading | `org.kde.kwin.Scripting.loadDeclarativeScript(path, plugin)` then `/Scripting/Script<N> run`; `unloadScript(plugin)`; `isScriptLoaded`; `start()` | R, S | Package entry is **hard-coded** to `contents/ui/main.qml` for declarative scripts. Autoload at startup and disable/re-enable via `[Plugins] <id>Enabled` + `Scripting.start()` work. A package installed **after** KWin started was not found by `start()`; the suspected cause is a cached package listing (**inference**). |
+| Loading | `org.kde.kwin.Scripting.loadDeclarativeScript(path, plugin)` then `/Scripting/Script<N> run`; `unloadScript(plugin)`; `isScriptLoaded`; `start()` | R, S, M | Package entry is **hard-coded** to `contents/ui/main.qml` for declarative scripts. Autoload at startup and disable/re-enable via `[Plugins] <id>Enabled` + `Scripting.start()` work. A package installed **after** KWin started is not found by `start()` (measured, `package-post-start-discovery-T32`); a cached package listing is the suspected cause (**inference**). |
 
 ## JavaScript language level in KWin's QV4 (Qt 6.12)
 
@@ -56,15 +56,17 @@ Measured by compiling each snippet with `new Function` inside the declarative sc
 - A `Qt.callLater` queued during `Component.onDestruction`, and a running QML `Timer` at unload, did **not** fire after teardown (M).
 - After unload, kglobalaccel still accepts `invokeShortcut` for the destroyed action, and no handler runs (M).
 
-## Unresolved capability items (with the task that resolves each)
+## Formerly unresolved capability items
 
-| Item | Status | Resolving task |
+Every item below now has nested-KWin evidence (KWin 6.7.5). None has been checked in a physical session.
+
+| Item | Status (nested KWin 6.7.5) | Evidence |
 |---|---|---|
-| Output transfer via `sendClientToScreen`, output hot-unplug callbacks | not exercised | T24/T30, needs multi-output nested runs |
-| All-activity window representation, Activities service present | not exercised (no service in nested) | E08, physical or nested with `kactivitymanagerd` |
-| Panel-aware `clientArea` | no panels in nested | E-physical or nested `plasmashell` |
-| Interactive move/resize signals | no input device in virtual backend | EIS/fake-input experiment or physical session |
-| XWayland constraint visibility (increments, aspect) | not exercised | E07/T18 |
-| Native split/remove mutation counts, native-editor interplay | not measured | T06 |
-| Fractional scale / mixed scale | not exercised (reference machine is scale 1) | T30, nested `kscreen-doctor` scale changes |
-| Post-start package discovery | inference only | T32 packaging |
+| Output transfer via `sendClientToScreen`, output hot-unplug/replug | measured: transfer works; frame change arrives before `outputChanged`; unplug with pending requests and replug keep windows visible | scenarios `outputs-O01`, `unplug-O04`, `replug-identity-O05`, `output-reorder-O03` |
+| All-activities representation, Activities service | measured with a private `kactivitymanagerd` (late start and a second activity included) | scenarios `activities-E08`, `activities-late-service-E08`, `activities-add-second-E08`; `evidence/contexts-o08-e08.json` |
+| Panel-aware `clientArea` | measured with a layer-shell panel fixture: area shrinks once, no double subtraction | scenarios `workarea-*-O07`; `evidence/workarea-o07.json` |
+| Interactive move/resize signals | measured with real input through KWin's EIS endpoint (`build/input/plastile-input`) | scenarios `drag-I01-I02`, `resize-I03`, `drag-teardown-I04`, `drag-output-removal-I04`, `resize-rapid-keys-I05`, `live-resize-T29` |
+| XWayland constraint visibility | measured: `minSize` visible in client space; increments and aspect are not script-visible, and script writes are applied verbatim | scenarios `xwayland-*-G10`; `evidence/xwayland-g10.json` |
+| Native split/remove mutation counts, native-editor interplay | measured (G1 spike; tree edits, manage/unmanage, editor toggle) | `evidence/spike-native.json`, `evidence/native-l14.json`; scenarios `native-*-L13`/`-L14` (`native-editor-toggle-L14` needs GL and skips under QPainter) |
+| Fractional / mixed scale | measured at 1.25–2.0; per-entry tolerance `frameTolerance(scale)` keeps device-pixel rounding from being learned | scenario `fractional-scale-G03`; ledger unit tests |
+| Post-start package discovery | measured: a package installed after KWin started is **not** loaded by `Scripting.start()` (3 attempts over 8 s); install before the session starts, or load by path | scenario `package-post-start-discovery-T32`; `evidence/package-install.json` (`postStartDiscovery`) |
