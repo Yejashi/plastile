@@ -347,3 +347,48 @@ preview once the zones overlay has established an input-transparent own-UI windo
 physical session can judge it, reusing that window rather than adding a second overlay path. Live resize
 costs client redraws of the peers at the resized window's commit rate; it stays opt-in until physical
 measurements show it is not perceived as lag or flicker.
+
+## ADR-018: Close T31 (presentation) as deferred; animation stays disabled
+
+**Status:** accepted (2026-10-18); task T31.
+
+**Context.** T31 is conditional: "If animation is desired … Otherwise keep animation disabled and close as
+deferred." ADR-006 makes instantaneous geometry the default and forbids animating real window sizes. Its
+prerequisite T20 (the G2 performance report) is not complete, and the only environment available is the
+nested virtual backend, which cannot show what is presented. A transform-only effect would be a native KWin
+effect built against exact KWin versions (6.7 and 6.8 already differ in script-visible behaviour, see
+[API_PROFILE](../status/API_PROFILE.md)), and nobody has asked for animation.
+
+**Decision.** T31 is closed as deferred. The configuration accepts `animation` only at its inert values
+(`enabled: false`, `durationMs: 0`) and rejects anything else with an actionable error
+(`src/config/schema.ts`, the `animation` branch; documented in [user CONFIGURATION](../user/CONFIGURATION.md)).
+No effect, timer or transform code exists.
+
+**Consequences.** Every geometry change is a direct frame request, measured as such. Reopening T31 needs a
+deliberate feature decision, a completed G2 report, and a physical session to judge the result. The
+acceptance criteria on the card then apply unchanged.
+
+## ADR-019: No live settings preview; the settings form is KConfigXT, checked against the schema
+
+**Status:** accepted (2026-10-18); task T28 (deviation from [CONFIGURATION](CONFIGURATION.md) §5's live
+preview and the card's "schema-driven settings surface" and "preview/cancel uses config revisions").
+
+**Context.** KWin's script settings dialog is a KConfigXT form (`package/contents/ui/config.ui` bound to
+`package/contents/config/main.xml`) that KWin's `ScriptingConfig` loads. Its Apply writes `kwinrc` and never
+reaches the running script (ADR-015), and its Cancel discards edits before anything is written. The dialog
+therefore has no channel to show the running script a candidate revision, and generating the form from
+Plastile's schema at run time would need Plastile's own settings UI or KCM.
+
+**Decision.** There is no live preview, so there is nothing to cancel in the running script: a configuration
+reaches the engine only through activation (load, the *Reload configuration* command, or KWin's reconfigure),
+which validates the whole snapshot first and keeps the previous revision on failure (T25). The form is
+written by hand and kept equivalent to the schema by tests: `tests/core/package.test.ts` compares the keys,
+defaults and enum vocabulary of `main.xml` with the runtime's flat-key parser, and `tools/settings-check`
+(built in CI) loads the form like `ScriptingConfig` and checks that every entry has a widget and that values
+round-trip. JSON overrides and rules are edited as text in the same form.
+
+**Consequences.** Cancel cannot restore stale window references, because no preview revision ever holds
+any. A setting takes effect only after Apply and a reload, which [user CONFIGURATION](../user/CONFIGURATION.md)
+states. A preview would need a Plastile-owned settings surface that sends candidate revisions to the engine
+and restores the previous one on cancel, recomputing from current window state; it stays out of scope until
+there is a reason to build that surface.

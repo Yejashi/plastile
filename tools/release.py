@@ -38,6 +38,11 @@ PACKAGE = ROOT / "package"
 REQUIRED = (
     "metadata.json",
     "contents/ui/main.qml",
+    # Loaded by main.qml at runtime (Loader.setSource / the persistence item): a zip without
+    # them installs and starts, then fails only when the inspector, persistence or overlay is used.
+    "contents/ui/Inspector.qml",
+    "contents/ui/Persistence.qml",
+    "contents/ui/ZoneOverlay.qml",
     "contents/ui/config.ui",
     "contents/config/main.xml",
     "contents/code/plastile.mjs",
