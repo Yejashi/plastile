@@ -609,6 +609,11 @@ def kscreen(s: Session, *args: str) -> None:
         raise RuntimeError(f"kscreen-doctor {args}: {r.stderr[-200:]}")
 
 
+def output_name(s: Session, index: int) -> str:
+    """KWin's name for output `index` (Virtual-N on the virtual backend, WL-N when windowed)."""
+    return json.loads(s.js(f"emit(workspace.screens[{index}].name);")[0])
+
+
 def on_output(s: Session, name: str) -> list[dict]:
     return [f for f in s.frames_list() if f["output"] == name]
 
@@ -621,12 +626,18 @@ def fractional_scale(out: Path, c: Checks):
         for cap in ("plastile-fixture 2", "plastile-fixture 3"):
             s.act(cap, "workspace.activeWindow = w")
             s.cmd("move.output-next"); s.settle()
+        second = output_name(s, 1)
         for scale in ("1.25", "1.5", "1.75", "2"):
-            kscreen(s, f"output.Virtual-1.scale.{scale}")
+            kscreen(s, f"output.{second}.scale.{scale}")
             time.sleep(0.8)
             a = s.settle()
             area = s.area(1)
-            f = on_output(s, "Virtual-1")
+            applied = abs(area["width"] - 1280 / float(scale)) <= 1
+            if not applied and s.kw.host_display:
+                # KWin's wayland (windowed) backend keeps the scale it was started with.
+                raise Skipped("the windowed backend does not apply kscreen-doctor scale changes")
+            c(f"G03 scale {scale}: applied (the output's logical width is 1280 / scale)", applied, area)
+            f = on_output(s, second)
             tol = 0.5 + 1 / float(scale)  # KWin snaps frame edges to the device-pixel grid (geometry.frameTolerance)
             c(f"G03 scale {scale}: two tiles inside the new area without overlap, gaps>=8 within one device pixel",
               len(f) == 2 and not tiling_errors(f, area, 8, tol), (area, [x["frame"] for x in f], tiling_errors(f, area, 8, tol)))
@@ -641,13 +652,14 @@ def rotation(out: Path, c: Checks):
     with Session(out) as s:
         three(s)
         s.load(); s.settle()
-        kscreen(s, "output.Virtual-0.rotation.left")
+        first = output_name(s, 0)
+        kscreen(s, f"output.{first}.rotation.left")
         time.sleep(0.8); s.settle()
         area = s.area(0)
         f = s.frames_list()
         c("O02 portrait: area rotated", area["height"] > area["width"], area)
         c("O02 portrait: retiled inside the rotated area", not tiling_errors(f, area, 8), tiling_errors(f, area, 8))
-        kscreen(s, "output.Virtual-0.rotation.normal")
+        kscreen(s, f"output.{first}.rotation.normal")
         time.sleep(0.8); s.settle()
         area = s.area(0)
         c("O02 back to landscape: retiled", not tiling_errors(s.frames_list(), area, 8))

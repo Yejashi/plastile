@@ -95,6 +95,9 @@ class NestedKwin:
         # session is still private (bus, XDG dirs, config) and still nested, never physical.
         # None: the virtual backend (offscreen framebuffer).
         self.host_display = host_display or os.environ.get("PLASTILE_NESTED_HOST_DISPLAY") or None
+        # --scale. Measured (KWin 6.7.5): the windowed backend accepts it but still reports its outputs at
+        # scale 1, and ignores kscreen-doctor scale changes, so fractional scaling is a virtual-backend
+        # (fractional-scale-G03) and physical check only.
         self.scale = scale
         self.socket = "wl-0"
         self._dbus: subprocess.Popen | None = None
