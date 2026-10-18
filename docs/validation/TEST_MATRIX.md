@@ -134,3 +134,5 @@ The initial support candidate families are 6.7 and 6.8. Earlier Plasma releases 
 ## 9. Release criteria
 
 All mandatory initial scenarios have a real result on declared supported versions. Every workaround has a reproducer and regression fixture. No unbounded geometry loop, stale callback, invisible orphan, duplicate engine, unexplained tail regression, or incomplete teardown remains. Physical-session presentation/input checks are explicitly completed; otherwise the result remains a candidate with those gates open. Report skipped/unavailable tests by ID rather than collapsing them into a passing count.
+
+The physical-session procedures, consent points, pass criteria and tooling are in [PHYSICAL_RUNBOOK](PHYSICAL_RUNBOOK.md).
