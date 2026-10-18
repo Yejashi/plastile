@@ -14,8 +14,9 @@ Collected 2026-10-17 with `python3 tools/collect_environment.py --publish docs/s
 | Qt / KF | Qt 6.12.0 (`qt6-base 6.12.0-2`, `qt6-declarative 6.12.0-1`, `qt6-wayland 6.12.0-1`); KF 6.30.0 |
 | XWayland | `xorg-xwayland 24.1.14-1` (live session runs KWin with `--xwayland`) |
 | Wayland | `wayland 1.26.0`, `wayland-protocols 1.49` |
-| Build/test tools | Node 26.11.1, npm 12.2.0, **no TypeScript compiler installed**, CMake 4.4.4, GCC 16.2.1, Clang 23.1.1, Python 3.14.8 with `python-dbus` 1.5.0 |
-| Not installed | weston, cage, gamescope, wlr-randr, perf, valgrind |
+| Build/test tools | Node 26.11.1, npm 12.2.0, CMake 4.4.4, GCC 16.2.1, Clang 23.1.1, Python 3.14.8 with `python-dbus` 1.5.0. No system TypeScript; the repository pins `typescript` 6.0.3, `esbuild` 0.28.2 and `@types/node` 26.6.5 as dev dependencies (`package.json`, `package-lock.json`), installed with `npm ci` |
+| Test-only helpers | `libei 1.6.0-1` (input injector [tools/input](../../tools/input)), `kactivitymanagerd 6.7.5-1` (activities scenarios); versions from `pacman -Q`, 2026-10-18 |
+| Not installed | weston, cage, gamescope, wlr-randr, perf, valgrind, Nix |
 
 ### Live outputs (physical session; read-only)
 
@@ -46,15 +47,19 @@ Mixed refresh rates (60/100/144 Hz) on one session; no fractional scaling and no
 
 **Conclusion:** the K67 research evidence for the script-visible window, workspace and tile surface applies to the installed build. The scripting and xdg differences between the pins do not change script-visible APIs. The original pins are retained; the new tag pin is recorded here rather than replacing them.
 
-Codeberg refresh (E02) has not been attempted in this session.
+The Codeberg refresh (E02) was done on 2026-10-17. Its results are recorded in [CODEBERG_ADDENDUM.md](../research/CODEBERG_ADDENDUM.md), and the original pins are retained.
 
 ## Test layers available on this machine
 
 | Layer | Available | How |
 |---|---|---|
-| Pure core (Node) | yes, once TypeScript is pinned as a dev dependency | `npm` |
+| Pure core (Node) | **yes** | `npm ci`, then `npm run typecheck` and `npm test` (Node's built-in test runner over `tests/core/*.test.ts`) |
 | Nested KWin 6.7.5 (virtual backend) | **yes, verified** | `tools/nested.py`: private `dbus-daemon`, private `XDG_RUNTIME_DIR/CONFIG/DATA/CACHE/STATE`, `kwin_wayland --virtual`, 1–N virtual outputs, software 60 Hz timeline, OpenGL on the real GPU |
-| Nested XWayland | probably (`--xwayland` flag wired, not yet exercised) | `NestedKwin(xwayland=True)` |
+| Nested XWayland | **yes, verified** | `NestedKwin(xwayland=True)`. The six `xwayland-*-G10` scenarios pass nested with `xorg-xwayland 24.1.14-1` and the xcb fixture ([evidence/xwayland-g10.json](evidence/xwayland-g10.json)). The X11 `realapps-*-x11*` scenarios also use it |
+| Real input in nested KWin | **yes, verified** | `build/input/plastile-input` (built from [tools/input](../../tools/input) with `make -C tools/input`) is a libei client. It takes the EIS socket from `org.kde.KWin.EIS.RemoteDesktop.connectToEIS` on the nested session's private bus and drives KWin's real pointer and keyboard pipeline (scenarios `drag-*`, `resize-*`, `live-resize-T29`, `shortcuts-defaults-real-input`). It is never connected to the user's session |
+| Activities service in nested KWin | **yes, verified** | A private `kactivitymanagerd` on the nested bus only (`activities-*-E08`). Scenarios skip when it is not found |
+| Ubuntu 26.10 sandbox (KWin 6.7.5, QPainter) | yes, on hosts with `debootstrap` and root | [tools/sandbox](../../tools/sandbox/README.md); see below. Also the CI `integration-nested` job |
+| Nix KWin 6.8.0 environment | **not on this machine** (Nix is not installed) | [tools/sandbox/nix](../../tools/sandbox/nix/README.md), run only in the CI `integration-nested-kwin68` job; see below |
 | Physical session | the user's active Wayland session | **Not used by any probe.** Requires an explicit user decision; see [STATUS](STATUS.md) |
 
 The nested session is fully isolated. Its D-Bus, runtime directory and configuration are private, and nothing is written to the user's kwinrc, journal or kglobalshortcutsrc. QML log output is forced to the session's own stderr with `QT_FORCE_STDERR_LOGGING=1`; without it, Qt routes script logs to the user journal. A nested session cannot establish physical scanout or input latency.
@@ -71,7 +76,7 @@ collected with `tools/collect_environment.py` against a nested session's private
 | Sandbox | Ubuntu 26.10 "stonking" chroot built by [tools/sandbox/create.sh](../../tools/sandbox/create.sh) |
 | KWin | `kwin-wayland 4:6.7.5-0ubuntu1` (same upstream release as the Arch build, tag `v6.7.5`), `kwin-style-breeze 4:6.7.5` |
 | Qt / KF | Qt **6.11.2** (Arch: 6.12.0); KF **6.29.0** (Arch: 6.30.0) |
-| Other | Xwayland 24.1.14, Wayland 1.26.0, wayland-protocols 1.49, kactivitymanagerd 6.7.5, Node 26.11.1, Python 3.14.7 |
+| Other | Xwayland 24.1.14, Wayland 1.26.0, wayland-protocols 1.49, kactivitymanagerd 6.7.5, Node 26.11.1, Python 3.14.7; `libei-dev` for the input injector ([packages.txt](../../tools/sandbox/packages.txt); its version is not in the profile) |
 | Compositing | **QPainter**: KWin's virtual backend finds no DRM render node, so GL-only effects (tile editor, blur) never load |
 | Layer | Nested KWin virtual backend only (1280×800 virtual outputs, synthetic 60 Hz timeline). No physical session exists here |
 
@@ -82,3 +87,19 @@ What this environment changed in the evidence (details in [STATUS](STATUS.md)):
 - QPainter compositing means scenarios that need GL effects report `SKIP` here (`native-editor-toggle-L14`).
 - Timing numbers from this machine (software rendering, shared vCPUs) are not comparable with the Arch
   reference machine and are not used for the performance tables.
+
+## Third environment: pinned Nix KWin 6.8.0 (CI only)
+
+Added 2026-10-18 to run the same nested suite against a second KWin API family. [tools/sandbox/nix/env.nix](../../tools/sandbox/nix/env.nix) pins one nixos-unstable channel release by URL and hash, and [run.sh](../../tools/sandbox/nix/run.sh) runs a command with only that environment on `PATH`. Nix is not installed on the reference machine, so this environment has run only in the CI job `integration-nested-kwin68`, which is marked provisional (`continue-on-error: true`). No environment profile JSON has been collected for it.
+
+| Item | Value |
+|---|---|
+| Pin | `nixos-26.11pre1093333.fe13242281a6` (nixpkgs commit `fe13242281a67641c0102cdb1087f0ebe586c7df`) |
+| KWin | `kdePackages.kwin` **6.8.0** |
+| Qt / KF | Qt **6.11.2**; KF **6.30.0** |
+| Other | Mesa 26.2.5, Xwayland 24.1.14, Breeze, kactivitymanagerd, Python 3 with dbus-python (versions from the [Nix README](../../tools/sandbox/nix/README.md); a build writes its exact versions to `plastile/versions`) |
+| Host | GitHub-hosted `ubuntu-latest` runner, Nix 2.33.0 single-user install (`ci.yml`) |
+| Compositing | **OpenGL ES via llvmpipe.** KWin 6.8 has no QPainter compositor. Without a DRM render node or `/dev/udmabuf`, `kwin_wayland` preloads [udmabuf-shim.c](../../tools/sandbox/nix/udmabuf-shim.c), which emulates the udmabuf ioctls with sealed memfds. KWin's code is unmodified. Buffers have no implicit fences |
+| Layer | Nested KWin virtual backend only. The fixtures and the libei injector are built on the runner host and connect to this KWin |
+
+Timing from this environment (software rendering, emulated udmabuf, shared runner) is not comparable with the reference machine and is not used for performance claims. GL-only effects such as the tile editor do load here, unlike in the QPainter sandbox.

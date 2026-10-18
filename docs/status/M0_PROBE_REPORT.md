@@ -161,7 +161,7 @@ Success 900/900, with 1 configure per request.
 ## 9. Open items carried forward
 
 - **T04:** upstream automatic-tiler baseline (for example Polonium at the pinned commit) in a nested session, and physical-session baselines (needs the user's approval and their session).
-- **E02:** Codeberg refresh not attempted.
+- **E02:** Codeberg refresh not attempted at the time of this report. It was done afterwards, on 2026-10-17: see [CODEBERG_ADDENDUM.md](../research/CODEBERG_ADDENDUM.md).
 - **E08:** the all-activities representation.
 - **E16:** output identity under replug.
 - XWayland constraint hints (**E07** remainder).
