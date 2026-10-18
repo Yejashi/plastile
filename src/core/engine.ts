@@ -6,7 +6,7 @@
 // frame write goes through applyTarget() and the requested/observed ledger.
 
 import {
-  centredDefault, clampInto, contains, frameTolerance, intersects, isValidArea, rect, rectNear, rectOf, relocate, sizeNear, type Rect,
+  centredDefault, clampInto, contains, frameTolerance, intersects, isFiniteRect, isValidArea, rect, rectNear, rectOf, relocate, sizeNear, type Rect,
   type Size,
 } from "./geometry.ts";
 import { classify, TINY_PX, TINY_REASON } from "./classify.ts";
@@ -38,7 +38,8 @@ import {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyLayout = Layout<any>;
 
-const LAYOUTS: Record<LayoutKind, AnyLayout> = {
+/** Layout registry (exported for tests that substitute a layout; never mutated at runtime). */
+export const LAYOUTS: Record<LayoutKind, AnyLayout> = {
   "master-stack": masterStack,
   bsp,
   monocle,
@@ -1343,6 +1344,13 @@ export class Engine {
   }
 
   private applyTarget(r: Rec, target: Rect): void {
+    // Plan validation (T13): a layout bug must never reach KWin as a NaN or empty frame.
+    if (!isFiniteRect(target) || target.width < 1 || target.height < 1) {
+      this.counters.invalidSlots++;
+      this.trace.record(this.svc.now(), "invalid-slot", r.id, target);
+      this.svc.log("warn", "layout produced an invalid slot; the window keeps its frame", { id: r.id, target });
+      return;
+    }
     const now = this.host.frame(r.id, r.gen);
     if (now === null) return; // gone: removal event follows; peers continue
     const dec = L.decideWrite(r.ledger, target, now);

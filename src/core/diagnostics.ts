@@ -41,6 +41,8 @@ export interface Counters {
   liveSolves: number;
   /** Parked scrolling windows re-parked after KWin pulled them back (KWin 6.8 confinement). */
   reparks: number;
+  /** Plan slots rejected before writing (non-finite or smaller than 1 px): a layout defect. */
+  invalidSlots: number;
 }
 
 export function newCounters(): Counters {
@@ -48,7 +50,7 @@ export function newCounters(): Counters {
     solves: 0, flushes: 0, commands: 0, commandsQueued: 0, writes: 0, corrections: 0, skipOutstanding: 0,
     skipNoop: 0, skipDiverged: 0, observations: 0, observationsDuringApply: 0, settled: 0, stale: 0,
     superseded: 0, partial: 0, external: 0, learned: 0, accepted: 0, diverged: 0, deadlines: 0, overflow: 0, reclassified: 0, adopted: 0, removed: 0,
-    staleEvents: 0, errors: 0, raises: 0, activations: 0, liveSolves: 0, restored: 0, restoreAmbiguous: 0, reparks: 0,
+    staleEvents: 0, errors: 0, raises: 0, activations: 0, liveSolves: 0, restored: 0, restoreAmbiguous: 0, reparks: 0, invalidSlots: 0,
   };
 }
 

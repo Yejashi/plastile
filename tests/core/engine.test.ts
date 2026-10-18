@@ -1175,3 +1175,27 @@ test("I05/KWin 6.8: a resize whose window moved to another slot mid-drag does no
   assertTiling(tiledFrames(h, ["a", "b", "c"]), AREA);
   assert.deepEqual(e.check(), []);
 });
+
+test("T13: a layout slot that is not finite or smaller than 1 px is never written; peers still are", async () => {
+  const { LAYOUTS } = await import("../../src/core/engine.ts");
+  const ms = LAYOUTS["master-stack"];
+  const orig = ms.solve;
+  try {
+    ms.solve = (state, input) => {
+      const r = orig.call(ms, state, input);
+      const slots = new Map(r.slots);
+      slots.set("a", rect(Number.NaN, 0, 100, 100));
+      slots.set("b", rect(10, 10, 0, 50));
+      return { ...r, slots };
+    };
+    const h = new MockHost();
+    const e = h.start();
+    for (const id of ["a", "b", "c"]) h.open(id);
+    h.drain();
+    assert.equal(h.writes.filter((w) => w.id === "a" || w.id === "b").length, 0, "invalid slots are not written");
+    assert.ok(h.writes.some((w) => w.id === "c"), "the valid peer is written");
+    assert.equal(e.counters.invalidSlots, 2);
+  } finally {
+    ms.solve = orig;
+  }
+});
