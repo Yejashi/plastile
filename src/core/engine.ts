@@ -131,6 +131,10 @@ export class Engine {
   private contexts = new Map<ContextId, Ctx>();
   private dirty = new Set<ContextId>();
   private corrections = new Set<WindowId>();
+  /** Overflow floats to reconsider at the next flush: by window, by context, or all. */
+  private retryWindows = new Set<WindowId>();
+  private retryContexts = new Set<ContextId>();
+  private retryAll = false;
   /** Output scales, refreshed on adoption and topology changes (not per command). */
   private scales = new Map<OutputId, number>();
   private endedInteractions = new Map<WindowId, "move" | "resize">();
@@ -184,6 +188,8 @@ export class Engine {
     this.contexts.clear();
     this.dirty.clear();
     this.corrections.clear();
+    this.retryWindows.clear();
+    this.retryContexts.clear();
     this.endedInteractions.clear();
     this.queued = [];
   }
@@ -272,6 +278,7 @@ export class Engine {
 
   private drop(r: Rec): void {
     L.cancel(r.ledger);
+    if (r.mode === "tiled" && r.ctx) this.retryOverflow(contextId(r.ctx));
     this.leaveContext(r);
     this.corrections.delete(r.id);
     this.endedInteractions.delete(r.id);
@@ -301,6 +308,7 @@ export class Engine {
     const r = this.live(id, gen);
     if (!r) return;
     r.membership = m;
+    if (isOverflow(r)) this.retryOverflow(null, r.id); // another context may have room
     this.reclassify(r, "membership");
     this.ensureFlush();
   }
@@ -337,6 +345,9 @@ export class Engine {
     if (sameConstraints(r.base, c)) return;
     r.base = c;
     r.learnedMin = null; r.learnedMax = null;
+    // Its own overflow, or a peer's in its context, may be resolved by the new constraints.
+    if (isOverflow(r)) this.retryOverflow(null, r.id);
+    else if (r.mode === "tiled" && r.ctx) this.retryOverflow(contextId(r.ctx));
     this.reclassify(r, "constraints");
     if (r.ctx && r.mode === "tiled") this.markDirty(r.ctx);
     this.ensureFlush();
@@ -430,6 +441,7 @@ export class Engine {
     this.trace.record(this.svc.now(), "topology");
     this.refreshScales();
     this.syncActivities();
+    this.retryOverflow("*"); // work areas may have grown
     for (const c of this.contexts.values()) { c.settings = null; this.markDirty(c.key); }
     this.ensureFlush();
   }
@@ -444,6 +456,7 @@ export class Engine {
     for (const c of this.contexts.values()) c.settings = null;
     for (const r of this.recs.values()) this.reclassify(r, "config");
     for (const c of this.contexts.values()) this.markDirty(c.key);
+    this.retryOverflow("*");
     this.ensureFlush();
   }
 
@@ -540,7 +553,10 @@ export class Engine {
   private transition(r: Rec, mode: PlacementMode, key: ContextKey | null, why: string): void {
     const wasTiled = r.mode === "tiled";
     const prevCtx = r.ctx;
-    if (wasTiled && (mode !== "tiled" || !sameContext(prevCtx, key))) this.leaveContext(r);
+    if (wasTiled && (mode !== "tiled" || !sameContext(prevCtx, key))) {
+      this.leaveContext(r);
+      if (why !== "overflow") this.retryOverflow(contextId(prevCtx!)); // its space is free now
+    }
     if (mode === "floating" && wasTiled === false && r.floatRect === null && r.suspensions.size === 0) r.floatRect = r.frame;
     r.mode = mode;
     const nextCtx = mode === "tiled" || mode === "floating" ? key : null;
@@ -681,6 +697,7 @@ export class Engine {
       this.queued = [];
       for (const q of queued) this.execute(q.id, q.arg);
       if (this.suspended) { this.dirty.clear(); this.corrections.clear(); this.endedInteractions.clear(); return; }
+      this.retryOverflows();
       if (this.endedInteractions.size) {
         const ended = [...this.endedInteractions];
         this.endedInteractions.clear();
@@ -704,6 +721,37 @@ export class Engine {
     }
     if (this.dirty.size > 0 || this.corrections.size > 0 || this.queued.length > 0) this.ensureFlush();
     else this.disarmIfIdle();
+  }
+
+  /** Ask for overflow floats to be reconsidered: "*" for all, a context id, or one window. */
+  private retryOverflow(ctx: ContextId | "*" | null, id?: WindowId): void {
+    if (ctx === "*") this.retryAll = true;
+    else if (ctx !== null) this.retryContexts.add(ctx);
+    if (id !== undefined) this.retryWindows.add(id);
+    this.ensureFlush();
+  }
+
+  /**
+   * Give overflow floats one new attempt when their inputs changed: output area, layout
+   * parameters (configuration), constraints, or a peer leaving (BEHAVIOR §11). They
+   * rejoin in insertion order; a solve that still cannot fit them floats the newest
+   * again, which asks for no further retry. Unrelated events (focus) never retry.
+   */
+  private retryOverflows(): void {
+    if (!this.retryAll && this.retryContexts.size === 0 && this.retryWindows.size === 0) return;
+    const all = this.retryAll, ctxs = this.retryContexts, ids = this.retryWindows;
+    this.retryAll = false;
+    this.retryContexts = new Set();
+    this.retryWindows = new Set();
+    const list: Rec[] = [];
+    for (const r of this.recs.values()) {
+      if (isOverflow(r) && (all || ids.has(r.id) || (r.ctx !== null && ctxs.has(contextId(r.ctx))))) list.push(r);
+    }
+    list.sort((a, b) => a.insertedAt - b.insertedAt);
+    for (const r of list) {
+      r.exception = null;
+      this.reclassify(r, "overflow-retry");
+    }
   }
 
   private runCorrections(): void {
@@ -1369,6 +1417,11 @@ function explainRules(w: WindowRules): Record<string, unknown> {
   if (w.border !== undefined) actions.border = w.border;
   if (w.insert !== undefined) actions.insert = w.insert;
   return { ids: w.ruleIds.slice(), actions, reasons: { ...(w.reasons ?? {}) } };
+}
+
+/** Floated by the overflow policy (float-new), as opposed to by the user or a rule. */
+function isOverflow(r: Rec): boolean {
+  return r.mode === "floating" && r.exception !== null && r.exception.startsWith("overflow");
 }
 
 function suspensionsOf(s: WindowStates): Set<Suspension> {

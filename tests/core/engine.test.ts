@@ -4,6 +4,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { rect, rectNear } from "../../src/core/geometry.ts";
+import { DEFAULT_SETTINGS } from "../../src/core/defaults.ts";
 import { MockHost, meta } from "./mockHost.ts";
 import { assertTiling } from "./helpers.ts";
 
@@ -789,6 +790,47 @@ test("L06/L08: in the floating layout the user's latest placement is what a late
   h.drain();
   assert.equal(e.modeOf("b"), "floating");
   assert.ok(rectNear(h.windows.get("b")!.frame, rect(900, 400, 300, 300)));
+});
+
+test("G08/BEHAVIOR §11: an overflow float is reconsidered when the area, constraints, peers or configuration change", () => {
+  const min700 = { minFrame: { width: 700, height: 0 }, maxFrame: { width: Infinity, height: Infinity }, fixed: false };
+  const free = { minFrame: { width: 0, height: 0 }, maxFrame: { width: Infinity, height: Infinity }, fixed: false };
+  const wide = () => setup(["a", "b", "c"], { a: { constraints: min700 }, b: { constraints: min700 }, c: { constraints: min700 } });
+  {
+    const { h, e } = wide();
+    assert.deepEqual(["a", "b", "c"].map((id) => e.modeOf(id)), ["tiled", "floating", "floating"]);
+    assert.ok(String(e.explain("c")!.exception).startsWith("overflow"));
+    h.outs = [{ ...h.outs[0], geometry: rect(0, 0, 3840, 2160) }];
+    e.topologyChanged();
+    h.drain();
+    assert.deepEqual(["a", "b", "c"].map((id) => e.modeOf(id)), ["tiled", "tiled", "tiled"], "larger output");
+    assertTiling(tiledFrames(h, ["a", "b", "c"]), rect(0, 0, 3840, 2160));
+    assert.equal(e.explain("c")!.exception, null);
+  }
+  {
+    const { h, e } = wide();
+    const c = h.windows.get("c")!;
+    c.constraints = free;
+    e.constraintsChanged("c", c.gen, free);
+    h.drain();
+    assert.equal(e.modeOf("c"), "tiled", "its own minimum dropped");
+    assert.equal(e.modeOf("b"), "floating", "an unrelated overflow float is left alone");
+    assertTiling(tiledFrames(h, ["a", "c"]), AREA);
+  }
+  {
+    const { h, e } = wide();
+    h.close("a");
+    h.drain();
+    assert.equal(e.modeOf("b"), "tiled", "a peer left");
+    assert.equal(e.modeOf("c"), "floating", "still only one fits (float-new keeps the older one)");
+    assert.ok(rectNear(h.windows.get("b")!.frame, rect(8, 8, 1264, 784)));
+  }
+  {
+    const { h, e } = wide();
+    e.configure({ settingsFor: () => ({ ...DEFAULT_SETTINGS, layout: "monocle" }) });
+    h.drain();
+    assert.deepEqual(["a", "b", "c"].map((id) => e.modeOf(id)), ["tiled", "tiled", "tiled"], "configuration activation");
+  }
 });
 
 function onActivities(activities: string[]) {
