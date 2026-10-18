@@ -103,7 +103,7 @@ python3 tests/integration/run.py --only a,b      # a subset
 python3 tests/integration/run.py --list          # names (authoritative; CI runs this import check)
 ```
 
-The table follows `run.py --list` on 2026-10-18 (65 names in the Ubuntu 26.10 sandbox; the `realapps-*`
+The table follows `run.py --list` on 2026-10-18 (69 names in the Ubuntu 26.10 sandbox; the `realapps-*`
 set depends on the host). The ID column says what the scenario's checks actually exercise; "partial"
 names the part of the matrix row that is not asserted. Geometry is judged by the oracle (one-shot KWin
 scripts); `tiling_errors()` checks containment, overlap, all four outer margins and the spacing between
@@ -134,7 +134,10 @@ facing tiles (>= the configured gap; one device pixel of tolerance at fractional
 | `drag-I01-I02` | I01, I02 (real libei input; needs `build/input/plastile-input`) |
 | `resize-I03` | I03 (real libei input) |
 | `drag-teardown-I04` | I04 partial (window removed mid-drag; output removal mid-drag not exercised), I06 partial (unload mid-drag; there is no overlay) |
-| `classify-builtin-T16`, `classify-rule-title-T16` | T16 classification (BEHAVIOR §1), no matrix ID |
+| `classify-builtin-T16`, `classify-rule-title-T16`, `classify-rule-title-reconfigure-T16` | T16 classification (BEHAVIOR §1), no matrix ID |
+| `config-desktop-rename-Q02` | Q02 partial: a desktopName override follows a desktop rename (precedence order is asserted in pure tests) |
+| `constraints-runtime-min-G08` | G08 family: a minimum set after mapping is read from KWin (not learned); a decoration change updates the frame minimum |
+| `shortcuts-defaults-real-input` | default key bindings reach Plastile with real key events (libei); Q08 partial: reports other registered actions holding a default |
 | `classify-rule-border-Q10-T16` | Q10 |
 | `per-output-desktops-O08` | O08 |
 | `activities-E08`, `activities-late-service-E08`, `activities-add-second-E08` | O09 activity half (the native-root half is N/A after ADR-003) |
@@ -143,14 +146,14 @@ facing tiles (>= the configured gap; one device pixel of tolerance at fractional
 | `package-install-autoload-T32`, `package-post-start-discovery-T32` | Q11 partial: install, autoload, disable, upgrade, remove within one KWin version |
 | `fixed-size-G07` | G07 (Wayland min == max: floats by policy, also when a rule asks to tile it; never written) |
 | `max-size-G09` | G09 (held at its maximum, centred in its cell, never configured beyond it, converged) |
-| `late-min-size-D3` | defect D3 regression: a client raises its minimum after mapping (fixture `--late-min-size`); fails until D3 is fixed |
+| `late-min-size-D3` | defect D3 regression: a client that clamps to its own minimum raises it after mapping (fixture `--late-min-size`); the minimum must be adopted from the hint, not learned from a refused request. Failed before 34204e2, passes after it |
 | `write-signal-C06` | C06 (signals emitted inside writes recorded as observations, one solve, no recursion) |
 | `create-remove-C04` | C04 KWin half: an X11 window without WM_CLASS removed inside the readiness window gets no write; a Wayland toplevel destroyed in its mapping flush is never reported by KWin; removal right after adoption leaves no stale write |
 | `remove-during-apply-C07` | C07 KWin half: removal while requests are outstanding (a Wayland window cannot vanish inside the synchronous write loop) |
 | `output-offset-origin-G02` | G02 nested half for non-zero origins on both axes; O01 with offset origins |
 | `output-negative-origin-G02` | G02 negative origin: SKIP on KWin 6.7.5, which rejects negative positions for enabled outputs and normalizes logical origins to (0, 0) |
 | `output-reorder-O03` | O03 (priority/enumeration reorder and geometric reorder: identity, preferences, send order) |
-| `desktops-rename-reorder-remove-O10` | O10 (stable desktop ids, reorder, removal migration; the rename check of name-matched overrides fails until rename re-resolves them) |
+| `desktops-rename-reorder-remove-O10` | O10 (stable desktop ids, reorder, removal migration, and a name-matched override re-resolved after a rename, which failed before fd0ae38) |
 | `all-desktops-L16` | L16 (all-desktop and two-desktop windows float, no geometry targets; tile again on one desktop) |
 | `workarea-panel-add-remove-O07`, `workarea-panel-before-load-O07`, `workarea-two-panels-O07`, `workarea-panel-one-output-O07` | O07 (layer-shell panels; auto-hide and floating panels need plasmashell) |
 | `xwayland-tile-close-G10`, `xwayland-min-G10`, `xwayland-inc-G10`, `xwayland-fixed-G10`, `xwayland-dialog-G10`, `xwayland-aspect-G10` | G10 |
@@ -178,7 +181,7 @@ in [PERFORMANCE](../validation/PERFORMANCE.md). These stay open release gates pe
 
 ### 2d. No automated coverage yet (any layer)
 
-G13, G14, G15 (physical), I05, Q04, Q05, Q06, Q07, Q08, Q12. L01, L03 and L04 are exercised by
+G13, G14, G15 (physical), I05, Q04, Q05, Q06, Q07, Q12, and Q08's conflict explanation. L01, L03 and L04 are exercised by
 pure tests without carrying their IDs. Section 7 later-feature gates (scrolling, zones, native
 presentation) have no tests because the features do not exist.
 
