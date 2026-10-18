@@ -1,0 +1,28 @@
+{
+ "what": "First run of Plastile in a physical Plasma session (owner-run; not the scripted runbook)",
+ "layer": "physical",
+ "source": "the owner's report of the session (2026-10-18), not tool output; no raw logs are committed",
+ "environment": {
+  "os": "Arch Linux", "kwin": "6.7.5", "qt": "6.12.0", "session": "Wayland",
+  "outputs": [{"name": "eDP-1", "mode": "2256x1504@60Hz", "scale": 1.35}],
+  "compositing": "OpenGL", "virtualDesktops": 5,
+  "note": "a laptop, not the three-output reference machine of ENVIRONMENT.md"
+ },
+ "build": {"repoCommit": "d7445d8", "package": "0.1.0", "installedBundleMatchesCheckout": true,
+           "install": "tools/install.sh install + install-helper (plastile-state, ADR-020)"},
+ "observed": {
+  "errors": 0,
+  "shortcuts": {"state": "done", "conflicts": 0, "registered": 68},
+  "persistence": {"state": "active", "helperActivatedOnSessionBus": true},
+  "holding": false, "outstanding": 0,
+  "context": {"layout": "monocle", "members": 2, "writes": 2, "settled": 2, "diverged": 0, "corrections": 0},
+  "commands": 2
+ },
+ "finding": "Plastile worked; the owner twice judged it not working. Two Meta+Shift+Space presses had switched the context master/stack -> BSP -> monocle, where both windows fill the work area, stacked, which looks like no tiling. The command-chosen layout is persisted per context (T27), so it survived a re-login. At the default diagnostics level (warn) the journal showed only five QV4 load warnings (qt.qml.usedbeforedeclared) and no sign of life. An active maximized window suspends tiling (solves with n:0) with no visible signal. A layout reset sent over D-Bus applied to the active window's context, which was another virtual desktop's.",
+ "runbookCoverage": {
+  "P0": "partly: a Wayland Plasma session with KWin 6.7.5, Plastile the only tiler (not run through session_check.py)",
+  "P1": "install and a manual smoke test: package and helper installed, 68 shortcuts registered with no conflict, both windows placed (monocle), persistence active across a re-login",
+  "P2-P9": "not run"
+ },
+ "followUp": "first-run diagnosability: a notice log level shown at warn (started, layout changes), Plasma's OSD on layout changes, layout commands target the visible context, first-run docs (monocle, floating and maximized look like no tiling), the five QV4 warnings removed"
+}

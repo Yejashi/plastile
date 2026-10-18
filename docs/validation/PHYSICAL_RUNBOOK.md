@@ -4,7 +4,12 @@ G3 ([ROADMAP §10](../implementation/ROADMAP.md#10-m7-packaging-documentation-an
 
 Reference machine ([ENVIRONMENT](../status/ENVIRONMENT.md#reference-machine)): Arch Linux, KWin 6.7.5, Qt 6.12, AMD RX 9070 XT (OpenGL), three outputs: DP-1 1920×1080 @ 60 Hz, HDMI-A-1 2560×1440 @ 144 Hz (primary), DP-2 1920×1080 @ 100 Hz, all scale 1, VRR incapable.
 
-Nothing in this document has been run in a physical session yet. Until it is, Plastile remains a **candidate** with the physical gate open.
+The runbook itself has not been run. Plastile ran in a physical session once, run by the owner by hand on a
+laptop (KWin 6.7.5, eDP-1 2256×1504 @ 60 Hz, scale 1.35, package 0.1.0 and the persistence helper): install,
+shortcut registration, placement and persistence across a re-login worked, and the session exposed first-run
+diagnosability problems (a user could not tell monocle from a dead tiler)
+([evidence](../status/evidence/physical-first-run-20261018.json)). That covers part of P0 and P1 only. Until the
+runbook has been run, Plastile remains a **candidate** with the physical gate open.
 
 ## 1. What was validated where
 

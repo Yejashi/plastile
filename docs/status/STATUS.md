@@ -2,8 +2,8 @@
 
 **Product state:** a working automatic tiler, packaged as a KWin 6 declarative script (`package/`) with a
 TypeScript core (`src/`). It is a **release candidate in preparation, not a release**: everything below was
-validated in unit/replay tests and in disposable nested KWin sessions. **No physical Plasma session has run
-it.** Gate G3 stays open until the [physical runbook](../validation/PHYSICAL_RUNBOOK.md) has been run.
+validated in unit/replay tests and in disposable nested KWin sessions. **A physical Plasma session has run it only
+once, by hand (part of P0/P1).** Gate G3 stays open until the [physical runbook](../validation/PHYSICAL_RUNBOOK.md) has been run.
 
 Updated 2026-10-18 at `main` (see `git log`). [HANDOFF](HANDOFF.md) has the working context for the next
 agent; this file is the short status.
@@ -17,7 +17,7 @@ agent; this file is the short status.
 | Nested, virtual backend (CI) | Ubuntu 26.10 sandbox: KWin 6.7.5, Qt 6.11.2, KF 6.29.0, QPainter compositing | `a434b29`: 811/811 checks, 88/88 scenarios, 3 SKIPs (run 39114760401; the job failed only on the new plasmashell SKIP, now expected) |
 | Nested, virtual backend (CI, provisional) | Nix: KWin 6.8.0, Qt 6.11.2, KF 6.30.0, llvmpipe | `a434b29`: 779/782 checks, 85/87 scenarios: `reload-Q09` (below) and `create-remove-C04` case B (KWin 6.8 reported a window destroyed in its mapping flush; the check now applies case C's contract when KWin does) |
 | Nested, windowed on the real GPU | Reference host: nested KWin 6.7.5's outputs are windows on the live compositor (`PLASTILE_NESTED_HOST_DISPLAY`), OpenGL on the real GPU, 144 Hz host output; private bus, config and XDG dirs | Latency kit at full protocol (30,000 taps): every Plastile workload `pass` against its matched baseline; 19/19 chords delivered; real apps, real `plasmashell` panels, GL tile editor pass ([runbook §1](../validation/PHYSICAL_RUNBOOK.md#1-what-was-validated-where)). Labelled `nested-windowed-gpu`, never physical |
-| Physical session | [Runbook](../validation/PHYSICAL_RUNBOOK.md) P0–P8 | **Never run** |
+| Physical session | Owner's laptop: Arch, KWin 6.7.5, Qt 6.12.0, eDP-1 2256×1504 @ 60 Hz, scale 1.35, at `d7445d8` | First run by hand (part of P0/P1): installs, registers 68 shortcuts with no conflict, places windows, persistence active across a re-login; the owner could not tell monocle from a dead tiler ([evidence](evidence/physical-first-run-20261018.json)). Runbook P0–P8 **not run** |
 
 Expected SKIPs: `output-negative-origin-G02` (KWin normalizes output origins, so a negative origin cannot
 occur); `native-editor-toggle-L14` only where compositing is QPainter (the tile editor is GL-only);
