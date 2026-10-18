@@ -337,6 +337,8 @@ def persist_reload_restart(out: Path, c: Checks):
           and cc["counters"]["restoreAmbiguous"] == 0, cc["counters"])
         c("reload without changes writes nothing: unload had nothing dirty, the restored content is unchanged (inotify)",
           not watch.writes(), describe(watch.writes(), t_reload))
+        c("Settings never used its default location (no kde.org/kwin.conf in the private config directory)",
+          not (base / "config/kde.org").exists(), sorted(p.name for p in (base / "config").iterdir()))
         c("no errors or JS exceptions logged (first session)", not unexpected(s), unexpected(s)[:5])
         facts["persistence"] = s.counters()["persistence"]
     # A KWin restart: a new compositor process, the same XDG state and config directories.
