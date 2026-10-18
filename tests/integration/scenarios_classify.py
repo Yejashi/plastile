@@ -45,8 +45,8 @@ def explain(s: Session, caption: str) -> dict:
     time.sleep(0.1)
     off = s.kw.mark()
     s.cmd("inspect.explain-window")
-    line = s.kw.wait_log(r"plastile info explain ", 5, off)[-1]
-    return json.loads(line.split("plastile info explain ", 1)[1])
+    line = s.kw.wait_log(r"plastile notice explain ", 5, off)[-1]
+    return json.loads(line.split("plastile notice explain ", 1)[1])
 
 
 def brief(e: dict | None) -> dict | None:

@@ -165,7 +165,7 @@ def reload_config(out: Path, c: Checks):
         cc = s.settle()
         acts = s.log_lines(r"plastile info configuration activated", off)
         started = s.log_lines(STARTED, 0)
-        stopped = s.log_lines(r"plastile info stopped", 0)
+        stopped = s.log_lines(r"plastile notice stopped", 0)
         names1 = len(s.kw.shortcut_names())
         ev["storm"] = {"requests": 20, "sendSeconds": storm_s, "activations": len(acts), "gap": inner_gap(s),
                        "started": len(started), "stopped": len(stopped),

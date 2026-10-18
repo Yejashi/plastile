@@ -38,7 +38,8 @@ export interface WindowRuleResult {
   readonly blockedBy: string | null;
 }
 
-export type DiagnosticsLevel = "off" | "warn" | "info" | "debug";
+/** Log threshold. Notices (start, stop, a layout a command chose, pause) show at every level but error and off. */
+export type DiagnosticsLevel = "off" | "error" | "warn" | "info" | "debug";
 
 export interface ConfigSnapshot {
   readonly revision: number;
@@ -46,6 +47,8 @@ export interface ConfigSnapshot {
   readonly defaults: ContextSettings;
   readonly traceCapacity: number;
   readonly diagnostics: DiagnosticsLevel;
+  /** Plasma's on-screen display for a layout a command chose and for pause/resume (flat key `osd`). */
+  readonly osd: boolean;
   /** False lets the engine skip rule re-evaluation on title changes (Q03). */
   readonly usesTitleRules: boolean;
   /** Some override or rule matches desktop names: a desktop rename must re-resolve. */

@@ -465,7 +465,7 @@ def settings_dialog(out: Path, c: Checks):
             time.sleep(QUIET_S)
             s.settle()
             alone = kcm_frames(s, kcm.pid).get(SCRIPTS_WINDOW)
-            quiet = s.log_lines(rf"{ACTIVATED}|{RELOAD_REQUESTED}|plastile info (started|stopped)", off)
+            quiet = s.log_lines(rf"{ACTIVATED}|{RELOAD_REQUESTED}|plastile notice (started|stopped)", off)
             kwin_reread = s.log_lines(r"PLT-CFG changed", off)
             ev["cancel"] = {"closed": closed, "kwinrcUnchanged": kwinrc_bytes(s) == raw, "logged": quiet,
                             "kwinConfigChanged": kwin_reread, "alone": alone}

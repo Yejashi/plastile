@@ -8,9 +8,9 @@
   "compositing": "OpenGL",
   "layer": "nested KWin, virtual backend (tools/nested.py), not a physical session",
   "how": "python3 tests/integration/scenarios_replay.py --only remove-during-apply (recording root tools/replay/record.qml)",
-  "implementationCommit": "902bca7f2d36dd3b799fd83237dec1e2020650c9",
+  "implementationCommit": "50913b8ac4a49866ee2303278776aafd5fad57e6",
   "implementationDirty": false,
-  "bundleSha256": "f415c95d38b9651b7ab5f74ddb8d4220e5db797f4c5196bd0bd7d16d8f482e03",
+  "bundleSha256": "193bfd5746716df2a904ccce399a82158ce6d1fd18ee118035cff003ffbb6d0d",
   "date": "2026-10-18"
  },
  "titles": "redacted",
@@ -30,12 +30,13 @@
   "ratioStep": "",
   "traceCapacity": "",
   "diagnostics": "info",
+  "osd": "",
   "configJson": ""
  },
  "events": [
   {
    "k": "start",
-   "t": 1000,
+   "t": 1001,
    "a": [
     [
      {
@@ -252,6 +253,11 @@
      "w3"
     ],
     [
+     "now",
+     5,
+     1002
+    ],
+    [
      "visibleDesktop|o1",
      0,
      "d1"
@@ -265,11 +271,6 @@
       "width": 1280,
       "height": 800
      }
-    ],
-    [
-     "now",
-     6,
-     1002
     ],
     [
      "frame|w1|1",
@@ -395,28 +396,7 @@
   },
   {
    "k": "frameObserved",
-   "t": 1340,
-   "a": [
-    "w2",
-    2,
-    {
-     "x": 707,
-     "y": 8,
-     "width": 565,
-     "height": 388
-    }
-   ],
-   "q": [
-    [
-     "now",
-     0,
-     1340
-    ]
-   ]
-  },
-  {
-   "k": "frameObserved",
-   "t": 1342,
+   "t": 1334,
    "a": [
     "w3",
     3,
@@ -431,7 +411,28 @@
     [
      "now",
      0,
-     1342
+     1334
+    ]
+   ]
+  },
+  {
+   "k": "frameObserved",
+   "t": 1335,
+   "a": [
+    "w2",
+    2,
+    {
+     "x": 707,
+     "y": 8,
+     "width": 565,
+     "height": 388
+    }
+   ],
+   "q": [
+    [
+     "now",
+     0,
+     1335
     ]
    ]
   },
@@ -458,14 +459,14 @@
   },
   {
    "k": "activeChanged",
-   "t": 2370,
+   "t": 2335,
    "a": [
     "w1"
    ]
   },
   {
    "k": "command",
-   "t": 2380,
+   "t": 2347,
    "a": [
     "plastile.resize.grow"
    ],
@@ -478,7 +479,7 @@
     [
      "now",
      0,
-     2381
+     2347
     ],
     [
      "frame|w1|1",
@@ -489,6 +490,11 @@
       "width": 691,
       "height": 784
      }
+    ],
+    [
+     "now",
+     2,
+     2348
     ],
     [
      "frame|w2|2",
@@ -542,7 +548,7 @@
     {
      "h": "deadline",
      "a": [
-      750
+      749
      ],
      "r": null
     },
@@ -604,7 +610,7 @@
   },
   {
    "k": "windowRemoved",
-   "t": 2411,
+   "t": 2378,
    "a": [
     "w2",
     2
@@ -613,22 +619,15 @@
     [
      "now",
      0,
-     2411
+     2378
     ]
    ]
   },
   {
    "k": "turn",
-   "t": 2411,
+   "t": 2378,
    "a": [
     2
-   ],
-   "q": [
-    [
-     "now",
-     0,
-     2412
-    ]
    ],
    "c": [
     {
@@ -662,28 +661,7 @@
   },
   {
    "k": "frameObserved",
-   "t": 2773,
-   "a": [
-    "w3",
-    3,
-    {
-     "x": 770,
-     "y": 8,
-     "width": 502,
-     "height": 784
-    }
-   ],
-   "q": [
-    [
-     "now",
-     0,
-     2773
-    ]
-   ]
-  },
-  {
-   "k": "frameObserved",
-   "t": 2776,
+   "t": 2737,
    "a": [
     "w1",
     1,
@@ -698,13 +676,27 @@
     [
      "now",
      0,
-     2776
+     2738
     ]
    ]
   },
   {
+   "k": "frameObserved",
+   "t": 2738,
+   "a": [
+    "w3",
+    3,
+    {
+     "x": 770,
+     "y": 8,
+     "width": 502,
+     "height": 784
+    }
+   ]
+  },
+  {
    "k": "stop",
-   "t": 4665,
+   "t": 4628,
    "a": []
   }
  ],
@@ -837,7 +829,9 @@
      "nativeTile": false,
      "nativeYield": false,
      "parked": false,
-     "zone": null
+     "zone": null,
+     "suspended": null,
+     "paused": false
     },
     "w3": {
      "id": "w3",
@@ -893,7 +887,9 @@
      "nativeTile": false,
      "nativeYield": false,
      "parked": false,
-     "zone": null
+     "zone": null,
+     "suspended": null,
+     "paused": false
     }
    },
    "contexts": [
@@ -901,6 +897,8 @@
      "id": "o1\u241fd1\u241fdefault",
      "layout": "master-stack",
      "members": 2,
+     "tiled": 2,
+     "suspended": 0,
      "revision": 5,
      "applied": 5,
      "order": [
@@ -982,7 +980,7 @@
     "id": "w3"
    },
    {
-    "t": 1001,
+    "t": 1002,
     "kind": "mode",
     "id": "w3",
     "data": {
@@ -1032,14 +1030,14 @@
     }
    },
    {
-    "t": 1340,
-    "kind": "settled",
-    "id": "w2"
-   },
-   {
-    "t": 1342,
+    "t": 1334,
     "kind": "settled",
     "id": "w3"
+   },
+   {
+    "t": 1335,
+    "kind": "settled",
+    "id": "w2"
    },
    {
     "t": 1410,
@@ -1047,7 +1045,7 @@
     "id": "w1"
    },
    {
-    "t": 2381,
+    "t": 2347,
     "kind": "solve",
     "id": "o1\u241fd1\u241fdefault",
     "data": {
@@ -1057,7 +1055,7 @@
     }
    },
    {
-    "t": 2381,
+    "t": 2347,
     "kind": "write",
     "id": "w1",
     "data": {
@@ -1067,7 +1065,7 @@
     }
    },
    {
-    "t": 2381,
+    "t": 2348,
     "kind": "write",
     "id": "w2",
     "data": {
@@ -1077,7 +1075,7 @@
     }
    },
    {
-    "t": 2381,
+    "t": 2348,
     "kind": "write",
     "id": "w3",
     "data": {
@@ -1087,7 +1085,7 @@
     }
    },
    {
-    "t": 2381,
+    "t": 2348,
     "kind": "command",
     "data": {
      "id": "plastile.resize.grow",
@@ -1095,12 +1093,12 @@
     }
    },
    {
-    "t": 2411,
+    "t": 2378,
     "kind": "remove",
     "id": "w2"
    },
    {
-    "t": 2412,
+    "t": 2378,
     "kind": "solve",
     "id": "o1\u241fd1\u241fdefault",
     "data": {
@@ -1110,7 +1108,7 @@
     }
    },
    {
-    "t": 2412,
+    "t": 2378,
     "kind": "write",
     "id": "w3",
     "data": {
@@ -1120,14 +1118,14 @@
     }
    },
    {
-    "t": 2773,
-    "kind": "settled",
-    "id": "w3"
-   },
-   {
-    "t": 2776,
+    "t": 2738,
     "kind": "settled",
     "id": "w1"
+   },
+   {
+    "t": 2738,
+    "kind": "settled",
+    "id": "w3"
    }
   ]
  },

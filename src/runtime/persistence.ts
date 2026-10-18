@@ -14,7 +14,7 @@
 // before the load reply arrives, one write is in flight at a time, and no request is retried by
 // itself: a missing helper means in-memory preferences and one diagnostic.
 
-import type { ContextKey } from "../core/types.ts";
+import type { ContextKey, LayoutKind } from "../core/types.ts";
 import type { ContextPrefs, FloatPreference, PersistScope } from "../core/engine.ts";
 import { identityKey } from "../persist/match.ts";
 import { buildSnapshot, contentOf, parse, serialize, type Snapshot } from "../persist/snapshot.ts";
@@ -62,6 +62,8 @@ export interface PersistServices {
   stamp(): string;
   /** Measurement builds: CLOCK_MONOTONIC ns around issuing a write and applying the load reply. */
   clockNs?: () => number;
+  /** Once per load reply: the saved layouts it applied (contexts the user changed since start-up excluded). */
+  restoredLayouts?: (items: ReadonlyArray<{ key: ContextKey; layout: LayoutKind }>) => void;
 }
 
 /**
@@ -225,10 +227,15 @@ export class Persister {
   /** Apply a snapshot, skipping what the user changed since start-up; returns how many entries were kept from the user. */
   private apply(s: Snapshot): number {
     let kept = 0;
+    const layouts: Array<{ key: ContextKey; layout: LayoutKind }> = [];
     for (const c of s.contexts) {
       const key = { output: c.outputKey, desktop: c.desktopId, activity: c.activity };
       if (this.touchedContexts.has(ctxId(key))) { kept++; continue; }
       this.model.setContextPreferences(key, { layout: c.layout, masterStack: c.masterStack });
+      if (c.layout !== null) layouts.push({ key, layout: c.layout });
+    }
+    if (layouts.length > 0 && this.svc.restoredLayouts) {
+      try { this.svc.restoredLayouts(layouts); } catch (_e) { /* a diagnostic only */ }
     }
     if (s.floats.length > 0) {
       // Oldest first, so the model's bounded map keeps the newest.

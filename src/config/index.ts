@@ -3,7 +3,7 @@
 export type {
   CompileResult, ConfigSnapshot, ContextInfo, DiagnosticsLevel, RuleActions, ValidationError, WindowRuleResult,
 } from "./types.ts";
-export { compileConfig, DEFAULT_DIAGNOSTICS, DEFAULT_TRACE_CAPACITY } from "./compile.ts";
+export { compileConfig, DEFAULT_DIAGNOSTICS, DEFAULT_OSD, DEFAULT_TRACE_CAPACITY } from "./compile.ts";
 export { BUILTIN_EXCLUDED_KINDS, resolveContext, resolveWindow, ruleCacheKey, type ContextResolution } from "./resolve.ts";
 export { FLAT_KEYS } from "./schema.ts";
 export { MAX_OVERRIDES, MAX_PATTERN, MAX_RULES, MAX_STRING } from "./validate.ts";

@@ -284,6 +284,13 @@ export class Engine {
    * context preference or a user float decision. The listener only marks state dirty.
    */
   onPersistChange: ((scope: PersistScope) => void) | null = null;
+  /**
+   * A command changed a context's layout (layout.*, context.reset), or suspended or resumed
+   * tiling: the runtime logs one notice and shows the on-screen display. Called from the command;
+   * the listener must not block (the OSD request is deferred to a later turn).
+   */
+  onLayoutChange: ((key: ContextKey, layout: LayoutKind, previous: LayoutKind) => void) | null = null;
+  onSuspendChange: ((suspended: boolean) => void) | null = null;
   /** Windows being resized interactively whose frame changed since the last flush (liveResize). */
   private liveResize = new Set<WindowId>();
   /** The resized frame each live solve used, so an unchanged frame solves nothing. */
@@ -387,6 +394,8 @@ export class Engine {
     this.pendingFloats.clear();
     this.restoreChecks.clear();
     this.onPersistChange = null;
+    this.onLayoutChange = null;
+    this.onSuspendChange = null;
     this.liveResize.clear();
     this.liveLast.clear();
     this.parked.clear();
@@ -1668,10 +1677,27 @@ export class Engine {
     return a === null ? null : this.recs.get(a) ?? null;
   }
 
-  /** Context for a command: the active window's, else the visible context of the active output. */
+  /** Context for a window-level command: the active window's, else the visible context of the active output. */
   private commandCtx(r: Rec | null): Ctx | null {
     if (r && r.ctx) return this.ctxFor(r.ctx);
-    const out = this.dispatchTarget ? this.dispatchTarget.output : this.host.activeOutput();
+    return this.visibleCtxOf(null);
+  }
+
+  /**
+   * Context for a layout-level command (layout, resize, master count, reset): the one the user is
+   * looking at. The active window's context when it is visible; otherwise the visible context of
+   * the active window's output (a window on another desktop, a pinned window), or of the active
+   * output when there is no active window. A command over D-Bus or a shortcut thus never changes
+   * a desktop that is not on screen.
+   */
+  private layoutCtx(r: Rec | null): Ctx | null {
+    if (r && r.ctx && this.isVisible(r.ctx)) return this.ctxFor(r.ctx);
+    return this.visibleCtxOf(r ? r.membership.output ?? (r.ctx ? r.ctx.output : null) : null);
+  }
+
+  /** The visible context of an output (null: the active output at dispatch). */
+  private visibleCtxOf(output: OutputId | null): Ctx | null {
+    const out = output ?? (this.dispatchTarget ? this.dispatchTarget.output : this.host.activeOutput());
     if (out === null) return null;
     const desk = this.host.visibleDesktop(out);
     if (desk === null) return null;
@@ -1697,7 +1723,12 @@ export class Engine {
 
     if (family === "runtime") {
       if (action === "toggle-suspend") {
-        if (!this.suspended) { this.suspended = true; this.releaseOwnership(); return ok(); }
+        if (!this.suspended) {
+          this.suspended = true;
+          this.releaseOwnership();
+          this.notify(() => this.onSuspendChange && this.onSuspendChange(true));
+          return ok();
+        }
         this.suspended = false;
         // Adopt the live state again: owned borders, the readiness waits the suspension
         // cancelled, and one solve per visible context.
@@ -1707,6 +1738,7 @@ export class Engine {
         }
         for (const c of this.contexts.values()) { c.revision++; this.markDirty(c.key); }
         this.ensureFlush();
+        this.notify(() => this.onSuspendChange && this.onSuspendChange(false));
         return ok();
       }
       if (action === "reconcile" || action === "reload-config") return noop("handled by the host adapter");
@@ -1714,7 +1746,8 @@ export class Engine {
     if (family === "inspect" || id === "plastile.zone.show") return noop("handled by the host adapter");
     if (this.suspended) return { status: "rejected", reason: "tiling suspended", targets: [] };
 
-    const c = this.commandCtx(r);
+    const layoutLevel = family === "layout" || family === "resize" || family === "master" || family === "context";
+    const c = layoutLevel ? this.layoutCtx(r) : this.commandCtx(r);
     if (family === "window") {
       if (!r) return noop("no active window");
       if (action === "toggle-float") return this.toggleFloat(r);
@@ -1751,6 +1784,7 @@ export class Engine {
         if (next === "floating") this.restoreFloatRects(c);
         this.solveNow(c);
         this.persistChanged({ context: c.key });
+        this.layoutChanged(c, cur);
         return ok(c.members.slice());
       }
       const cmd: LayoutCommand | null =
@@ -1780,11 +1814,13 @@ export class Engine {
       return this.layoutCommand(c, { kind: "master-count", delta: action === "increase" ? 1 : -1 });
     }
     if (family === "context" && action === "reset") {
+      const cur = this.layoutKind(c);
       this.releaseZones(c);
       c.layoutOverride = null;
       c.states = {};
       this.solveNow(c);
       this.persistChanged({ context: c.key });
+      this.layoutChanged(c, cur);
       return ok(c.members.slice());
     }
     if (family === "scroll") return this.scrollCommand(c, r, action);
@@ -1793,6 +1829,18 @@ export class Engine {
     if (family === "swap") return this.swapCommand(c, r, action);
     if (family === "move") return this.moveCommand(c, r, action);
     return { status: "rejected", reason: "unsupported command", targets: [] };
+  }
+
+  /** Tell the runtime a command changed this context's layout (nothing when it stayed the same). */
+  private layoutChanged(c: Ctx, previous: LayoutKind): void {
+    const now = this.layoutKind(c);
+    if (now !== previous) this.notify(() => this.onLayoutChange && this.onLayoutChange(c.key, now, previous));
+  }
+
+  /** A listener's failure is a diagnostic, never the command's failure. */
+  private notify(fn: () => void): void {
+    if (!this.alive) return;
+    try { fn(); } catch (e) { this.counters.errors++; this.svc.log("warn", "notice listener failed", String(e)); }
   }
 
   private layoutCommand(c: Ctx, cmd: LayoutCommand): { status: CommandStatus; reason?: string; targets: string[] } {
@@ -2611,6 +2659,7 @@ export class Engine {
         desired: r.ledger.desired, corrections: r.ledger.corrections }, slot: c?.plan.get(r.id) ?? null,
       exception: r.exception, nativeTile: r.nativeTile, nativeYield: r.nativeYield, parked: this.parked.has(r.id),
       zone: c && this.layoutKind(c) === "zones" ? this.zoneExplain(c, r) : null,
+      suspended: suspendedText(r), paused: this.suspended,
     };
   }
 
@@ -2635,6 +2684,20 @@ export class Engine {
     return errs;
   }
 
+  /** The layout a context uses now, without creating it: a live context's, a kept preference's, or the configured one. */
+  layoutAt(key: ContextKey): LayoutKind {
+    const id = contextId(key);
+    const c = this.contexts.get(id);
+    if (c) return this.layoutKind(c);
+    const kept = this.retained.get(id);
+    return (kept && kept.prefs.layout) || this.settingsFor(key).layout;
+  }
+
+  /** The layout the configuration gives a context (what context.reset returns to). */
+  configuredLayout(key: ContextKey): LayoutKind {
+    return this.settingsFor(key).layout;
+  }
+
   /** Members of a context in order (tests/diagnostics). */
   membersOf(key: ContextKey): WindowId[] {
     return this.contexts.get(contextId(key))?.members.slice() ?? [];
@@ -2644,9 +2707,19 @@ export class Engine {
     return this.recs.get(id)?.mode ?? null;
   }
 
-  contextSummary(): Array<{ id: ContextId; layout: LayoutKind; members: number; revision: number; applied: number }> {
-    return [...this.contexts.values()].map((c) => ({ id: c.id, layout: this.layoutKind(c), members: c.members.length,
-      revision: c.revision, applied: c.applied }));
+  /**
+   * Per context: all members, those the layout places now (`tiled`), and those KWin owns for the
+   * moment (`suspended`: maximized, full screen, minimized or hidden; they keep their place and
+   * return when restored). members = tiled + suspended.
+   */
+  contextSummary(): Array<{ id: ContextId; layout: LayoutKind; members: number; tiled: number; suspended: number; revision: number;
+                            applied: number }> {
+    return [...this.contexts.values()].map((c) => {
+      let tiled = 0;
+      for (const id of c.members) { const r = this.recs.get(id); if (r && this.participates(r)) tiled++; }
+      return { id: c.id, layout: this.layoutKind(c), members: c.members.length, tiled, suspended: c.members.length - tiled,
+        revision: c.revision, applied: c.applied };
+    });
   }
 
   /**
@@ -2728,6 +2801,23 @@ function explainRules(w: WindowRules): Record<string, unknown> {
 /** Floated by the overflow policy (float-new), as opposed to by the user or a rule. */
 function isOverflow(r: Rec): boolean {
   return r.mode === "floating" && r.exception !== null && r.exception.startsWith("overflow");
+}
+
+const SUSPENSION_WORDS: Readonly<Record<Suspension, string>> = {
+  maximized: "maximized", fullscreen: "full screen", minimized: "minimized", hidden: "hidden", interactive: "",
+};
+
+/**
+ * Explain's statement for a tiled window that KWin owns for the moment (maximize, full screen,
+ * minimize and hide suspend its placement; the policy itself is unchanged), or null. An
+ * interactive move or resize is not a suspension: the window keeps its slot.
+ */
+function suspendedText(r: Rec): string | null {
+  if (r.mode !== "tiled") return null;
+  const words: string[] = [];
+  for (const k of ["maximized", "fullscreen", "minimized", "hidden"] as const) if (r.suspensions.has(k)) words.push(SUSPENSION_WORDS[k]);
+  if (words.length === 0) return null;
+  return `tiling of this window is suspended while it is ${words.join(" and ")}; it resumes, in the same place, when the window is restored`;
 }
 
 function suspensionsOf(s: WindowStates): Set<Suspension> {

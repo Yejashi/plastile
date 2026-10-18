@@ -4,25 +4,31 @@ Plastile's diagnostics are shortcuts that write to KWin's log, one inspector win
 
 ## Reading the log
 
-Plastile prints single lines prefixed with `plastile <level>`, where the level is `error`, `warn`, `info` or `debug`. The `diagnostics` setting (default `warn`) filters them, except the counters and trace dumps, which are printed at every level.
+Plastile prints single lines prefixed with `plastile <level>`, where the level is `error`, `notice`, `warn`, `info` or `debug`. The `diagnostics` setting (default `warn`) filters them, except the counters and trace dumps, which are printed at every level. `notice` is not a setting: those few lines show at `warn`, `info` and `debug`, and only `error` and `off` hide them. For a first check, see [Is it working?](README.md#is-it-working)
 
 ```sh
 journalctl --user -f | grep plastile
 ```
 
-**Where the lines go.** Plastile writes through QML `console.info` inside KWin. Without `QT_FORCE_STDERR_LOGGING`, Qt sends that output to the user journal (observed during environment discovery, [ENVIRONMENT](../status/ENVIRONMENT.md)). The nested tests read the compositor's captured stderr instead; reading the journal in a physical Plasma session is untested.
+**Where the lines go.** Plastile writes through QML `console.info` inside KWin. Without `QT_FORCE_STDERR_LOGGING`, Qt sends that output to the user journal (observed during environment discovery, [ENVIRONMENT](../status/ENVIRONMENT.md)). The nested tests read the compositor's captured stderr instead. In the first physical session (KWin 6.7.5, reported by the owner), `journalctl --user -b | grep plastile` showed KWin's own load warnings for the script (`qt.qml.usedbeforedeclared`, since fixed) and none of Plastile's lines, because the default level then hid the start line; Plastile's own lines in a physical journal are not yet confirmed.
 
 If nothing appears although the script is enabled:
 
 - Check that `QT_LOGGING_RULES` in KWin's environment does not disable the `js` or `qml` categories.
-- Check that `diagnostics` is not `off`.
+- Check that `diagnostics` is not `off` or `error`.
 - Search the whole boot: `journalctl --user -b | grep -i plastile`.
 
 **What each level adds.**
 
-- **`warn` (the default):** configuration warnings, `shortcut conflicts: ...` ([details](SHORTCUTS.md#conflict-report)), and errors such as `configuration rejected; keeping previous revision [...]`.
-- **`info`:** also `started 0.1.0 {...}`, `stopped`, `configuration reload requested`, `configuration activated {"revision": N}`, `shortcut check: no conflicts {...}` and the `explain` lines.
-- **`debug`:** also one line per command, with its result (`accepted`, `rejected` or `noop`), reason, targets, model revision and whether a placement request was issued.
+- **`error`:** errors only, such as `configuration rejected; keeping previous revision [...]`.
+- **`warn` (the default):** also configuration warnings, `shortcut conflicts: ...` ([details](SHORTCUTS.md#conflict-report)), and the `notice` lines:
+  - `started 0.1.0: N windows, configuration revision R; layout master-stack on eDP-1 / Desktop 1` (one `layout ... on <screen> / <desktop>` per screen, for its visible desktop) and `stopped`;
+  - `restored saved layout monocle for eDP-1 / Desktop 2, bsp for ...`, once at load, naming saved layouts that differ from the configuration;
+  - `layout monocle on eDP-1 / Desktop 2 (was bsp)` for each layout change made by a command (layout commands and *Reset this layout*);
+  - `tiling paused` and `tiling resumed`;
+  - the `explain {...}` line of *Explain active window*.
+- **`info`:** also `configuration reload requested`, `configuration activated {"revision": N}`, `shortcut check: no conflicts {...}`, `saved state loaded {...}` and the start-up hold.
+- **`debug`:** also `on-screen display unavailable` when plasmashell does not answer (one line per run of failures, not per message), and one line per command, with its result (`accepted`, `rejected` or `noop`), reason, targets, model revision and whether a placement request was issued.
 
 ## Inspect commands
 
@@ -60,10 +66,12 @@ qdbus6 org.kde.kglobalaccel /component/kwin org.kde.kglobalaccel.Component.invok
 | `outstanding` | Windows with a geometry request not yet settled. Should return to 0 shortly after any action. |
 | `connections` | Signal connections Plastile owns. Stable across reloads (measured over 20 reloads). |
 | `windows` | Windows the adapter tracks. |
-| `contexts` | One entry per screen, desktop and activity: layout, member count, model revision and applied revision. |
+| `contexts` | One entry per screen, desktop and activity: `layout`, `members`, `tiled` (members the layout places now) and `suspended` (members KWin owns for the moment: maximized, full screen, minimized or hidden; `members` = `tiled` + `suspended`), model `revision` and `applied` revision. A desktop whose only window is maximized shows `tiled: 0`. |
 | `configRevision` | Increases with every configuration attempt that differs from the previous input. |
 | `shortcuts` | The startup shortcut check: `state` (`pending`, `done` or `unavailable`) and the number of `conflicts` ([details](SHORTCUTS.md#conflict-report)). |
 | `inspectorOpen` | Whether the *Explain active window* inspector is open. |
+| `suspended` | `true` while *Suspend/resume tiling* has suspended all tiling. |
+| `osd` | The on-screen display: `state` (`idle`; `off` by the `osd` setting or without D-Bus; `failed` when the last request failed, so messages are dropped for 30 s and the next command after that tries again; `stopped`), the number of messages `sent` and of `failures`. |
 | `counters.restored`, `restoreAmbiguous` | Saved floats given back: to the window they were saved from when it is still open (after a disable and re-enable), otherwise to the one open window of their application; and ones withheld because several windows of the application were open. |
 | `holding` | `true` only right after Plastile starts while it waits for the saved state before its first layout (at most 250 ms). |
 | `persistence` | Saved state: `state` (`loading` until the helper answered; `active`; `memory` when the persistence helper is not installed or did not answer; `read-only` when a newer Plastile's file is present; `off`), the `generation` last loaded or saved, this load's confirmed `writes`, `issued` and `failed` saves, `skipped` (unchanged) saves, and whether a save is pending (`dirty`, `armed`, `inflight`: a request the helper has not answered yet). |
@@ -72,7 +80,7 @@ A healthy idle session shows no change between two dumps taken a few seconds apa
 
 ### Explain active window
 
-**Explain active window** opens the inspector for the focused window: how Plastile treats it and why, in plain words, with internal values under *Show details*. Escape, a click elsewhere, activating another window, or the command again closes it. It also prints the classification and placement record to the log, which requires `diagnostics` at `info` or `debug`. Both are described in [CONFIGURATION](CONFIGURATION.md#seeing-why-a-window-was-classified).
+**Explain active window** opens the inspector for the focused window: how Plastile treats it and why, in plain words, with internal values under *Show details*. Escape, a click elsewhere, activating another window, or the command again closes it. It also prints the classification and placement record to the log as a `notice` line, shown at the default level. For a maximized or full-screen tiled window, both say first that its tiling is suspended until it is restored. Both are described in [CONFIGURATION](CONFIGURATION.md#seeing-why-a-window-was-classified).
 
 ### Log trace
 
@@ -81,6 +89,8 @@ A healthy idle session shows no change between two dumps taken a few seconds apa
 ## Suspend and resume
 
 *Suspend/resume tiling* toggles between two states. Its default is `Meta+Ctrl+S` (earlier versions used `Meta+Shift+S`, which Spectacle also claims; [details](SHORTCUTS.md#default-bindings-measured-with-real-key-presses)).
+
+Each toggle logs `plastile notice tiling paused` or `plastile notice tiling resumed` and shows "Tiling paused" or "Tiling resumed" in Plasma's on-screen display (unless `osd` is off).
 
 - **Suspended:** Plastile cancels outstanding requests, restores any borders it removed, stops issuing geometry and rejects commands with `tiling suspended`. The exceptions are this toggle, *Reconcile*, *Reload configuration* and the inspect commands. Windows stay exactly where they are, so move and resize them freely. Measured: a window moved by hand while suspended was not moved back.
 - **Resumed:** every context is re-solved once, and your float choices are kept. Measured: the layout was valid again after resume.
@@ -131,7 +141,7 @@ Check KWin's Window Rules and disable other tiling scripts. Then compare two cou
 
 ## Shortcuts do nothing
 
-- **Script not running:** shortcuts work only while the script is enabled. Check KWin Scripts and look for `plastile info started` in the log.
+- **Script not running:** shortcuts work only while the script is enabled. Check KWin Scripts and look for `plastile notice started` in the log.
 - **Old defaults:** earlier versions bound *Suspend/resume* to `Meta+Shift+S` (taken by Spectacle) and *Grow*/*Shrink* to `Meta+Shift+=` / `Meta+Shift+-`, which never arrive as registered on a US keymap. The defaults are now `Meta+Ctrl+S`, `Meta+Ctrl+=` and `Meta+Ctrl+-` (measured to reach Plastile; [details](SHORTCUTS.md#default-bindings-measured-with-real-key-presses)). A binding you set yourself is kept by KGlobalAccel.
 - **Your own bindings:** a key you had already bound to something else goes to that other action (measured for a KWin action bound to `Meta+Shift+H`). Look for `plastile warn shortcut conflicts:` in the log, or open *Explain active window*: both name the key and the other action ([conflict report](SHORTCUTS.md#conflict-report)). Pick another key for one of them.
 - **Script disabled:** KGlobalAccel still accepts the shortcut and nothing runs (measured). That is expected.
@@ -150,7 +160,7 @@ Check KWin's Window Rules and disable other tiling scripts. Then compare two cou
 | Limitation | Detail | Status |
 |---|---|---|
 | Only some session changes are saved | A layout chosen by command, master ratio and count, and floated windows' positions per application are saved ([saved layout preferences](README.md#saved-layout-preferences)). Window order, BSP structure and per-window choices for applications with several open windows are not. Put lasting choices in the configuration as `defaults` or `overrides`. | By design for now |
-| A save is a synchronous file write in KWin | About 2 to 8 ms per save, up to 20 ms observed, about 2 s after the last change and never during a command or drag (nested measurement). On a slow disk it is longer. | Measured (nested); accepted in ADR-013 |
+| Saving needs the persistence helper | KWin does no file I/O for saved state: a save is one asynchronous D-Bus request to the `plastile-state` helper, about 2 s after the last change and never during a command or drag, costing KWin about 0.2 ms for a typical state and 1.2 ms for the largest (nested measurement). The helper writes the file. Without it, changes stay in memory until the script reloads ([saved layout preferences](README.md#saved-layout-preferences)). | Measured (nested); ADR-020 (the in-process file write of ADR-013 is gone) |
 | Apply in the settings dialog alone does not reach the running script | `ScriptingConfig::reload()` is a TODO in kwin v6.7.5. Press *Reload configuration* after Apply: it asks KWin to re-read `kwinrc`, which also re-reads KWin's other settings. | Observed source; measured |
 | Default shortcuts tested on one keymap | All 20 defaults reach Plastile with real key presses on the default (US) keymap in a nested session; other layouts and installed software (Spectacle is not installed in the test sandbox) are not covered. | Measured (nested, libei) |
 | Activities untested | The matcher and context key include the activity, but every test ran with the single default activity (no Activities service in nested sessions). Switching activities with tiled windows on each is unverified. | Untested |
@@ -172,7 +182,7 @@ Check KWin's Window Rules and disable other tiling scripts. Then compare two cou
 Include:
 
 - the KWin version (`kwin_wayland --version`)
-- the `plastile info started` line
+- the `plastile notice started` line, and any `plastile notice restored saved layout` line
 - the `[Script-plastile]` section of `kwinrc`, with any window titles removed from the JSON
 - a *Log counters* dump
 - an *Explain active window* dump for the affected window

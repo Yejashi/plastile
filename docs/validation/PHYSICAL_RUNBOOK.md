@@ -158,16 +158,16 @@ Consent: C1.
 4. Confirm the start and the diagnostics in the journal (reading the journal in a physical session is itself untested; see [TROUBLESHOOTING](../user/TROUBLESHOOTING.md#reading-the-log)):
 
 ```sh
-journalctl --user -b | grep 'plastile info started'
+journalctl --user -b | grep -E 'plastile notice (started|restored)|usedbeforedeclared'
 qdbus6 org.kde.kglobalaccel /component/kwin org.kde.kglobalaccel.Component.invokeShortcut plastile.inspect.counters
 qdbus6 org.kde.kglobalaccel /component/kwin org.kde.kglobalaccel.Component.invokeShortcut plastile.inspect.explain-window
-journalctl --user --since=-1min | grep -E 'plastile (counters|info explain)'
+journalctl --user --since=-1min | grep -E 'plastile (counters|notice explain)'
 ```
 
 5. Open three Konsole windows on an empty desktop. They should tile master/stack without overlap. Run `python3 tools/physical/session_check.py --require-plastile loaded --json "$RUN/session-loaded.json"`.
 
 - **Record:** the journal lines (keep them in `$RUN/`, they may contain window captions), a screenshot, the second session report.
-- **Pass (PHY-01):** `plastile info started` appears once; the counters line parses and shows `errors: 0`; explain shows a classification for the active window; the three windows tile without overlap; the dialog opens and applies.
+- **Pass (PHY-01):** `plastile notice started` appears once (at the default log level) and no `qt.qml.usedbeforedeclared` warning names `plastile.mjs`; the counters line parses and shows `errors: 0`; explain shows a classification for the active window; the three windows tile without overlap; the dialog opens and applies.
 
 ### P2. Real outputs
 

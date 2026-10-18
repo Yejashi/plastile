@@ -185,13 +185,13 @@ class Session:
     def load(self) -> None:
         off = self.kw.mark()
         self.kw.load_declarative(self.qml, PLUGIN)
-        self.kw.wait_log(r"plastile info started ", 10, off)
+        self.kw.wait_log(r"plastile notice started ", 10, off)
         self.loaded = True
 
     def unload(self) -> None:
         off = self.kw.mark()
         self.kw.unload(PLUGIN)
-        self.kw.wait_log(r"plastile info stopped", 10, off)
+        self.kw.wait_log(r"plastile notice stopped", 10, off)
         self.loaded = False
 
     def cmd(self, name: str) -> int:
@@ -368,8 +368,8 @@ def explain(s: Session, caption: str) -> dict:
     time.sleep(0.1)
     off = s.kw.mark()
     s.cmd("inspect.explain-window")
-    line = s.kw.wait_log(r"plastile info explain ", 5, off)[-1]
-    return json.loads(line.split("plastile info explain ", 1)[1])
+    line = s.kw.wait_log(r"plastile notice explain ", 5, off)[-1]
+    return json.loads(line.split("plastile notice explain ", 1)[1])
 
 
 def fixture_events(log: Path, ev: str | None = None, win: str = "main") -> list[dict]:

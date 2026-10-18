@@ -519,7 +519,7 @@ def rule_control(res: Results, s: Session, area: dict, n_tiled: int) -> dict:
     explain_off = s.kw.mark()
     s.act(fl["caption"], "workspace.activeWindow = w")
     s.cmd("inspect.explain-window")
-    expl = s.kw.wait_log(r"plastile info explain", 5, explain_off)[-1].split("explain", 1)[1]
+    expl = s.kw.wait_log(r"plastile notice explain", 5, explain_off)[-1].split("explain", 1)[1]
     res.check("P13 control: rule 255 (glob, floating) matched (explain: r255, mode floating)",
               '"r255"' in expl and '"mode":"floating"' in expl, expl[:300])
     res.check("P13 control: floating window kept its own 400x300 client size (oracle)",

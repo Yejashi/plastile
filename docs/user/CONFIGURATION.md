@@ -28,7 +28,8 @@ These are the keys in `kwinrc` and the fields of the settings dialog. Defaults c
 | `bspInsert` | `focused` | `focused`, `last` | Which tile a new window splits in BSP. |
 | `bspAxis` | `alternate` | `alternate`, `longest`, `horizontal`, `vertical` | Split direction for new BSP splits. `horizontal` means side by side; `vertical` means stacked. |
 | `ratioStep` | `0.05` | greater than 0, at most 0.5. The dialog offers 0.01–0.5. | Step for *Grow*/*Shrink*. This one key drives both master/stack and BSP; the JSON document can set them separately. |
-| `diagnostics` | `warn` | `off`, `warn`, `info`, `debug` | Log level for `plastile` lines. `off` also disables the event trace. |
+| `diagnostics` | `warn` | `off`, `error`, `warn`, `info`, `debug` | Log level for `plastile` lines. `notice` lines (start, stop, a layout a command chose, pause and resume, saved layouts restored at load, explain) show at `warn`, `info` and `debug`; `error` shows errors only; `off` shows nothing and also disables the event trace ([TROUBLESHOOTING](TROUBLESHOOTING.md#reading-the-log)). |
+| `osd` | `true` | `true`, `false` | Plasma's on-screen display (`org.kde.osdService` in plasmashell) when a command changes a layout ("Monocle layout — Desktop 2") or pauses or resumes tiling. Never for window events. Without plasmashell nothing is shown. After a failed request (plasmashell not started yet at login, or restarting) the messages of the next 30 s are dropped; the first command after that tries again. Nothing retries by itself. |
 | `traceCapacity` | `2048` | integer 64–65536 | Number of events kept for *Log trace*. |
 | `configJson` | empty | a JSON string of at most 524,288 characters | The JSON document described below. |
 
@@ -227,7 +228,7 @@ Later levels win per field:
 2. Flat keys from `kwinrc`.
 3. `defaults` in the JSON document.
 4. Matching `overrides`, in ascending priority, then declaration order.
-5. Session commands: a layout chosen with the layout shortcuts, and structure changed by grow/shrink, master count, rotate, mirror or equalize in that context. These last until *Reset this layout*, a script reload or the end of the KWin session.
+5. Session commands: a layout chosen with the layout shortcuts, and structure changed by grow/shrink, master count, rotate, mirror or equalize in that context. The layout choice, master ratio and master count are saved and restored at the next load ([saved layout preferences](README.md#saved-layout-preferences)); the rest lasts until *Reset this layout*, a script reload or the end of the KWin session.
 
 ### Window treatment
 
@@ -341,7 +342,7 @@ It also records the reason text and, when a rule decided the mode, the ids of th
 - **It opens the inspector,** a small window in the middle of the screen that states in plain words how Plastile treats the window and why: tiled, floating or not managed; what decided it (window type, a built-in exception, your rule, its size limits, being on several desktops); which rules matched and what they changed; where it is; whether KWin owns it right now (minimized, full screen, maximized, being dragged); its size limits, including sizes learned from the application; whether it reached its tile; and why Plastile gave up on it, if it did. Shortcut conflicts found at startup are listed too. *Show details* adds the internal values (window id, desktop and activity ids, planned and requested rectangles).
   - Escape, a click anywhere else, activating another window, or running the command again closes it. While it is open it takes the keyboard, like a menu; global shortcuts still work (measured with a Plastile focus key, which also closed it by activating another window).
   - It exists only between the command and its closing, and is removed when Plastile unloads. It is Plastile's own window, so it is never tiled, and opening it moves no window (measured in nested KWin 6.7.5 with QPainter rendering and 6.8.0 with OpenGL, scenario `inspector-T28`).
-- **It logs the explanation** as one line, with the fields below. This needs `diagnostics` at `info` or `debug`.
+- **It logs the explanation** as one `notice` line, with the fields below. The default log level shows it; only `error` and `off` hide it.
 
 To read the log line:
 
@@ -351,7 +352,7 @@ journalctl --user -f | grep plastile
 qdbus6 org.kde.kglobalaccel /component/kwin org.kde.kglobalaccel.Component.invokeShortcut plastile.inspect.explain-window
 ```
 
-The line is `plastile info explain {...}` with these fields:
+The line is `plastile notice explain {...}` with these fields:
 
 | Field | Content |
 |---|---|
@@ -363,6 +364,8 @@ The line is `plastile info explain {...}` with these fields:
 | `context` | Output name, desktop id and activity. |
 | `layout` | The context's current layout. |
 | `suspensions` | Any of `minimized`, `fullscreen`, `maximized`, `interactive`, `hidden`. |
+| `suspended` | For a tiled window that KWin owns for the moment (maximized, full screen, minimized or hidden), a plain statement such as `tiling of this window is suspended while it is maximized; it resumes, in the same place, when the window is restored`; otherwise `null`. The policy itself does not change: the window stays a member of its context. |
+| `paused` | `true` while *Suspend/resume tiling* has suspended all tiling. |
 | `constraints` | Frame minimum and maximum, and whether the window is fixed-size. |
 | `learnedMin`, `learnedMax` | Sizes the client actually accepted. |
 | `ledger` | Status, outstanding request, desired rectangle and corrections used. |

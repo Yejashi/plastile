@@ -170,7 +170,11 @@ export function describeWindow(x: Obj | null, ctx: InspectContext): InspectorVie
   }
   const mode = s(x.mode), layout = s(x.layout);
   const decision = obj(x.decision), context = obj(x.context);
-  const rows: InspectorRow[] = [{ label: "Placement", text: placement(mode, layout) }];
+  // A tiled window KWin owns for the moment (maximized, full screen, ...): say so first and plainly.
+  const suspended = s(x.suspended);
+  const rows: InspectorRow[] = [{ label: "Placement", text: suspended
+    ? `${suspended.charAt(0).toUpperCase()}${suspended.slice(1)}. Until then KWin owns its size and position, and the other windows tile without it.`
+    : placement(mode, layout) }];
   let reason = why(decision);
   if (decision && s(decision.mode) === "tiled" && mode !== "tiled" && mode !== "pending") {
     // Classified for tiling, but something after the classification keeps it out of the layout.
@@ -195,13 +199,15 @@ export function describeWindow(x: Obj | null, ctx: InspectContext): InspectorVie
     rows.push({ label: "Where", text: `Output ${s(context.output)}, desktop “${name || "unnamed"}”.` });
   }
   const sus = Array.isArray(x.suspensions) ? (x.suspensions as unknown[]).map((v) => SUSPENSIONS[s(v)] ?? s(v)) : [];
-  if (sus.length) rows.push({ label: "Paused", text: `KWin owns the window while it is ${list(sus)}; Plastile resumes afterwards.` });
+  if (suspended) rows.push({ label: "Layout", text: placement(mode, layout) });
+  else if (sus.length) rows.push({ label: "Paused", text: `KWin owns the window while it is ${list(sus)}; Plastile resumes afterwards.` });
   const sz = sizeText(obj(x.constraints), x.learnedMin);
   if (sz) rows.push({ label: "Size", text: sz });
   const st = statusText(mode, obj(x.ledger));
   if (st) rows.push({ label: "Status", text: st });
   if (x.exception) rows.push({ label: "Problem", text: problemText(s(x.exception)) });
   if (x.nativeYield && mode !== "native") rows.push({ label: "KWin tiling", text: "A native KWin tile action made Plastile yield this window." });
+  if (x.paused === true) rows.push({ label: "Tiling paused", text: "Plastile is suspended everywhere and moves no window; “Suspend/resume tiling” resumes it." });
   if (conflicts) rows.push({ label: "Shortcut conflicts", text: conflicts });
 
   const ledger = obj(x.ledger);

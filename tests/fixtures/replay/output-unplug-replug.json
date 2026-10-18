@@ -8,9 +8,9 @@
   "compositing": "OpenGL",
   "layer": "nested KWin, virtual backend (tools/nested.py), not a physical session",
   "how": "python3 tests/integration/scenarios_replay.py --only output-unplug-replug (recording root tools/replay/record.qml)",
-  "implementationCommit": "902bca7f2d36dd3b799fd83237dec1e2020650c9",
+  "implementationCommit": "50913b8ac4a49866ee2303278776aafd5fad57e6",
   "implementationDirty": false,
-  "bundleSha256": "f415c95d38b9651b7ab5f74ddb8d4220e5db797f4c5196bd0bd7d16d8f482e03",
+  "bundleSha256": "193bfd5746716df2a904ccce399a82158ce6d1fd18ee118035cff003ffbb6d0d",
   "date": "2026-10-18"
  },
  "titles": "redacted",
@@ -30,6 +30,7 @@
   "ratioStep": "",
   "traceCapacity": "",
   "diagnostics": "info",
+  "osd": "",
   "configJson": ""
  },
  "events": [
@@ -319,7 +320,7 @@
     ],
     [
      "now",
-     6,
+     3,
      1002
     ],
     [
@@ -336,6 +337,11 @@
       "width": 1280,
       "height": 800
      }
+    ],
+    [
+     "now",
+     8,
+     1003
     ],
     [
      "frame|w1|1",
@@ -366,11 +372,6 @@
       "width": 400,
       "height": 327.99999999999994
      }
-    ],
-    [
-     "now",
-     12,
-     1003
     ],
     [
      "frame|w4|4",
@@ -503,7 +504,7 @@
   },
   {
    "k": "frameObserved",
-   "t": 1010,
+   "t": 1011,
    "a": [
     "w2",
     2,
@@ -518,13 +519,13 @@
     [
      "now",
      0,
-     1010
+     1011
     ]
    ]
   },
   {
    "k": "frameObserved",
-   "t": 1011,
+   "t": 1012,
    "a": [
     "w1",
     1,
@@ -539,13 +540,13 @@
     [
      "now",
      0,
-     1011
+     1012
     ]
    ]
   },
   {
    "k": "frameObserved",
-   "t": 1343,
+   "t": 1335,
    "a": [
     "w3",
     3,
@@ -560,13 +561,13 @@
     [
      "now",
      0,
-     1343
+     1335
     ]
    ]
   },
   {
    "k": "frameObserved",
-   "t": 1345,
+   "t": 1336,
    "a": [
     "w4",
     4,
@@ -581,20 +582,20 @@
     [
      "now",
      0,
-     1345
+     1337
     ]
    ]
   },
   {
    "k": "activeChanged",
-   "t": 1565,
+   "t": 1568,
    "a": [
     "w3"
    ]
   },
   {
    "k": "command",
-   "t": 1575,
+   "t": 1578,
    "a": [
     "plastile.move.output-next"
    ],
@@ -617,7 +618,7 @@
      "n": [
       {
        "k": "frameObserved",
-       "t": 1575,
+       "t": 1578,
        "a": [
         "w3",
         3,
@@ -632,13 +633,13 @@
         [
          "now",
          0,
-         1575
+         1578
         ]
        ]
       },
       {
        "k": "membershipChanged",
-       "t": 1576,
+       "t": 1578,
        "a": [
         "w3",
         3,
@@ -660,7 +661,7 @@
         [
          "now",
          0,
-         1576
+         1579
         ]
        ]
       }
@@ -670,7 +671,7 @@
   },
   {
    "k": "turn",
-   "t": 1576,
+   "t": 1579,
    "a": [
     2
    ],
@@ -719,6 +720,11 @@
       "width": 1280,
       "height": 800
      }
+    ],
+    [
+     "now",
+     5,
+     1580
     ],
     [
      "frame|w3|3",
@@ -824,7 +830,7 @@
   },
   {
    "k": "frameObserved",
-   "t": 1578,
+   "t": 1581,
    "a": [
     "w2",
     2,
@@ -839,13 +845,13 @@
     [
      "now",
      0,
-     1578
+     1581
     ]
    ]
   },
   {
    "k": "frameObserved",
-   "t": 1966,
+   "t": 1971,
    "a": [
     "w4",
     4,
@@ -860,13 +866,13 @@
     [
      "now",
      0,
-     1966
+     1971
     ]
    ]
   },
   {
    "k": "frameObserved",
-   "t": 1968,
+   "t": 1973,
    "a": [
     "w3",
     3,
@@ -881,20 +887,20 @@
     [
      "now",
      0,
-     1968
+     1973
     ]
    ]
   },
   {
    "k": "activeChanged",
-   "t": 2194,
+   "t": 2199,
    "a": [
     "w4"
    ]
   },
   {
    "k": "command",
-   "t": 2204,
+   "t": 2209,
    "a": [
     "plastile.move.output-next"
    ],
@@ -903,11 +909,6 @@
      "activeWindow",
      0,
      "w4"
-    ],
-    [
-     "now",
-     0,
-     2205
     ]
    ],
    "c": [
@@ -922,7 +923,7 @@
      "n": [
       {
        "k": "frameObserved",
-       "t": 2204,
+       "t": 2210,
        "a": [
         "w4",
         4,
@@ -937,13 +938,13 @@
         [
          "now",
          0,
-         2204
+         2210
         ]
        ]
       },
       {
        "k": "membershipChanged",
-       "t": 2204,
+       "t": 2210,
        "a": [
         "w4",
         4,
@@ -963,7 +964,7 @@
   },
   {
    "k": "turn",
-   "t": 2205,
+   "t": 2210,
    "a": [
     2
    ],
@@ -971,7 +972,7 @@
     [
      "now",
      0,
-     2206
+     2211
     ],
     [
      "frame|w2|2",
@@ -1097,7 +1098,7 @@
   },
   {
    "k": "frameObserved",
-   "t": 2208,
+   "t": 2212,
    "a": [
     "w2",
     2,
@@ -1112,13 +1113,13 @@
     [
      "now",
      0,
-     2208
+     2212
     ]
    ]
   },
   {
    "k": "frameObserved",
-   "t": 2597,
+   "t": 2602,
    "a": [
     "w4",
     4,
@@ -1133,13 +1134,13 @@
     [
      "now",
      0,
-     2597
+     2602
     ]
    ]
   },
   {
    "k": "frameObserved",
-   "t": 2599,
+   "t": 2604,
    "a": [
     "w3",
     3,
@@ -1154,20 +1155,20 @@
     [
      "now",
      0,
-     2599
+     2604
     ]
    ]
   },
   {
    "k": "activeChanged",
-   "t": 2786,
+   "t": 2837,
    "a": [
     "w3"
    ]
   },
   {
    "k": "command",
-   "t": 2798,
+   "t": 2848,
    "a": [
     "plastile.resize.grow"
    ],
@@ -1180,7 +1181,7 @@
     [
      "now",
      0,
-     2798
+     2849
     ],
     [
      "frame|w3|3",
@@ -1269,7 +1270,7 @@
   },
   {
    "k": "membershipChanged",
-   "t": 2867,
+   "t": 2921,
    "a": [
     "w4",
     4,
@@ -1286,13 +1287,13 @@
     [
      "now",
      0,
-     2867
+     2921
     ]
    ]
   },
   {
    "k": "membershipChanged",
-   "t": 2868,
+   "t": 2921,
    "a": [
     "w3",
     3,
@@ -1304,24 +1305,17 @@
      "onAllDesktops": false,
      "activities": []
     }
-   ],
-   "q": [
-    [
-     "now",
-     0,
-     2868
-    ]
    ]
   },
   {
    "k": "topologyChanged",
-   "t": 2875,
+   "t": 2927,
    "a": [],
    "q": [
     [
      "now",
      0,
-     2875
+     2927
     ],
     [
      "outputs",
@@ -1345,7 +1339,7 @@
   },
   {
    "k": "turn",
-   "t": 2875,
+   "t": 2927,
    "a": [
     2
    ],
@@ -1452,7 +1446,7 @@
   },
   {
    "k": "frameObserved",
-   "t": 2877,
+   "t": 2930,
    "a": [
     "w2",
     2,
@@ -1467,34 +1461,13 @@
     [
      "now",
      0,
-     2877
+     2930
     ]
    ]
   },
   {
    "k": "frameObserved",
-   "t": 3187,
-   "a": [
-    "w3",
-    3,
-    {
-     "x": 707,
-     "y": 536,
-     "width": 565,
-     "height": 256
-    }
-   ],
-   "q": [
-    [
-     "now",
-     0,
-     3187
-    ]
-   ]
-  },
-  {
-   "k": "frameObserved",
-   "t": 3188,
+   "t": 3238,
    "a": [
     "w4",
     4,
@@ -1509,19 +1482,40 @@
     [
      "now",
      0,
-     3188
+     3238
+    ]
+   ]
+  },
+  {
+   "k": "frameObserved",
+   "t": 3239,
+   "a": [
+    "w3",
+    3,
+    {
+     "x": 707,
+     "y": 536,
+     "width": 565,
+     "height": 256
+    }
+   ],
+   "q": [
+    [
+     "now",
+     0,
+     3239
     ]
    ]
   },
   {
    "k": "topologyChanged",
-   "t": 4581,
+   "t": 4671,
    "a": [],
    "q": [
     [
      "now",
      0,
-     4581
+     4671
     ],
     [
      "outputs",
@@ -1557,7 +1551,7 @@
   },
   {
    "k": "turn",
-   "t": 4581,
+   "t": 4671,
    "a": [
     2
    ],
@@ -1596,7 +1590,7 @@
   },
   {
    "k": "frameObserved",
-   "t": 4581,
+   "t": 4671,
    "a": [
     "w2",
     2,
@@ -1610,9 +1604,16 @@
   },
   {
    "k": "turn",
-   "t": 4581,
+   "t": 4672,
    "a": [
     2
+   ],
+   "q": [
+    [
+     "now",
+     0,
+     4672
+    ]
    ],
    "c": [
     {
@@ -1653,7 +1654,7 @@
   },
   {
    "k": "frameObserved",
-   "t": 4582,
+   "t": 4672,
    "a": [
     "w2",
     2,
@@ -1663,18 +1664,11 @@
      "width": 565,
      "height": 256
     }
-   ],
-   "q": [
-    [
-     "now",
-     0,
-     4582
-    ]
    ]
   },
   {
    "k": "frameObserved",
-   "t": 4982,
+   "t": 5072,
    "a": [
     "w4",
     4,
@@ -1689,13 +1683,13 @@
     [
      "now",
      0,
-     4982
+     5072
     ]
    ]
   },
   {
    "k": "membershipChanged",
-   "t": 4982,
+   "t": 5072,
    "a": [
     "w4",
     4,
@@ -1711,7 +1705,7 @@
   },
   {
    "k": "frameObserved",
-   "t": 4982,
+   "t": 5072,
    "a": [
     "w3",
     3,
@@ -1725,7 +1719,7 @@
   },
   {
    "k": "membershipChanged",
-   "t": 4982,
+   "t": 5072,
    "a": [
     "w3",
     3,
@@ -1741,7 +1735,7 @@
   },
   {
    "k": "turn",
-   "t": 4982,
+   "t": 5072,
    "a": [
     2
    ],
@@ -1842,6 +1836,11 @@
      "d1"
     ],
     [
+     "now",
+     4,
+     5073
+    ],
+    [
      "frame|w4|4",
      0,
      {
@@ -1865,7 +1864,7 @@
   },
   {
    "k": "frameObserved",
-   "t": 4983,
+   "t": 5073,
    "a": [
     "w2",
     2,
@@ -1875,18 +1874,11 @@
      "width": 565,
      "height": 784
     }
-   ],
-   "q": [
-    [
-     "now",
-     0,
-     4983
-    ]
    ]
   },
   {
    "k": "frameObserved",
-   "t": 5384,
+   "t": 5474,
    "a": [
     "w3",
     3,
@@ -1901,13 +1893,13 @@
     [
      "now",
      0,
-     5384
+     5474
     ]
    ]
   },
   {
    "k": "frameObserved",
-   "t": 5385,
+   "t": 5475,
    "a": [
     "w4",
     4,
@@ -1922,13 +1914,13 @@
     [
      "now",
      0,
-     5385
+     5475
     ]
    ]
   },
   {
    "k": "stop",
-   "t": 5804,
+   "t": 5892,
    "a": []
   }
  ],
@@ -2181,7 +2173,9 @@
      "nativeTile": false,
      "nativeYield": false,
      "parked": false,
-     "zone": null
+     "zone": null,
+     "suspended": null,
+     "paused": false
     },
     "w2": {
      "id": "w2",
@@ -2237,7 +2231,9 @@
      "nativeTile": false,
      "nativeYield": false,
      "parked": false,
-     "zone": null
+     "zone": null,
+     "suspended": null,
+     "paused": false
     },
     "w3": {
      "id": "w3",
@@ -2293,7 +2289,9 @@
      "nativeTile": false,
      "nativeYield": false,
      "parked": false,
-     "zone": null
+     "zone": null,
+     "suspended": null,
+     "paused": false
     },
     "w4": {
      "id": "w4",
@@ -2349,7 +2347,9 @@
      "nativeTile": false,
      "nativeYield": false,
      "parked": false,
-     "zone": null
+     "zone": null,
+     "suspended": null,
+     "paused": false
     }
    },
    "contexts": [
@@ -2357,6 +2357,8 @@
      "id": "o1\u241fd1\u241fdefault",
      "layout": "master-stack",
      "members": 2,
+     "tiled": 2,
+     "suspended": 0,
      "revision": 10,
      "applied": 10,
      "order": [
@@ -2368,6 +2370,8 @@
      "id": "o2\u241fd1\u241fdefault",
      "layout": "master-stack",
      "members": 2,
+     "tiled": 2,
+     "suspended": 0,
      "revision": 2,
      "applied": 2,
      "order": [
@@ -2434,7 +2438,7 @@
     "id": "w2"
    },
    {
-    "t": 1001,
+    "t": 1002,
     "kind": "mode",
     "id": "w2",
     "data": {
@@ -2444,12 +2448,12 @@
     }
    },
    {
-    "t": 1001,
+    "t": 1002,
     "kind": "add",
     "id": "w3"
    },
    {
-    "t": 1001,
+    "t": 1002,
     "kind": "mode",
     "id": "w3",
     "data": {
@@ -2474,7 +2478,7 @@
     }
    },
    {
-    "t": 1002,
+    "t": 1003,
     "kind": "solve",
     "id": "o1\u241fd1\u241fdefault",
     "data": {
@@ -2484,7 +2488,7 @@
     }
    },
    {
-    "t": 1002,
+    "t": 1003,
     "kind": "write",
     "id": "w1",
     "data": {
@@ -2494,7 +2498,7 @@
     }
    },
    {
-    "t": 1002,
+    "t": 1003,
     "kind": "write",
     "id": "w2",
     "data": {
@@ -2524,27 +2528,27 @@
     }
    },
    {
-    "t": 1010,
+    "t": 1011,
     "kind": "settled",
     "id": "w2"
    },
    {
-    "t": 1011,
+    "t": 1012,
     "kind": "settled",
     "id": "w1"
    },
    {
-    "t": 1343,
+    "t": 1335,
     "kind": "settled",
     "id": "w3"
    },
    {
-    "t": 1345,
+    "t": 1337,
     "kind": "settled",
     "id": "w4"
    },
    {
-    "t": 1575,
+    "t": 1578,
     "kind": "external",
     "id": "w3",
     "data": {
@@ -2563,7 +2567,7 @@
     }
    },
    {
-    "t": 1576,
+    "t": 1579,
     "kind": "mode",
     "id": "w3",
     "data": {
@@ -2573,7 +2577,7 @@
     }
    },
    {
-    "t": 1576,
+    "t": 1579,
     "kind": "command",
     "data": {
      "id": "plastile.move.output-next",
@@ -2581,7 +2585,7 @@
     }
    },
    {
-    "t": 1576,
+    "t": 1579,
     "kind": "solve",
     "id": "o1\u241fd1\u241fdefault",
     "data": {
@@ -2591,7 +2595,7 @@
     }
    },
    {
-    "t": 1576,
+    "t": 1579,
     "kind": "write",
     "id": "w2",
     "data": {
@@ -2601,7 +2605,7 @@
     }
    },
    {
-    "t": 1576,
+    "t": 1579,
     "kind": "write",
     "id": "w4",
     "data": {
@@ -2611,7 +2615,7 @@
     }
    },
    {
-    "t": 1576,
+    "t": 1580,
     "kind": "solve",
     "id": "o2\u241fd1\u241fdefault",
     "data": {
@@ -2621,7 +2625,7 @@
     }
    },
    {
-    "t": 1576,
+    "t": 1580,
     "kind": "write",
     "id": "w3",
     "data": {
@@ -2631,22 +2635,22 @@
     }
    },
    {
-    "t": 1578,
+    "t": 1581,
     "kind": "settled",
     "id": "w2"
    },
    {
-    "t": 1966,
+    "t": 1971,
     "kind": "settled",
     "id": "w4"
    },
    {
-    "t": 1968,
+    "t": 1973,
     "kind": "settled",
     "id": "w3"
    },
    {
-    "t": 2204,
+    "t": 2210,
     "kind": "external",
     "id": "w4",
     "data": {
@@ -2665,7 +2669,7 @@
     }
    },
    {
-    "t": 2204,
+    "t": 2210,
     "kind": "mode",
     "id": "w4",
     "data": {
@@ -2675,7 +2679,7 @@
     }
    },
    {
-    "t": 2205,
+    "t": 2210,
     "kind": "command",
     "data": {
      "id": "plastile.move.output-next",
@@ -2683,7 +2687,7 @@
     }
    },
    {
-    "t": 2206,
+    "t": 2211,
     "kind": "solve",
     "id": "o1\u241fd1\u241fdefault",
     "data": {
@@ -2693,7 +2697,7 @@
     }
    },
    {
-    "t": 2206,
+    "t": 2211,
     "kind": "write",
     "id": "w2",
     "data": {
@@ -2703,7 +2707,7 @@
     }
    },
    {
-    "t": 2206,
+    "t": 2211,
     "kind": "solve",
     "id": "o2\u241fd1\u241fdefault",
     "data": {
@@ -2713,7 +2717,7 @@
     }
    },
    {
-    "t": 2206,
+    "t": 2211,
     "kind": "write",
     "id": "w3",
     "data": {
@@ -2723,7 +2727,7 @@
     }
    },
    {
-    "t": 2206,
+    "t": 2211,
     "kind": "write",
     "id": "w4",
     "data": {
@@ -2733,22 +2737,22 @@
     }
    },
    {
-    "t": 2208,
+    "t": 2212,
     "kind": "settled",
     "id": "w2"
    },
    {
-    "t": 2597,
+    "t": 2602,
     "kind": "settled",
     "id": "w4"
    },
    {
-    "t": 2599,
+    "t": 2604,
     "kind": "settled",
     "id": "w3"
    },
    {
-    "t": 2798,
+    "t": 2849,
     "kind": "solve",
     "id": "o2\u241fd1\u241fdefault",
     "data": {
@@ -2758,7 +2762,7 @@
     }
    },
    {
-    "t": 2798,
+    "t": 2849,
     "kind": "write",
     "id": "w3",
     "data": {
@@ -2768,7 +2772,7 @@
     }
    },
    {
-    "t": 2798,
+    "t": 2849,
     "kind": "write",
     "id": "w4",
     "data": {
@@ -2778,7 +2782,7 @@
     }
    },
    {
-    "t": 2798,
+    "t": 2849,
     "kind": "command",
     "data": {
      "id": "plastile.resize.grow",
@@ -2786,7 +2790,7 @@
     }
    },
    {
-    "t": 2867,
+    "t": 2921,
     "kind": "mode",
     "id": "w4",
     "data": {
@@ -2796,7 +2800,7 @@
     }
    },
    {
-    "t": 2868,
+    "t": 2921,
     "kind": "mode",
     "id": "w3",
     "data": {
@@ -2806,11 +2810,11 @@
     }
    },
    {
-    "t": 2875,
+    "t": 2927,
     "kind": "topology"
    },
    {
-    "t": 2875,
+    "t": 2927,
     "kind": "solve",
     "id": "o1\u241fd1\u241fdefault",
     "data": {
@@ -2820,7 +2824,7 @@
     }
    },
    {
-    "t": 2875,
+    "t": 2927,
     "kind": "write",
     "id": "w2",
     "data": {
@@ -2830,7 +2834,7 @@
     }
    },
    {
-    "t": 2875,
+    "t": 2927,
     "kind": "write",
     "id": "w4",
     "data": {
@@ -2840,7 +2844,7 @@
     }
    },
    {
-    "t": 2875,
+    "t": 2927,
     "kind": "write",
     "id": "w3",
     "data": {
@@ -2850,26 +2854,26 @@
     }
    },
    {
-    "t": 2877,
+    "t": 2930,
     "kind": "settled",
     "id": "w2"
    },
    {
-    "t": 3187,
-    "kind": "settled",
-    "id": "w3"
-   },
-   {
-    "t": 3188,
+    "t": 3238,
     "kind": "settled",
     "id": "w4"
    },
    {
-    "t": 4581,
+    "t": 3239,
+    "kind": "settled",
+    "id": "w3"
+   },
+   {
+    "t": 4671,
     "kind": "topology"
    },
    {
-    "t": 4581,
+    "t": 4671,
     "kind": "solve",
     "id": "o1\u241fd1\u241fdefault",
     "data": {
@@ -2879,7 +2883,7 @@
     }
    },
    {
-    "t": 4581,
+    "t": 4671,
     "kind": "external",
     "id": "w2",
     "data": {
@@ -2898,7 +2902,7 @@
     }
    },
    {
-    "t": 4581,
+    "t": 4672,
     "kind": "write",
     "id": "w2",
     "data": {
@@ -2908,12 +2912,12 @@
     }
    },
    {
-    "t": 4582,
+    "t": 4672,
     "kind": "settled",
     "id": "w2"
    },
    {
-    "t": 4982,
+    "t": 5072,
     "kind": "external",
     "id": "w4",
     "data": {
@@ -2932,7 +2936,7 @@
     }
    },
    {
-    "t": 4982,
+    "t": 5072,
     "kind": "mode",
     "id": "w4",
     "data": {
@@ -2942,7 +2946,7 @@
     }
    },
    {
-    "t": 4982,
+    "t": 5072,
     "kind": "external",
     "id": "w3",
     "data": {
@@ -2961,7 +2965,7 @@
     }
    },
    {
-    "t": 4982,
+    "t": 5072,
     "kind": "mode",
     "id": "w3",
     "data": {
@@ -2971,7 +2975,7 @@
     }
    },
    {
-    "t": 4982,
+    "t": 5072,
     "kind": "solve",
     "id": "o1\u241fd1\u241fdefault",
     "data": {
@@ -2981,7 +2985,7 @@
     }
    },
    {
-    "t": 4982,
+    "t": 5072,
     "kind": "write",
     "id": "w2",
     "data": {
@@ -2991,7 +2995,7 @@
     }
    },
    {
-    "t": 4982,
+    "t": 5073,
     "kind": "solve",
     "id": "o2\u241fd1\u241fdefault",
     "data": {
@@ -3001,7 +3005,7 @@
     }
    },
    {
-    "t": 4982,
+    "t": 5073,
     "kind": "write",
     "id": "w4",
     "data": {
@@ -3011,7 +3015,7 @@
     }
    },
    {
-    "t": 4982,
+    "t": 5073,
     "kind": "write",
     "id": "w3",
     "data": {
@@ -3021,17 +3025,17 @@
     }
    },
    {
-    "t": 4983,
+    "t": 5073,
     "kind": "settled",
     "id": "w2"
    },
    {
-    "t": 5384,
+    "t": 5474,
     "kind": "settled",
     "id": "w3"
    },
    {
-    "t": 5385,
+    "t": 5475,
     "kind": "settled",
     "id": "w4"
    }

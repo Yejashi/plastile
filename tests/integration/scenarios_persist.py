@@ -413,7 +413,7 @@ def persist_reload_restart(out: Path, c: Checks):
         pload(s); s.settle()
         loaded = s.log_lines(r"plastile info saved state loaded")
         c("restart: saved state loaded once (log)", len(loaded) == 1, s.log_lines(r"plastile info saved state"))
-        started = s.log_lines(r"plastile info started ")
+        started = s.log_lines(r"plastile notice started ")
         stamp = lambda ln: float(ln.split()[0])  # noqa: E731  QT_MESSAGE_PATTERN %{time boot}, seconds
         if loaded and started:
             facts["restartReplyAfterStartMs"] = round((stamp(loaded[0]) - stamp(started[0])) * 1000, 1)
@@ -482,7 +482,7 @@ def persist_kwin_exit(out: Path, c: Checks):
                         pass
                 s.fixtures.clear()
                 g2 = wait_generation(s, base, 2, 5)
-                stops = [float(ln.split()[0]) for ln in s.log_lines(r"plastile info stopped")]
+                stops = [float(ln.split()[0]) for ln in s.log_lines(r"plastile notice stopped")]
                 trials.append({"mode": mode, "helperRunningAtExit": had_helper, "firstSave": g1, "kwinExit": rc,
                                "termAfterCommandS": round(t_term - t_cmd, 3),
                                # QT_MESSAGE_PATTERN %{time boot} is CLOCK_MONOTONIC, as time.monotonic()

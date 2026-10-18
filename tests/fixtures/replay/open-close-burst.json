@@ -8,15 +8,15 @@
   "compositing": "OpenGL",
   "layer": "nested KWin, virtual backend (tools/nested.py), not a physical session",
   "how": "python3 tests/integration/scenarios_replay.py --only open-close-burst (recording root tools/replay/record.qml)",
-  "implementationCommit": "902bca7f2d36dd3b799fd83237dec1e2020650c9",
+  "implementationCommit": "50913b8ac4a49866ee2303278776aafd5fad57e6",
   "implementationDirty": false,
-  "bundleSha256": "f415c95d38b9651b7ab5f74ddb8d4220e5db797f4c5196bd0bd7d16d8f482e03",
+  "bundleSha256": "193bfd5746716df2a904ccce399a82158ce6d1fd18ee118035cff003ffbb6d0d",
   "date": "2026-10-18"
  },
  "titles": "redacted",
  "truncated": false,
  "anomalies": 0,
- "nodes": 132,
+ "nodes": 130,
  "config": {
   "layout": "",
   "gapInner": "",
@@ -30,12 +30,13 @@
   "ratioStep": "",
   "traceCapacity": "",
   "diagnostics": "info",
+  "osd": "",
   "configJson": ""
  },
  "events": [
   {
    "k": "start",
-   "t": 1001,
+   "t": 1000,
    "a": [
     [
      {
@@ -234,7 +235,7 @@
     [
      "now",
      0,
-     1001
+     1000
     ],
     [
      "outputName|o1",
@@ -252,6 +253,11 @@
      "w3"
     ],
     [
+     "now",
+     3,
+     1001
+    ],
+    [
      "visibleDesktop|o1",
      0,
      "d1"
@@ -265,11 +271,6 @@
       "width": 1280,
       "height": 1600
      }
-    ],
-    [
-     "now",
-     6,
-     1002
     ],
     [
      "frame|w1|1",
@@ -450,48 +451,15 @@
    ]
   },
   {
-   "k": "constraintsChanged",
-   "t": 1015,
-   "a": [
-    "w2",
-    2,
-    {
-     "minFrame": {
-      "width": 150,
-      "height": 178
-     },
-     "maxFrame": {
-      "width": "Infinity",
-      "height": "Infinity"
-     },
-     "fixed": false
-    }
-   ]
-  },
-  {
-   "k": "frameObserved",
-   "t": 1015,
-   "a": [
-    "w2",
-    2,
-    {
-     "x": 707,
-     "y": 8,
-     "width": 565,
-     "height": 788
-    }
-   ]
-  },
-  {
    "k": "activeChanged",
-   "t": 1251,
+   "t": 1250,
    "a": [
     "w4"
    ]
   },
   {
    "k": "windowAdded",
-   "t": 1252,
+   "t": 1251,
    "a": [
     {
      "id": "w4",
@@ -552,7 +520,7 @@
     [
      "now",
      0,
-     1252
+     1251
     ],
     [
      "activeWindow",
@@ -571,7 +539,7 @@
     [
      "now",
      0,
-     1254
+     1253
     ],
     [
      "frame|w1|1",
@@ -590,7 +558,7 @@
       "x": 707,
       "y": 8,
       "width": 565,
-      "height": 788
+      "height": 788.0000000000001
      }
     ],
     [
@@ -632,13 +600,13 @@
        "x": 707,
        "y": 8,
        "width": 565,
-       "height": 788
+       "height": 788.0000000000001
       },
       "after": {
        "x": 707,
        "y": 8,
        "width": 565,
-       "height": 788
+       "height": 788.0000000000001
       }
      }
     },
@@ -707,7 +675,7 @@
   },
   {
    "k": "activeChanged",
-   "t": 1254,
+   "t": 1253,
    "a": [
     "w5"
    ]
@@ -773,27 +741,27 @@
    ],
    "q": [
     [
+     "now",
+     0,
+     1254
+    ],
+    [
      "activeWindow",
      0,
      "w5"
-    ],
-    [
-     "now",
-     1,
-     1255
     ]
    ]
   },
   {
    "k": "activeChanged",
-   "t": 1255,
+   "t": 1254,
    "a": [
     "w6"
    ]
   },
   {
    "k": "windowAdded",
-   "t": 1255,
+   "t": 1254,
    "a": [
     {
      "id": "w6",
@@ -860,14 +828,14 @@
   },
   {
    "k": "activeChanged",
-   "t": 1255,
+   "t": 1254,
    "a": [
     "w7"
    ]
   },
   {
    "k": "windowAdded",
-   "t": 1255,
+   "t": 1254,
    "a": [
     {
      "id": "w7",
@@ -941,7 +909,7 @@
   },
   {
    "k": "windowAdded",
-   "t": 1256,
+   "t": 1255,
    "a": [
     {
      "id": "w8",
@@ -1002,7 +970,7 @@
     [
      "now",
      0,
-     1256
+     1255
     ],
     [
      "activeWindow",
@@ -1013,7 +981,7 @@
   },
   {
    "k": "turn",
-   "t": 1256,
+   "t": 1255,
    "a": [
     2
    ],
@@ -1035,13 +1003,13 @@
        "x": 707,
        "y": 8,
        "width": 565,
-       "height": 788
+       "height": 788.0000000000001
       },
       "after": {
        "x": 707,
        "y": 8,
        "width": 565,
-       "height": 788
+       "height": 788.0000000000001
       }
      }
     },
@@ -1252,170 +1220,15 @@
    ]
   },
   {
-   "k": "frameObserved",
-   "t": 1257,
-   "a": [
-    "w6",
-    6,
-    {
-     "x": 707,
-     "y": 918,
-     "width": 565,
-     "height": 219
-    }
-   ],
-   "q": [
-    [
-     "now",
-     0,
-     1257
-    ]
-   ]
-  },
-  {
-   "k": "frameObserved",
-   "t": 1258,
-   "a": [
-    "w7",
-    7,
-    {
-     "x": 707,
-     "y": 1145,
-     "width": 565,
-     "height": 220
-    }
-   ],
-   "q": [
-    [
-     "now",
-     0,
-     1258
-    ]
-   ]
-  },
-  {
-   "k": "frameObserved",
-   "t": 1258,
-   "a": [
-    "w8",
-    8,
-    {
-     "x": 707,
-     "y": 1373,
-     "width": 565,
-     "height": 219
-    }
-   ]
-  },
-  {
-   "k": "frameObserved",
-   "t": 1258,
-   "a": [
-    "w5",
-    5,
-    {
-     "x": 707,
-     "y": 690,
-     "width": 565,
-     "height": 220
-    }
-   ]
-  },
-  {
-   "k": "constraintsChanged",
-   "t": 1258,
-   "a": [
-    "w3",
-    3,
-    {
-     "minFrame": {
-      "width": 150,
-      "height": 178
-     },
-     "maxFrame": {
-      "width": "Infinity",
-      "height": "Infinity"
-     },
-     "fixed": false
-    }
-   ]
-  },
-  {
-   "k": "frameObserved",
-   "t": 1258,
-   "a": [
-    "w3",
-    3,
-    {
-     "x": 707,
-     "y": 539,
-     "width": 565,
-     "height": 522
-    }
-   ]
-  },
-  {
-   "k": "constraintsChanged",
-   "t": 1258,
-   "a": [
-    "w3",
-    3,
-    {
-     "minFrame": {
-      "width": 150,
-      "height": 178
-     },
-     "maxFrame": {
-      "width": "Infinity",
-      "height": "Infinity"
-     },
-     "fixed": false
-    }
-   ]
-  },
-  {
-   "k": "frameObserved",
-   "t": 1258,
-   "a": [
-    "w4",
-    4,
-    {
-     "x": 707,
-     "y": 1069,
-     "width": 565,
-     "height": 523
-    }
-   ]
-  },
-  {
-   "k": "constraintsChanged",
-   "t": 1258,
-   "a": [
-    "w4",
-    4,
-    {
-     "minFrame": {
-      "width": 150,
-      "height": 178
-     },
-     "maxFrame": {
-      "width": "Infinity",
-      "height": "Infinity"
-     },
-     "fixed": false
-    }
-   ]
-  },
-  {
    "k": "activeChanged",
-   "t": 1258,
+   "t": 1256,
    "a": [
     "w9"
    ]
   },
   {
    "k": "windowAdded",
-   "t": 1258,
+   "t": 1256,
    "a": [
     {
      "id": "w9",
@@ -1464,30 +1277,30 @@
       "fixed": false
      },
      "frame": {
-      "x": 440,
-      "y": 636,
+      "x": 573.3333333333333,
+      "y": 802.6666666666669,
       "width": 400,
-      "height": 328
+      "height": 328.0000000000001
      },
      "nativeTile": false
     }
    ],
    "q": [
     [
+     "now",
+     0,
+     1256
+    ],
+    [
      "activeWindow",
      0,
      "w9"
-    ],
-    [
-     "now",
-     1,
-     1259
     ]
    ]
   },
   {
    "k": "turn",
-   "t": 1262,
+   "t": 1256,
    "a": [
     2
    ],
@@ -1495,76 +1308,16 @@
     [
      "now",
      0,
-     1263
-    ],
-    [
-     "frame|w3|3",
-     0,
-     {
-      "x": 707,
-      "y": 539,
-      "width": 565,
-      "height": 522
-     }
-    ],
-    [
-     "frame|w4|4",
-     0,
-     {
-      "x": 707,
-      "y": 1069,
-      "width": 565,
-      "height": 523
-     }
-    ],
-    [
-     "frame|w5|5",
-     0,
-     {
-      "x": 707,
-      "y": 690,
-      "width": 565,
-      "height": 220
-     }
-    ],
-    [
-     "frame|w6|6",
-     0,
-     {
-      "x": 707,
-      "y": 918,
-      "width": 565,
-      "height": 219
-     }
-    ],
-    [
-     "frame|w7|7",
-     0,
-     {
-      "x": 707,
-      "y": 1145,
-      "width": 565,
-      "height": 220
-     }
-    ],
-    [
-     "frame|w8|8",
-     0,
-     {
-      "x": 707,
-      "y": 1373,
-      "width": 565,
-      "height": 219
-     }
+     1257
     ],
     [
      "frame|w9|9",
      0,
      {
-      "x": 440,
-      "y": 636,
+      "x": 573.3333333333333,
+      "y": 802.6666666666669,
       "width": 400,
-      "height": 328
+      "height": 328.0000000000001
      }
     ]
    ],
@@ -1586,13 +1339,13 @@
        "x": 707,
        "y": 8,
        "width": 565,
-       "height": 788
+       "height": 788.0000000000001
       },
       "after": {
        "x": 707,
        "y": 8,
        "width": 565,
-       "height": 788
+       "height": 788.0000000000001
       }
      }
     },
@@ -1611,15 +1364,15 @@
      "r": {
       "before": {
        "x": 707,
-       "y": 539,
+       "y": 804,
        "width": 565,
-       "height": 522
+       "height": 788
       },
       "after": {
        "x": 707,
-       "y": 539,
+       "y": 804,
        "width": 565,
-       "height": 522
+       "height": 788
       }
      }
     },
@@ -1637,16 +1390,16 @@
      ],
      "r": {
       "before": {
-       "x": 707,
-       "y": 1069,
-       "width": 565,
-       "height": 523
+       "x": 440,
+       "y": 636,
+       "width": 400,
+       "height": 328
       },
       "after": {
-       "x": 707,
-       "y": 1069,
-       "width": 565,
-       "height": 523
+       "x": 440,
+       "y": 636,
+       "width": 400,
+       "height": 328
       }
      }
     },
@@ -1664,16 +1417,16 @@
      ],
      "r": {
       "before": {
-       "x": 707,
-       "y": 690,
-       "width": 565,
-       "height": 220
+       "x": 466.6666666666667,
+       "y": 669.3333333333334,
+       "width": 400.00000000000006,
+       "height": 328
       },
       "after": {
-       "x": 707,
-       "y": 690,
-       "width": 565,
-       "height": 220
+       "x": 466.6666666666667,
+       "y": 669.3333333333334,
+       "width": 400.00000000000006,
+       "height": 328
       }
      }
     },
@@ -1691,16 +1444,16 @@
      ],
      "r": {
       "before": {
-       "x": 707,
-       "y": 918,
-       "width": 565,
-       "height": 219
+       "x": 493.33333333333337,
+       "y": 702.6666666666667,
+       "width": 400,
+       "height": 328
       },
       "after": {
-       "x": 707,
-       "y": 918,
-       "width": 565,
-       "height": 219
+       "x": 493.33333333333337,
+       "y": 702.6666666666667,
+       "width": 400,
+       "height": 328
       }
      }
     },
@@ -1718,16 +1471,16 @@
      ],
      "r": {
       "before": {
-       "x": 707,
-       "y": 1145,
-       "width": 565,
-       "height": 220
+       "x": 520,
+       "y": 736.0000000000001,
+       "width": 400,
+       "height": 327.9999999999999
       },
       "after": {
-       "x": 707,
-       "y": 1145,
-       "width": 565,
-       "height": 220
+       "x": 520,
+       "y": 736.0000000000001,
+       "width": 400,
+       "height": 327.9999999999999
       }
      }
     },
@@ -1745,16 +1498,16 @@
      ],
      "r": {
       "before": {
-       "x": 707,
-       "y": 1373,
-       "width": 565,
-       "height": 219
+       "x": 546.6666666666666,
+       "y": 769.3333333333335,
+       "width": 400,
+       "height": 328
       },
       "after": {
-       "x": 707,
-       "y": 1373,
-       "width": 565,
-       "height": 219
+       "x": 546.6666666666666,
+       "y": 769.3333333333335,
+       "width": 400,
+       "height": 328
       }
      }
     },
@@ -1772,16 +1525,16 @@
      ],
      "r": {
       "before": {
-       "x": 440,
-       "y": 636,
+       "x": 573.3333333333333,
+       "y": 802.6666666666669,
        "width": 400,
-       "height": 328
+       "height": 328.0000000000001
       },
       "after": {
-       "x": 440,
-       "y": 636,
+       "x": 573.3333333333333,
+       "y": 802.6666666666669,
        "width": 400,
-       "height": 328
+       "height": 328.0000000000001
       }
      }
     }
@@ -1789,24 +1542,24 @@
   },
   {
    "k": "frameObserved",
-   "t": 1263,
+   "t": 1257,
    "a": [
-    "w3",
-    3,
+    "w4",
+    4,
     {
      "x": 707,
-     "y": 235,
+     "y": 1069,
      "width": 565,
-     "height": 220
+     "height": 523
     }
    ]
   },
   {
    "k": "constraintsChanged",
-   "t": 1263,
+   "t": 1258,
    "a": [
-    "w3",
-    3,
+    "w4",
+    4,
     {
      "minFrame": {
       "width": 150,
@@ -1822,7 +1575,7 @@
   },
   {
    "k": "frameObserved",
-   "t": 1263,
+   "t": 1258,
    "a": [
     "w4",
     4,
@@ -1835,11 +1588,25 @@
    ]
   },
   {
-   "k": "constraintsChanged",
-   "t": 1263,
+   "k": "frameObserved",
+   "t": 1258,
    "a": [
-    "w4",
-    4,
+    "w8",
+    8,
+    {
+     "x": 707,
+     "y": 1373,
+     "width": 565,
+     "height": 219
+    }
+   ]
+  },
+  {
+   "k": "constraintsChanged",
+   "t": 1258,
+   "a": [
+    "w8",
+    8,
     {
      "minFrame": {
       "width": 150,
@@ -1855,7 +1622,106 @@
   },
   {
    "k": "frameObserved",
-   "t": 1264,
+   "t": 1258,
+   "a": [
+    "w5",
+    5,
+    {
+     "x": 707,
+     "y": 690,
+     "width": 565,
+     "height": 220
+    }
+   ]
+  },
+  {
+   "k": "constraintsChanged",
+   "t": 1258,
+   "a": [
+    "w5",
+    5,
+    {
+     "minFrame": {
+      "width": 150,
+      "height": 178
+     },
+     "maxFrame": {
+      "width": "Infinity",
+      "height": "Infinity"
+     },
+     "fixed": false
+    }
+   ]
+  },
+  {
+   "k": "frameObserved",
+   "t": 1258,
+   "a": [
+    "w6",
+    6,
+    {
+     "x": 707,
+     "y": 918,
+     "width": 565,
+     "height": 219
+    }
+   ]
+  },
+  {
+   "k": "constraintsChanged",
+   "t": 1258,
+   "a": [
+    "w6",
+    6,
+    {
+     "minFrame": {
+      "width": 150,
+      "height": 178
+     },
+     "maxFrame": {
+      "width": "Infinity",
+      "height": "Infinity"
+     },
+     "fixed": false
+    }
+   ]
+  },
+  {
+   "k": "frameObserved",
+   "t": 1258,
+   "a": [
+    "w7",
+    7,
+    {
+     "x": 707,
+     "y": 1145,
+     "width": 565,
+     "height": 220
+    }
+   ]
+  },
+  {
+   "k": "constraintsChanged",
+   "t": 1258,
+   "a": [
+    "w7",
+    7,
+    {
+     "minFrame": {
+      "width": 150,
+      "height": 178
+     },
+     "maxFrame": {
+      "width": "Infinity",
+      "height": "Infinity"
+     },
+     "fixed": false
+    }
+   ]
+  },
+  {
+   "k": "frameObserved",
+   "t": 1258,
    "a": [
     "w2",
     2,
@@ -1869,7 +1735,7 @@
   },
   {
    "k": "constraintsChanged",
-   "t": 1264,
+   "t": 1258,
    "a": [
     "w2",
     2,
@@ -1888,7 +1754,7 @@
   },
   {
    "k": "frameObserved",
-   "t": 1264,
+   "t": 1258,
    "a": [
     "w2",
     2,
@@ -1902,42 +1768,54 @@
   },
   {
    "k": "frameObserved",
-   "t": 1265,
+   "t": 1259,
    "a": [
-    "w4",
-    4,
+    "w3",
+    3,
     {
      "x": 707,
-     "y": 406,
+     "y": 539,
      "width": 565,
-     "height": 191
+     "height": 522
     }
-   ],
-   "q": [
-    [
-     "now",
-     0,
-     1265
-    ]
    ]
   },
   {
-   "k": "frameObserved",
-   "t": 1265,
+   "k": "constraintsChanged",
+   "t": 1259,
    "a": [
-    "w5",
-    5,
+    "w3",
+    3,
     {
-     "x": 707,
-     "y": 605,
-     "width": 565,
-     "height": 191
+     "minFrame": {
+      "width": 150,
+      "height": 178
+     },
+     "maxFrame": {
+      "width": "Infinity",
+      "height": "Infinity"
+     },
+     "fixed": false
     }
    ]
   },
   {
    "k": "frameObserved",
-   "t": 1265,
+   "t": 1259,
+   "a": [
+    "w3",
+    3,
+    {
+     "x": 707,
+     "y": 235,
+     "width": 565,
+     "height": 220
+    }
+   ]
+  },
+  {
+   "k": "frameObserved",
+   "t": 1259,
    "a": [
     "w6",
     6,
@@ -1947,17 +1825,24 @@
      "width": 565,
      "height": 191
     }
+   ],
+   "q": [
+    [
+     "now",
+     0,
+     1259
+    ]
    ]
   },
   {
    "k": "frameObserved",
-   "t": 1265,
+   "t": 1259,
    "a": [
-    "w7",
-    7,
+    "w9",
+    9,
     {
      "x": 707,
-     "y": 1003,
+     "y": 1401,
      "width": 565,
      "height": 191
     }
@@ -1965,7 +1850,28 @@
   },
   {
    "k": "frameObserved",
-   "t": 1266,
+   "t": 1260,
+   "a": [
+    "w5",
+    5,
+    {
+     "x": 707,
+     "y": 605,
+     "width": 565,
+     "height": 191
+    }
+   ],
+   "q": [
+    [
+     "now",
+     0,
+     1260
+    ]
+   ]
+  },
+  {
+   "k": "frameObserved",
+   "t": 1260,
    "a": [
     "w2",
     2,
@@ -1975,32 +1881,11 @@
      "width": 565,
      "height": 191
     }
-   ],
-   "q": [
-    [
-     "now",
-     0,
-     1266
-    ]
    ]
   },
   {
    "k": "frameObserved",
-   "t": 1266,
-   "a": [
-    "w8",
-    8,
-    {
-     "x": 707,
-     "y": 1202,
-     "width": 565,
-     "height": 191
-    }
-   ]
-  },
-  {
-   "k": "frameObserved",
-   "t": 1266,
+   "t": 1260,
    "a": [
     "w3",
     3,
@@ -2014,13 +1899,48 @@
   },
   {
    "k": "frameObserved",
-   "t": 1266,
+   "t": 1260,
    "a": [
-    "w9",
-    9,
+    "w4",
+    4,
     {
      "x": 707,
-     "y": 1401,
+     "y": 406,
+     "width": 565,
+     "height": 191
+    }
+   ]
+  },
+  {
+   "k": "frameObserved",
+   "t": 1260,
+   "a": [
+    "w8",
+    8,
+    {
+     "x": 707,
+     "y": 1202,
+     "width": 565,
+     "height": 191
+    }
+   ],
+   "q": [
+    [
+     "now",
+     0,
+     1261
+    ]
+   ]
+  },
+  {
+   "k": "frameObserved",
+   "t": 1261,
+   "a": [
+    "w7",
+    7,
+    {
+     "x": 707,
+     "y": 1003,
      "width": 565,
      "height": 191
     }
@@ -2028,7 +1948,7 @@
   },
   {
    "k": "windowRemoved",
-   "t": 1497,
+   "t": 1508,
    "a": [
     "w4",
     4
@@ -2037,13 +1957,13 @@
     [
      "now",
      0,
-     1497
+     1508
     ]
    ]
   },
   {
    "k": "turn",
-   "t": 1497,
+   "t": 1508,
    "a": [
     2
    ],
@@ -2079,6 +1999,11 @@
      }
     ],
     [
+     "now",
+     5,
+     1509
+    ],
+    [
      "frame|w6|6",
      0,
      {
@@ -2107,11 +2032,6 @@
       "width": 565,
       "height": 191
      }
-    ],
-    [
-     "now",
-     8,
-     1498
     ],
     [
      "frame|w9|9",
@@ -2325,15 +2245,15 @@
   },
   {
    "k": "windowRemoved",
-   "t": 1498,
+   "t": 1509,
    "a": [
-    "w6",
-    6
+    "w7",
+    7
    ]
   },
   {
    "k": "turn",
-   "t": 1498,
+   "t": 1509,
    "a": [
     2
    ],
@@ -2422,8 +2342,8 @@
     {
      "h": "applyFrame",
      "a": [
-      "w7",
-      7,
+      "w6",
+      6,
       {
        "x": 707,
        "y": 804,
@@ -2434,13 +2354,13 @@
      "r": {
       "before": {
        "x": 707,
-       "y": 1003,
+       "y": 804,
        "width": 565,
        "height": 191
       },
       "after": {
        "x": 707,
-       "y": 1003,
+       "y": 804,
        "width": 565,
        "height": 191
       }
@@ -2504,7 +2424,7 @@
   },
   {
    "k": "frameObserved",
-   "t": 1499,
+   "t": 1509,
    "a": [
     "w2",
     2,
@@ -2518,7 +2438,7 @@
   },
   {
    "k": "constraintsChanged",
-   "t": 1499,
+   "t": 1510,
    "a": [
     "w2",
     2,
@@ -2536,33 +2456,285 @@
    ]
   },
   {
-   "k": "windowRemoved",
-   "t": 1499,
+   "k": "frameObserved",
+   "t": 1510,
    "a": [
-    "w7",
-    7
+    "w3",
+    3,
+    {
+     "x": 707,
+     "y": 235,
+     "width": 565,
+     "height": 220
+    }
+   ]
+  },
+  {
+   "k": "constraintsChanged",
+   "t": 1510,
+   "a": [
+    "w3",
+    3,
+    {
+     "minFrame": {
+      "width": 150,
+      "height": 178
+     },
+     "maxFrame": {
+      "width": "Infinity",
+      "height": "Infinity"
+     },
+     "fixed": false
+    }
+   ]
+  },
+  {
+   "k": "frameObserved",
+   "t": 1510,
+   "a": [
+    "w8",
+    8,
+    {
+     "x": 707,
+     "y": 1145,
+     "width": 565,
+     "height": 220
+    }
+   ]
+  },
+  {
+   "k": "constraintsChanged",
+   "t": 1510,
+   "a": [
+    "w8",
+    8,
+    {
+     "minFrame": {
+      "width": 150,
+      "height": 178
+     },
+     "maxFrame": {
+      "width": "Infinity",
+      "height": "Infinity"
+     },
+     "fixed": false
+    }
+   ]
+  },
+  {
+   "k": "frameObserved",
+   "t": 1510,
+   "a": [
+    "w9",
+    9,
+    {
+     "x": 707,
+     "y": 1373,
+     "width": 565,
+     "height": 219
+    }
+   ]
+  },
+  {
+   "k": "constraintsChanged",
+   "t": 1510,
+   "a": [
+    "w9",
+    9,
+    {
+     "minFrame": {
+      "width": 150,
+      "height": 178
+     },
+     "maxFrame": {
+      "width": "Infinity",
+      "height": "Infinity"
+     },
+     "fixed": false
+    }
+   ]
+  },
+  {
+   "k": "frameObserved",
+   "t": 1510,
+   "a": [
+    "w5",
+    5,
+    {
+     "x": 707,
+     "y": 463,
+     "width": 565,
+     "height": 219
+    }
+   ]
+  },
+  {
+   "k": "constraintsChanged",
+   "t": 1510,
+   "a": [
+    "w5",
+    5,
+    {
+     "minFrame": {
+      "width": 150,
+      "height": 178
+     },
+     "maxFrame": {
+      "width": "Infinity",
+      "height": "Infinity"
+     },
+     "fixed": false
+    }
+   ]
+  },
+  {
+   "k": "frameObserved",
+   "t": 1511,
+   "a": [
+    "w6",
+    6,
+    {
+     "x": 707,
+     "y": 690,
+     "width": 565,
+     "height": 220
+    }
+   ]
+  },
+  {
+   "k": "constraintsChanged",
+   "t": 1511,
+   "a": [
+    "w6",
+    6,
+    {
+     "minFrame": {
+      "width": 150,
+      "height": 178
+     },
+     "maxFrame": {
+      "width": "Infinity",
+      "height": "Infinity"
+     },
+     "fixed": false
+    }
+   ]
+  },
+  {
+   "k": "frameObserved",
+   "t": 1511,
+   "a": [
+    "w6",
+    6,
+    {
+     "x": 707,
+     "y": 804,
+     "width": 565,
+     "height": 257
+    }
    ],
    "q": [
     [
      "now",
      0,
-     1499
+     1511
     ]
    ]
   },
   {
+   "k": "windowRemoved",
+   "t": 1511,
+   "a": [
+    "w6",
+    6
+   ]
+  },
+  {
+   "k": "frameObserved",
+   "t": 1511,
+   "a": [
+    "w2",
+    2,
+    {
+     "x": 707,
+     "y": 8,
+     "width": 565,
+     "height": 257
+    }
+   ]
+  },
+  {
+   "k": "frameObserved",
+   "t": 1511,
+   "a": [
+    "w3",
+    3,
+    {
+     "x": 707,
+     "y": 273,
+     "width": 565,
+     "height": 258
+    }
+   ]
+  },
+  {
    "k": "turn",
-   "t": 1499,
+   "t": 1511,
    "a": [
     2
    ],
    "q": [
+    [
+     "now",
+     0,
+     1512
+    ],
     [
      "frame|w2|2",
      0,
      {
       "x": 707,
       "y": 8,
+      "width": 565,
+      "height": 257
+     }
+    ],
+    [
+     "frame|w3|3",
+     0,
+     {
+      "x": 707,
+      "y": 273,
+      "width": 565,
+      "height": 258
+     }
+    ],
+    [
+     "frame|w5|5",
+     0,
+     {
+      "x": 707,
+      "y": 463,
+      "width": 565,
+      "height": 219
+     }
+    ],
+    [
+     "frame|w8|8",
+     0,
+     {
+      "x": 707,
+      "y": 1145,
+      "width": 565,
+      "height": 220
+     }
+    ],
+    [
+     "frame|w9|9",
+     0,
+     {
+      "x": 707,
+      "y": 1373,
       "width": 565,
       "height": 219
      }
@@ -2586,13 +2758,13 @@
        "x": 707,
        "y": 8,
        "width": 565,
-       "height": 219
+       "height": 257
       },
       "after": {
        "x": 707,
        "y": 8,
        "width": 565,
-       "height": 219
+       "height": 257
       }
      }
     },
@@ -2611,15 +2783,15 @@
      "r": {
       "before": {
        "x": 707,
-       "y": 207,
+       "y": 273,
        "width": 565,
-       "height": 191
+       "height": 258
       },
       "after": {
        "x": 707,
-       "y": 207,
+       "y": 273,
        "width": 565,
-       "height": 191
+       "height": 258
       }
      }
     },
@@ -2638,15 +2810,15 @@
      "r": {
       "before": {
        "x": 707,
-       "y": 605,
+       "y": 463,
        "width": 565,
-       "height": 191
+       "height": 219
       },
       "after": {
        "x": 707,
-       "y": 605,
+       "y": 463,
        "width": 565,
-       "height": 191
+       "height": 219
       }
      }
     },
@@ -2665,15 +2837,15 @@
      "r": {
       "before": {
        "x": 707,
-       "y": 1202,
+       "y": 1145,
        "width": 565,
-       "height": 191
+       "height": 220
       },
       "after": {
        "x": 707,
-       "y": 1202,
+       "y": 1145,
        "width": 565,
-       "height": 191
+       "height": 220
       }
      }
     },
@@ -2692,136 +2864,31 @@
      "r": {
       "before": {
        "x": 707,
-       "y": 1401,
+       "y": 1373,
        "width": 565,
-       "height": 191
+       "height": 219
       },
       "after": {
        "x": 707,
-       "y": 1401,
+       "y": 1373,
        "width": 565,
-       "height": 191
+       "height": 219
       }
      }
     }
    ]
   },
   {
-   "k": "frameObserved",
-   "t": 1500,
+   "k": "windowRemoved",
+   "t": 1512,
    "a": [
-    "w2",
-    2,
-    {
-     "x": 707,
-     "y": 8,
-     "width": 565,
-     "height": 257
-    }
-   ]
-  },
-  {
-   "k": "constraintsChanged",
-   "t": 1500,
-   "a": [
-    "w2",
-    2,
-    {
-     "minFrame": {
-      "width": 150,
-      "height": 178
-     },
-     "maxFrame": {
-      "width": "Infinity",
-      "height": "Infinity"
-     },
-     "fixed": false
-    }
+    "w5",
+    5
    ]
   },
   {
    "k": "frameObserved",
-   "t": 1500,
-   "a": [
-    "w3",
-    3,
-    {
-     "x": 707,
-     "y": 235,
-     "width": 565,
-     "height": 220
-    }
-   ]
-  },
-  {
-   "k": "constraintsChanged",
-   "t": 1500,
-   "a": [
-    "w3",
-    3,
-    {
-     "minFrame": {
-      "width": 150,
-      "height": 178
-     },
-     "maxFrame": {
-      "width": "Infinity",
-      "height": "Infinity"
-     },
-     "fixed": false
-    }
-   ]
-  },
-  {
-   "k": "frameObserved",
-   "t": 1500,
-   "a": [
-    "w3",
-    3,
-    {
-     "x": 707,
-     "y": 273,
-     "width": 565,
-     "height": 258
-    }
-   ]
-  },
-  {
-   "k": "frameObserved",
-   "t": 1500,
-   "a": [
-    "w8",
-    8,
-    {
-     "x": 707,
-     "y": 1145,
-     "width": 565,
-     "height": 220
-    }
-   ]
-  },
-  {
-   "k": "constraintsChanged",
-   "t": 1500,
-   "a": [
-    "w8",
-    8,
-    {
-     "minFrame": {
-      "width": 150,
-      "height": 178
-     },
-     "maxFrame": {
-      "width": "Infinity",
-      "height": "Infinity"
-     },
-     "fixed": false
-    }
-   ]
-  },
-  {
-   "k": "frameObserved",
-   "t": 1500,
+   "t": 1512,
    "a": [
     "w8",
     8,
@@ -2834,25 +2901,11 @@
    ]
   },
   {
-   "k": "frameObserved",
-   "t": 1500,
-   "a": [
-    "w5",
-    5,
-    {
-     "x": 707,
-     "y": 463,
-     "width": 565,
-     "height": 219
-    }
-   ]
-  },
-  {
    "k": "constraintsChanged",
-   "t": 1500,
+   "t": 1512,
    "a": [
-    "w5",
-    5,
+    "w8",
+    8,
     {
      "minFrame": {
       "width": 150,
@@ -2867,107 +2920,38 @@
    ]
   },
   {
-   "k": "frameObserved",
-   "t": 1500,
+   "k": "activeChanged",
+   "t": 1513,
    "a": [
-    "w5",
-    5,
-    {
-     "x": 707,
-     "y": 539,
-     "width": 565,
-     "height": 257
-    }
+    "w8"
    ]
   },
   {
    "k": "windowRemoved",
-   "t": 1501,
+   "t": 1513,
    "a": [
-    "w5",
-    5
+    "w9",
+    9
    ],
    "q": [
     [
      "now",
      0,
-     1501
+     1513
     ]
    ]
   },
   {
-   "k": "frameObserved",
-   "t": 1501,
-   "a": [
-    "w9",
-    9,
-    {
-     "x": 707,
-     "y": 1373,
-     "width": 565,
-     "height": 219
-    }
-   ]
-  },
-  {
-   "k": "constraintsChanged",
-   "t": 1501,
-   "a": [
-    "w9",
-    9,
-    {
-     "minFrame": {
-      "width": 150,
-      "height": 178
-     },
-     "maxFrame": {
-      "width": "Infinity",
-      "height": "Infinity"
-     },
-     "fixed": false
-    }
-   ]
-  },
-  {
-   "k": "frameObserved",
-   "t": 1501,
-   "a": [
-    "w9",
-    9,
-    {
-     "x": 707,
-     "y": 1335,
-     "width": 565,
-     "height": 257
-    }
-   ]
-  },
-  {
    "k": "turn",
-   "t": 1501,
+   "t": 1513,
    "a": [
     2
    ],
    "q": [
     [
-     "frame|w2|2",
+     "activeWindow",
      0,
-     {
-      "x": 707,
-      "y": 8,
-      "width": 565,
-      "height": 257
-     }
-    ],
-    [
-     "frame|w3|3",
-     0,
-     {
-      "x": 707,
-      "y": 273,
-      "width": 565,
-      "height": 258
-     }
+     "w8"
     ],
     [
      "frame|w8|8",
@@ -2977,21 +2961,6 @@
       "y": 1069,
       "width": 565,
       "height": 258
-     }
-    ],
-    [
-     "now",
-     4,
-     1502
-    ],
-    [
-     "frame|w9|9",
-     0,
-     {
-      "x": 707,
-      "y": 1335,
-      "width": 565,
-      "height": 257
      }
     ]
    ],
@@ -3005,7 +2974,7 @@
        "x": 707,
        "y": 8,
        "width": 565,
-       "height": 390
+       "height": 523
       }
      ],
      "r": {
@@ -3030,9 +2999,9 @@
       3,
       {
        "x": 707,
-       "y": 406,
+       "y": 539,
        "width": 565,
-       "height": 390
+       "height": 522
       }
      ],
      "r": {
@@ -3057,9 +3026,9 @@
       8,
       {
        "x": 707,
-       "y": 804,
+       "y": 1069,
        "width": 565,
-       "height": 390
+       "height": 523
       }
      ],
      "r": {
@@ -3074,130 +3043,29 @@
        "y": 1069,
        "width": 565,
        "height": 258
-      }
-     }
-    },
-    {
-     "h": "applyFrame",
-     "a": [
-      "w9",
-      9,
-      {
-       "x": 707,
-       "y": 1202,
-       "width": 565,
-       "height": 390
-      }
-     ],
-     "r": {
-      "before": {
-       "x": 707,
-       "y": 1335,
-       "width": 565,
-       "height": 257
-      },
-      "after": {
-       "x": 707,
-       "y": 1335,
-       "width": 565,
-       "height": 257
       }
      }
     }
    ]
   },
   {
-   "k": "windowRemoved",
-   "t": 1502,
-   "a": [
-    "w8",
-    8
-   ]
-  },
-  {
    "k": "activeChanged",
-   "t": 1502,
+   "t": 1513,
    "a": [
     "w3"
    ]
   },
   {
    "k": "windowRemoved",
-   "t": 1502,
+   "t": 1513,
    "a": [
-    "w9",
-    9
-   ]
-  },
-  {
-   "k": "frameObserved",
-   "t": 1502,
-   "a": [
-    "w2",
-    2,
-    {
-     "x": 707,
-     "y": 8,
-     "width": 565,
-     "height": 310
-    }
-   ]
-  },
-  {
-   "k": "constraintsChanged",
-   "t": 1502,
-   "a": [
-    "w2",
-    2,
-    {
-     "minFrame": {
-      "width": 150,
-      "height": 178
-     },
-     "maxFrame": {
-      "width": "Infinity",
-      "height": "Infinity"
-     },
-     "fixed": false
-    }
-   ]
-  },
-  {
-   "k": "frameObserved",
-   "t": 1502,
-   "a": [
-    "w3",
-    3,
-    {
-     "x": 707,
-     "y": 326,
-     "width": 565,
-     "height": 311
-    }
-   ]
-  },
-  {
-   "k": "constraintsChanged",
-   "t": 1502,
-   "a": [
-    "w3",
-    3,
-    {
-     "minFrame": {
-      "width": 150,
-      "height": 178
-     },
-     "maxFrame": {
-      "width": "Infinity",
-      "height": "Infinity"
-     },
-     "fixed": false
-    }
+    "w8",
+    8
    ]
   },
   {
    "k": "turn",
-   "t": 1502,
+   "t": 1514,
    "a": [
     2
    ],
@@ -3210,27 +3078,7 @@
     [
      "now",
      0,
-     1503
-    ],
-    [
-     "frame|w2|2",
-     0,
-     {
-      "x": 707,
-      "y": 8,
-      "width": 565,
-      "height": 310
-     }
-    ],
-    [
-     "frame|w3|3",
-     0,
-     {
-      "x": 707,
-      "y": 326,
-      "width": 565,
-      "height": 311
-     }
+     1514
     ]
    ],
    "c": [
@@ -3251,13 +3099,13 @@
        "x": 707,
        "y": 8,
        "width": 565,
-       "height": 310
+       "height": 257
       },
       "after": {
        "x": 707,
        "y": 8,
        "width": 565,
-       "height": 310
+       "height": 257
       }
      }
     },
@@ -3276,15 +3124,15 @@
      "r": {
       "before": {
        "x": 707,
-       "y": 326,
+       "y": 273,
        "width": 565,
-       "height": 311
+       "height": 258
       },
       "after": {
        "x": 707,
-       "y": 326,
+       "y": 273,
        "width": 565,
-       "height": 311
+       "height": 258
       }
      }
     }
@@ -3292,40 +3140,7 @@
   },
   {
    "k": "frameObserved",
-   "t": 1503,
-   "a": [
-    "w3",
-    3,
-    {
-     "x": 707,
-     "y": 406,
-     "width": 565,
-     "height": 390
-    }
-   ]
-  },
-  {
-   "k": "constraintsChanged",
-   "t": 1503,
-   "a": [
-    "w3",
-    3,
-    {
-     "minFrame": {
-      "width": 150,
-      "height": 178
-     },
-     "maxFrame": {
-      "width": "Infinity",
-      "height": "Infinity"
-     },
-     "fixed": false
-    }
-   ]
-  },
-  {
-   "k": "frameObserved",
-   "t": 1504,
+   "t": 1514,
    "a": [
     "w2",
     2,
@@ -3333,13 +3148,13 @@
      "x": 707,
      "y": 8,
      "width": 565,
-     "height": 390
+     "height": 310
     }
    ]
   },
   {
    "k": "constraintsChanged",
-   "t": 1504,
+   "t": 1514,
    "a": [
     "w2",
     2,
@@ -3358,7 +3173,89 @@
   },
   {
    "k": "frameObserved",
-   "t": 1505,
+   "t": 1515,
+   "a": [
+    "w3",
+    3,
+    {
+     "x": 707,
+     "y": 326,
+     "width": 565,
+     "height": 311
+    }
+   ]
+  },
+  {
+   "k": "constraintsChanged",
+   "t": 1515,
+   "a": [
+    "w3",
+    3,
+    {
+     "minFrame": {
+      "width": 150,
+      "height": 178
+     },
+     "maxFrame": {
+      "width": "Infinity",
+      "height": "Infinity"
+     },
+     "fixed": false
+    }
+   ]
+  },
+  {
+   "k": "frameObserved",
+   "t": 1515,
+   "a": [
+    "w3",
+    3,
+    {
+     "x": 707,
+     "y": 539,
+     "width": 565,
+     "height": 522
+    }
+   ]
+  },
+  {
+   "k": "frameObserved",
+   "t": 1515,
+   "a": [
+    "w2",
+    2,
+    {
+     "x": 707,
+     "y": 8,
+     "width": 565,
+     "height": 523
+    }
+   ]
+  },
+  {
+   "k": "frameObserved",
+   "t": 1516,
+   "a": [
+    "w2",
+    2,
+    {
+     "x": 707,
+     "y": 8,
+     "width": 565,
+     "height": 788
+    }
+   ],
+   "q": [
+    [
+     "now",
+     0,
+     1516
+    ]
+   ]
+  },
+  {
+   "k": "frameObserved",
+   "t": 1517,
    "a": [
     "w3",
     3,
@@ -3373,27 +3270,13 @@
     [
      "now",
      0,
-     1505
+     1517
     ]
    ]
   },
   {
-   "k": "frameObserved",
-   "t": 1505,
-   "a": [
-    "w2",
-    2,
-    {
-     "x": 707,
-     "y": 8,
-     "width": 565,
-     "height": 788
-    }
-   ]
-  },
-  {
    "k": "stop",
-   "t": 1758,
+   "t": 1759,
    "a": []
   }
  ],
@@ -3709,8 +3592,8 @@
    }
   },
   {
-   "id": "w7",
-   "gen": 7,
+   "id": "w6",
+   "gen": 6,
    "target": {
     "x": 707,
     "y": 804,
@@ -3795,7 +3678,7 @@
     "x": 707,
     "y": 8,
     "width": 565,
-    "height": 390
+    "height": 523
    }
   },
   {
@@ -3803,9 +3686,9 @@
    "gen": 3,
    "target": {
     "x": 707,
-    "y": 406,
+    "y": 539,
     "width": 565,
-    "height": 390
+    "height": 522
    }
   },
   {
@@ -3813,19 +3696,9 @@
    "gen": 8,
    "target": {
     "x": 707,
-    "y": 804,
+    "y": 1069,
     "width": 565,
-    "height": 390
-   }
-  },
-  {
-   "id": "w9",
-   "gen": 9,
-   "target": {
-    "x": 707,
-    "y": 1202,
-    "width": 565,
-    "height": 390
+    "height": 523
    }
   },
   {
@@ -3906,7 +3779,9 @@
      "nativeTile": false,
      "nativeYield": false,
      "parked": false,
-     "zone": null
+     "zone": null,
+     "suspended": null,
+     "paused": false
     },
     "w2": {
      "id": "w2",
@@ -3962,7 +3837,9 @@
      "nativeTile": false,
      "nativeYield": false,
      "parked": false,
-     "zone": null
+     "zone": null,
+     "suspended": null,
+     "paused": false
     },
     "w3": {
      "id": "w3",
@@ -4018,7 +3895,9 @@
      "nativeTile": false,
      "nativeYield": false,
      "parked": false,
-     "zone": null
+     "zone": null,
+     "suspended": null,
+     "paused": false
     }
    },
    "contexts": [
@@ -4026,6 +3905,8 @@
      "id": "o1\u241fd1\u241fdefault",
      "layout": "master-stack",
      "members": 3,
+     "tiled": 3,
+     "suspended": 0,
      "revision": 15,
      "applied": 15,
      "order": [
@@ -4041,16 +3922,16 @@
    "flushes": 9,
    "commands": 0,
    "commandsQueued": 0,
-   "writes": 45,
+   "writes": 44,
    "corrections": 0,
    "skipOutstanding": 0,
    "skipNoop": 8,
    "skipDiverged": 0,
-   "observations": 38,
+   "observations": 37,
    "observationsDuringApply": 0,
-   "settled": 17,
+   "settled": 16,
    "stale": 0,
-   "superseded": 20,
+   "superseded": 21,
    "partial": 0,
    "external": 0,
    "learned": 0,
@@ -4073,12 +3954,12 @@
   },
   "trace": [
    {
-    "t": 1001,
+    "t": 1000,
     "kind": "add",
     "id": "w1"
    },
    {
-    "t": 1001,
+    "t": 1000,
     "kind": "mode",
     "id": "w1",
     "data": {
@@ -4088,7 +3969,7 @@
     }
    },
    {
-    "t": 1001,
+    "t": 1000,
     "kind": "add",
     "id": "w2"
    },
@@ -4118,7 +3999,7 @@
     }
    },
    {
-    "t": 1002,
+    "t": 1001,
     "kind": "solve",
     "id": "o1\u241fd1\u241fdefault",
     "data": {
@@ -4128,7 +4009,7 @@
     }
    },
    {
-    "t": 1002,
+    "t": 1001,
     "kind": "write",
     "id": "w1",
     "data": {
@@ -4138,7 +4019,7 @@
     }
    },
    {
-    "t": 1002,
+    "t": 1001,
     "kind": "write",
     "id": "w2",
     "data": {
@@ -4148,7 +4029,7 @@
     }
    },
    {
-    "t": 1002,
+    "t": 1001,
     "kind": "write",
     "id": "w3",
     "data": {
@@ -4173,12 +4054,12 @@
     "id": "w1"
    },
    {
-    "t": 1252,
+    "t": 1251,
     "kind": "add",
     "id": "w4"
    },
    {
-    "t": 1252,
+    "t": 1251,
     "kind": "mode",
     "id": "w4",
     "data": {
@@ -4188,7 +4069,7 @@
     }
    },
    {
-    "t": 1254,
+    "t": 1253,
     "kind": "solve",
     "id": "o1\u241fd1\u241fdefault",
     "data": {
@@ -4198,7 +4079,7 @@
     }
    },
    {
-    "t": 1254,
+    "t": 1253,
     "kind": "write",
     "id": "w2",
     "data": {
@@ -4208,7 +4089,7 @@
     }
    },
    {
-    "t": 1254,
+    "t": 1253,
     "kind": "write",
     "id": "w3",
     "data": {
@@ -4218,7 +4099,7 @@
     }
    },
    {
-    "t": 1254,
+    "t": 1253,
     "kind": "write",
     "id": "w4",
     "data": {
@@ -4233,7 +4114,7 @@
     "id": "w5"
    },
    {
-    "t": 1255,
+    "t": 1254,
     "kind": "mode",
     "id": "w5",
     "data": {
@@ -4243,12 +4124,12 @@
     }
    },
    {
-    "t": 1255,
+    "t": 1254,
     "kind": "add",
     "id": "w6"
    },
    {
-    "t": 1255,
+    "t": 1254,
     "kind": "mode",
     "id": "w6",
     "data": {
@@ -4258,12 +4139,12 @@
     }
    },
    {
-    "t": 1255,
+    "t": 1254,
     "kind": "add",
     "id": "w7"
    },
    {
-    "t": 1255,
+    "t": 1254,
     "kind": "mode",
     "id": "w7",
     "data": {
@@ -4273,12 +4154,12 @@
     }
    },
    {
-    "t": 1256,
+    "t": 1255,
     "kind": "add",
     "id": "w8"
    },
    {
-    "t": 1256,
+    "t": 1255,
     "kind": "mode",
     "id": "w8",
     "data": {
@@ -4288,7 +4169,7 @@
     }
    },
    {
-    "t": 1256,
+    "t": 1255,
     "kind": "solve",
     "id": "o1\u241fd1\u241fdefault",
     "data": {
@@ -4298,7 +4179,7 @@
     }
    },
    {
-    "t": 1256,
+    "t": 1255,
     "kind": "write",
     "id": "w2",
     "data": {
@@ -4308,7 +4189,7 @@
     }
    },
    {
-    "t": 1256,
+    "t": 1255,
     "kind": "write",
     "id": "w3",
     "data": {
@@ -4318,7 +4199,7 @@
     }
    },
    {
-    "t": 1256,
+    "t": 1255,
     "kind": "write",
     "id": "w4",
     "data": {
@@ -4328,7 +4209,7 @@
     }
    },
    {
-    "t": 1256,
+    "t": 1255,
     "kind": "write",
     "id": "w5",
     "data": {
@@ -4338,7 +4219,7 @@
     }
    },
    {
-    "t": 1256,
+    "t": 1255,
     "kind": "write",
     "id": "w6",
     "data": {
@@ -4348,7 +4229,7 @@
     }
    },
    {
-    "t": 1256,
+    "t": 1255,
     "kind": "write",
     "id": "w7",
     "data": {
@@ -4358,7 +4239,7 @@
     }
    },
    {
-    "t": 1256,
+    "t": 1255,
     "kind": "write",
     "id": "w8",
     "data": {
@@ -4368,32 +4249,12 @@
     }
    },
    {
-    "t": 1257,
-    "kind": "settled",
-    "id": "w6"
-   },
-   {
-    "t": 1258,
-    "kind": "settled",
-    "id": "w7"
-   },
-   {
-    "t": 1258,
-    "kind": "settled",
-    "id": "w8"
-   },
-   {
-    "t": 1258,
-    "kind": "settled",
-    "id": "w5"
-   },
-   {
-    "t": 1258,
+    "t": 1256,
     "kind": "add",
     "id": "w9"
    },
    {
-    "t": 1259,
+    "t": 1256,
     "kind": "mode",
     "id": "w9",
     "data": {
@@ -4403,7 +4264,7 @@
     }
    },
    {
-    "t": 1263,
+    "t": 1257,
     "kind": "solve",
     "id": "o1\u241fd1\u241fdefault",
     "data": {
@@ -4413,7 +4274,7 @@
     }
    },
    {
-    "t": 1263,
+    "t": 1257,
     "kind": "write",
     "id": "w2",
     "data": {
@@ -4423,7 +4284,7 @@
     }
    },
    {
-    "t": 1263,
+    "t": 1257,
     "kind": "write",
     "id": "w3",
     "data": {
@@ -4433,7 +4294,7 @@
     }
    },
    {
-    "t": 1263,
+    "t": 1257,
     "kind": "write",
     "id": "w4",
     "data": {
@@ -4443,7 +4304,7 @@
     }
    },
    {
-    "t": 1263,
+    "t": 1257,
     "kind": "write",
     "id": "w5",
     "data": {
@@ -4453,7 +4314,7 @@
     }
    },
    {
-    "t": 1263,
+    "t": 1257,
     "kind": "write",
     "id": "w6",
     "data": {
@@ -4463,7 +4324,7 @@
     }
    },
    {
-    "t": 1263,
+    "t": 1257,
     "kind": "write",
     "id": "w7",
     "data": {
@@ -4473,7 +4334,7 @@
     }
    },
    {
-    "t": 1263,
+    "t": 1257,
     "kind": "write",
     "id": "w8",
     "data": {
@@ -4483,7 +4344,7 @@
     }
    },
    {
-    "t": 1263,
+    "t": 1257,
     "kind": "write",
     "id": "w9",
     "data": {
@@ -4493,52 +4354,52 @@
     }
    },
    {
-    "t": 1265,
-    "kind": "settled",
-    "id": "w4"
-   },
-   {
-    "t": 1265,
-    "kind": "settled",
-    "id": "w5"
-   },
-   {
-    "t": 1265,
+    "t": 1259,
     "kind": "settled",
     "id": "w6"
    },
    {
-    "t": 1265,
-    "kind": "settled",
-    "id": "w7"
-   },
-   {
-    "t": 1266,
-    "kind": "settled",
-    "id": "w2"
-   },
-   {
-    "t": 1266,
-    "kind": "settled",
-    "id": "w8"
-   },
-   {
-    "t": 1266,
-    "kind": "settled",
-    "id": "w3"
-   },
-   {
-    "t": 1266,
+    "t": 1259,
     "kind": "settled",
     "id": "w9"
    },
    {
-    "t": 1497,
+    "t": 1260,
+    "kind": "settled",
+    "id": "w5"
+   },
+   {
+    "t": 1260,
+    "kind": "settled",
+    "id": "w2"
+   },
+   {
+    "t": 1260,
+    "kind": "settled",
+    "id": "w3"
+   },
+   {
+    "t": 1260,
+    "kind": "settled",
+    "id": "w4"
+   },
+   {
+    "t": 1261,
+    "kind": "settled",
+    "id": "w8"
+   },
+   {
+    "t": 1261,
+    "kind": "settled",
+    "id": "w7"
+   },
+   {
+    "t": 1508,
     "kind": "remove",
     "id": "w4"
    },
    {
-    "t": 1497,
+    "t": 1508,
     "kind": "solve",
     "id": "o1\u241fd1\u241fdefault",
     "data": {
@@ -4548,7 +4409,7 @@
     }
    },
    {
-    "t": 1497,
+    "t": 1508,
     "kind": "write",
     "id": "w2",
     "data": {
@@ -4558,7 +4419,7 @@
     }
    },
    {
-    "t": 1497,
+    "t": 1508,
     "kind": "write",
     "id": "w3",
     "data": {
@@ -4568,7 +4429,7 @@
     }
    },
    {
-    "t": 1497,
+    "t": 1509,
     "kind": "write",
     "id": "w5",
     "data": {
@@ -4578,7 +4439,7 @@
     }
    },
    {
-    "t": 1497,
+    "t": 1509,
     "kind": "write",
     "id": "w6",
     "data": {
@@ -4588,7 +4449,7 @@
     }
    },
    {
-    "t": 1497,
+    "t": 1509,
     "kind": "write",
     "id": "w7",
     "data": {
@@ -4598,7 +4459,7 @@
     }
    },
    {
-    "t": 1498,
+    "t": 1509,
     "kind": "write",
     "id": "w8",
     "data": {
@@ -4608,7 +4469,7 @@
     }
    },
    {
-    "t": 1498,
+    "t": 1509,
     "kind": "write",
     "id": "w9",
     "data": {
@@ -4618,12 +4479,12 @@
     }
    },
    {
-    "t": 1498,
+    "t": 1509,
     "kind": "remove",
-    "id": "w6"
+    "id": "w7"
    },
    {
-    "t": 1498,
+    "t": 1509,
     "kind": "solve",
     "id": "o1\u241fd1\u241fdefault",
     "data": {
@@ -4633,7 +4494,7 @@
     }
    },
    {
-    "t": 1498,
+    "t": 1509,
     "kind": "write",
     "id": "w2",
     "data": {
@@ -4643,7 +4504,7 @@
     }
    },
    {
-    "t": 1498,
+    "t": 1509,
     "kind": "write",
     "id": "w3",
     "data": {
@@ -4653,7 +4514,7 @@
     }
    },
    {
-    "t": 1498,
+    "t": 1509,
     "kind": "write",
     "id": "w5",
     "data": {
@@ -4663,9 +4524,9 @@
     }
    },
    {
-    "t": 1498,
+    "t": 1509,
     "kind": "write",
-    "id": "w7",
+    "id": "w6",
     "data": {
      "reason": "plan",
      "seq": 32,
@@ -4673,7 +4534,7 @@
     }
    },
    {
-    "t": 1498,
+    "t": 1509,
     "kind": "write",
     "id": "w8",
     "data": {
@@ -4683,7 +4544,7 @@
     }
    },
    {
-    "t": 1498,
+    "t": 1509,
     "kind": "write",
     "id": "w9",
     "data": {
@@ -4693,12 +4554,27 @@
     }
    },
    {
-    "t": 1499,
-    "kind": "remove",
-    "id": "w7"
+    "t": 1511,
+    "kind": "settled",
+    "id": "w6"
    },
    {
-    "t": 1499,
+    "t": 1511,
+    "kind": "remove",
+    "id": "w6"
+   },
+   {
+    "t": 1511,
+    "kind": "settled",
+    "id": "w2"
+   },
+   {
+    "t": 1511,
+    "kind": "settled",
+    "id": "w3"
+   },
+   {
+    "t": 1512,
     "kind": "solve",
     "id": "o1\u241fd1\u241fdefault",
     "data": {
@@ -4708,7 +4584,7 @@
     }
    },
    {
-    "t": 1499,
+    "t": 1512,
     "kind": "write",
     "id": "w2",
     "data": {
@@ -4718,7 +4594,7 @@
     }
    },
    {
-    "t": 1499,
+    "t": 1512,
     "kind": "write",
     "id": "w3",
     "data": {
@@ -4728,7 +4604,7 @@
     }
    },
    {
-    "t": 1499,
+    "t": 1512,
     "kind": "write",
     "id": "w5",
     "data": {
@@ -4738,7 +4614,7 @@
     }
    },
    {
-    "t": 1499,
+    "t": 1512,
     "kind": "write",
     "id": "w8",
     "data": {
@@ -4748,7 +4624,7 @@
     }
    },
    {
-    "t": 1499,
+    "t": 1512,
     "kind": "write",
     "id": "w9",
     "data": {
@@ -4758,22 +4634,27 @@
     }
    },
    {
-    "t": 1501,
+    "t": 1512,
     "kind": "remove",
     "id": "w5"
    },
    {
-    "t": 1501,
+    "t": 1513,
+    "kind": "remove",
+    "id": "w9"
+   },
+   {
+    "t": 1513,
     "kind": "solve",
     "id": "o1\u241fd1\u241fdefault",
     "data": {
      "kind": "master-stack",
-     "n": 5,
+     "n": 4,
      "notes": 0
     }
    },
    {
-    "t": 1501,
+    "t": 1513,
     "kind": "write",
     "id": "w2",
     "data": {
@@ -4783,7 +4664,7 @@
     }
    },
    {
-    "t": 1501,
+    "t": 1513,
     "kind": "write",
     "id": "w3",
     "data": {
@@ -4793,7 +4674,7 @@
     }
    },
    {
-    "t": 1502,
+    "t": 1513,
     "kind": "write",
     "id": "w8",
     "data": {
@@ -4803,27 +4684,12 @@
     }
    },
    {
-    "t": 1502,
-    "kind": "write",
-    "id": "w9",
-    "data": {
-     "reason": "plan",
-     "seq": 43,
-     "settled": false
-    }
-   },
-   {
-    "t": 1502,
+    "t": 1513,
     "kind": "remove",
     "id": "w8"
    },
    {
-    "t": 1502,
-    "kind": "remove",
-    "id": "w9"
-   },
-   {
-    "t": 1503,
+    "t": 1514,
     "kind": "solve",
     "id": "o1\u241fd1\u241fdefault",
     "data": {
@@ -4833,9 +4699,19 @@
     }
    },
    {
-    "t": 1503,
+    "t": 1514,
     "kind": "write",
     "id": "w2",
+    "data": {
+     "reason": "plan",
+     "seq": 43,
+     "settled": false
+    }
+   },
+   {
+    "t": 1514,
+    "kind": "write",
+    "id": "w3",
     "data": {
      "reason": "plan",
      "seq": 44,
@@ -4843,24 +4719,14 @@
     }
    },
    {
-    "t": 1503,
-    "kind": "write",
-    "id": "w3",
-    "data": {
-     "reason": "plan",
-     "seq": 45,
-     "settled": false
-    }
-   },
-   {
-    "t": 1505,
-    "kind": "settled",
-    "id": "w3"
-   },
-   {
-    "t": 1505,
+    "t": 1516,
     "kind": "settled",
     "id": "w2"
+   },
+   {
+    "t": 1517,
+    "kind": "settled",
+    "id": "w3"
    }
   ]
  },

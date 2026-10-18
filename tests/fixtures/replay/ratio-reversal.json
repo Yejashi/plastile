@@ -8,9 +8,9 @@
   "compositing": "OpenGL",
   "layer": "nested KWin, virtual backend (tools/nested.py), not a physical session",
   "how": "python3 tests/integration/scenarios_replay.py --only ratio-reversal (recording root tools/replay/record.qml)",
-  "implementationCommit": "902bca7f2d36dd3b799fd83237dec1e2020650c9",
+  "implementationCommit": "50913b8ac4a49866ee2303278776aafd5fad57e6",
   "implementationDirty": false,
-  "bundleSha256": "f415c95d38b9651b7ab5f74ddb8d4220e5db797f4c5196bd0bd7d16d8f482e03",
+  "bundleSha256": "193bfd5746716df2a904ccce399a82158ce6d1fd18ee118035cff003ffbb6d0d",
   "date": "2026-10-18"
  },
  "titles": "redacted",
@@ -30,6 +30,7 @@
   "ratioStep": "",
   "traceCapacity": "",
   "diagnostics": "info",
+  "osd": "",
   "configJson": ""
  },
  "events": [
@@ -395,7 +396,7 @@
   },
   {
    "k": "frameObserved",
-   "t": 1253,
+   "t": 1251,
    "a": [
     "w3",
     3,
@@ -410,13 +411,13 @@
     [
      "now",
      0,
-     1253
+     1251
     ]
    ]
   },
   {
    "k": "frameObserved",
-   "t": 1264,
+   "t": 1258,
    "a": [
     "w2",
     2,
@@ -431,13 +432,13 @@
     [
      "now",
      0,
-     1264
+     1258
     ]
    ]
   },
   {
    "k": "frameObserved",
-   "t": 1309,
+   "t": 1308,
    "a": [
     "w1",
     1,
@@ -452,20 +453,20 @@
     [
      "now",
      0,
-     1309
+     1308
     ]
    ]
   },
   {
    "k": "activeChanged",
-   "t": 1519,
+   "t": 1516,
    "a": [
     "w1"
    ]
   },
   {
    "k": "command",
-   "t": 1530,
+   "t": 1527,
    "a": [
     "plastile.resize.grow"
    ],
@@ -478,7 +479,7 @@
     [
      "now",
      0,
-     1530
+     1527
     ],
     [
      "frame|w1|1",
@@ -489,6 +490,11 @@
       "width": 691,
       "height": 784
      }
+    ],
+    [
+     "now",
+     1,
+     1528
     ],
     [
      "frame|w2|2",
@@ -509,11 +515,6 @@
       "width": 565,
       "height": 388
      }
-    ],
-    [
-     "now",
-     4,
-     1531
     ]
    ],
    "c": [
@@ -609,7 +610,7 @@
   },
   {
    "k": "command",
-   "t": 1580,
+   "t": 1578,
    "a": [
     "plastile.resize.shrink"
    ],
@@ -617,7 +618,7 @@
     [
      "now",
      0,
-     1581
+     1578
     ]
    ],
    "c": [
@@ -706,7 +707,7 @@
   },
   {
    "k": "frameObserved",
-   "t": 1821,
+   "t": 1818,
    "a": [
     "w3",
     3,
@@ -715,6 +716,70 @@
      "y": 404,
      "width": 502,
      "height": 388
+    }
+   ],
+   "q": [
+    [
+     "now",
+     0,
+     1818
+    ]
+   ]
+  },
+  {
+   "k": "turn",
+   "t": 1820,
+   "a": [
+    2
+   ],
+   "q": [
+    [
+     "now",
+     0,
+     1820
+    ]
+   ],
+   "c": [
+    {
+     "h": "applyFrame",
+     "a": [
+      "w3",
+      3,
+      {
+       "x": 707,
+       "y": 404,
+       "width": 565,
+       "height": 388
+      }
+     ],
+     "r": {
+      "before": {
+       "x": 770,
+       "y": 404,
+       "width": 502,
+       "height": 388
+      },
+      "after": {
+       "x": 770,
+       "y": 404,
+       "width": 502,
+       "height": 388
+      }
+     }
+    }
+   ]
+  },
+  {
+   "k": "frameObserved",
+   "t": 1821,
+   "a": [
+    "w1",
+    1,
+    {
+     "x": 8,
+     "y": 8,
+     "width": 754,
+     "height": 784
     }
    ],
    "q": [
@@ -727,64 +792,7 @@
   },
   {
    "k": "turn",
-   "t": 1823,
-   "a": [
-    2
-   ],
-   "q": [
-    [
-     "now",
-     0,
-     1823
-    ]
-   ],
-   "c": [
-    {
-     "h": "applyFrame",
-     "a": [
-      "w3",
-      3,
-      {
-       "x": 707,
-       "y": 404,
-       "width": 565,
-       "height": 388
-      }
-     ],
-     "r": {
-      "before": {
-       "x": 770,
-       "y": 404,
-       "width": 502,
-       "height": 388
-      },
-      "after": {
-       "x": 770,
-       "y": 404,
-       "width": 502,
-       "height": 388
-      }
-     }
-    }
-   ]
-  },
-  {
-   "k": "frameObserved",
-   "t": 1823,
-   "a": [
-    "w1",
-    1,
-    {
-     "x": 8,
-     "y": 8,
-     "width": 754,
-     "height": 784
-    }
-   ]
-  },
-  {
-   "k": "turn",
-   "t": 1823,
+   "t": 1821,
    "a": [
     2
    ],
@@ -820,7 +828,7 @@
   },
   {
    "k": "frameObserved",
-   "t": 1831,
+   "t": 1829,
    "a": [
     "w2",
     2,
@@ -835,22 +843,15 @@
     [
      "now",
      0,
-     1831
+     1829
     ]
    ]
   },
   {
    "k": "turn",
-   "t": 1831,
+   "t": 1829,
    "a": [
     2
-   ],
-   "q": [
-    [
-     "now",
-     0,
-     1832
-    ]
    ],
    "c": [
     {
@@ -884,7 +885,7 @@
   },
   {
    "k": "frameObserved",
-   "t": 2124,
+   "t": 2121,
    "a": [
     "w3",
     3,
@@ -899,13 +900,13 @@
     [
      "now",
      0,
-     2124
+     2121
     ]
    ]
   },
   {
    "k": "frameObserved",
-   "t": 2125,
+   "t": 2121,
    "a": [
     "w1",
     1,
@@ -915,18 +916,11 @@
      "width": 691,
      "height": 784
     }
-   ],
-   "q": [
-    [
-     "now",
-     0,
-     2125
-    ]
    ]
   },
   {
    "k": "frameObserved",
-   "t": 2132,
+   "t": 2129,
    "a": [
     "w2",
     2,
@@ -941,13 +935,13 @@
     [
      "now",
      0,
-     2132
+     2129
     ]
    ]
   },
   {
    "k": "command",
-   "t": 2997,
+   "t": 2983,
    "a": [
     "plastile.resize.grow"
    ],
@@ -955,7 +949,12 @@
     [
      "now",
      0,
-     2998
+     2983
+    ],
+    [
+     "now",
+     3,
+     2984
     ]
    ],
    "c": [
@@ -1051,7 +1050,7 @@
   },
   {
    "k": "command",
-   "t": 3048,
+   "t": 3034,
    "a": [
     "plastile.resize.shrink"
    ],
@@ -1059,7 +1058,7 @@
     [
      "now",
      0,
-     3049
+     3035
     ]
    ],
    "c": [
@@ -1148,7 +1147,7 @@
   },
   {
    "k": "frameObserved",
-   "t": 3299,
+   "t": 3284,
    "a": [
     "w2",
     2,
@@ -1163,13 +1162,13 @@
     [
      "now",
      0,
-     3299
+     3284
     ]
    ]
   },
   {
    "k": "frameObserved",
-   "t": 3299,
+   "t": 3284,
    "a": [
     "w3",
     3,
@@ -1183,7 +1182,7 @@
   },
   {
    "k": "turn",
-   "t": 3300,
+   "t": 3287,
    "a": [
     2
    ],
@@ -1191,7 +1190,7 @@
     [
      "now",
      0,
-     3301
+     3287
     ]
    ],
    "c": [
@@ -1253,7 +1252,7 @@
   },
   {
    "k": "frameObserved",
-   "t": 3301,
+   "t": 3287,
    "a": [
     "w1",
     1,
@@ -1267,7 +1266,7 @@
   },
   {
    "k": "turn",
-   "t": 3301,
+   "t": 3287,
    "a": [
     2
    ],
@@ -1303,49 +1302,7 @@
   },
   {
    "k": "frameObserved",
-   "t": 3601,
-   "a": [
-    "w1",
-    1,
-    {
-     "x": 8,
-     "y": 8,
-     "width": 691,
-     "height": 784
-    }
-   ],
-   "q": [
-    [
-     "now",
-     0,
-     3601
-    ]
-   ]
-  },
-  {
-   "k": "frameObserved",
-   "t": 3602,
-   "a": [
-    "w3",
-    3,
-    {
-     "x": 707,
-     "y": 404,
-     "width": 565,
-     "height": 388
-    }
-   ],
-   "q": [
-    [
-     "now",
-     0,
-     3602
-    ]
-   ]
-  },
-  {
-   "k": "frameObserved",
-   "t": 3603,
+   "t": 3587,
    "a": [
     "w2",
     2,
@@ -1360,13 +1317,41 @@
     [
      "now",
      0,
-     3603
+     3587
     ]
    ]
   },
   {
+   "k": "frameObserved",
+   "t": 3587,
+   "a": [
+    "w3",
+    3,
+    {
+     "x": 707,
+     "y": 404,
+     "width": 565,
+     "height": 388
+    }
+   ]
+  },
+  {
+   "k": "frameObserved",
+   "t": 3587,
+   "a": [
+    "w1",
+    1,
+    {
+     "x": 8,
+     "y": 8,
+     "width": 691,
+     "height": 784
+    }
+   ]
+  },
+  {
    "k": "stop",
-   "t": 4479,
+   "t": 4463,
    "a": []
   }
  ],
@@ -1639,7 +1624,9 @@
      "nativeTile": false,
      "nativeYield": false,
      "parked": false,
-     "zone": null
+     "zone": null,
+     "suspended": null,
+     "paused": false
     },
     "w2": {
      "id": "w2",
@@ -1695,7 +1682,9 @@
      "nativeTile": false,
      "nativeYield": false,
      "parked": false,
-     "zone": null
+     "zone": null,
+     "suspended": null,
+     "paused": false
     },
     "w3": {
      "id": "w3",
@@ -1751,7 +1740,9 @@
      "nativeTile": false,
      "nativeYield": false,
      "parked": false,
-     "zone": null
+     "zone": null,
+     "suspended": null,
+     "paused": false
     }
    },
    "contexts": [
@@ -1759,6 +1750,8 @@
      "id": "o1\u241fd1\u241fdefault",
      "layout": "master-stack",
      "members": 3,
+     "tiled": 3,
+     "suspended": 0,
      "revision": 7,
      "applied": 7,
      "order": [
@@ -1891,22 +1884,22 @@
     }
    },
    {
-    "t": 1253,
+    "t": 1251,
     "kind": "settled",
     "id": "w3"
    },
    {
-    "t": 1264,
+    "t": 1258,
     "kind": "settled",
     "id": "w2"
    },
    {
-    "t": 1309,
+    "t": 1308,
     "kind": "settled",
     "id": "w1"
    },
    {
-    "t": 1530,
+    "t": 1527,
     "kind": "solve",
     "id": "o1\u241fd1\u241fdefault",
     "data": {
@@ -1916,7 +1909,7 @@
     }
    },
    {
-    "t": 1530,
+    "t": 1528,
     "kind": "write",
     "id": "w1",
     "data": {
@@ -1926,7 +1919,7 @@
     }
    },
    {
-    "t": 1530,
+    "t": 1528,
     "kind": "write",
     "id": "w2",
     "data": {
@@ -1936,7 +1929,7 @@
     }
    },
    {
-    "t": 1531,
+    "t": 1528,
     "kind": "write",
     "id": "w3",
     "data": {
@@ -1946,7 +1939,7 @@
     }
    },
    {
-    "t": 1531,
+    "t": 1528,
     "kind": "command",
     "data": {
      "id": "plastile.resize.grow",
@@ -1954,7 +1947,7 @@
     }
    },
    {
-    "t": 1581,
+    "t": 1578,
     "kind": "solve",
     "id": "o1\u241fd1\u241fdefault",
     "data": {
@@ -1964,7 +1957,7 @@
     }
    },
    {
-    "t": 1581,
+    "t": 1578,
     "kind": "write",
     "id": "w1",
     "data": {
@@ -1974,7 +1967,7 @@
     }
    },
    {
-    "t": 1581,
+    "t": 1578,
     "kind": "write",
     "id": "w2",
     "data": {
@@ -1984,7 +1977,7 @@
     }
    },
    {
-    "t": 1581,
+    "t": 1578,
     "kind": "write",
     "id": "w3",
     "data": {
@@ -1994,7 +1987,7 @@
     }
    },
    {
-    "t": 1581,
+    "t": 1578,
     "kind": "command",
     "data": {
      "id": "plastile.resize.shrink",
@@ -2002,7 +1995,7 @@
     }
    },
    {
-    "t": 1821,
+    "t": 1818,
     "kind": "stale",
     "id": "w3",
     "data": {
@@ -2027,7 +2020,7 @@
     }
    },
    {
-    "t": 1823,
+    "t": 1820,
     "kind": "write",
     "id": "w3",
     "data": {
@@ -2037,7 +2030,7 @@
     }
    },
    {
-    "t": 1823,
+    "t": 1821,
     "kind": "stale",
     "id": "w1",
     "data": {
@@ -2062,7 +2055,7 @@
     }
    },
    {
-    "t": 1823,
+    "t": 1821,
     "kind": "write",
     "id": "w1",
     "data": {
@@ -2072,7 +2065,7 @@
     }
    },
    {
-    "t": 1831,
+    "t": 1829,
     "kind": "stale",
     "id": "w2",
     "data": {
@@ -2097,7 +2090,7 @@
     }
    },
    {
-    "t": 1832,
+    "t": 1829,
     "kind": "write",
     "id": "w2",
     "data": {
@@ -2107,22 +2100,22 @@
     }
    },
    {
-    "t": 2124,
+    "t": 2121,
     "kind": "settled",
     "id": "w3"
    },
    {
-    "t": 2125,
+    "t": 2121,
     "kind": "settled",
     "id": "w1"
    },
    {
-    "t": 2132,
+    "t": 2129,
     "kind": "settled",
     "id": "w2"
    },
    {
-    "t": 2998,
+    "t": 2983,
     "kind": "solve",
     "id": "o1\u241fd1\u241fdefault",
     "data": {
@@ -2132,7 +2125,7 @@
     }
    },
    {
-    "t": 2998,
+    "t": 2983,
     "kind": "write",
     "id": "w1",
     "data": {
@@ -2142,7 +2135,7 @@
     }
    },
    {
-    "t": 2998,
+    "t": 2984,
     "kind": "write",
     "id": "w2",
     "data": {
@@ -2152,7 +2145,7 @@
     }
    },
    {
-    "t": 2998,
+    "t": 2984,
     "kind": "write",
     "id": "w3",
     "data": {
@@ -2162,7 +2155,7 @@
     }
    },
    {
-    "t": 2998,
+    "t": 2984,
     "kind": "command",
     "data": {
      "id": "plastile.resize.grow",
@@ -2170,7 +2163,7 @@
     }
    },
    {
-    "t": 3049,
+    "t": 3035,
     "kind": "solve",
     "id": "o1\u241fd1\u241fdefault",
     "data": {
@@ -2180,7 +2173,7 @@
     }
    },
    {
-    "t": 3049,
+    "t": 3035,
     "kind": "write",
     "id": "w1",
     "data": {
@@ -2190,7 +2183,7 @@
     }
    },
    {
-    "t": 3049,
+    "t": 3035,
     "kind": "write",
     "id": "w2",
     "data": {
@@ -2200,7 +2193,7 @@
     }
    },
    {
-    "t": 3049,
+    "t": 3035,
     "kind": "write",
     "id": "w3",
     "data": {
@@ -2210,7 +2203,7 @@
     }
    },
    {
-    "t": 3049,
+    "t": 3035,
     "kind": "command",
     "data": {
      "id": "plastile.resize.shrink",
@@ -2218,7 +2211,7 @@
     }
    },
    {
-    "t": 3299,
+    "t": 3284,
     "kind": "stale",
     "id": "w2",
     "data": {
@@ -2243,7 +2236,7 @@
     }
    },
    {
-    "t": 3299,
+    "t": 3284,
     "kind": "stale",
     "id": "w3",
     "data": {
@@ -2268,7 +2261,7 @@
     }
    },
    {
-    "t": 3301,
+    "t": 3287,
     "kind": "write",
     "id": "w2",
     "data": {
@@ -2278,7 +2271,7 @@
     }
    },
    {
-    "t": 3301,
+    "t": 3287,
     "kind": "write",
     "id": "w3",
     "data": {
@@ -2288,7 +2281,7 @@
     }
    },
    {
-    "t": 3301,
+    "t": 3287,
     "kind": "stale",
     "id": "w1",
     "data": {
@@ -2313,7 +2306,7 @@
     }
    },
    {
-    "t": 3301,
+    "t": 3287,
     "kind": "write",
     "id": "w1",
     "data": {
@@ -2323,19 +2316,19 @@
     }
    },
    {
-    "t": 3601,
+    "t": 3587,
     "kind": "settled",
-    "id": "w1"
+    "id": "w2"
    },
    {
-    "t": 3602,
+    "t": 3587,
     "kind": "settled",
     "id": "w3"
    },
    {
-    "t": 3603,
+    "t": 3587,
     "kind": "settled",
-    "id": "w2"
+    "id": "w1"
    }
   ]
  },

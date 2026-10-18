@@ -3,7 +3,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { compileConfig, FLAT_KEYS } from "../../src/config/index.ts";
+import { compileConfig, DEFAULT_DIAGNOSTICS, DEFAULT_OSD, FLAT_KEYS } from "../../src/config/index.ts";
+import { DIAGNOSTICS } from "../../src/config/schema.ts";
 import { DEFAULT_SETTINGS } from "../../src/core/defaults.ts";
 import { COMMANDS } from "../../src/core/commands.ts";
 
@@ -29,6 +30,30 @@ test("schema defaults equal the runtime defaults", () => {
   assert.equal(d.bspAxis, DEFAULT_SETTINGS.bsp.axis);
   assert.equal(d.singleWindowGaps === "true", DEFAULT_SETTINGS.singleWindowGaps);
   assert.equal(Number(d.ratioStep), DEFAULT_SETTINGS.masterStack.ratioStep);
+  assert.equal(d.diagnostics, DEFAULT_DIAGNOSTICS);
+  assert.equal(d.osd === "true", DEFAULT_OSD);
+  const empty = compileConfig({}, 1);
+  assert.ok(empty.ok && empty.snapshot.osd === DEFAULT_OSD && empty.snapshot.diagnostics === DEFAULT_DIAGNOSTICS);
+});
+
+test("the log level choices are the runtime's, in order (error hides notices; off hides everything)", () => {
+  assert.deepEqual(entries.find((e) => e.name === "diagnostics")!.choices, [...DIAGNOSTICS]);
+  assert.deepEqual([...DIAGNOSTICS], ["off", "error", "warn", "info", "debug"]);
+  const off = compileConfig({ osd: "false" }, 1);
+  assert.ok(off.ok && off.snapshot.osd === false);
+  assert.ok(!compileConfig({ osd: "maybe" }, 1).ok, "osd is validated");
+});
+
+test("the settings dialog (config.ui) has one widget per schema entry, and every combo box lists its choices", () => {
+  const ui = readFileSync(new URL("../../package/contents/ui/config.ui", import.meta.url), "utf8");
+  const widgets = [...ui.matchAll(/<widget class="([^"]+)" name="kcfg_([^"]+)">([\s\S]*?)<\/widget>/g)]
+    .map((m) => ({ cls: m[1], name: m[2], items: (m[3].match(/<item>/g) ?? []).length }));
+  assert.deepEqual(widgets.map((w) => w.name).sort(), entries.map((e) => e.name).sort());
+  for (const e of entries) {
+    const w = widgets.find((x) => x.name === e.name)!;
+    if (e.type === "Enum") assert.equal(w.items, e.choices.length, `${e.name}: one combo item per choice, in the same order`);
+    if (e.type === "Bool") assert.equal(w.cls, "QCheckBox", `${e.name}: a check box`);
+  }
 });
 
 test("every schema value (defaults and enum choices) is accepted by the runtime", () => {
