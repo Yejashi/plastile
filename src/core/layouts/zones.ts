@@ -46,25 +46,25 @@ export function activeZoneLayout(state: ZoneState | null, z: ZoneSettings): Zone
 
 /**
  * Project normalized zones into a work area, with the arithmetic of the other layouts: the area
- * is inset by the outer gaps; each normalized edge maps to one pixel position, rounded once (area
- * edges stay exact, so a fractional area keeps fractional outer edges); the inner gap is taken
- * only from zone sides that are not on the area edge, split so that two zones sharing an edge
- * meet with exactly one inner gap (floor(gap/2) before the edge, the rest after it).
+ * is inset by the outer gaps; each interior normalized edge u becomes one cut, rounded once to a
+ * whole pixel at `start + u * (length + gap) - gap` (area edges stay exact, so a fractional area
+ * keeps fractional outer edges). A zone ending at u ends at the cut and a zone starting at u
+ * starts one inner gap after it, so two zones sharing an edge meet with exactly one inner gap and
+ * zones of equal fractions get equal sizes, the same pixels allocate() gives (masterStack,
+ * BSP). The gap is taken only from zone sides that are not on the area edge.
  */
 export function projectZones(zones: readonly ZoneRect[], area: Rect, gaps: GapSettings): Rect[] {
   const a = inset(area, gaps.outer);
   const g = gaps.inner;
-  const before = Math.floor(g / 2), after = g - before;
-  const edge = (u: number, start: number, length: number): number =>
-    u <= 0 ? start : u >= 1 ? start + length : Math.round(start + u * length);
+  const cut = (u: number, start: number, length: number): number => Math.round(start + u * (length + g) - g);
+  const begin = (u: number, start: number, length: number): number => (u <= 0 ? start : cut(u, start, length) + g);
+  const end = (u: number, start: number, length: number): number => (u >= 1 ? start + length : cut(u, start, length));
   const out: Rect[] = [];
   for (const z of zones) {
     const u0 = canonical(z.x), u1 = canonical(z.x + z.width);
     const v0 = canonical(z.y), v1 = canonical(z.y + z.height);
-    const x0 = edge(u0, a.x, a.width) + (u0 <= 0 ? 0 : after);
-    const x1 = edge(u1, a.x, a.width) - (u1 >= 1 ? 0 : before);
-    const y0 = edge(v0, a.y, a.height) + (v0 <= 0 ? 0 : after);
-    const y1 = edge(v1, a.y, a.height) - (v1 >= 1 ? 0 : before);
+    const x0 = begin(u0, a.x, a.width), x1 = end(u1, a.x, a.width);
+    const y0 = begin(v0, a.y, a.height), y1 = end(v1, a.y, a.height);
     out.push(rect(x0, y0, Math.max(1, x1 - x0), Math.max(1, y1 - y0)));
   }
   return out;
