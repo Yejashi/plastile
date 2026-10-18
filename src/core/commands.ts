@@ -51,10 +51,17 @@ export const COMMANDS: readonly CommandSpec[] = [
   { id: "plastile.layout.bsp", text: "Plastile: BSP layout", sequence: "" },
   { id: "plastile.layout.monocle", text: "Plastile: Monocle layout", sequence: "Meta+Shift+M" },
   { id: "plastile.layout.floating", text: "Plastile: Floating layout (no tiling here)", sequence: "" },
+  { id: "plastile.layout.scrolling", text: "Plastile: Scrolling layout (experimental)", sequence: "" },
   { id: "plastile.layout.rotate-clockwise", text: "Plastile: Rotate layout clockwise", sequence: "" },
   { id: "plastile.layout.rotate-counterclockwise", text: "Plastile: Rotate layout counterclockwise", sequence: "" },
   { id: "plastile.layout.mirror-horizontal", text: "Plastile: Mirror layout horizontally", sequence: "" },
   { id: "plastile.layout.mirror-vertical", text: "Plastile: Mirror layout vertically", sequence: "" },
+  // Scrolling layout (experimental, docs/design/SCROLLING.md): unbound, so no default can
+  // collide with software already installed; users bind them in System Settings.
+  { id: "plastile.scroll.consume", text: "Plastile: Scrolling: move window into the column on the left", sequence: "" },
+  { id: "plastile.scroll.expel", text: "Plastile: Scrolling: move window out into its own column", sequence: "" },
+  { id: "plastile.scroll.width-cycle", text: "Plastile: Scrolling: cycle column width", sequence: "" },
+  { id: "plastile.scroll.center", text: "Plastile: Scrolling: centre focused column", sequence: "" },
   { id: "plastile.window.toggle-float", text: "Plastile: Toggle floating", sequence: "Meta+Shift+F" },
   { id: "plastile.window.adopt-native", text: "Plastile: Adopt natively tiled window", sequence: "" },
   { id: "plastile.context.reset", text: "Plastile: Reset this layout", sequence: "" },

@@ -5,7 +5,7 @@
 // a transaction is applying, in which case they queue in order. Every external
 // frame write goes through applyTarget() and the requested/observed ledger.
 
-import { frameTolerance, isValidArea, rectNear, rectOf, type Rect, type Size } from "./geometry.ts";
+import { contains, frameTolerance, isValidArea, rect, rectNear, rectOf, type Rect, type Size } from "./geometry.ts";
 import { classify, TINY_PX, TINY_REASON } from "./classify.ts";
 import { COMMAND_IDS, type CommandResult, type CommandStatus } from "./commands.ts";
 import { DEFAULT_SETTINGS } from "./defaults.ts";
@@ -17,6 +17,10 @@ import type { Layout, LayoutCommand, SolveInput } from "./layouts/layout.ts";
 import { masterStack, type MasterStackState } from "./layouts/masterStack.ts";
 import { bsp, reinsert as bspReinsert } from "./layouts/bsp.ts";
 import { monocle, floating } from "./layouts/monocle.ts";
+import {
+  centre as scrollCentre, columnNeighbour, consume as scrollConsume, cycleWidth, expel as scrollExpel, moveColumn, scrolling,
+  stripOrder, type ScrollState,
+} from "./layouts/scrolling.ts";
 import {
   contextId, sameContext, type ActivityId, type Constraints, type ContextId, type ContextKey, type ContextSettings, type Decision,
   type DesktopId, type LayoutKind, type Membership, type OutputId, type PlacementMode, type Suspension, type WindowId, type WindowMeta,
@@ -31,7 +35,9 @@ const LAYOUTS: Record<LayoutKind, AnyLayout> = {
   bsp,
   monocle,
   floating,
+  scrolling,
 };
+/** Scrolling is experimental and opt-in (ADR-014): selected explicitly, never by the cycle. */
 const LAYOUT_CYCLE: readonly LayoutKind[] = ["master-stack", "bsp", "monocle", "floating"];
 const DIVERGED = "did not reach its target after bounded corrections";
 /** Preferences kept for dropped (empty) contexts, most recent first out last. */
@@ -145,6 +151,15 @@ interface Ctx {
   failures: number;
 }
 
+/** A window Plastile placed outside every output (scrolling, SCROLLING §3). */
+interface Parked {
+  /** The strip's context: its output is the one the parking place is nearest to. */
+  readonly ctx: ContextKey;
+  /** Where it was parked, and where it would be in an unbounded work area. */
+  readonly rect: Rect;
+  readonly virtual: Rect;
+}
+
 export class Engine {
   readonly counters: Counters = newCounters();
   readonly trace: Trace;
@@ -170,6 +185,8 @@ export class Engine {
   /** Output scales, refreshed on adoption and topology changes (not per command). */
   private scales = new Map<OutputId, number>();
   private endedInteractions = new Map<WindowId, "move" | "resize">();
+  /** Windows currently parked by a scrolling strip (recorded before each parking write). */
+  private parked = new Map<WindowId, Parked>();
   private queued: Array<{ id: string; arg: unknown }> = [];
   private applying = 0;
   private flushScheduled = false;
@@ -225,6 +242,7 @@ export class Engine {
     this.retryWindows.clear();
     this.retryContexts.clear();
     this.endedInteractions.clear();
+    this.parked.clear();
     this.queued = [];
   }
 
@@ -234,6 +252,8 @@ export class Engine {
    */
   reconcile(live: readonly WindowSnapshot[]): void {
     if (!this.alive) return;
+    // Nothing stays parked across a resync: the solves that follow park what is still hidden.
+    this.sweepParked(true);
     const ids = new Set(live.map((s) => s.id));
     for (const r of [...this.recs.values()]) {
       if (!ids.has(r.id)) { this.tombstones.set(r.id, r.gen); this.drop(r); this.counters.removed++; }
@@ -250,6 +270,7 @@ export class Engine {
   private releaseOwnership(): void {
     if (this.cancelDeadline) { this.cancelDeadline(); this.cancelDeadline = null; }
     this.deadlineAt = Infinity;
+    this.sweepParked(true); // every parked window back inside its output's work area (SCROLLING §5)
     for (const r of this.recs.values()) {
       L.cancel(r.ledger);
       this.restoreBorder(r);
@@ -316,6 +337,7 @@ export class Engine {
     this.leaveContext(r);
     this.corrections.delete(r.id);
     this.endedInteractions.delete(r.id);
+    this.parked.delete(r.id);
     this.recs.delete(r.id);
   }
 
@@ -341,7 +363,7 @@ export class Engine {
   membershipChanged(id: WindowId, gen: number, m: Membership): void {
     const r = this.live(id, gen);
     if (!r) return;
-    r.membership = m;
+    r.membership = this.keepParkedOutput(r, m);
     if (isOverflow(r)) this.retryOverflow(null, r.id); // another context may have room
     this.reclassify(r, "membership");
     this.ensureFlush();
@@ -461,12 +483,15 @@ export class Engine {
   activeChanged(id: WindowId | null): void {
     if (!this.alive || id === null) return;
     const r = this.recs.get(id);
-    if (!r || !r.ctx || r.mode !== "tiled") return;
+    if (!r) return;
+    if (!r.ctx || r.mode !== "tiled") { this.revealTransientParent(r); return; }
     const c = this.ctxFor(r.ctx);
     c.focus = [id, ...c.focus.filter((x) => x !== id)].slice(0, 16);
     // Monocle frames do not depend on the selection, and KWin raises an activated
     // window itself (the focus command raises explicitly): record it, no solve (C12).
-    if (this.layoutKind(c) === "monocle") c.states.monocle = { selected: id };
+    const kind = this.layoutKind(c);
+    if (kind === "monocle") c.states.monocle = { selected: id };
+    else if (kind === "scrolling") this.scrollActivated(c, id);
   }
 
   /** Visible desktop/activity changed on some output. */
@@ -520,6 +545,10 @@ export class Engine {
       this.retained.delete(id);
       const key: ContextKey = { output: to, desktop: kept.key.desktop, activity: kept.key.activity };
       this.retained.set(contextId(key), { key, prefs: kept.prefs });
+    }
+    for (const [id, p] of [...this.parked]) {
+      const to = renames.get(p.ctx.output);
+      if (to !== undefined) this.parked.set(id, { ...p, ctx: { output: to, desktop: p.ctx.desktop, activity: p.ctx.activity } });
     }
     for (const r of [...this.recs.values()]) {
       const to = r.membership.output === null ? undefined : renames.get(r.membership.output);
@@ -834,8 +863,11 @@ export class Engine {
     c.members.splice(at, 0, r.id);
     const anchor = at > 0 ? c.members[at - 1] : null;
     const input = this.solveInput(c, null);
+    // Scrolling: a new column right of the focused one, or at the end (SCROLLING §2).
+    const scrollAnchor = insert === "after-focus" ? focus : null;
     for (const kind of Object.keys(c.states) as LayoutKind[]) {
-      c.states[kind] = LAYOUTS[kind].insert(c.states[kind], r.id, kind === "bsp" ? (focus ?? anchor) : anchor, input);
+      const after = kind === "bsp" ? (focus ?? anchor) : kind === "scrolling" ? scrollAnchor : anchor;
+      c.states[kind] = LAYOUTS[kind].insert(c.states[kind], r.id, after, input);
     }
     c.revision++;
     this.markDirty(c.key);
@@ -933,6 +965,7 @@ export class Engine {
         this.solveContained(c);
       }
       this.collectEmpty();
+      this.sweepParked();
     } catch (e) {
       this.counters.errors++;
       this.svc.log("error", "flush failed", String(e));
@@ -1048,8 +1081,12 @@ export class Engine {
     const t0 = clock ? clock() : 0;
     const kind = this.layoutKind(c);
     const lay = LAYOUTS[kind];
-    const input = this.solveInput(c, area);
-    const state = this.layoutState(c, kind);
+    let input = this.solveInput(c, area);
+    let state = this.layoutState(c, kind);
+    if (kind === "scrolling") {
+      input = this.scrollInput(c, input);
+      state = this.revealState(c, state, input.focused, input);
+    }
     const res = lay.solve(state, input);
     const t1 = clock ? clock() : 0;
     const writes0 = this.counters.writes;
@@ -1064,6 +1101,7 @@ export class Engine {
     }
     c.plan = res.slots;
     c.applied = c.revision;
+    this.noteParking(c, res.slots, res.parked, res.virtual);
     const tol = frameTolerance(this.scales.get(c.key.output) ?? 1);
     this.applying++;
     try {
@@ -1265,6 +1303,7 @@ export class Engine {
     let out: { status: CommandStatus; reason?: string; targets: string[] };
     try {
       out = this.run(id);
+      this.sweepParked(); // a command that ended a strip's ownership unparks at once
     } catch (e) {
       this.counters.errors++;
       this.svc.log("error", "command failed", { id, error: String(e) });
@@ -1348,8 +1387,11 @@ export class Engine {
       let next: LayoutKind | null = null;
       if (action === "next" || action === "previous") {
         const i = LAYOUT_CYCLE.indexOf(cur);
-        next = LAYOUT_CYCLE[(i + (action === "next" ? 1 : LAYOUT_CYCLE.length - 1)) % LAYOUT_CYCLE.length];
-      } else if (action === "master-stack" || action === "bsp" || action === "monocle" || action === "floating") {
+        // Outside the cycle (scrolling): next enters it at the start, previous at the end.
+        next = i < 0 ? LAYOUT_CYCLE[action === "next" ? 0 : LAYOUT_CYCLE.length - 1]
+          : LAYOUT_CYCLE[(i + (action === "next" ? 1 : LAYOUT_CYCLE.length - 1)) % LAYOUT_CYCLE.length];
+      } else if (action === "master-stack" || action === "bsp" || action === "monocle" || action === "floating"
+                 || action === "scrolling") {
         next = action;
       }
       if (next !== null) {
@@ -1391,6 +1433,7 @@ export class Engine {
       this.solveNow(c);
       return ok(c.members.slice());
     }
+    if (family === "scroll") return this.scrollCommand(c, r, action);
     if (family === "focus") return this.focusCommand(c, r, action);
     if (family === "swap") return this.swapCommand(c, r, action);
     if (family === "move") return this.moveCommand(c, r, action);
@@ -1452,11 +1495,12 @@ export class Engine {
   private restoreFloatRects(c: Ctx): void {
     for (const id of c.members) {
       const r = this.recs.get(id);
-      if (r && r.floatRect && r.suspensions.size === 0) { L.cancel(r.ledger); this.writeRestore(r, r.floatRect); }
+      if (r && r.floatRect && r.suspensions.size === 0) { L.cancel(r.ledger); this.parked.delete(id); this.writeRestore(r, r.floatRect); }
     }
   }
 
   private planRects(c: Ctx): Map<WindowId, Rect> {
+    if (this.layoutKind(c) === "scrolling") { const v = this.scrollVirtual(c); if (v) return v; }
     if (c.applied !== c.revision || c.plan.size === 0) {
       // Plan may be stale (e.g. desktop never shown): use observed frames of participants.
       const m = new Map<WindowId, Rect>();
@@ -1489,7 +1533,8 @@ export class Engine {
   }
 
   private focusCommand(c: Ctx, r: Rec | null, action: string): { status: CommandStatus; reason?: string; targets: string[] } {
-    const ids = this.solveInput(c, null).ids;
+    const scroll = this.layoutKind(c) === "scrolling";
+    const ids = scroll ? this.scrollOrder(c) : this.solveInput(c, null).ids;
     if (ids.length === 0) return { status: "noop", reason: "no tiled windows", targets: [] };
     const cur = r && ids.includes(r.id) ? r.id : null;
     let target: WindowId | null = null;
@@ -1499,11 +1544,13 @@ export class Engine {
       target = ids[(i + (action === "next" ? 1 : ids.length - 1) + ids.length) % ids.length];
       if (cur === null && action === "previous") target = ids[ids.length - 1];
     } else if (cur === null) target = c.focus.find((id) => ids.includes(id)) ?? ids[0];
+    else if (scroll && (action === "up" || action === "down")) target = columnNeighbour(this.layoutState(c, "scrolling"), cur, action, ids);
     else target = neighbour(cur, action as Direction, this.planRects(c));
     if (target === null) return { status: "noop", reason: `nothing ${action}`, targets: [] };
     if (target === cur) return { status: "noop", reason: "already focused", targets: [] };
     const t = this.recs.get(target)!;
     this.activate(t);
+    if (scroll) this.scrollFocused(c, target);
     // Monocle shows one member: selecting another needs one raise, still no geometry solve.
     if (this.layoutKind(c) === "monocle") {
       c.states.monocle = { selected: target };
@@ -1524,7 +1571,9 @@ export class Engine {
 
   private swapCommand(c: Ctx, r: Rec | null, action: string): { status: CommandStatus; reason?: string; targets: string[] } {
     if (!r || !this.participates(r) || !sameContext(r.ctx, c.key)) return { status: "noop", reason: "active window is not tiled here", targets: [] };
-    const ids = this.solveInput(c, null).ids;
+    const scroll = this.layoutKind(c) === "scrolling";
+    if (scroll && action !== "master" && action !== "next" && action !== "previous") return this.scrollMove(c, r, action);
+    const ids = scroll ? this.scrollOrder(c) : this.solveInput(c, null).ids;
     let other: WindowId | null = null;
     if (action === "master") other = ids[0] === r.id ? (ids[1] ?? null) : ids[0];
     else if (action === "next" || action === "previous") {
@@ -1565,6 +1614,7 @@ export class Engine {
     }
     // Structural reinsert next to the directional neighbour.
     if (!this.participates(r) || !sameContext(r.ctx, c.key)) return { status: "noop", reason: "active window is not tiled here", targets: [] };
+    if (this.layoutKind(c) === "scrolling") return this.scrollMove(c, r, action);
     const dir = action as Direction;
     const other = neighbour(r.id, dir, this.planRects(c));
     if (other === null) return { status: "noop", reason: `nothing ${action}`, targets: [] };
@@ -1579,6 +1629,199 @@ export class Engine {
       const to = c.members.indexOf(other);
       c.members.splice(dir === "left" || dir === "up" ? to : to + 1, 0, r.id);
     }
+    this.solveNow(c);
+    return { status: "accepted", targets: [r.id, other] };
+  }
+
+  // ------------------------------------------------------- scrolling (M8, experimental)
+  //
+  // The strip's viewport follows focus (SCROLLING §4); columns that are not fully visible
+  // are parked outside every output with position-only writes. Every parking write is
+  // recorded first (`parked`), so KWin reassigning a parked window's output does not move
+  // it to another context, and every exit path brings parked windows back (§5).
+
+  /** Solve input for a strip: focus from the engine's own focus history, and the output geometry. */
+  private scrollInput(c: Ctx, input: SolveInput): SolveInput {
+    const outs = this.host.outputs();
+    const outputs: Rect[] = [];
+    let own: Rect | null = null;
+    for (const o of outs) {
+      outputs.push(o.geometry);
+      if (o.id === c.key.output) own = o.geometry;
+    }
+    return { ...input, focused: this.scrollFocus(c), outputs, output: own };
+  }
+
+  /** The member whose column must be visible: the most recently focused participant. */
+  private scrollFocus(c: Ctx): WindowId | null {
+    for (const id of c.focus) {
+      const r = this.recs.get(id);
+      if (r && this.participates(r) && c.members.includes(id)) return id;
+    }
+    return null;
+  }
+
+  private revealState(c: Ctx, state: ScrollState, focus: WindowId | null, input: SolveInput): ScrollState {
+    const next = scrolling.reveal!(state, focus, input);
+    if (next !== state) c.states.scrolling = next;
+    return next;
+  }
+
+  /** Scroll the strip so `focus` is shown; true when the viewport moved (the caller solves). */
+  private scrollTo(c: Ctx, focus: WindowId | null): boolean {
+    const area = this.host.workArea(c.key.output, c.key.desktop);
+    if (!isValidArea(area)) return false;
+    const state = this.layoutState(c, "scrolling") as ScrollState;
+    if (this.revealState(c, state, focus, this.solveInput(c, area)) === state) return false;
+    c.revision++;
+    return true;
+  }
+
+  /** A member was activated (click, Alt+Tab, an application): bring its column into view, solved in the next flush. */
+  private scrollActivated(c: Ctx, id: WindowId): void {
+    if (this.suspended) return;
+    const r = this.recs.get(id);
+    if (!r || !this.participates(r)) return;
+    if (this.scrollTo(c, id)) { this.markDirty(c.key); this.ensureFlush(); }
+  }
+
+  /** A focus command chose `target`: record it and solve once if the viewport moved. */
+  private scrollFocused(c: Ctx, target: WindowId): void {
+    c.focus = [target, ...c.focus.filter((x) => x !== target)].slice(0, 16);
+    if (this.scrollTo(c, target) || this.dirty.has(c.id)) this.solveNow(c);
+  }
+
+  /** An activated dialog or other transient floats; its parent's column is scrolled into view. */
+  private revealTransientParent(r: Rec): void {
+    const parentId = r.meta.transientFor;
+    if (parentId === null || this.suspended) return;
+    const p = this.recs.get(parentId);
+    if (!p || p.mode !== "tiled" || !p.ctx || !this.participates(p)) return;
+    const c = this.contexts.get(contextId(p.ctx));
+    if (!c || this.layoutKind(c) !== "scrolling") return;
+    c.focus = [p.id, ...c.focus.filter((x) => x !== p.id)].slice(0, 16);
+    if (this.scrollTo(c, p.id)) { this.markDirty(c.key); this.ensureFlush(); }
+  }
+
+  /** Participants in strip order (focus/swap next and previous). */
+  private scrollOrder(c: Ctx): WindowId[] {
+    return stripOrder(this.layoutState(c, "scrolling"), this.solveInput(c, null).ids);
+  }
+
+  /** Virtual (unparked) rectangles for directional navigation: "right" is the next column even when parked. */
+  private scrollVirtual(c: Ctx): Map<WindowId, Rect> | null {
+    const area = this.host.workArea(c.key.output, c.key.desktop);
+    if (!isValidArea(area)) return null;
+    const input = this.scrollInput(c, this.solveInput(c, area));
+    return scrolling.solve(this.layoutState(c, "scrolling"), input).virtual ?? null;
+  }
+
+  /** Record parking intent before the writes, and forget windows that now have an ordinary slot. */
+  private noteParking(c: Ctx, slots: ReadonlyMap<WindowId, Rect>, parked: readonly WindowId[] | undefined,
+    virtual: ReadonlyMap<WindowId, Rect> | undefined): void {
+    if (parked === undefined && this.parked.size === 0) return;
+    const set = new Set(parked ?? []);
+    for (const [id, target] of slots) {
+      if (set.has(id)) this.parked.set(id, { ctx: c.key, rect: target, virtual: virtual?.get(id) ?? target });
+      else this.parked.delete(id);
+    }
+  }
+
+  /**
+   * Bring back every parked window that its strip no longer owns (another layout, not tiled,
+   * suspended, stopped), or all of them with `force` (unload, suspend, reconcile). A window
+   * KWin itself sized (fullscreen, maximized) or the user is dragging is left to KWin until
+   * that ends, except when forced.
+   */
+  private sweepParked(force = false): void {
+    if (this.parked.size === 0) return;
+    for (const [id, p] of [...this.parked]) {
+      const r = this.recs.get(id);
+      if (!r) { this.parked.delete(id); continue; }
+      if (!force) {
+        if (!this.suspended && this.participates(r) && sameContext(r.ctx, p.ctx)) {
+          const c = this.contexts.get(contextId(p.ctx));
+          if (c && this.layoutKind(c) === "scrolling") continue; // still its strip's
+        }
+        if (r.suspensions.has("fullscreen") || r.suspensions.has("maximized") || r.suspensions.has("interactive")) continue;
+      }
+      this.parked.delete(id);
+      this.unpark(r, p);
+    }
+  }
+
+  /**
+   * One restore write placing a parked window inside its output's work area: its virtual
+   * position clamped into the area (a window larger than the area is shrunk to it). Skipped
+   * when the window is already inside (moved back by KWin, the user or a newer request).
+   */
+  private unpark(r: Rec, p: Parked): void {
+    const now = this.host.frame(r.id, r.gen);
+    if (now === null) return;
+    let area = this.host.workArea(p.ctx.output, p.ctx.desktop);
+    if (!isValidArea(area) && r.membership.output !== null) area = this.host.workArea(r.membership.output, p.ctx.desktop);
+    if (!isValidArea(area)) area = this.host.outputs()[0]?.geometry ?? null;
+    if (!isValidArea(area)) return;
+    if (contains(area, now, frameTolerance(this.scales.get(p.ctx.output) ?? 1))) return;
+    const w = Math.min(now.width, area.width), h = Math.min(now.height, area.height);
+    const x = Math.min(Math.max(p.virtual.x, area.x), area.x + area.width - w);
+    const y = Math.min(Math.max(p.virtual.y, area.y), area.y + area.height - h);
+    L.cancel(r.ledger);
+    this.trace.record(this.svc.now(), "unpark", r.id);
+    this.writeRestore(r, rect(x, y, w, h));
+  }
+
+  /**
+   * KWin assigns a window's output from its frame centre, and a topology change can pull a
+   * parked window partly back onto another output. That output change is an expected
+   * consequence of parking, not a move by the user: the window keeps its strip's output
+   * (and so its context) while its output still exists; the next solve parks it again or
+   * brings it into view.
+   */
+  private keepParkedOutput(r: Rec, m: Membership): Membership {
+    const p = this.parked.get(r.id);
+    if (!p || m.output === null || m.output === p.ctx.output) return m;
+    const prev = r.membership;
+    if (m.onAllDesktops !== prev.onAllDesktops || !sameList(m.desktops, prev.desktops) || !sameList(m.activities, prev.activities)) return m;
+    if (!this.host.outputs().some((o) => o.id === p.ctx.output)) return m;
+    this.trace.record(this.svc.now(), "parked-output", r.id, { reported: m.output, kept: p.ctx.output });
+    return { output: p.ctx.output, desktops: m.desktops, onAllDesktops: m.onAllDesktops, activities: m.activities };
+  }
+
+  /** plastile.scroll.*: consume, expel, width-cycle, center (SCROLLING §4). */
+  private scrollCommand(c: Ctx, r: Rec | null, action: string): { status: CommandStatus; reason?: string; targets: string[] } {
+    if (this.layoutKind(c) !== "scrolling") return { status: "noop", reason: "the layout here is not scrolling", targets: [] };
+    if (!r || !this.participates(r) || !sameContext(r.ctx, c.key)) return { status: "noop", reason: "active window is not tiled here", targets: [] };
+    const state = this.layoutState(c, "scrolling") as ScrollState;
+    let o;
+    if (action === "consume") o = scrollConsume(state, r.id);
+    else if (action === "expel") o = scrollExpel(state, r.id);
+    else if (action === "width-cycle") o = cycleWidth(state, r.id, this.ctxSettings(c).scrolling.widthPresets);
+    else if (action === "center") {
+      const area = this.host.workArea(c.key.output, c.key.desktop);
+      if (!isValidArea(area)) return { status: "noop", reason: "no usable area", targets: [] };
+      o = scrollCentre(state, r.id, this.solveInput(c, area));
+    } else return { status: "rejected", reason: "unsupported command", targets: [] };
+    if (!o.changed) return { status: "noop", reason: o.reason ?? "no change", targets: [] };
+    c.states.scrolling = o.state;
+    this.solveNow(c);
+    return { status: "accepted", targets: [r.id] };
+  }
+
+  /** swap/move left and right move the focused column; up and down move the window within its column. */
+  private scrollMove(c: Ctx, r: Rec, action: string): { status: CommandStatus; reason?: string; targets: string[] } {
+    const state = this.layoutState(c, "scrolling") as ScrollState;
+    if (action === "left" || action === "right") {
+      const o = moveColumn(state, r.id, action);
+      if (!o.changed) return { status: "noop", reason: o.reason ?? `nothing ${action}`, targets: [] };
+      c.states.scrolling = o.state;
+      this.solveNow(c);
+      return { status: "accepted", targets: [r.id] };
+    }
+    if (action !== "up" && action !== "down") return { status: "rejected", reason: "unsupported command", targets: [] };
+    const other = columnNeighbour(state, r.id, action, this.solveInput(c, null).ids);
+    if (other === null) return { status: "noop", reason: `nothing ${action}`, targets: [] };
+    this.swapIn(c, r.id, other);
     this.solveNow(c);
     return { status: "accepted", targets: [r.id, other] };
   }
@@ -1618,7 +1861,7 @@ export class Engine {
       suspensions: [...r.suspensions], constraints: this.effectiveConstraints(r),
       learnedMin: r.learnedMin, learnedMax: r.learnedMax, ledger: { status: r.ledger.status, outstanding: r.ledger.outstanding,
         desired: r.ledger.desired, corrections: r.ledger.corrections }, slot: c?.plan.get(r.id) ?? null,
-      exception: r.exception, nativeTile: r.nativeTile, nativeYield: r.nativeYield,
+      exception: r.exception, nativeTile: r.nativeTile, nativeYield: r.nativeYield, parked: this.parked.has(r.id),
     };
   }
 
@@ -1744,4 +1987,10 @@ function result(command: string, status: CommandStatus, reason: string | undefin
   revision: number, requested: boolean): CommandResult {
   return reason === undefined ? { command, status, targets, revision, requested }
     : { command, status, reason, targets, revision, requested };
+}
+
+function sameList<T>(a: readonly T[], b: readonly T[]): boolean {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; ++i) if (a[i] !== b[i]) return false;
+  return true;
 }

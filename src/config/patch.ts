@@ -20,6 +20,8 @@ export function applyPatch(base: ContextSettings, p: SettingsPatch): ContextSett
     } : base.gaps,
     masterStack: p.masterStack ? { ...base.masterStack, ...p.masterStack } : base.masterStack,
     bsp: p.bsp ? { ...base.bsp, ...p.bsp } : base.bsp,
+    // Arrays (widthPresets) replace rather than concatenate (CONFIGURATION §3).
+    scrolling: p.scrolling ? { ...base.scrolling, ...p.scrolling } : base.scrolling,
     overflow: p.overflow !== undefined ? p.overflow : base.overflow,
     singleWindowGaps: p.singleWindowGaps !== undefined ? p.singleWindowGaps : base.singleWindowGaps,
     followOnSend: p.followOnSend !== undefined ? p.followOnSend : base.followOnSend,
@@ -28,7 +30,8 @@ export function applyPatch(base: ContextSettings, p: SettingsPatch): ContextSett
 
 /** Deep copy, so freezing never touches objects owned elsewhere (e.g. DEFAULT_SETTINGS). */
 export function cloneSettings(s: ContextSettings): ContextSettings {
-  return { ...s, gaps: { inner: s.gaps.inner, outer: { ...s.gaps.outer } }, masterStack: { ...s.masterStack }, bsp: { ...s.bsp } };
+  return { ...s, gaps: { inner: s.gaps.inner, outer: { ...s.gaps.outer } }, masterStack: { ...s.masterStack }, bsp: { ...s.bsp },
+           scrolling: { ...s.scrolling, widthPresets: s.scrolling.widthPresets.slice() } };
 }
 
 export function freezeSettings(s: ContextSettings): ContextSettings {
@@ -37,5 +40,7 @@ export function freezeSettings(s: ContextSettings): ContextSettings {
   Object.freeze(s.gaps);
   Object.freeze(s.masterStack);
   Object.freeze(s.bsp);
+  Object.freeze(s.scrolling.widthPresets);
+  Object.freeze(s.scrolling);
   return Object.freeze(s);
 }
