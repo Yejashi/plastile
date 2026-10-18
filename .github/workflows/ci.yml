@@ -147,6 +147,13 @@ jobs:
           make -C tools/input
           test -x build/input/plastile-input
 
+      - name: Physical-session kit (tools/physical) unit tests and build
+        # Offline tests only (synthetic and recorded fixture logs). The live tools
+        # refuse to run outside a real Plasma Wayland session.
+        run: |
+          python3 -m unittest discover -s tools/physical/tests -v
+          make -C tools/physical
+
       - name: Job summary
         if: always()
         # T33 acceptance: CI may not pass by skipping mandatory tests unnoticed.
