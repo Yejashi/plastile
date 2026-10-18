@@ -11,12 +11,15 @@ Outputs (docs/status/evidence/, no window titles, no user paths):
   g2-baselines-samples.csv.xz every baseline sample
   g2-lifecycle.json           P05 bursts, the P05 n=32 boundary, P07/P12/P13 and root teardown
   g2-churn.json               P14 reload cycles, P15 churn, idle pairs, and their no-tiler controls
+  g2-rss-bisect.json          the P14 memory bisection (--rss-campaign)
+  g2-p04-node.json            P04 in Node (--p04; informational, not QV4)
 
 Statistics: nearest-rank quantiles (tools/physical/summarize); p99 is withheld below 5000 samples;
 95 % confidence intervals are percentile bootstraps over whole runs. Every sample is kept: warm-up
 samples (declared before the run) are summarized separately, failures are counted by reason.
 
 Usage: python3 probes/perf/g2_aggregate.py artifacts/g2/<campaign> [--evidence docs/status/evidence]
+         [--churn-campaign DIR --superseded TEXT] [--gc-campaign DIR] [--rss-campaign DIR] [--p04 pure.json]
 """
 from __future__ import annotations
 
@@ -764,6 +767,7 @@ def main() -> int:
     ap.add_argument("--p04", type=Path, default=None, help="probes/perf/pure.ts JSON output (Node, informational)")
     ap.add_argument("--gc-campaign", type=Path, action="append", default=[],
                     help="a campaign (campaign.py --only gc-rate) with the QV4 collection-rate units")
+    ap.add_argument("--rss-campaign", type=Path, default=None, help="a campaign (campaign.py --only rss-bisect)")
     args = ap.parse_args()
     GC_DIRS.extend(args.gc_campaign)
     cdir, ev = args.campaign, args.evidence
@@ -774,6 +778,17 @@ def main() -> int:
         record["churn"] = campaign(args.churn_campaign)[0] | {"replaces": args.superseded}
     for g in args.gc_campaign:
         record.setdefault("gcRate", []).append(campaign(g)[0])
+    if args.rss_campaign:
+        record["rssBisect"] = campaign(args.rss_campaign)[0]
+        units = {}
+        for d in sorted((args.rss_campaign / "units").glob("*")):
+            if (d / "unit.json").exists():
+                u = json.loads((d / "unit.json").read_text())
+                units[d.name] = {k: u.get(k) for k in ("mode", "args", "implementationCommit", "implementationDirty", "metric",
+                                                       "result")} | {"load1mAtStart": u["machineStart"]["loadavg"][0]}
+        pc.write_json(ev / "g2-rss-bisect.json", {
+            "purpose": "T34: where P14's anonymous-memory growth comes from (probes/perf/rss_bisect.py)",
+            "layer": "nested KWin virtual backend (not physical)", "units": units})
     pc.write_json(ev / "g2-campaign.json", record)
     if args.p04:
         pc.write_json(ev / "g2-p04-node.json", {
