@@ -133,6 +133,10 @@ facing tiles (>= the configured gap; one device pixel of tolerance at fractional
 | `rotation-portrait-O02` | O02 partial: portrait logical placement only (no mixed scale or refresh) |
 | `unplug-O04` | O04; O05 partial: placement validity after replug (KWin decides where windows return; preference recovery not asserted) |
 | `reconcile` | diagnostic reconcile, no ID |
+| `resume-missed-events-T19` | T19 resume: a close, an open, a desktop move, an output move and two external resizes (one leaving the slot unchanged) while suspended; resume adopts the live state (closed window not revived, one solve per visible context, one write per window out of its slot including the one that drifted in place, none for the window already in it); a reconcile afterwards writes nothing |
+| `reenable-missed-events-T19` | T19: the same changes while disabled (unloaded), adopted on enable; 10 suspend/resume and 10 disable/enable cycles leave one engine (KWin script objects, kglobalaccel names, steady connections, one command record and one ratio step per press) |
+| `send-reflow-once-T24` | T24 "source/destination reflow once": solves per context (trace `solve` records, keyed by context id) and writes per window for send-to-output and send-to-desktop, with and without `followOnSend`; a context hidden by the send is solved once when shown |
+| `send-stale-close-T24` | T24 "stale transfer callbacks do nothing": the sent window closes with its destination write outstanding (delayed acks; asserted from the trace), or straight after the shortcut; nothing is recorded for it after its removal |
 | `drag-I01-I02` | I01, I02 (real libei input; needs `build/input/plastile-input`) |
 | `resize-I03` | I03 (real libei input) |
 | `drag-teardown-I04` | I04 partial (window removed mid-drag; output removal mid-drag not exercised), I06 partial (unload mid-drag; there is no overlay) |
