@@ -130,12 +130,10 @@ def pingpong(seq: list[dict]) -> list[dict]:
     return [r for k, r in enumerate(st) if any(near(r, p, 0.5) for p in st[:max(0, k - 1)])]
 
 
-def unrecorded(kw: dict[str, list[dict]], writes: dict[str, int], late: set[str] = frozenset()) -> dict:
+def unrecorded(kw: dict[str, list[dict]], writes: dict[str, int]) -> dict:
     """KWin's side of "one target per window": frames that changed without a Plastile write in
-    the same interval, or that went through more than one rectangle (listener vs trace). `late`:
-    windows whose earlier request settled in this interval (the client committed it late, as on
-    slow CI runners): one change, to that request, is theirs."""
-    return {k: v for k, v in kw.items() if (k not in writes and k not in late) or len(steps(v)) > 1}
+    the same interval, or that went through more than one rectangle (listener vs trace)."""
+    return {k: v for k, v in kw.items() if k not in writes or len(steps(v)) > 1}
 
 
 def covered(frames: list[dict], area: dict) -> float:
@@ -158,6 +156,7 @@ class Run:
         """Run `act`, wait for `ready` (an event wait on KWin state), settle; return what happened."""
         s = self.s
         t0 = last_trace_t(s)
+        before = {k: v["frame"] for k, v in s.frames().items()}
         off = s.kw.mark()
         a = s.counters()
         act()
@@ -165,10 +164,12 @@ class Run:
         b = s.settle(timeout=timeout, quiet=0.3)
         recs = trace_since(trace(s), t0)
         writes = by_caption(recs, self.wid)
-        # An earlier write the client committed only now: settled here, written before (trace).
-        late = {k for k in by_caption(recs, self.wid, "settled") if k not in writes}
-        return {"ready": ok, "recs": recs, "delta": delta(a, b), "kwin": kwin_frames(self.lst, off),
-                "writes": writes, "late": late, "counters": b}
+        # KWin may re-round a fractional frame without moving it (6.8: height 784.0000000000001 -> 784 when the
+        # desktop switches): changes within the 0.5 px tolerance of the frame before the interval are no change.
+        kwin = {k: v for k, v in kwin_frames(self.lst, off).items()
+                if not (k in before and all(near(r, before[k], 0.5) for r in v))}
+        return {"ready": ok, "recs": recs, "delta": delta(a, b), "kwin": kwin,
+                "writes": writes, "counters": b}
 
     def shown(self, desk: str, act: str | None) -> dict[str, list[int]]:
         out: dict[str, list[int]] = {}
@@ -221,11 +222,10 @@ class Run:
         c(f"{label}: no frame goes back to a rectangle it left (listener, every fixture)", not pp, pp)
         # Independent of Plastile's own records: KWin moved only windows the trace says were
         # written, each to one rectangle; an already applied context moved nothing at all.
-        un = unrecorded(r["kwin"], r["writes"], r["late"])
-        moved = {k for k, v in r["kwin"].items() if v and k not in r["late"]}
-        c(f"{label}: KWin changed only frames Plastile wrote (or an earlier write settling late), each to one rectangle"
-          + ("; nothing else for an applied context" if applied else "") + " (listener vs trace)",
-          not un and not (applied and moved), {"kwin": r["kwin"], "writes": r["writes"], "late": sorted(r["late"])})
+        un = unrecorded(r["kwin"], r["writes"])
+        c(f"{label}: KWin changed only frames Plastile wrote, each to one rectangle"
+          + ("; nothing at all for an applied context" if applied else "") + " (listener vs trace)",
+          not un and not (applied and any(r["kwin"].values())), {"kwin": r["kwin"], "writes": r["writes"]})
         self.view(label, desk, act, r["counters"])
 
 

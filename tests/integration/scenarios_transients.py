@@ -349,6 +349,10 @@ def parent_close(out: Path, c: Checks):
         wid = {x["caption"]: x["id"] for x in s.frames_list()}
         w = [r for r in trace(s) if r.get("kind") == "write" and r.get("id") == wid.get(orphan)]
         c("(b) Plastile never wrote the orphaned dialog (trace)", not w, len(w))
+        # Activating another window closes the inspector that explain opened (Plastile's own UI, counted as an
+        # excluded window; on KWin 6.8 it was still open at the count below), so the counts are the application's.
+        s.act(OTHER, "workspace.activeWindow = w")
+        until(lambda: state(s, "Plastile inspector") is None, 3.0)
         s.kill(5, wait=False)
         removed = until(lambda: orphan not in s.frames(), 5.0)
         w6 = s.settle()
