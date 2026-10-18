@@ -34,7 +34,7 @@ The 23 core integration scenarios in `tests/integration/scenarios.py` passed: 10
 - Native quick tiling (`Meta+arrow`) is kept and not snapped back. *Adopt natively tiled window* brings the window back into the layout.
 - Toggling a window floating and back to tiled; the last floating rectangle is restored.
 - Transient dialogs float; main windows tile.
-- Two outputs: send a window to the other output, output scale changes from 1.25 to 2, portrait rotation, unplugging an output with requests in flight, and replugging it.
+- Two outputs: send a window to the other output, output scale changes from 1.25 to 2, portrait rotation, unplugging an output with requests in flight, and replugging it. A layout chosen for a screen comes back when the screen is replugged. Screens are identified by the monitor's manufacturer, model and serial number when KWin reports them, so that also holds on another connector (unit-tested only: the nested virtual outputs report none and are identified by connector name). Two identical monitors are told apart by connector.
 - Sending a window to another desktop without following it; that desktop is tiled when it is first shown.
 - 20 unload/reload cycles with pending work: stable connection and window counts, one shortcut per command, no errors.
 - Configuration: invalid values are rejected with a message and the previous configuration is kept. Values are re-read live when KWin reconfigures (see [applying settings](INSTALL.md#applying-settings-changes) for which paths do that).

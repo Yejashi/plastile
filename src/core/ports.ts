@@ -17,11 +17,17 @@ export interface WindowSnapshot {
   readonly nativeTile: boolean;
 }
 
+/** How an output's id was derived: EDID triple, connector name, or EDID plus connector for identical monitors. */
+export type OutputIdentity = "edid" | "connector" | "ambiguous";
+
 export interface OutputInfo {
+  /** Stable identity key (context keys use it); independent of enumeration order (E16). */
   readonly id: OutputId;
+  /** Connector name, for user-facing matching (overrides' outputName) and messages. */
   readonly name: string;
   readonly geometry: Rect;
   readonly scale: number;
+  readonly identity?: OutputIdentity;
 }
 
 export interface FrameWrite {

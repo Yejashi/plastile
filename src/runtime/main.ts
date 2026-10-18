@@ -96,12 +96,15 @@ export function createRuntime(env: RuntimeEnv): Runtime {
 
   const adapter = new KwinAdapter(env.workspace, env.qt);
   const options = (snap: ConfigSnapshot): EngineOptions => ({
+    // Context keys carry the output's identity key (E16); overrides match its connector name.
     settingsFor: (key: ContextKey) => resolveContext(snap, {
-      outputName: key.output, desktopId: key.desktop, desktopName: adapter.desktopNameOf(key.desktop), activityId: key.activity,
+      outputName: adapter.outputNameOf(key.output), desktopId: key.desktop, desktopName: adapter.desktopNameOf(key.desktop),
+      activityId: key.activity,
     }).settings,
     rulesFor: (meta, key) => {
       const r = resolveWindow(snap, meta, key ? {
-        outputName: key.output, desktopId: key.desktop, desktopName: adapter.desktopNameOf(key.desktop), activityId: key.activity,
+        outputName: adapter.outputNameOf(key.output), desktopId: key.desktop, desktopName: adapter.desktopNameOf(key.desktop),
+        activityId: key.activity,
       } : null);
       if (r.ruleIds.length === 0) return null;
       return { mode: r.actions.mode, border: r.actions.border, insert: r.actions.insert, ruleIds: r.ruleIds, reasons: r.reasons };
