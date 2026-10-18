@@ -764,6 +764,33 @@ test("C08: an exception while solving one context does not drop the other dirty 
   h.workArea = orig;
 });
 
+test("L06/L08: in the floating layout the user's latest placement is what a later return restores", () => {
+  const { h, e } = setup(["a", "b"]);
+  h.active = "b";
+  e.execute("plastile.window.toggle-float");
+  h.drain();
+  h.userSetFrame("b", rect(300, 200, 500, 400));
+  e.execute("plastile.window.toggle-float"); // tiled again
+  h.drain();
+  e.execute("plastile.layout.floating");
+  h.drain();
+  assert.ok(rectNear(h.windows.get("b")!.frame, rect(300, 200, 500, 400)), "floating layout restores b's float rect");
+  h.setStates("b", { interactive: "move" });
+  h.userSetFrame("b", rect(900, 400, 300, 300));
+  h.setStates("b", { interactive: "none" });
+  h.drain();
+  e.execute("plastile.layout.master-stack");
+  h.drain();
+  e.execute("plastile.layout.floating");
+  h.drain();
+  assert.ok(rectNear(h.windows.get("b")!.frame, rect(900, 400, 300, 300)), `latest placement restored: ${JSON.stringify(h.windows.get("b")!.frame)}`);
+  // Floating a member of the floating layout keeps it where the user put it.
+  e.execute("plastile.window.toggle-float");
+  h.drain();
+  assert.equal(e.modeOf("b"), "floating");
+  assert.ok(rectNear(h.windows.get("b")!.frame, rect(900, 400, 300, 300)));
+});
+
 function onActivities(activities: string[]) {
   return { membership: { output: "O1", desktops: ["D1"], onAllDesktops: false, activities } };
 }

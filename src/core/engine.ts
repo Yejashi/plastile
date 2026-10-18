@@ -367,6 +367,13 @@ export class Engine {
     if (this.applying > 0) this.counters.observationsDuringApply++;
     if (r.mode === "floating" && r.suspensions.size === 0 && r.ledger.status !== "pending") r.floatRect = f;
     if (r.mode !== "tiled") { L.observe(r.ledger, f); return; }
+    if (this.inFloatingLayout(r)) {
+      // The floating layout places nothing: where the user puts a member is its float
+      // rectangle, so a later return to floating does not restore an older snapshot.
+      if (this.participates(r)) r.floatRect = f;
+      L.observe(r.ledger, f);
+      return;
+    }
     if (r.suspensions.has("interactive")) return; // the user owns the frame during the drag
     const o = L.observe(r.ledger, f);
     switch (o) {
@@ -636,6 +643,11 @@ export class Engine {
     if (!this.writable(r)) return false;
     const c = this.contexts.get(contextId(r.ctx!));
     return !!c && this.layoutKind(c) !== "floating";
+  }
+
+  private inFloatingLayout(r: Rec): boolean {
+    const c = r.ctx ? this.contexts.get(contextId(r.ctx)) : undefined;
+    return !!c && this.layoutKind(c) === "floating";
   }
 
   // ---------------------------------------------------------------- scheduling
