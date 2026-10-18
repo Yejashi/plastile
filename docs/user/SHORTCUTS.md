@@ -32,8 +32,8 @@ Every Plastile command is one KWin global shortcut. All of them are registered u
 | `plastile.move.output-previous` | Send window to previous output | *unbound* | Sends the active window to the previous screen. |
 | `plastile.move.desktop-next` | Send window to next desktop | *unbound* | Sends the active window to the next virtual desktop (cyclic). The current desktop does not change, and the window is tiled when that desktop is shown. No-op for a window on several or all desktops. |
 | `plastile.move.desktop-previous` | Send window to previous desktop | *unbound* | Sends the active window to the previous virtual desktop. |
-| `plastile.resize.grow` | Grow focused tile | `Meta+Shift+=` (see [below](#default-bindings-that-do-not-work-out-of-the-box)) | Master/stack: moves the divider by `ratioStep` so the focused tile grows. Growing a stack window shrinks the master column. BSP: moves the divider of the split that contains the focused tile. Clamped to 0.05–0.95 and to window minimum sizes. A no-op when nothing would move. Does nothing in monocle or floating. |
-| `plastile.resize.shrink` | Shrink focused tile | `Meta+Shift+-` (see [below](#default-bindings-that-do-not-work-out-of-the-box)) | Opposite of *Grow*. |
+| `plastile.resize.grow` | Grow focused tile | `Meta+Ctrl+=` | Master/stack: moves the divider by `ratioStep` so the focused tile grows. Growing a stack window shrinks the master column. BSP: moves the divider of the split that contains the focused tile. Clamped to 0.05–0.95 and to window minimum sizes. A no-op when nothing would move. Does nothing in monocle or floating. |
+| `plastile.resize.shrink` | Shrink focused tile | `Meta+Ctrl+-` | Opposite of *Grow*. |
 | `plastile.resize.equalize` | Equalize sizes | *unbound* | Master/stack: resets the per-window row weights to equal, keeping the master ratio. BSP: sets every split to 0.5. |
 | `plastile.master.increase` | More master windows | `Meta+Shift+I` | Master/stack only: one more window in the master column (maximum 8). |
 | `plastile.master.decrease` | Fewer master windows | `Meta+Shift+D` | Master/stack only: one fewer window in the master column. The minimum is 0, which stacks everything. |
@@ -50,29 +50,33 @@ Every Plastile command is one KWin global shortcut. All of them are registered u
 | `plastile.window.toggle-float` | Toggle floating | `Meta+Shift+F` | **Tiled window:** floats it and restores its last floating rectangle, if one is remembered; peers re-solve once. **Floating or natively quick-tiled window:** remembers its current rectangle, releases any native tile and tiles it. This also works for a resizable dialog, utility or transient window. A window that cannot be tiled (fixed size, or on several desktops) stays floating and the reason is reported. Excluded windows (panels, menus, shell surfaces, rule-excluded windows) are not affected. |
 | `plastile.window.adopt-native` | Adopt natively tiled window | *unbound* | A window you quick-tiled with KWin's own actions (`Meta+arrow`, edge drag) is left to KWin. This command releases that native tile and adopts the window back into the layout. No-op for other windows. |
 | `plastile.context.reset` | Reset this layout | *unbound* | Drops the current context's session layout choice and its structure (master ratio and count, BSP tree and ratios, row weights), then re-solves from the configured settings. Global settings are untouched. |
-| `plastile.runtime.toggle-suspend` | Suspend/resume tiling | `Meta+Shift+S` (see [below](#default-bindings-that-do-not-work-out-of-the-box)) | **Suspend:** cancels every outstanding request, restores borders Plastile changed and leaves windows where they are. While suspended, every command except this one, *Reconcile*, *Reload configuration* and the three inspect commands is rejected with `tiling suspended`. **Resume:** re-solves every context. |
+| `plastile.runtime.toggle-suspend` | Suspend/resume tiling | `Meta+Ctrl+S` | **Suspend:** cancels every outstanding request, restores borders Plastile changed and leaves windows where they are. While suspended, every command except this one, *Reconcile*, *Reload configuration* and the three inspect commands is rejected with `tiling suspended`. **Resume:** re-solves every context. |
 | `plastile.runtime.reconcile` | Reconcile with live windows | *unbound* | Compares the model with KWin's live window list: drops windows that are gone, adds missing ones and re-solves every context. On an unchanged session it writes nothing (measured). It is a manual recovery command, not a background task. |
 | `plastile.runtime.reload-config` | Reload configuration | *unbound* | Re-reads `[Script-plastile]` as KWin currently has it cached. If the values changed and are valid, they are activated; otherwise the errors are logged and the previous configuration is kept. It does **not** make KWin re-read `kwinrc`, so on its own it does not pick up the settings dialog's Apply (measured; see [INSTALL](INSTALL.md#applying-settings-changes)). |
 | `plastile.inspect.explain-window` | Explain active window (log) | *unbound* | Logs the active window's classification, mode, decision source, rule ids, context, layout, constraints, ledger state, planned slot and exception, at `info` level (see [CONFIGURATION](CONFIGURATION.md#seeing-why-a-window-was-classified)). |
 | `plastile.inspect.counters` | Log counters | *unbound* | Logs the work counters (solves, writes, corrections and others), outstanding requests, connection and window counts, a per-context summary and the configuration revision. Logged at every level. |
 | `plastile.inspect.dump-trace` | Log trace | *unbound* | Logs the bounded event trace (the `traceCapacity` most recent events). Empty when `diagnostics` is `off`. |
 
-## Default bindings that do not work out of the box
+## Default bindings measured with real key presses
 
-Real key presses were injected with libei into a nested KWin 6.7.5 session. That session used the default keymap (no `kxkbrc`, so US by inference) and the system's default shortcut registry (no user customizations). 17 of the 20 default bindings reached Plastile; three did not (measured):
+Every default binding is pressed with real key events, injected with libei into a nested KWin 6.7.5 session, by the scenario `shortcuts-defaults-real-input` (`tests/integration/scenarios_shortcuts.py`). The session uses the default keymap (no `kxkbrc`, so US by inference) and only the shortcuts that KWin and the nested session register. All 20 defaults reached Plastile (measured, Ubuntu 26.10 sandbox, KWin 6.7.5). The same run read the session's `kglobalshortcutsrc` (206 entries) and found no other action registered with a Plastile default.
 
-| Default | Command | What happened | Why |
+**Changed defaults.** Earlier versions shipped three defaults that did not work on a stock setup. They were replaced:
+
+| Command | Old default | What happened (measured) | New default |
 |---|---|---|---|
-| `Meta+Shift+S` | Suspend/resume tiling | The key press did not reach Plastile. | Spectacle 6.7.5 registers the same key for launching itself (`X-KDE-Shortcuts=Print,Meta+Shift+S` in `org.kde.spectacle.desktop`). KGlobalAccel accepted both registrations without reporting a conflict. |
-| `Meta+Shift+=` | Grow focused tile | The key press did not reach Plastile. | On a US layout, Shift+`=` produces `+`, and KWin's Zoom effect binds `Meta++` and `Meta+=` (measured in the registry; observed source: `src/plugins/zoom/zoom.cpp`). Whether Zoom fired instead was not checked. |
-| `Meta+Shift+-` | Shrink focused tile | The key press did not reach Plastile. | Shift+`-` produces `_`. The sequence as registered is apparently never produced by the keyboard (inference). |
+| Suspend/resume tiling | `Meta+Shift+S` | Did not reach Plastile in a nested session on the reference Arch machine: Spectacle 6.7.5 registers the same key (`X-KDE-Shortcuts=Print,Meta+Shift+S` in `org.kde.spectacle.desktop`), and KGlobalAccel accepted both registrations without reporting a conflict. | `Meta+Ctrl+S` |
+| Grow focused tile | `Meta+Shift+=` | Never reached Plastile (nested sessions in both environments). On a US layout, Shift+`=` produces `+`, so the registered sequence is not what the keyboard sends; KWin's Zoom effect binds `Meta++` and `Meta+=` (observed source: `src/plugins/zoom/zoom.cpp`). | `Meta+Ctrl+=` |
+| Shrink focused tile | `Meta+Shift+-` | Never reached Plastile (nested sessions in both environments). Shift+`-` produces `_`. | `Meta+Ctrl+-` |
 
-Until the defaults change, bind these three commands to other keys yourself ([Rebinding](#rebinding)). Combinations without Shift-punctuation are the safe choice, for example `Meta+Ctrl+=` and `Meta+Ctrl+-` (not tested). On non-US layouts, other defaults may also behave differently (untested).
+If you had bound the old sequences yourself, KGlobalAccel keeps your binding. A unit test (`tests/core/package.test.ts`) rejects defaults that combine Shift with punctuation, and the sequences known to be taken by stock software.
+
+Not measured: Spectacle is not installed in the Ubuntu sandbox, so its absence of conflicts with the new defaults comes from its published shortcut list, not from a run. Other keyboard layouts may produce different symbols for `=` and `-` with Ctrl held (untested).
 
 Pressed and confirmed to reach Plastile:
 
 - `Meta+Shift+` H, J, K, L, N, P, I, D, O, M, F, Space and Return
-- `Meta+Ctrl+` H, J, K and L
+- `Meta+Ctrl+` H, J, K, L, S, `=` and `-`
 
 ## Rebinding
 
@@ -92,7 +96,7 @@ qdbus6 org.kde.kglobalaccel /component/kwin org.kde.kglobalaccel.Component.invok
 
 ## Default binding policy and conflicts
 
-The defaults use `Meta+Shift+<key>` plus four `Meta+Ctrl+<letter>` swaps. According to the comment block in `commands.ts` (observed source), they were chosen to avoid the bindings found on the reference Plasma 6.7 machine:
+The defaults use `Meta+Shift+<letter>`, `Meta+Shift+Space` and `Meta+Shift+Return`, plus `Meta+Ctrl+<letter>` (the four swaps and suspend) and `Meta+Ctrl+=` / `Meta+Ctrl+-` (grow and shrink). According to the comment block in `commands.ts` (observed source), they were chosen to avoid the bindings found on the reference Plasma 6.7 machine:
 
 - KWin's `Meta+arrows` quick tiling
 - `Meta+PgUp/PgDn`
@@ -102,8 +106,9 @@ The defaults use `Meta+Shift+<key>` plus four `Meta+Ctrl+<letter>` swaps. Accord
 - `Meta+Ctrl+arrows` (desktop switching)
 - `Meta+Alt+arrows` (window focus)
 - `Meta+1..9` (task manager)
+- `Meta+Shift+S` (Spectacle) and `Meta+=` / `Meta+-` (KWin Zoom)
 
-The full list of that machine's bindings was not committed. The nested registry check above found one remaining collision with stock software, `Meta+Shift+S` with Spectacle, and the two Shift-punctuation problems. A unit test (`tests/core/package.test.ts`) checks that no two Plastile commands share a default.
+The full list of that machine's bindings was not committed. The nested scenario above checks the registry of the nested session on every run; unit tests check that no two Plastile commands share a default and that no default combines Shift with punctuation.
 
 **Your own bindings.** If you have already bound one of these sequences to something else, expect Plastile's key press not to work, as happened with Spectacle above. Pick another key for the Plastile command.
 

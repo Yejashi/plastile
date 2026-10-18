@@ -40,7 +40,7 @@ The 23 core integration scenarios in `tests/integration/scenarios.py` passed: 10
 - Configuration: invalid values are rejected with a message and the previous configuration is kept. Values are re-read live when KWin reconfigures (see [applying settings](INSTALL.md#applying-settings-changes) for which paths do that).
 - Idle: no timers, polling or writes while nothing happens (3 s window). Suspend and resume.
 - Pointer drags. Dropping a tile onto another tile swaps them on release, with no re-tiling during the drag. Dropping it into a gap snaps it back. Meta+right-drag resizing moves the shared divider. Closing the window or unloading the script mid-drag leaves no errors.
-- Real keyboard input: 17 of the 20 default bindings reach Plastile when pressed through libei in a nested session. The three that do not are listed in [SHORTCUTS](SHORTCUTS.md#default-bindings-that-do-not-work-out-of-the-box).
+- Real keyboard input: all 20 default bindings reach Plastile when pressed through libei in a nested session (US keymap). Three earlier defaults that did not were replaced; see [SHORTCUTS](SHORTCUTS.md#default-bindings-measured-with-real-key-presses).
 
 ### What is not covered
 
