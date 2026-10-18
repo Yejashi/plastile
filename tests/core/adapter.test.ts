@@ -4,7 +4,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createRuntime } from "../../src/runtime/main.ts";
-import { KwinAdapter } from "../../src/adapters/kwin/adapter.ts";
+import { constraintsOf, KwinAdapter } from "../../src/adapters/kwin/adapter.ts";
 import { desktop, fakeEnv, FakeQt, FakeWorkspace, output, type FakeWindow, type R } from "./fakeKwin.ts";
 
 const GAP = 8;
@@ -420,4 +420,34 @@ test("the armed decoration watcher is a transient connection: counted, dropped w
   a.detach();
   assert.equal(a.connectionCount(), 0, "detach releases the armed watcher too");
   assert.equal(w.clientGeometryChanged.fns.length, 0);
+});
+
+test("X11 CSD: frame-space constraints subtract the shadow the client geometry includes (zenity)", () => {
+  const ws = new FakeWorkspace([output("O1", FULL)], [desktop("1")]);
+  // zenity --info under GDK_BACKEND=x11, measured in nested KWin 6.7.5: frame 300x226, client 344x270
+  // (_GTK_FRAME_EXTENTS 22), WM_NORMAL_HINTS min = max = 344x270, resizeable false.
+  const w = ws.window({ frameGeometry: { x: 490, y: 287, width: 300, height: 226 }, csdShadow: 22, resizeable: false,
+                        minSize: { width: 344, height: 270 }, maxSize: { width: 344, height: 270 } }, false);
+  assert.deepEqual(constraintsOf(w), { minFrame: { width: 300, height: 226 }, maxFrame: { width: 300, height: 226 }, fixed: true });
+  // Bounded below by 0: a hint smaller than the shadow is no negative minimum.
+  w.minSize = { width: 10, height: 10 };
+  assert.deepEqual(constraintsOf(w).minFrame, { width: 0, height: 0 });
+});
+
+test("X11 CSD client that resizes itself after KWin's synchronous echo gets its hints re-read (gnome-calculator)", () => {
+  const { ws, qt, wins, rt } = setup(1, 2);
+  // Mapped with no hints visible (KWin 6.7.5 reports minSize 0x0 at windowAdded for GTK4 X11 clients).
+  const w3 = ws.window({ caption: "calc", resourceClass: "gnome-calculator", csdShadow: 25,
+                         frameGeometry: { x: 400, y: 100, width: 360, height: 616 } }, false);
+  ws.add(w3);
+  // WM_NORMAL_HINTS arrive before the flush with no script-visible signal.
+  w3.minSize = { width: 410, height: 666 };
+  qt.drain(); // the stack slot is shorter than 616: KWin applies it inside the setter (echo)
+  assert.ok(w3.frameGeometry.height < 616, "precondition: the slot is below the real minimum");
+  // GTK enforces its minimum itself: a ConfigureRequest back to 666 client (616 frame) px.
+  ws.kwinSetFrame(w3, { ...w3.frameGeometry, height: 616 });
+  qt.drain();
+  assert.equal(w3.frameGeometry.height, 616, `honours the 616 px frame minimum, not the 666 px client one: ${JSON.stringify(w3.frameGeometry)}`);
+  assertTiles([...wins, w3], FULL);
+  rt.shutdown();
 });

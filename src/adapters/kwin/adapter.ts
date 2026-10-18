@@ -27,7 +27,7 @@ interface Entry {
   /** captionChanged connection, present only while title rules are active. */
   caption: Conn | null;
   /** Sizes around the last frame request until the client answers it (constraint refresh on deviation). */
-  req: { from: Size; to: Size } | null;
+  req: { from: Size; to: Size; echoed?: boolean } | null;
   /**
    * One-shot clientGeometryChanged watcher armed by decorationChanged until the margin settles.
    * It can stay armed while the window is idle (measured: decorationChanged ~100 ms after the
@@ -168,11 +168,13 @@ export function statesOf(w: KWindow): WindowStates {
  */
 export function constraintsOf(w: KWindow, resizeable: boolean = !!w.resizeable): Constraints {
   const f = w.frameGeometry, c = w.clientGeometry;
-  const mw = Math.max(0, f.width - c.width), mh = Math.max(0, f.height - c.height);
+  // Signed: an X11 client-side-decorated window's client geometry includes its shadow
+  // (_GTK_FRAME_EXTENTS), so frame - client is negative there (measured: zenity, gnome-calculator).
+  const mw = f.width - c.width, mh = f.height - c.height;
   const min = w.minSize, max = w.maxSize;
-  const minW = min.width > 0 ? min.width + mw : 0, minH = min.height > 0 ? min.height + mh : 0;
-  const maxW = max.width > 0 && max.width < UNBOUNDED ? max.width + mw : Infinity;
-  const maxH = max.height > 0 && max.height < UNBOUNDED ? max.height + mh : Infinity;
+  const minW = min.width > 0 ? Math.max(0, min.width + mw) : 0, minH = min.height > 0 ? Math.max(0, min.height + mh) : 0;
+  const maxW = max.width > 0 && max.width < UNBOUNDED ? Math.max(minW, max.width + mw) : Infinity;
+  const maxH = max.height > 0 && max.height < UNBOUNDED ? Math.max(minH, max.height + mh) : Infinity;
   const fixed = !resizeable || (maxW !== Infinity && maxH !== Infinity && Math.abs(maxW - minW) < 1 && Math.abs(maxH - minH) < 1);
   return { minFrame: { width: minW, height: minH }, maxFrame: { width: maxW, height: maxH }, fixed };
 }
@@ -440,8 +442,12 @@ export class KwinAdapter implements HostPort {
       const f = rectOf(w.frameGeometry);
       g.frameObserved(id, gen, f);
       const q = e.req;
+      if (q === null) return;
+      // X11: KWin applies the frame inside the setter (a synchronous echo of the request); the
+      // client answers afterwards with its own ConfigureRequest. The echo is not an answer.
+      if (this.writing && sameSize(f, q.to)) { q.echoed = true; return; }
       // The previous size still showing (a move applied before the resize) is not an answer.
-      if (q === null || sameSize(f, q.from)) return;
+      if (!q.echoed && sameSize(f, q.from)) return;
       e.req = null;
       // Answered with a size other than the requested one: the client or KWin (X11 size
       // hints) applied a constraint Plastile may not know. Re-read once per request.

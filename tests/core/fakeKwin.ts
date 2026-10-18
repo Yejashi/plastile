@@ -140,8 +140,12 @@ export class FakeWorkspace {
       w.clientGeometryChanged.emit();
     };
     Object.defineProperty(w, "frameGeometry", { get: () => ({ ...fg }), set: (r: R) => w._setFrame(r, true) });
+    // `csdShadow`: an X11 client-side-decorated window (GTK, _GTK_FRAME_EXTENTS): the X window, which
+    // KWin reports as the client geometry, extends past the frame by the shadow on every side.
+    const shadow = Number(o.csdShadow ?? 0);
     Object.defineProperty(w, "clientGeometry", {
-      get: () => ({ x: fg.x, y: fg.y + margin, width: fg.width, height: fg.height - margin }),
+      get: () => shadow > 0 ? { x: fg.x - shadow, y: fg.y - shadow, width: fg.width + 2 * shadow, height: fg.height + 2 * shadow }
+        : { x: fg.x, y: fg.y + margin, width: fg.width, height: fg.height - margin },
     });
     Object.defineProperty(w, "noBorder", {
       get: () => noBorder,
