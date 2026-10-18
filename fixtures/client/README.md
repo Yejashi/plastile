@@ -51,13 +51,18 @@ sessions that are running the old binary keep working during a rebuild.
 | `--delay-mode latest\|each` | `latest` (default): a newer configure supersedes the pending one; only the newest is acked when the timer fires. The deadline is the first unanswered configure's deadline. It is not reset by newer configures, so a stream of configures cannot starve the client. `each`: each configure is answered in order, N ms after its own arrival. |
 | `--ignore-size` | Ack configures but keep committing the current size (main window). |
 | `--parent-after-ms N` | N ms after the main window maps, create a transient child (300x200, same app id, title `<title> child`, `set_parent(main)`). |
-| `--exit-after-ms N` | Exit cleanly after N ms. |
+| `--exit-after-ms N` | Exit cleanly after N ms (counted from start). |
+| `--exit-after-map-ms N` | Exit cleanly N ms after the main window mapped (its first buffer commit, which is flushed first). `0` destroys the window right after that flush; the compositor may handle the two in separate dispatches. |
+| `--exit-on-map` | Commit the first buffer without flushing it, then destroy the window and exit, so the mapping commit and the destruction reach the compositor in one flush. The `commit` record carries `"flush_deferred": true`. Measured in nested KWin 6.7.5: KWin never reports such a window (no `windowAdded`/`windowRemoved`). |
+| `--late-min-size W,H,MS` | MS ms after the main window mapped, set `xdg_toplevel.set_min_size(W, H)` with a bufferless commit (a client that knows its real minimum only once its content exists). Logged as `size_hints` with `reason:"late-min-size"`. Combine with `--clamp` to make the client refuse configures below the new minimum, as toolkits do. |
 | `--ssd` / `--csd` | Request server-/client-side decoration through xdg-decoration. By default, no decoration mode is negotiated and the manager is not bound. |
 | `--panel EDGE:SIZE` | Instead of an xdg_toplevel, create a `zwlr_layer_surface_v1` (layer `top`, namespace `dock`) anchored to EDGE (`top`, `bottom`, `left`, `right`) plus both perpendicular edges, `exclusive_zone` SIZE, keyboard interactivity none, requested size SIZE on the anchored axis and 0 (compositor fills) on the other. The window is logged as `win:"panel"`. Every configure is acked and answered with a buffer of exactly the configured size. `zwlr_layer_shell_v1` and `wl_output` (v4, for names) are bound only in this mode. Size flags, decoration, delay and child options do not apply. |
 | `--output NAME` | Panel mode only: anchor the panel to the `wl_output` whose `name` event is NAME (for example `Virtual-1`). Without it the compositor chooses the output. An unknown name logs an `error` and exits with code 1. |
 
 The delay, ignore-size, and decoration settings also apply to the child. A
-configure size of 0 on an axis uses the current size on that axis.
+configure size of 0 on an axis uses the current size on that axis. At most one of
+`--exit-after-ms`, `--exit-after-map-ms` and `--exit-on-map` may be given, and the
+exit and late-minimum options are refused in panel mode.
 
 ## Control commands (stdin, one per line)
 
@@ -97,7 +102,7 @@ the record is written, and `ev`. Window-scoped records carry `win`
 
 | `ev` | Fields |
 |---|---|
-| `start` | `pid`, `args`, `app_id`, `id`, `title`, `size`, `min`/`max` (if set), `configure_delay_ms`, `delay_mode`, `ignore_size`, `clamp`, `decoration_request`, `log_clock` |
+| `start` | `pid`, `args`, `app_id`, `id`, `title`, `size`, `min`/`max` (if set), `configure_delay_ms`, `delay_mode`, `ignore_size`, `clamp`, `exit_on_map`/`exit_after_map_ms`/`late_min_size` (if set), `decoration_request`, `log_clock` |
 | `bound` | `globals.{wl_compositor,wl_shm,xdg_wm_base,wp_presentation,zxdg_decoration_manager_v1,zwlr_layer_shell_v1,wl_output}.{advertised,bound}` (null = absent/not bound) |
 | `presentation_clock` | `clk_id`, `name`, `same_as_log_clock` |
 | `initial_commit` | The bufferless initial commit: `title`, `width`, `height` (intended size). Panel mode: `shell:"layer"`, `layer`, `scope`, `edge`, `exclusive_zone`, `width`/`height` (requested; 0 = compositor fills), `output` (requested name or null), `outputs` (all bound output names) |
@@ -111,10 +116,11 @@ the record is written, and `ev`. Window-scoped records carry `win`
 | `frame_done` | `seq`, `cb_time_ms` (compositor-supplied, ms, unspecified base) |
 | `presented` | `seq`, `present_ns` (= `tv_sec`·1e9 + `tv_nsec`, presentation clock), `tv_sec`, `tv_nsec`, `refresh_ns`, `seq_hi`, `seq_lo`, `flags_raw`, `flags` |
 | `discarded` | `seq` |
-| `size_hints`, `title_set`, `command`, `stdin_eof`, `signal`, `global_removed` | as named |
+| `size_hints` | `min`, `max` (0 = unset); with `--late-min-size` also `reason:"late-min-size"`, `current_width`, `current_height` |
+| `title_set`, `command`, `stdin_eof`, `signal`, `global_removed` | as named |
 | `close_requested` | `xdg_toplevel.close` (or, in panel mode, `zwlr_layer_surface_v1.closed`, with `shell:"layer"`) received. The main window exits cleanly. The child is destroyed (`child_destroyed`). |
 | `error` | `msg` |
-| `exit` | `reason` (`close`, `quit`, `exit-after`, `signal`, `display-error`, …), `code`, `commits` |
+| `exit` | `reason` (`close`, `quit`, `exit-after`, `exit-after-map`, `exit-on-map`, `signal`, `display-error`, …), `code`, `commits` |
 
 A frame callback and, when `wp_presentation` is advertised, a presentation
 feedback are requested for every buffer commit.

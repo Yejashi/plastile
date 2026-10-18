@@ -3,9 +3,10 @@
 // Owns the window registry, every signal connection (registry-owned and
 // disconnected on teardown: M0 measured that unowned closures survive unload),
 // value snapshots for the engine, and the HostPort operations. Uses only the
-// script surface verified in docs/status/API_PROFILE.md.
+// script surface verified in docs/status/API_PROFILE.md, plus signals measured in
+// nested KWin 6.7.5 where noted below.
 
-import { rectOf, type Rect } from "../../core/geometry.ts";
+import { rectOf, type Rect, type Size } from "../../core/geometry.ts";
 import type { FrameWrite, HostPort, OutputInfo, WindowSnapshot } from "../../core/ports.ts";
 import type { Engine } from "../../core/engine.ts";
 import type { Constraints, Membership, WindowKind, WindowMeta, WindowStates } from "../../core/types.ts";
@@ -21,6 +22,23 @@ interface Entry {
   gen: number;
   conns: Conn[];
   meta: WindowMeta;
+  /** Geometry/state signals connected (managed kinds; not panels or passive surfaces). */
+  hooked: boolean;
+  /** captionChanged connection, present only while title rules are active. */
+  caption: Conn | null;
+  /** Sizes around the last frame request until the client answers it (constraint refresh on deviation). */
+  req: { from: Size; to: Size } | null;
+}
+
+/** Constraint re-reads are bounded: one per frame request that the client answered with another size. */
+const SIZE_TOL = 1;
+
+function sameSize(a: Size, b: Size): boolean {
+  return Math.abs(a.width - b.width) <= SIZE_TOL && Math.abs(a.height - b.height) <= SIZE_TOL;
+}
+
+function sameRect(a: Rect, b: Rect): boolean {
+  return a.x === b.x && a.y === b.y && a.width === b.width && a.height === b.height;
 }
 
 /** Window kinds that never need geometry/state signal hookups. */
@@ -86,15 +104,21 @@ export function statesOf(w: KWindow): WindowStates {
   };
 }
 
-/** minSize/maxSize are client-space (M0); frame constraints add decoration margins. */
-export function constraintsOf(w: KWindow): Constraints {
+/**
+ * minSize/maxSize are client-space (M0); frame constraints add decoration margins.
+ * `resizeable` defaults to the live property; refreshes pass the sampled metadata value
+ * because KWin reports any window as not resizable while fullscreen is requested
+ * (observed source: xdgshellwindow.cpp:682-686, x11window.cpp:3459), which is a state, not
+ * a size constraint.
+ */
+export function constraintsOf(w: KWindow, resizeable: boolean = !!w.resizeable): Constraints {
   const f = w.frameGeometry, c = w.clientGeometry;
   const mw = Math.max(0, f.width - c.width), mh = Math.max(0, f.height - c.height);
   const min = w.minSize, max = w.maxSize;
   const minW = min.width > 0 ? min.width + mw : 0, minH = min.height > 0 ? min.height + mh : 0;
   const maxW = max.width > 0 && max.width < UNBOUNDED ? max.width + mw : Infinity;
   const maxH = max.height > 0 && max.height < UNBOUNDED ? max.height + mh : Infinity;
-  const fixed = !w.resizeable || (maxW !== Infinity && maxH !== Infinity && Math.abs(maxW - minW) < 1 && Math.abs(maxH - minH) < 1);
+  const fixed = !resizeable || (maxW !== Infinity && maxH !== Infinity && Math.abs(maxW - minW) < 1 && Math.abs(maxH - minH) < 1);
   return { minFrame: { width: minW, height: minH }, maxFrame: { width: maxW, height: maxH }, fixed };
 }
 
@@ -102,16 +126,55 @@ export class KwinAdapter implements HostPort {
   private ws: KWorkspace;
   private qt: KQt;
   private entries = new Map<string, Entry>();
-  private gens = new Map<string, number>();
+  /** Adapter-wide generation counter: unique across re-registration without a per-id table. */
+  private lastGen = 0;
   private globals: Conn[] = [];
   private outputConns: Conn[] = [];
+  private desktopConns: Conn[] = [];
   private engine: Engine | null = null;
   private watchTitles = false;
   private alive = true;
+  /** Last usable area (MaximizeArea) per output name; KWin keeps one per output, not per desktop. */
+  private areas = new Map<string, Rect>();
   private topologyPending = false;
-  private readonly topologyFlush = (): void => {
-    this.topologyPending = false;
-    if (this.alive && this.engine) this.engine.topologyChanged();
+  /** Deferred work-area checks still allowed for the current panel event (0: none pending). */
+  private areaChecks = 0;
+  private deferredQueued = false;
+  /** Inside a frame write: re-entrant constraint refreshes are deferred to the next turn. */
+  private writing = false;
+  private pendingRefresh: Entry[] = [];
+  /** Desktop names changed (configuration matchers read them); set by the runtime. */
+  onDesktopNamesChanged: (() => void) | null = null;
+  /** One coalesced callback for topology and work-area invalidation (stable identity for callLater). */
+  private readonly deferredFlush = (): void => {
+    this.deferredQueued = false;
+    if (!this.alive || !this.engine) return;
+    if (this.pendingRefresh.length > 0) {
+      const list = this.pendingRefresh;
+      this.pendingRefresh = [];
+      for (const e of list) this.refreshConstraints(e);
+    }
+    if (this.topologyPending) {
+      // The engine re-solves every context; only refresh the area cache.
+      this.topologyPending = false;
+      this.areaChecks = 0;
+      this.areas.clear();
+      this.readAreas();
+      this.engine.topologyChanged();
+      return;
+    }
+    if (this.areaChecks > 0) {
+      this.areaChecks--;
+      const changed = this.readAreas();
+      if (changed.length > 0) {
+        this.areaChecks = 0;
+        this.engine.workAreaChanged(changed);
+      } else if (this.areaChecks > 0) {
+        // KWin defers the rearrange after a strut window goes away (Workspace::removeWindow ->
+        // scheduleRearrange(), a 0 ms timer): look once more on the next turn, then stop.
+        this.queueDeferred();
+      }
+    }
   };
 
   constructor(ws: KWorkspace, qt: KQt) {
@@ -130,11 +193,13 @@ export class KwinAdapter implements HostPort {
     this.own(this.ws.currentDesktopChanged, vis, this.globals);
     this.own(this.ws.currentActivityChanged, vis, this.globals);
     this.own(this.ws.activitiesChanged, () => this.scheduleTopology(), this.globals);
-    this.own(this.ws.desktopsChanged, () => this.scheduleTopology(), this.globals);
+    this.own(this.ws.desktopsChanged, () => { this.watchDesktops(); this.scheduleTopology(); }, this.globals);
     this.own(this.ws.screensChanged, () => { this.watchOutputs(); this.scheduleTopology(); }, this.globals);
     this.own(this.ws.screenOrderChanged, () => this.scheduleTopology(), this.globals);
     this.own(this.ws.virtualScreenGeometryChanged, () => this.scheduleTopology(), this.globals);
     this.watchOutputs();
+    this.watchDesktops();
+    this.readAreas();
     const out: WindowSnapshot[] = [];
     const list = this.ws.windows;
     for (let i = 0; i < list.length; ++i) {
@@ -151,20 +216,33 @@ export class KwinAdapter implements HostPort {
     this.entries.clear();
     this.disconnectAll(this.globals);
     this.disconnectAll(this.outputConns);
+    this.disconnectAll(this.desktopConns);
+    this.areas.clear();
+    this.pendingRefresh = [];
     this.engine = null;
+    this.onDesktopNamesChanged = null;
   }
 
   connectionCount(): number {
-    let n = this.globals.length + this.outputConns.length;
+    let n = this.globals.length + this.outputConns.length + this.desktopConns.length;
     for (const e of this.entries.values()) n += e.conns.length;
     return n;
   }
 
   windowCount(): number { return this.entries.size; }
 
-  private own(signal: KSignal, fn: (...args: unknown[]) => void, into: Conn[]): void {
+  private own(signal: KSignal, fn: (...args: unknown[]) => void, into: Conn[]): Conn {
     signal.connect(fn);
-    into.push({ signal, fn });
+    const c = { signal, fn };
+    into.push(c);
+    return c;
+  }
+
+  /** Disconnect one owned connection early (it stays owned until then). */
+  private drop(c: Conn, from: Conn[]): void {
+    const i = from.indexOf(c);
+    if (i >= 0) from.splice(i, 1);
+    try { c.signal.disconnect(c.fn); } catch (_e) { /* object already destroyed */ }
   }
 
   private disconnectAll(list: Conn[]): void {
@@ -180,10 +258,64 @@ export class KwinAdapter implements HostPort {
     for (let i = 0; i < outs.length; ++i) this.own(outs[i].geometryChanged, () => this.scheduleTopology(), this.outputConns);
   }
 
+  /** Desktop names feed configuration matchers; KWin's desktopsChanged does not cover a rename. */
+  private watchDesktops(): void {
+    this.disconnectAll(this.desktopConns);
+    const ds = this.ws.desktops;
+    const renamed = (): void => { if (this.alive && this.onDesktopNamesChanged) this.onDesktopNamesChanged(); };
+    for (let i = 0; i < ds.length; ++i) if (ds[i].nameChanged) this.own(ds[i].nameChanged, renamed, this.desktopConns);
+  }
+
+  private queueDeferred(): void {
+    if (this.deferredQueued || !this.alive) return;
+    this.deferredQueued = true;
+    this.qt.callLater(this.deferredFlush);
+  }
+
   private scheduleTopology(): void {
     if (this.topologyPending || !this.alive) return;
     this.topologyPending = true;
-    this.qt.callLater(this.topologyFlush);
+    this.queueDeferred();
+  }
+
+  /**
+   * Re-read every output's usable area and return the outputs whose area changed. The
+   * desktop argument is passed for the API's sake: KWin 6.7.5 keeps one MaximizeArea per
+   * output (observed source: workspace_wrapper.cpp:286-292 ignores it). Bounded: one
+   * clientArea call per output, only on panel and topology events.
+   */
+  private readAreas(): string[] {
+    const changed: string[] = [];
+    const outs = this.ws.screens;
+    for (let i = 0; i < outs.length; ++i) {
+      const o = outs[i];
+      const d = this.ws.currentDesktopForScreen(o) ?? (this.ws.desktops.length ? this.ws.desktops[0] : null);
+      if (!d) continue;
+      const a = rectOf(this.ws.clientArea(this.ws.MaximizeArea, o, d));
+      const prev = this.areas.get(o.name);
+      if (prev && sameRect(prev, a)) continue;
+      this.areas.set(o.name, a);
+      changed.push(o.name);
+    }
+    return changed;
+  }
+
+  /**
+   * A panel (strut window) appeared, went away or changed its frame: the usable area may
+   * have changed. There is no script-visible work-area signal, so compare the areas.
+   * `now`: KWin already rearranged (a new strut window: Workspace::addWaylandWindow calls
+   * rearrange() before windowAdded), so check synchronously; this marks the contexts dirty
+   * before the flush that would otherwise write tiles KWin just moved off the panel back to
+   * their old slots. Otherwise (and when nothing changed yet) look on the next two turns.
+   */
+  private panelChanged(now: boolean): void {
+    if (!this.alive || !this.engine) return;
+    if (now) {
+      const changed = this.readAreas();
+      if (changed.length > 0) { this.engine.workAreaChanged(changed); return; }
+    }
+    this.areaChecks = 2;
+    this.queueDeferred();
   }
 
   // ------------------------------------------------------------------ registry
@@ -193,13 +325,12 @@ export class KwinAdapter implements HostPort {
     if (!w || w.deleted) return null;
     const id = this.idOf(w);
     if (this.entries.has(id)) return this.snapshot(this.entries.get(id)!);
-    const gen = (this.gens.get(id) ?? 0) + 1;
-    this.gens.set(id, gen);
-    const e: Entry = { w, id, gen, conns: [], meta: metaOf(w) };
+    const gen = ++this.lastGen;
+    const e: Entry = { w, id, gen, conns: [], meta: metaOf(w), hooked: false, caption: null, req: null };
     this.entries.set(id, e);
     if (e.meta.kind === "dock") {
       // Panels change the usable area; KWin has no script-visible work-area signal.
-      this.own(w.frameGeometryChanged, () => this.scheduleTopology(), e.conns);
+      this.own(w.frameGeometryChanged, () => this.panelChanged(false), e.conns);
     } else if (!PASSIVE_KINDS.has(e.meta.kind) && e.meta.kind !== "desktop") {
       this.hook(e);
     }
@@ -208,8 +339,21 @@ export class KwinAdapter implements HostPort {
 
   private hook(e: Entry): void {
     const w = e.w, id = e.id, gen = e.gen;
+    e.hooked = true;
     const eng = () => (this.alive ? this.engine : null);
-    this.own(w.frameGeometryChanged, () => { const g = eng(); if (g) g.frameObserved(id, gen, rectOf(w.frameGeometry)); }, e.conns);
+    this.own(w.frameGeometryChanged, () => {
+      const g = eng();
+      if (!g) return;
+      const f = rectOf(w.frameGeometry);
+      g.frameObserved(id, gen, f);
+      const q = e.req;
+      // The previous size still showing (a move applied before the resize) is not an answer.
+      if (q === null || sameSize(f, q.from)) return;
+      e.req = null;
+      // Answered with a size other than the requested one: the client or KWin (X11 size
+      // hints) applied a constraint Plastile may not know. Re-read once per request.
+      if (!sameSize(f, q.to)) this.refreshConstraints(e);
+    }, e.conns);
     const states = () => { const g = eng(); if (g) g.statesChanged(id, gen, statesOf(w)); };
     for (const s of [w.minimizedChanged, w.fullScreenChanged, w.maximizedChanged, w.moveResizedChanged,
                      w.interactiveMoveResizeStarted, w.interactiveMoveResizeFinished, w.hiddenChanged]) {
@@ -226,7 +370,64 @@ export class KwinAdapter implements HostPort {
       g.constraintsChanged(id, gen, constraintsOf(w));
     };
     for (const s of [w.windowClassChanged, w.transientChanged, w.modalChanged]) this.own(s, metadata, e.conns);
-    if (this.watchTitles) this.own(w.captionChanged, metadata, e.conns);
+    // minSize/maxSize have no NOTIFY signal. KWin emits maximizeableChanged whenever an
+    // xdg-toplevel's min or max size changes (observed source: xdgshellwindow.cpp:1214-1226;
+    // measured for Kate and the fixture in nested KWin 6.7.5), and for X11 clients when the
+    // maximize action flips, e.g. on becoming fixed-size (x11window.cpp:1912, 3052).
+    if (w.maximizeableChanged) this.own(w.maximizeableChanged, () => this.refreshConstraints(e), e.conns);
+    // A decoration change alters the frame/client margin used for frame-space constraints.
+    // It is current only at the clientGeometryChanged that follows decorationChanged
+    // (measured order: decorationPolicyChanged, decorationChanged, clientGeometryChanged),
+    // so that signal is watched once instead of on every resize.
+    if (w.decorationChanged && w.clientGeometryChanged) {
+      let margin: Conn | null = null;
+      const settled = (): void => {
+        if (margin) { this.drop(margin, e.conns); margin = null; }
+        this.refreshConstraints(e);
+      };
+      this.own(w.decorationChanged, () => { if (!margin) margin = this.own(w.clientGeometryChanged, settled, e.conns); }, e.conns);
+    }
+    this.watchCaption(e, this.watchTitles);
+  }
+
+  /** Re-read constraints (only at the refresh points above). Deferred while a frame write is in progress. */
+  private refreshConstraints(e: Entry): void {
+    if (!this.alive || !this.engine || this.entries.get(e.id) !== e) return;
+    if (this.writing) {
+      if (this.pendingRefresh.indexOf(e) < 0) this.pendingRefresh.push(e);
+      this.queueDeferred();
+      return;
+    }
+    this.engine.constraintsChanged(e.id, e.gen, constraintsOf(e.w, e.meta.resizeable));
+  }
+
+  private watchCaption(e: Entry, on: boolean): void {
+    if (on && !e.caption) e.caption = this.own(e.w.captionChanged, () => this.onCaption(e), e.conns);
+    else if (!on && e.caption) { this.drop(e.caption, e.conns); e.caption = null; }
+  }
+
+  /** Title-only update: one property read; the engine re-evaluates only when title rules exist. */
+  private onCaption(e: Entry): void {
+    if (!this.alive || !this.engine || this.entries.get(e.id) !== e) return;
+    const title = String(e.w.caption || "");
+    if (title === e.meta.title) return;
+    e.meta = Object.assign({}, e.meta, { title });
+    this.engine.metadataChanged(e.id, e.gen, e.meta);
+  }
+
+  /**
+   * Title rules were activated or removed by a configuration change. On activation the
+   * current captions are read once (they may have changed while unwatched), before the
+   * engine re-classifies with the new configuration.
+   */
+  setWatchTitles(on: boolean): void {
+    if (on === this.watchTitles) return;
+    this.watchTitles = on;
+    for (const e of this.entries.values()) {
+      if (!e.hooked) continue;
+      this.watchCaption(e, on);
+      if (on) this.onCaption(e);
+    }
   }
 
   private release(e: Entry): void { this.disconnectAll(e.conns); }
@@ -254,7 +455,9 @@ export class KwinAdapter implements HostPort {
   private onAdded(w: KWindow): void {
     if (!this.alive || !this.engine) return;
     const s = this.register(w);
-    if (s) this.engine.windowAdded(s);
+    if (!s) return;
+    this.engine.windowAdded(s);
+    if (s.meta.kind === "dock") this.panelChanged(true);
   }
 
   private onRemoved(w: KWindow): void {
@@ -264,7 +467,12 @@ export class KwinAdapter implements HostPort {
     if (!e) return;
     this.entries.delete(id);
     this.release(e);
-    if (this.alive && this.engine) this.engine.windowRemoved(id, e.gen);
+    e.caption = null;
+    e.req = null;
+    if (this.alive && this.engine) {
+      this.engine.windowRemoved(id, e.gen);
+      if (e.meta.kind === "dock") this.panelChanged(false);
+    }
   }
 
   private onActivated(w: KWindow | null): void {
@@ -272,18 +480,31 @@ export class KwinAdapter implements HostPort {
     this.engine.activeChanged(w ? this.idOf(w) : null);
   }
 
-  private get(id: string, gen: number): KWindow | null {
+  private entry(id: string, gen: number): Entry | null {
     const e = this.entries.get(id);
     if (!e || e.gen !== gen || e.w.deleted) return null;
-    return e.w;
+    return e;
+  }
+
+  private get(id: string, gen: number): KWindow | null {
+    const e = this.entry(id, gen);
+    return e ? e.w : null;
   }
 
   // ---------------------------------------------------------------- HostPort
   applyFrame(id: string, gen: number, t: Rect): FrameWrite | null {
-    const w = this.get(id, gen);
-    if (!w) return null;
+    const e = this.entry(id, gen);
+    if (!e) return null;
+    const w = e.w;
     const before = rectOf(w.frameGeometry);
-    w.frameGeometry = this.qt.rect(t.x, t.y, t.width, t.height);
+    e.req = sameSize(before, t) ? null
+      : { from: { width: before.width, height: before.height }, to: { width: t.width, height: t.height } };
+    this.writing = true;
+    try {
+      w.frameGeometry = this.qt.rect(t.x, t.y, t.width, t.height);
+    } finally {
+      this.writing = false;
+    }
     return { before, after: rectOf(w.frameGeometry) };
   }
 

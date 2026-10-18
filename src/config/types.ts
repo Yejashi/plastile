@@ -89,6 +89,14 @@ export interface CompiledRule {
   readonly actions: RuleActions;
 }
 
+/** Title-free part of a window's rule resolution: the shared cache entry (no titles in it). */
+export interface RuleBase {
+  /** Rules whose title-free matchers passed, in application order; some may still test the title. */
+  readonly matched: readonly CompiledRule[];
+  /** The final result when none of `matched` tests the title; null otherwise. */
+  readonly result: WindowRuleResult | null;
+}
+
 export interface CompiledConfig {
   /** Sorted by priority ascending, then declaration order. */
   readonly overrides: readonly CompiledOverride[];
@@ -96,6 +104,6 @@ export interface CompiledConfig {
   /** Base explanation chain for `defaults`, e.g. ["builtin", "flat", "json.defaults"]. */
   readonly baseChain: readonly string[];
   /** Bounded memo tables; mutated only by resolve functions, cleared when full. */
-  readonly ruleCache: Map<string, WindowRuleResult>;
+  readonly ruleCache: Map<string, RuleBase>;
   readonly contextCache: Map<string, { readonly settings: ContextSettings; readonly chain: readonly string[] }>;
 }

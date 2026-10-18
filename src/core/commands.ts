@@ -3,9 +3,13 @@
 // Default bindings avoid the Plasma 6 defaults found on the reference machine
 // (Meta+arrows quick tile, Meta+PgUp/PgDn, Meta+T tile editor, Meta+W overview,
 // Meta+L lock, Meta+Ctrl+arrows desktop switching, Meta+Alt+arrows window focus,
-// Meta+1..9 task manager). Plastile uses Meta+Shift+<letter> plus a few
-// Meta+Ctrl letters, all unbound by default Plasma; users can rebind in System
-// Settings, and existing user bindings are preserved by KGlobalAccel.
+// Meta+1..9 task manager), Spectacle's Meta+Shift+S and KWin Zoom's Meta+=/Meta+-.
+// They are Meta+Shift+<letter>, Meta+Shift+Space/Return and Meta+Ctrl+<letter or
+// = or ->; never Shift with punctuation, which changes the key symbol (Shift+= is
+// "+" on a US layout). Every default was measured to reach Plastile with real key
+// events in nested KWin 6.7.5 (tests/integration/scenarios_shortcuts.py, US keymap);
+// other layouts and installed software can still claim a sequence. Users rebind in
+// System Settings; existing user bindings are preserved by KGlobalAccel.
 
 export interface CommandSpec {
   readonly id: string;
@@ -36,8 +40,8 @@ export const COMMANDS: readonly CommandSpec[] = [
   { id: "plastile.move.output-previous", text: "Plastile: Send window to previous output", sequence: "" },
   { id: "plastile.move.desktop-next", text: "Plastile: Send window to next desktop", sequence: "" },
   { id: "plastile.move.desktop-previous", text: "Plastile: Send window to previous desktop", sequence: "" },
-  { id: "plastile.resize.grow", text: "Plastile: Grow focused tile", sequence: "Meta+Shift+=" },
-  { id: "plastile.resize.shrink", text: "Plastile: Shrink focused tile", sequence: "Meta+Shift+-" },
+  { id: "plastile.resize.grow", text: "Plastile: Grow focused tile", sequence: "Meta+Ctrl+=" },
+  { id: "plastile.resize.shrink", text: "Plastile: Shrink focused tile", sequence: "Meta+Ctrl+-" },
   { id: "plastile.resize.equalize", text: "Plastile: Equalize sizes", sequence: "" },
   { id: "plastile.master.increase", text: "Plastile: More master windows", sequence: "Meta+Shift+I" },
   { id: "plastile.master.decrease", text: "Plastile: Fewer master windows", sequence: "Meta+Shift+D" },
@@ -54,7 +58,7 @@ export const COMMANDS: readonly CommandSpec[] = [
   { id: "plastile.window.toggle-float", text: "Plastile: Toggle floating", sequence: "Meta+Shift+F" },
   { id: "plastile.window.adopt-native", text: "Plastile: Adopt natively tiled window", sequence: "" },
   { id: "plastile.context.reset", text: "Plastile: Reset this layout", sequence: "" },
-  { id: "plastile.runtime.toggle-suspend", text: "Plastile: Suspend/resume tiling", sequence: "Meta+Shift+S" },
+  { id: "plastile.runtime.toggle-suspend", text: "Plastile: Suspend/resume tiling", sequence: "Meta+Ctrl+S" },
   { id: "plastile.runtime.reconcile", text: "Plastile: Reconcile with live windows", sequence: "" },
   { id: "plastile.runtime.reload-config", text: "Plastile: Reload configuration", sequence: "" },
   { id: "plastile.inspect.explain-window", text: "Plastile: Explain active window (log)", sequence: "" },

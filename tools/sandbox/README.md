@@ -4,6 +4,8 @@ A reproducible second test environment: an Ubuntu chroot with distribution KWin 
 the nested integration suite (`tests/integration/run.py`) on machines without Plasma, including the
 GitHub-hosted runner (`integration-nested` job in [ci.yml](../../.github/workflows/ci.yml)).
 
+A second KWin API family, KWin 6.8.0 pinned with Nix, lives in [nix/](nix/README.md).
+
 Every test still starts its own `kwin_wayland --virtual` on a private D-Bus through
 [nested.py](../nested.py). The sandbox never connects to, replaces or restarts a running desktop
 session, and `run.sh` starts commands with an empty environment (only proxy settings and the CA

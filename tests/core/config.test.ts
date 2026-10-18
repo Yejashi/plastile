@@ -114,7 +114,9 @@ test("flat key errors name the key (Q01)", () => {
   hasError(errors({ gapInner: "NaN" }), "gapInner: must be a number");
   hasError(errors({ gapInner: "0x10" }), "gapInner: must be a number");
   hasError(errors({ masterRatio: Infinity }), "masterRatio: must be a finite number");
-  // Unknown flat keys are leftovers from other versions: warning, not failure.
+  // Unknown flat keys are leftovers from other versions: warning, not failure. This covers
+  // compileConfig only: in KWin the runtime reads FLAT_KEYS by name (readConfig cannot list a
+  // group), so an unknown key never reaches the validator and is ignored without a warning.
   const r = compileConfig({ floatDialogs: true }, 1);
   assert.ok(r.ok);
   assert.deepEqual(r.warnings.map(formatError), ["floatDialogs: unknown key ignored"]);
@@ -340,7 +342,8 @@ test("title-independent cache keys and memoization (Q03)", () => {
 
   const withTitle = json({ schemaVersion: 1, rules: [{ id: "t", match: { title: { glob: "Home*" } }, actions: { mode: "floating" } }] });
   assert.equal(withTitle.usesTitleRules, true);
-  assert.notEqual(ruleCacheKey(a, withTitle), ruleCacheKey(b, withTitle));
+  // The shared cache holds the title-free part; only rules that use the title see it (CONFIGURATION §4).
+  assert.equal(ruleCacheKey(a, withTitle), ruleCacheKey(b, withTitle), "titles never enter the shared cache key");
   assert.deepEqual(resolveWindow(withTitle, a, CTX).ruleIds, ["t"]);
   assert.deepEqual(resolveWindow(withTitle, b, CTX).ruleIds, []);
 
@@ -348,6 +351,47 @@ test("title-independent cache keys and memoization (Q03)", () => {
   for (let i = 0; i < 2000; ++i) resolveWindow(noTitle, meta({ appId: `app${i}` }), null);
   assert.ok(noTitle.compiled.ruleCache.size <= 512);
   assert.deepEqual(resolveWindow(noTitle, a, CTX).actions, { mode: "floating" });
+});
+
+test("a title change evaluates only title rules and does not churn the shared cache (CONFIGURATION §4)", () => {
+  const s = json({ schemaVersion: 1, rules: [
+    { id: "kde", match: { appId: { regex: "^org\\.kde\\..*$" } }, actions: { border: "none" } },
+    { id: "pip", match: { title: { glob: "Picture-in-Picture*" } }, actions: { mode: "floating" } },
+    { id: "konsole-busy", match: { appId: "org.kde.konsole", title: { regex: "^busy" } }, actions: { insert: "master" } },
+  ] });
+  for (let i = 0; i < 100; ++i) resolveWindow(s, meta({ appId: `app${i}` }), CTX);
+  const cached = s.compiled.ruleCache.size;
+  let appIdRegex = 0, titleRegex = 0;
+  const test0 = RegExp.prototype.test;
+  RegExp.prototype.test = function (this: RegExp, v: string) {
+    if (this.source === "^org\\.kde\\..*$") appIdRegex++;
+    if (this.source === "^busy") titleRegex++;
+    return test0.call(this, v);
+  };
+  let last;
+  try {
+    for (let i = 0; i < 1000; ++i) last = resolveWindow(s, meta({ appId: "org.kde.konsole", resourceName: "konsole", title: `~ : top ${i}` }), CTX);
+  } finally {
+    RegExp.prototype.test = test0;
+  }
+  assert.equal(appIdRegex, 1, "the appId regex runs once for unchanged app metadata");
+  assert.equal(titleRegex, 1000, "the title rule (whose other matchers passed) sees every title");
+  assert.ok(s.compiled.ruleCache.size <= cached + 1, `title churn adds no cache entries (${s.compiled.ruleCache.size})`);
+  assert.deepEqual(last!.ruleIds, ["kde"]);
+  assert.deepEqual(last!.actions, { border: "none" });
+  // Priority/declaration order is kept when title and title-free rules interleave.
+  const busy = resolveWindow(s, meta({ appId: "org.kde.konsole", resourceName: "konsole", title: "busy: make" }), CTX);
+  assert.deepEqual(busy.ruleIds, ["kde", "konsole-busy"]);
+  assert.deepEqual(busy.actions, { border: "none", insert: "master" });
+  assert.deepEqual(busy.reasons, { border: "rule kde", insert: "rule konsole-busy" });
+  const pip = resolveWindow(s, meta({ appId: "org.mozilla.firefox", title: "Picture-in-Picture" }), CTX);
+  assert.deepEqual(pip.ruleIds, ["pip"]);
+  assert.ok(Object.isFrozen(busy) && Object.isFrozen(busy.actions) && Object.isFrozen(busy.ruleIds));
+  // A built-in exclusion still wins over a matching title rule, with the attempt explained.
+  const osd = resolveWindow(s, meta({ kind: "osd", title: "Picture-in-Picture" }), CTX);
+  assert.deepEqual(osd.actions, { mode: "excluded" });
+  assert.deepEqual(osd.ruleIds, ["kde", "pip"]);
+  assert.deepEqual(osd.reasons, { mode: "builtin kind:osd; ignored rule pip", border: "ignored (builtin kind:osd): rule kde" });
 });
 
 test("warnings for inert entries do not block activation", () => {
