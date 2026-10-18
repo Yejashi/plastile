@@ -459,15 +459,13 @@ Committed (7.4 MB with the review files, redacted: no window titles, no user pat
   7 % of the committed ones (`g2-review.json` `p04Rerun`). At 250 synthetic windows, 0.15 ms p50 per
   ratio command in V8 with a mock host; open bursts solve once per flush.
 
-Left in `artifacts/g2/` (gitignored, about 2 GB) because they hold window titles, absolute paths and KWin logs of each
-session:
-
-- fixture JSONL logs (`start` records carry argv);
-- the GC and frame diagnostic logs;
-- per-cycle P14/P15 records;
-- the aborted `cec0b83` campaign.
-
-The aggregation script regenerates every committed file from them.
+Not committed, because they held window titles, absolute paths and KWin logs of each session (about 2 GB, gitignored
+`artifacts/g2/`): fixture JSONL logs (`start` records carry argv), the GC and frame diagnostic logs, per-cycle P14/P15
+records, and the aborted `cec0b83` campaign. **These raw logs no longer exist:** they lived in the measuring agent's
+worktree and were deleted with it on 2026-10-18, after the review. The committed raw samples above (§8 schema) still
+reproduce every percentile in this report (the review recomputed all 50 pooled P03 cells from them with no mismatch),
+but `g2_aggregate.py` can no longer regenerate the committed summaries from the session logs, and the diagnostic
+analyses (GC log, frame listener, per-cycle churn) can only be repeated by running the probes again.
 
 ## 15. Adversarial review (nested-virtual, KWin 6.7.5)
 
