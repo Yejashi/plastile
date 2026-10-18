@@ -381,9 +381,11 @@ def bindings(s: Session, p: Profile, acc: Accel, c: Checks, phase: str, expect_v
         mt = press_none(s, inp, ("Meta", "T"))
         press(inp, "Escape")
         ev["metaT"] = {"holder": holder[:2], "plastileActions": acc.plastile_with(META | ord("T")), "dispatch": mt}
-        c(f"{phase}: Meta+T is not stolen (held by kwin 'Edit Tiles', no Plastile action has it, a press reaches no "
-          "Plastile command)", holder[:2] == ["kwin", "Edit Tiles"] and not ev["metaT"]["plastileActions"] and not mt,
-          ev["metaT"])
+        # Under QPainter compositing (the CI sandbox) the GL-only tile editor registers nothing, so Meta+T has no
+        # holder at all; what matters is that it is not Plastile's.
+        c(f"{phase}: Meta+T is not stolen (held by kwin 'Edit Tiles', or by nobody where the GL-only editor is absent; no "
+          "Plastile action has it, a press reaches no Plastile command)",
+          holder[:2] in (["kwin", "Edit Tiles"], []) and not ev["metaT"]["plastileActions"] and not mt, ev["metaT"])
     finally:
         inp.close()
     return ev

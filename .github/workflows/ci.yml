@@ -289,6 +289,12 @@ jobs:
             echo "Nested integration did not produce a summary (setup failed)." >> "$GITHUB_STEP_SUMMARY"
           fi
 
+      # The scenarios ran as root in the chroot and leave 0700/0000 test directories (the helper's
+      # state directory and its permission checks); the upload runs as the runner user.
+      - name: Make the reports readable for the upload
+        if: always()
+        run: sudo chmod -R a+rX artifacts || true
+
       - name: Upload integration reports and KWin logs
         if: always()
         uses: actions/upload-artifact@v7
@@ -345,9 +351,10 @@ jobs:
           # llvmpipe runs the tile-editor effect here; the expected SKIPs are the negative origin, the
           # real-panel scenario and the settings dialog (the Nix environment has no plasmashell or kcmshell6), and
           # the helper's install.sh build (no compiler in the environment). The environment builds the persistence
-          # helper itself (env.nix plastileState; run.sh exports PLASTILE_STATE_HELPER).
+          # helper itself (env.nix plastileState; run.sh exports PLASTILE_STATE_HELPER). replay-capture-T10 records
+          # fixtures but cannot replay them without node, which the environment does not carry.
           tools/sandbox/nix/run.sh -- python3 tests/integration/run.py --markdown artifacts/integration-kwin68-summary.md \
-            --expect-skips output-negative-origin-G02,plasmashell-panels-O07,settings-dialog-T28,package-helper-install-T32
+            --expect-skips output-negative-origin-G02,plasmashell-panels-O07,settings-dialog-T28,package-helper-install-T32,replay-capture-T10
 
       - name: Diagnostics on failure (device nodes, first KWin log)
         if: failure()

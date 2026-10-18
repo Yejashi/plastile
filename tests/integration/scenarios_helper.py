@@ -224,7 +224,12 @@ def persist_helper_contract(out: Path, c: Checks):
           list(map(len, b.call("Read"))) == [0, MiB])
         b.slot(0).write_text("x")
         b.slot(0).chmod(0)
-        c("an unreadable (0000) slot reads as empty", b.call("Read")[0] == "")
+        if os.geteuid() == 0:
+            # Root reads a 0000 file anyway (the CI sandbox runs as root): nothing to observe.
+            c("an unreadable (0000) slot reads as empty: NOT MEASURABLE as root (permissions do not apply)", True,
+              {"euid": 0, "read": len(b.call("Read")[0])})
+        else:
+            c("an unreadable (0000) slot reads as empty", b.call("Read")[0] == "")
         ok = b.call("Write", 0, "over a read-only slot", sig="is")
         c("a slot its owner cannot write (0000, e.g. restored from a backup) is replaced, as 0600",
           bool(ok) and b.slot(0).read_text() == "over a read-only slot" and mode(b.slot(0)) == "0o600",
