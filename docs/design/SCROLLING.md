@@ -9,13 +9,17 @@ state. Scrolling ships disabled and opt-in (`layout: "scrolling"`), as an experi
 ## 1. Evidence this design depends on
 
 Measured in nested KWin 6.7.5 ([probe](../../probes/scrolling/offscreen.py),
-[evidence](../status/evidence/scrolling-offscreen-e15.json)):
+[evidence](../status/evidence/scrolling-offscreen-e15.json)), plus observed source at v6.7.5:
 
 - A script can place a window entirely outside every output, and KWin leaves it there. The window
   keeps the nearest output as its `output`.
 - An output topology change makes KWin pull such a window partly back on screen (x −2000 became −280).
   KWin owns that correction; a script cannot prevent it.
-- `opacity`, `minimized`, `skipTaskbar` and `keepBelow` are script-writable.
+- `opacity`, `minimized`, `skipTaskbar` and `keepBelow` are script-writable, but input picking ignores
+  opacity (only minimized, hidden, other-desktop/activity and show-desktop windows are skipped, input.cpp),
+  so a transparent window over an output still takes clicks. Opacity is not a hiding mechanism.
+- `checkWorkspacePosition`/`checkOffscreenPosition` runs on client-area updates and desktop sends
+  (window.cpp:4117–4135, workspace.cpp:2497 and 1676). That explains the pull-back seen in the probe.
 
 Inference to verify in the physical session: a window outside the union of all output rectangles
 cannot receive pointer input, because no output covers its pixels. The nested backend cannot show
@@ -47,10 +51,19 @@ Solving projects the strip into the work area: `screenX = area.x + outerGap + st
 - A column whose projected rectangle lies entirely inside the area (within tolerance) is **visible**
   and receives that rectangle.
 - A column that would cross either area edge or lie outside it is **parked**. Its windows keep their
-  column size (position-only writes, so no client configure) and are moved to a parking position
-  outside the union of all output rectangles: `x = bounds.right + 64`, `y = area.y`. `bounds` is the
-  union of every output geometry. That point is outside every output for any output arrangement,
-  so parked windows never appear on, or take input from, a neighbouring monitor.
+  column size (position-only writes, so no client configure) and move to a parking rectangle that
+  intersects no output, so parked windows never appear on, or take input from, any monitor.
+- KWin assigns `window.output` from the frame centre: an off-output centre maps to the nearest output
+  (`outputAt(center)`, v6.7.5 window.cpp:3361; probe E15 saw x = 3060 report the right-hand output). The
+  parking rectangle is therefore chosen so that its centre's nearest output is the strip's own output.
+  Candidates are checked in this order: directly above the output (`y = output.top - height - 64`, x
+  inside the output's span), directly below it, left of it, right of it. The first candidate that
+  intersects no output and whose centre is nearest to this output wins. If none qualifies, for example
+  an output enclosed on all four sides, the column is not parked. It is clamped to the nearest area edge and
+  left visible, with an explanation.
+- Because KWin can still reassign the output during a later topology change, every parking write is
+  recorded in the ledger as an expected observation. An output change for a window that Plastile parked
+  does not re-key its context. The next solve re-parks it or brings it back.
 - The focused column is always visible. If it is wider than the area, it is placed at the area's left
   edge and clipped by the output; that is the one case where part of a window can be off-area.
 
