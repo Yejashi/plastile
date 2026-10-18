@@ -1,0 +1,128 @@
+// The real KwinAdapter and runtime driven through a fake KWin script surface (fakeKwin.ts).
+// Oracles are the fake windows' frames and the script write log, never engine claims.
+
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { createRuntime } from "../../src/runtime/main.ts";
+import { desktop, fakeEnv, FakeQt, FakeWorkspace, output, type FakeWindow, type R } from "./fakeKwin.ts";
+
+const GAP = 8;
+
+function bottomOf(r: R): number { return r.y + r.height; }
+
+/** Oracle: inside `area` with at least GAP to its edges, no two frames overlapping. */
+function assertTiles(wins: FakeWindow[], area: R): void {
+  const fs = wins.map((w) => w.frameGeometry as R);
+  for (const [i, f] of fs.entries()) {
+    const name = wins[i].caption;
+    assert.ok(f.x >= area.x + GAP - 0.5 && f.y >= area.y + GAP - 0.5, `${name} too close to the area edge ${JSON.stringify(f)}`);
+    assert.ok(f.x + f.width <= area.x + area.width - GAP + 0.5 && bottomOf(f) <= bottomOf(area) - GAP + 0.5,
+      `${name} outside ${JSON.stringify(area)}: ${JSON.stringify(f)}`);
+  }
+  for (let i = 0; i < fs.length; ++i)
+    for (let j = i + 1; j < fs.length; ++j) {
+      const a = fs[i], b = fs[j];
+      const ox = Math.min(a.x + a.width, b.x + b.width) - Math.max(a.x, b.x);
+      const oy = Math.min(bottomOf(a), bottomOf(b)) - Math.max(a.y, b.y);
+      assert.ok(ox <= 0.5 || oy <= 0.5, `${wins[i].caption} overlaps ${wins[j].caption}`);
+    }
+}
+
+function writesPerWindow(ws: FakeWorkspace, since: number): Map<string, number> {
+  const m = new Map<string, number>();
+  for (const w of ws.writes.slice(since)) m.set(w.caption, (m.get(w.caption) ?? 0) + 1);
+  return m;
+}
+
+function setup(outputs = 1, n = 3, cfg: Record<string, unknown> = {}) {
+  const outs = [output("O1", { x: 0, y: 0, width: 1280, height: 800 })];
+  if (outputs > 1) outs.push(output("O2", { x: 1280, y: 0, width: 1280, height: 800 }));
+  const ws = new FakeWorkspace(outs, [desktop("D1")]);
+  const qt = new FakeQt();
+  const wins: FakeWindow[] = [];
+  for (let i = 1; i <= n; ++i) {
+    const w = ws.window({ caption: `w${i}`, resourceClass: `app${i}`, frameGeometry: { x: 20 * i, y: 20 * i, width: 400, height: 300 } });
+    ws.windows.push(w);
+    wins.push(w);
+  }
+  const f = fakeEnv(ws, qt, cfg);
+  const rt = createRuntime(f.env);
+  qt.drain();
+  return { ws, qt, wins, rt, f };
+}
+
+// ------------------------------------------------------------------ O07 work areas
+
+test("O07: a panel added after load re-solves once into the new area, each tile written at most once", () => {
+  const { ws, qt, wins, rt } = setup();
+  const area = { x: 0, y: 0, width: 1280, height: 760 };
+  // KWin's addWaylandWindow: rearrange() (new area, checkWorkspacePosition moves tiles that
+  // intersect the strut) runs synchronously BEFORE windowAdded is emitted.
+  ws.areas.set("O1", area);
+  for (const w of wins) {
+    const f = w.frameGeometry as R;
+    if (bottomOf(f) > bottomOf(area)) ws.kwinSetFrame(w, { ...f, height: bottomOf(area) - f.y });
+  }
+  const before = ws.writes.length;
+  ws.add(ws.panel({ frameGeometry: { x: 0, y: 760, width: 1280, height: 40 } }));
+  qt.drain();
+  assertTiles(wins, area);
+  const lowest = Math.max(...wins.map((w) => bottomOf(w.frameGeometry)));
+  assert.equal(lowest, bottomOf(area) - GAP, "lowest tile bottom == area bottom - gap");
+  for (const [cap, n] of writesPerWindow(ws, before)) assert.ok(n <= 1, `${cap} written ${n} times`);
+  rt.shutdown();
+});
+
+test("O07: a panel removed restores the area even when KWin's rearrange runs after the first deferred turn", () => {
+  const { ws, qt, wins, rt } = setup();
+  const reduced = { x: 0, y: 0, width: 1280, height: 760 };
+  ws.areas.set("O1", reduced);
+  const panel = ws.panel({ frameGeometry: { x: 0, y: 760, width: 1280, height: 40 } });
+  ws.add(panel);
+  qt.drain();
+  assertTiles(wins, reduced);
+  const before = ws.writes.length;
+  // removeWindow(): scheduleRearrange() is a 0 ms timer; here it lands after the adapter's
+  // first deferred turn (worst case), so the area is still the reduced one at that turn.
+  ws.remove(panel);
+  qt.turn();
+  ws.areas.delete("O1");
+  qt.drain();
+  const full = { x: 0, y: 0, width: 1280, height: 800 };
+  assertTiles(wins, full);
+  assert.equal(Math.max(...wins.map((w) => bottomOf(w.frameGeometry))), 800 - GAP);
+  for (const [cap, n] of writesPerWindow(ws, before)) assert.ok(n <= 1, `${cap} written ${n} times`);
+  rt.shutdown();
+});
+
+test("O07: a panel on one output re-solves only that output (zero writes to the other)", () => {
+  const { ws, qt, wins, rt } = setup(2, 3);
+  // w2 and w3 go to O2.
+  for (const w of [wins[1], wins[2]]) { w.output = ws.screens[1]; w.outputChanged.emit(); }
+  qt.drain();
+  const o2 = { x: 1280, y: 0, width: 1280, height: 760 };
+  const w1Before = wins[0].frameGeometry;
+  ws.areas.set("O2", o2);
+  const before = ws.writes.length;
+  ws.add(ws.panel({ output: ws.screens[1], frameGeometry: { x: 1280, y: 760, width: 1280, height: 40 } }));
+  qt.drain();
+  assertTiles([wins[1], wins[2]], o2);
+  assert.deepEqual(wins[0].frameGeometry, w1Before);
+  assert.equal(writesPerWindow(ws, before).get("w1") ?? 0, 0, "no write to the other output's tile");
+  rt.shutdown();
+});
+
+test("O07: a panel's own frame change without an area change writes nothing", () => {
+  const { ws, qt, rt } = setup();
+  ws.areas.set("O1", { x: 48, y: 0, width: 1232, height: 800 });
+  const left = ws.panel({ frameGeometry: { x: 0, y: 0, width: 48, height: 800 } });
+  ws.add(left);
+  qt.drain();
+  const before = ws.writes.length;
+  // KWin reconfigures the panel (e.g. another panel took the bottom edge first): its frame
+  // changes, the usable area does not.
+  ws.kwinSetFrame(left, { x: 0, y: 0, width: 48, height: 760 });
+  qt.drain();
+  assert.equal(ws.writes.length, before);
+  rt.shutdown();
+});

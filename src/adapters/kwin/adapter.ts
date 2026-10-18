@@ -23,6 +23,10 @@ interface Entry {
   meta: WindowMeta;
 }
 
+function sameRect(a: Rect, b: Rect): boolean {
+  return a.x === b.x && a.y === b.y && a.width === b.width && a.height === b.height;
+}
+
 /** Window kinds that never need geometry/state signal hookups. */
 const PASSIVE_KINDS: ReadonlySet<WindowKind> = new Set<WindowKind>([
   "tooltip", "popup", "menu", "dnd-icon", "osd", "notification", "applet-popup", "splash",
@@ -108,10 +112,37 @@ export class KwinAdapter implements HostPort {
   private engine: Engine | null = null;
   private watchTitles = false;
   private alive = true;
+  /** Last usable area (MaximizeArea) per output name; KWin keeps one per output, not per desktop. */
+  private areas = new Map<string, Rect>();
   private topologyPending = false;
-  private readonly topologyFlush = (): void => {
-    this.topologyPending = false;
-    if (this.alive && this.engine) this.engine.topologyChanged();
+  /** Deferred work-area checks still allowed for the current panel event (0: none pending). */
+  private areaChecks = 0;
+  private deferredQueued = false;
+  /** One coalesced callback for topology and work-area invalidation (stable identity for callLater). */
+  private readonly deferredFlush = (): void => {
+    this.deferredQueued = false;
+    if (!this.alive || !this.engine) return;
+    if (this.topologyPending) {
+      // The engine re-solves every context; only refresh the area cache.
+      this.topologyPending = false;
+      this.areaChecks = 0;
+      this.areas.clear();
+      this.readAreas();
+      this.engine.topologyChanged();
+      return;
+    }
+    if (this.areaChecks > 0) {
+      this.areaChecks--;
+      const changed = this.readAreas();
+      if (changed.length > 0) {
+        this.areaChecks = 0;
+        this.engine.workAreaChanged(changed);
+      } else if (this.areaChecks > 0) {
+        // KWin defers the rearrange after a strut window goes away (Workspace::removeWindow ->
+        // scheduleRearrange(), a 0 ms timer): look once more on the next turn, then stop.
+        this.queueDeferred();
+      }
+    }
   };
 
   constructor(ws: KWorkspace, qt: KQt) {
@@ -135,6 +166,7 @@ export class KwinAdapter implements HostPort {
     this.own(this.ws.screenOrderChanged, () => this.scheduleTopology(), this.globals);
     this.own(this.ws.virtualScreenGeometryChanged, () => this.scheduleTopology(), this.globals);
     this.watchOutputs();
+    this.readAreas();
     const out: WindowSnapshot[] = [];
     const list = this.ws.windows;
     for (let i = 0; i < list.length; ++i) {
@@ -151,6 +183,7 @@ export class KwinAdapter implements HostPort {
     this.entries.clear();
     this.disconnectAll(this.globals);
     this.disconnectAll(this.outputConns);
+    this.areas.clear();
     this.engine = null;
   }
 
@@ -180,10 +213,56 @@ export class KwinAdapter implements HostPort {
     for (let i = 0; i < outs.length; ++i) this.own(outs[i].geometryChanged, () => this.scheduleTopology(), this.outputConns);
   }
 
+  private queueDeferred(): void {
+    if (this.deferredQueued || !this.alive) return;
+    this.deferredQueued = true;
+    this.qt.callLater(this.deferredFlush);
+  }
+
   private scheduleTopology(): void {
     if (this.topologyPending || !this.alive) return;
     this.topologyPending = true;
-    this.qt.callLater(this.topologyFlush);
+    this.queueDeferred();
+  }
+
+  /**
+   * Re-read every output's usable area and return the outputs whose area changed. The
+   * desktop argument is passed for the API's sake: KWin 6.7.5 keeps one MaximizeArea per
+   * output (observed source: workspace_wrapper.cpp:286-292 ignores it). Bounded: one
+   * clientArea call per output, only on panel and topology events.
+   */
+  private readAreas(): string[] {
+    const changed: string[] = [];
+    const outs = this.ws.screens;
+    for (let i = 0; i < outs.length; ++i) {
+      const o = outs[i];
+      const d = this.ws.currentDesktopForScreen(o) ?? (this.ws.desktops.length ? this.ws.desktops[0] : null);
+      if (!d) continue;
+      const a = rectOf(this.ws.clientArea(this.ws.MaximizeArea, o, d));
+      const prev = this.areas.get(o.name);
+      if (prev && sameRect(prev, a)) continue;
+      this.areas.set(o.name, a);
+      changed.push(o.name);
+    }
+    return changed;
+  }
+
+  /**
+   * A panel (strut window) appeared, went away or changed its frame: the usable area may
+   * have changed. There is no script-visible work-area signal, so compare the areas.
+   * `now`: KWin already rearranged (a new strut window: Workspace::addWaylandWindow calls
+   * rearrange() before windowAdded), so check synchronously; this marks the contexts dirty
+   * before the flush that would otherwise write tiles KWin just moved off the panel back to
+   * their old slots. Otherwise (and when nothing changed yet) look on the next two turns.
+   */
+  private panelChanged(now: boolean): void {
+    if (!this.alive || !this.engine) return;
+    if (now) {
+      const changed = this.readAreas();
+      if (changed.length > 0) { this.engine.workAreaChanged(changed); return; }
+    }
+    this.areaChecks = 2;
+    this.queueDeferred();
   }
 
   // ------------------------------------------------------------------ registry
@@ -199,7 +278,7 @@ export class KwinAdapter implements HostPort {
     this.entries.set(id, e);
     if (e.meta.kind === "dock") {
       // Panels change the usable area; KWin has no script-visible work-area signal.
-      this.own(w.frameGeometryChanged, () => this.scheduleTopology(), e.conns);
+      this.own(w.frameGeometryChanged, () => this.panelChanged(false), e.conns);
     } else if (!PASSIVE_KINDS.has(e.meta.kind) && e.meta.kind !== "desktop") {
       this.hook(e);
     }
@@ -254,7 +333,9 @@ export class KwinAdapter implements HostPort {
   private onAdded(w: KWindow): void {
     if (!this.alive || !this.engine) return;
     const s = this.register(w);
-    if (s) this.engine.windowAdded(s);
+    if (!s) return;
+    this.engine.windowAdded(s);
+    if (s.meta.kind === "dock") this.panelChanged(true);
   }
 
   private onRemoved(w: KWindow): void {
@@ -264,7 +345,10 @@ export class KwinAdapter implements HostPort {
     if (!e) return;
     this.entries.delete(id);
     this.release(e);
-    if (this.alive && this.engine) this.engine.windowRemoved(id, e.gen);
+    if (this.alive && this.engine) {
+      this.engine.windowRemoved(id, e.gen);
+      if (e.meta.kind === "dock") this.panelChanged(false);
+    }
   }
 
   private onActivated(w: KWindow | null): void {
