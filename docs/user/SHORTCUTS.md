@@ -1,6 +1,6 @@
 # Plastile shortcuts
 
-Every Plastile command is one KWin global shortcut. All of them are registered under the **KWin** component, and their labels start with `Plastile:`. The table below is derived from [`src/core/commands.ts`](../../src/core/commands.ts): 46 commands, 20 of them bound by default.
+Every Plastile command is one KWin global shortcut. All of them are registered under the **KWin** component, and their labels start with `Plastile:`. The table below is derived from [`src/core/commands.ts`](../../src/core/commands.ts): 53 commands, 20 of them bound by default. The five scrolling commands are experimental (see [Scrolling layout](#scrolling-layout-experimental)).
 
 **Context.** Commands act on the **active window** and its context: the screen, virtual desktop and activity it is on. When there is no active window, commands use the active screen's visible desktop.
 
@@ -10,13 +10,15 @@ Every Plastile command is one KWin global shortcut. All of them are registered u
 
 | Command id | Label in System Settings (after `Plastile:`) | Default | Behaviour |
 |---|---|---|---|
-| `plastile.focus.left` | Focus left | `Meta+Shift+H` | Activates the tiled neighbour to the left of the focused tile, on the same screen and desktop. Candidates lying fully beyond the facing edge win over others. Among them, one that overlaps vertically wins, then the nearest facing edge, then the larger overlap, then stable order. When nothing lies fully beyond the edge (irregular or overlapping frames, such as a size-limited window centred in its tile), a tile that reaches past the edge with its centre on that side is used; a tile beside the focused one never is. No wrap-around, no screen change, no geometry change. If the active window is not tiled here, the most recently focused tile of the context is activated instead. |
+| `plastile.focus.left` | Focus left | `Meta+Shift+H` | Activates the tiled neighbour to the left of the focused tile, on the same screen and desktop. Candidates lying fully beyond the facing edge win over others. Among them, one that overlaps vertically wins, then the nearest facing edge, then the larger overlap, then stable order. When nothing lies fully beyond the edge (irregular or overlapping frames, such as a size-limited window centred in its tile), a tile that reaches past the edge with its centre on that side is used; a tile beside the focused one never is. No wrap-around by default (with `focusWrap`, [CONFIGURATION](CONFIGURATION.md#settings-patch), it continues from the opposite end of the same row or column on the same screen), no screen change, no geometry change. If the active window is not tiled here, the most recently focused tile of the context is activated instead. |
 | `plastile.focus.down` | Focus down | `Meta+Shift+J` | Same as *Focus left*, downwards. |
 | `plastile.focus.up` | Focus up | `Meta+Shift+K` | Same as *Focus left*, upwards. |
 | `plastile.focus.right` | Focus right | `Meta+Shift+L` | Same as *Focus left*, to the right. |
 | `plastile.focus.next` | Focus next | `Meta+Shift+N` | Activates the next tiled window in the context's stable order (wraps around). In monocle, it also raises that window. |
 | `plastile.focus.previous` | Focus previous | `Meta+Shift+P` | Activates the previous tiled window in stable order (wraps around). |
 | `plastile.focus.master` | Focus master | *unbound* | Activates the first window in the order (the master in master/stack). |
+| `plastile.focus.output-next` | Focus next output | *unbound* | Activates a window on the next screen. Screens are ordered by position (left edge, then top edge), not by how KWin enumerates them, and the order wraps around. On that screen it activates the window focused there most recently (tiled or floating, not minimized, on the desktop that screen shows), else that screen's first tile. No-op with one screen or when the next screen shows no window. No geometry change. |
+| `plastile.focus.output-previous` | Focus previous output | *unbound* | Same as *Focus next output*, towards the previous screen. |
 | `plastile.swap.left` | Swap with window to the left | `Meta+Ctrl+H` | Exchanges the focused tile with its left neighbour: their order positions in master/stack and monocle, their leaves in BSP. One re-solve. No-op when nothing lies in that direction or the active window is not tiled here. |
 | `plastile.swap.down` | Swap with window below | `Meta+Ctrl+J` | Same as *Swap with window to the left*, downwards. |
 | `plastile.swap.up` | Swap with window above | `Meta+Ctrl+K` | Same as *Swap with window to the left*, upwards. |
@@ -28,7 +30,7 @@ Every Plastile command is one KWin global shortcut. All of them are registered u
 | `plastile.move.down` | Move tile down (reinsert) | *unbound* | Same as *Move tile left*, downwards (BSP: below the neighbour; order layouts: just after it). |
 | `plastile.move.up` | Move tile up (reinsert) | *unbound* | Same as *Move tile left*, upwards (BSP: above; order layouts: just before). |
 | `plastile.move.right` | Move tile right (reinsert) | *unbound* | Same as *Move tile left*, to the right (BSP: right side; order layouts: just after). |
-| `plastile.move.output-next` | Send window to next output | `Meta+Shift+O` | Sends the active window to the next screen in KWin's output order (cyclic), where it is tiled. KWin puts it on that screen's current desktop and keeps it active, so no desktop changes; the source screen is re-solved. No-op with one output. Tested with two virtual outputs, with and without per-screen desktops. |
+| `plastile.move.output-next` | Send window to next output | `Meta+Shift+O` | Sends the active window to the next screen by position (left edge, then top edge, cyclic; the order *Focus next output* uses), where it is tiled. KWin puts it on that screen's current desktop and keeps it active, so no desktop changes; the source screen is re-solved. No-op with one output. Tested with two virtual outputs, with and without per-screen desktops. |
 | `plastile.move.output-previous` | Send window to previous output | *unbound* | Sends the active window to the previous screen. |
 | `plastile.move.desktop-next` | Send window to next desktop | *unbound* | Sends the active window to the next virtual desktop (cyclic). The current desktop does not change, and the window is tiled when that desktop is shown. With `followOnSend` ([CONFIGURATION](CONFIGURATION.md#settings-patch)) that desktop is shown on the window's screen and the window activated. No-op for a window on several or all desktops. |
 | `plastile.move.desktop-previous` | Send window to previous desktop | *unbound* | Sends the active window to the previous virtual desktop. |
@@ -43,10 +45,15 @@ Every Plastile command is one KWin global shortcut. All of them are registered u
 | `plastile.layout.bsp` | BSP layout | *unbound* | Sets BSP for the current context. |
 | `plastile.layout.monocle` | Monocle layout | `Meta+Shift+M` | Sets monocle for the current context. |
 | `plastile.layout.floating` | Floating layout (no tiling here) | *unbound* | Stops tiling the current context. Windows that have a remembered floating rectangle are restored to it once, then Plastile leaves them alone. |
+| `plastile.layout.scrolling` | Scrolling layout (experimental) | *unbound* | Sets the experimental scrolling layout for the current context. *Next layout* and *Previous layout* never select it; from scrolling, *Next layout* goes to master/stack and *Previous layout* to floating. See [Scrolling layout](#scrolling-layout-experimental). |
 | `plastile.layout.rotate-clockwise` | Rotate layout clockwise | *unbound* | BSP only: rotates every split. Side-by-side splits become stacked and vice versa, with children reordered clockwise. In other layouts it reports a no-op. |
 | `plastile.layout.rotate-counterclockwise` | Rotate layout counterclockwise | *unbound* | BSP only: rotates every split counterclockwise. |
 | `plastile.layout.mirror-horizontal` | Mirror layout horizontally | *unbound* | BSP only: flips every side-by-side split (the children exchange places and the ratio is inverted). |
 | `plastile.layout.mirror-vertical` | Mirror layout vertically | *unbound* | BSP only: flips every stacked split. |
+| `plastile.scroll.consume` | Scrolling: move window into the column on the left | *unbound* | Scrolling layout only: the focused window leaves its column and joins the bottom of the column on its left. An emptied column is removed. No-op in the first column or in other layouts. |
+| `plastile.scroll.expel` | Scrolling: move window out into its own column | *unbound* | Scrolling layout only: the focused window leaves a shared column and gets its own column just right of it, with the same width. No-op when it is already alone. |
+| `plastile.scroll.width-cycle` | Scrolling: cycle column width | *unbound* | Scrolling layout only: the focused column steps to the next wider width preset (default ⅓, ½, ⅔, full), wrapping to the narrowest. A column is never narrower than the minimum width of a window in it. |
+| `plastile.scroll.center` | Scrolling: centre focused column | *unbound* | Scrolling layout only: scrolls so the focused column is centred. With the default `lazy` policy the strip does not scroll past its first or last column, so an end column is centred only as far as that allows. |
 | `plastile.window.toggle-float` | Toggle floating | `Meta+Shift+F` | **Tiled window:** floats it and restores its last floating rectangle, if one is remembered; peers re-solve once. **Floating or natively quick-tiled window:** remembers its current rectangle, releases any native tile and tiles it. This also works for a resizable dialog, utility or transient window. A window that cannot be tiled (fixed size, or on several desktops) stays floating and the reason is reported. Excluded windows (panels, menus, shell surfaces, rule-excluded windows) are not affected. |
 | `plastile.window.adopt-native` | Adopt natively tiled window | *unbound* | A window you quick-tiled with KWin's own actions (`Meta+arrow`, edge drag) is left to KWin. This command releases that native tile and adopts the window back into the layout. No-op for other windows. |
 | `plastile.context.reset` | Reset this layout | *unbound* | Drops the current context's session layout choice and its structure (master ratio and count, BSP tree and ratios, row weights), then re-solves from the configured settings. Global settings are untouched. |
@@ -138,3 +145,21 @@ Plastile does not override `Meta+T` and does not take over KWin's own quick-tile
 - **Leftover entries:** shortcut registrations are KWin-wide and **persist in `kglobalshortcutsrc` after the script is disabled or uninstalled** (measured in nested KWin). They are harmless entries without a handler; remove them in the shortcuts settings if you want a clean file.
 - **Screens:** directional focus, swap and move never cross screens. Use *Send window to next output* to change screens.
 - **Unbound diagnostics:** *Reload configuration*, *Explain active window*, *Log counters* and *Log trace* are unbound by default. Bind them if you change settings or need to debug ([TROUBLESHOOTING](TROUBLESHOOTING.md)).
+
+## Scrolling layout (experimental)
+
+In a context using the experimental scrolling layout ([README](README.md#scrolling-experimental)), the ordinary commands act on the strip of columns:
+
+| Command | In a scrolling context |
+|---|---|
+| *Focus left/right* | Focuses the nearest window in the previous or next column, even when that column is off screen, and scrolls it into view. No wrap-around. |
+| *Focus up/down* | Moves within the focused column only; never scrolls. |
+| *Focus next/previous* | Steps through the strip's order (columns left to right, windows top to bottom), scrolling as needed. |
+| *Swap left/right*, *Move tile left/right* | Moves the focused column one place left or right. |
+| *Swap up/down*, *Move tile up/down* | Moves the focused window up or down within its column. |
+| *Swap next/previous/master* | Exchanges the focused window with the next or previous window in strip order, or with the first one. |
+| *Grow/Shrink focused tile* | Widens or narrows the focused column by `ratioStep` (as a fraction of the usable width, between 0.1 and 1). |
+| *Equalize sizes* | Resets the row heights inside every column; column widths stay. |
+| *Rotate*, *Mirror*, *More/Fewer master windows* | No-op. |
+
+Focus changes in a scrolling context move windows: scrolling is a position-only change (no window is resized). Focusing a column that is already fully visible scrolls nothing with the default `lazy` policy.

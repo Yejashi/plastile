@@ -16,7 +16,7 @@ export const MAX_FLOATS = 64;
 export const MAX_TEXT = 256 * 1024;
 const MAX_ID = 512;
 const MAX_COORD = 1e6;
-const LAYOUTS: readonly LayoutKind[] = ["master-stack", "bsp", "monocle", "floating"];
+const LAYOUTS: readonly LayoutKind[] = ["master-stack", "bsp", "monocle", "floating", "scrolling"];
 const MAX_MASTER_COUNT = 8;
 
 export interface ContextEntry {

@@ -2,7 +2,7 @@
 // They normalize into patches and uncompiled-order lists; errors carry exact paths.
 
 import type { Edges } from "../core/geometry.ts";
-import type { BspSettings, LayoutKind, MasterStackSettings, WindowKind } from "../core/types.ts";
+import type { BspSettings, LayoutKind, MasterStackSettings, ScrollingSettings, WindowKind } from "../core/types.ts";
 import { compileStringMatcher } from "./matchers.ts";
 import type { CompiledOverride, CompiledRule, DiagnosticsLevel, RuleActions, SettingsPatch, StringMatcher } from "./types.ts";
 import {
@@ -10,7 +10,10 @@ import {
   at, bool, err, expected, finite, has, idx, intIn, objectWith, oneOf, openRatio, ratioStep, str, warn, type Sink,
 } from "./validate.ts";
 
-export const LAYOUTS: readonly LayoutKind[] = ["master-stack", "bsp", "monocle", "floating"];
+export const LAYOUTS: readonly LayoutKind[] = ["master-stack", "bsp", "monocle", "floating", "scrolling"];
+export const SCROLL_POLICY: readonly ScrollingSettings["policy"][] = ["lazy", "centered"];
+/** Width presets the width-cycle command steps through: at most this many. */
+export const MAX_WIDTH_PRESETS = 8;
 export const MS_INSERT: readonly MasterStackSettings["insert"][] = ["after-focus", "end", "master"];
 export const BSP_INSERT: readonly BspSettings["insert"][] = ["focused", "last"];
 export const BSP_AXIS: readonly BspSettings["axis"][] = ["alternate", "longest", "horizontal", "vertical"];
@@ -150,8 +153,8 @@ export function readFlat(s: Sink, flat: Readonly<Record<string, unknown>>): Flat
 // ---- settings patch (JSON `defaults` and override `set`) ----
 
 const SETTINGS_KEYS = [
-  "enabled", "layout", "gaps", "masterStack", "bsp", "overflow", "singleWindowGaps",
-  "followOnSend", "multiContextWindows", "animation",
+  "enabled", "layout", "gaps", "masterStack", "bsp", "scrolling", "overflow", "singleWindowGaps",
+  "followOnSend", "focusWrap", "liveResize", "multiContextWindows", "animation",
 ];
 
 function unsupported(s: Sink, v: unknown, path: string, only: unknown): void {
@@ -235,7 +238,10 @@ export function readPatch(s: Sink, v: unknown, path: string): SettingsPatch {
       p.bsp = bs;
     }
   }
+  if (has(o, "scrolling")) p.scrolling = readScrolling(s, o.scrolling, at(path, "scrolling"));
   if (has(o, "followOnSend")) { const x = bool(s, o.followOnSend, at(path, "followOnSend")); if (x !== null) p.followOnSend = x; }
+  if (has(o, "focusWrap")) { const x = bool(s, o.focusWrap, at(path, "focusWrap")); if (x !== null) p.focusWrap = x; }
+  if (has(o, "liveResize")) { const x = bool(s, o.liveResize, at(path, "liveResize")); if (x !== null) p.liveResize = x; }
   // Accepted for forward compatibility with the documented example, only at their inert values.
   if (has(o, "multiContextWindows")) unsupported(s, o.multiContextWindows, at(path, "multiContextWindows"), "float");
   if (has(o, "animation")) {
@@ -247,6 +253,46 @@ export function readPatch(s: Sink, v: unknown, path: string): SettingsPatch {
     }
   }
   return p;
+}
+
+/** A column width as a fraction of the usable width: (0, 1]. */
+function widthFraction(s: Sink, v: unknown, path: string): number | null {
+  const x = finite(s, v, path);
+  if (x === null) return null;
+  return x > 0 && x <= 1 ? x : err(s, path, "must be greater than 0 and at most 1");
+}
+
+/** Scrolling layout settings (experimental, docs/design/SCROLLING.md). */
+function readScrolling(s: Sink, v: unknown, path: string): Partial<ScrollingSettings> {
+  const out: { policy?: ScrollingSettings["policy"]; defaultWidth?: number; widthPresets?: readonly number[] } = {};
+  const o = objectWith(s, v, path, ["policy", "defaultWidth", "widthPresets"]);
+  if (!o) return out;
+  if (has(o, "policy")) { const x = oneOf(s, o.policy, at(path, "policy"), SCROLL_POLICY); if (x !== null) out.policy = x; }
+  if (has(o, "defaultWidth")) {
+    const x = widthFraction(s, o.defaultWidth, at(path, "defaultWidth"));
+    if (x !== null) out.defaultWidth = x;
+  }
+  if (has(o, "widthPresets")) {
+    const pp = at(path, "widthPresets");
+    const list = o.widthPresets;
+    if (!Array.isArray(list)) expected(s, pp, "an array of fractions", list);
+    else if (list.length === 0 || list.length > MAX_WIDTH_PRESETS) err(s, pp, `must hold 1..${MAX_WIDTH_PRESETS} fractions`);
+    else {
+      const presets: number[] = [];
+      let ok = true;
+      for (let i = 0; i < list.length; ++i) {
+        const x = widthFraction(s, list[i], idx(pp, i));
+        if (x === null) { ok = false; continue; }
+        if (presets.length > 0 && x <= presets[presets.length - 1]) {
+          err(s, idx(pp, i), "presets must be strictly ascending");
+          ok = false;
+        }
+        presets.push(x);
+      }
+      if (ok) out.widthPresets = presets;
+    }
+  }
+  return out;
 }
 
 // ---- JSON document ----

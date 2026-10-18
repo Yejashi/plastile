@@ -16,7 +16,7 @@ These are the keys in `kwinrc` and the fields of the settings dialog. Defaults c
 
 | Key | Default | Accepted values | Meaning |
 |---|---|---|---|
-| `layout` | `master-stack` | `master-stack`, `bsp`, `monocle`, `floating` | Layout for every context, unless an override or a session command changes it. |
+| `layout` | `master-stack` | `master-stack`, `bsp`, `monocle`, `floating`, `scrolling` | Layout for every context, unless an override or a session command changes it. `scrolling` is experimental and not offered by the settings dialog; set it in `kwinrc` or the JSON document ([scrolling](#scrolling-layout-settings-experimental)). |
 | `gapInner` | `8` | integer 0–200 (px) | Gap between neighbouring tiles. |
 | `gapOuter` | `8` | integer 0–200 (px) | Gap between tiles and the edge of the usable area, the same on all four sides. The JSON document can set each edge. |
 | `singleWindowGaps` | `true` | `true`, `false` | Keeps the outer gap when a context has a single tiled window. `false` lets a lone window fill the area. |
@@ -59,7 +59,7 @@ A settings patch is used by `defaults` and by each override's `set`. Every field
 | Field | Values | Notes |
 |---|---|---|
 | `enabled` | boolean | `false` stops tiling in the matching contexts: windows there are treated as floating. |
-| `layout` | `master-stack`, `bsp`, `monocle`, `floating` | |
+| `layout` | `master-stack`, `bsp`, `monocle`, `floating`, `scrolling` | `scrolling` is experimental. |
 | `gaps.inner` | integer 0–200 | |
 | `gaps.outer` | integer 0–200, or `{ "top", "right", "bottom", "left" }` (each 0–200, any subset) | A number sets all four edges. |
 | `masterStack.ratio` | strictly between 0 and 1 (clamped to 0.05–0.95 when solving) | |
@@ -70,11 +70,37 @@ A settings patch is used by `defaults` and by each override's `set`. Every field
 | `bsp.axis` | `alternate`, `longest`, `horizontal`, `vertical` | |
 | `bsp.initialRatio` | strictly between 0 and 1 (clamped to 0.05–0.95) | Ratio given to a new split. There is no flat key for it. Default 0.5. |
 | `bsp.ratioStep` | greater than 0, at most 0.5 | |
+| `scrolling.policy` | `lazy`, `centered` | Experimental scrolling layout ([below](#scrolling-layout-settings-experimental)). Default `lazy`. |
+| `scrolling.defaultWidth` | greater than 0, at most 1 | Width of a new column as a fraction of the usable width. Default 0.5. |
+| `scrolling.widthPresets` | 1–8 fractions, each greater than 0 and at most 1, strictly ascending | Widths *Scrolling: cycle column width* steps through. Default `[0.3333, 0.5, 0.6667, 1]` (exactly ⅓, ½, ⅔, 1). An override's list replaces the inherited one. |
 | `overflow` | `float-new` | The only implemented policy. Other values are rejected. |
 | `singleWindowGaps` | boolean | |
 | `followOnSend` | boolean | Default `false`. When `true`, *Send window to next/previous desktop* also shows that desktop on the window's screen (only that screen when KWin's per-screen desktops are on) and activates the window. *Send window to next/previous output* needs no switch: KWin itself moves the window onto the destination screen's current desktop and keeps it active, so `true` only adds the activation. The value of the context the window is sent **from** decides. JSON only (no flat key). |
+| `focusWrap` | boolean | Default `false`. When `true`, *Focus left/right/up/down* at the edge of the context continues from the opposite end of the same row or column on the same screen (right from the rightmost tile activates the leftmost tile it shares rows with). A tile with no row or column in common is never a wrap target, so a full-height master has nothing to wrap to upwards. Wrap never changes screen; *Focus next/previous output* does that. The value of the active window's context decides. JSON only. |
+| `liveResize` | boolean | Default `false`: during a mouse resize of a tile, the neighbours stay put and follow once on release. When `true` (master/stack and BSP only), the neighbours follow the dragged edge while the mouse moves: at most one layout solve per update of the resized window (measured in nested KWin: 60 solves and 120 neighbour frame requests per second for two neighbours at 60 Hz), only neighbours whose frame changes are written, the resized window is never written, and the release commits the final ratio as before. A cancelled resize returns the neighbours to their slots. JSON only. |
 | `multiContextWindows` | `"float"` only | As above: windows on several desktops or activities always float. |
 | `animation` | `{ "enabled": false, "durationMs": 0 }` only | As above: no animation exists. |
+
+### Scrolling layout settings (experimental)
+
+The scrolling layout ([README](README.md#scrolling-experimental)) is off unless `layout` is `scrolling` in a context. It is experimental: covered by mock and nested-KWin tests only, with its physical-monitor checks still open. Its settings exist only in the JSON document:
+
+```json
+{
+  "schemaVersion": 1,
+  "overrides": [
+    { "id": "scroll-on-desktop-2", "match": { "desktopName": "Desktop 2" },
+      "set": { "layout": "scrolling", "scrolling": { "policy": "centered", "defaultWidth": 0.6667 } } }
+  ]
+}
+```
+
+- **`policy`:** `lazy` scrolls only as far as needed to show the focused column and never past the strip's first or last column. `centered` centres the focused column whenever it fits on the screen.
+- **`defaultWidth`:** the width of each new column, as a fraction of the usable width (the screen's work area minus the outer gaps). Fractions that add up to 1 fill the width exactly, gaps included.
+- **`widthPresets`:** the widths *Scrolling: cycle column width* steps through, narrowest first.
+- *Grow* and *Shrink* change the focused column's width by `masterStack.ratioStep` (the flat `ratioStep`).
+
+A configuration change that leaves a context's layout as scrolling keeps its columns. One that changes it to another layout, or disables tiling there, brings every off-screen window back first.
 
 ### Overrides
 
@@ -330,6 +356,7 @@ The line is `plastile info explain {...}` with these fields:
 - `multiContextWindows` or `animation` at any non-inert value
 - a rule action this version does not support (`layout`, placement on an output, desktop or activity, `overflow`), each with the alternative in the message
 - a `minSize` with neither `width` nor `height`, or a value outside 1–8192
+- a scrolling `policy` other than `lazy` or `centered`, a width outside (0, 1], or `widthPresets` that is empty, longer than 8 or not strictly ascending
 
 **Warnings** (the configuration still activates): an empty `set`, empty `actions`. (Unknown flat keys would be a warning too, but in KWin they never reach the validator; see [Flat keys](#flat-keys).)
 

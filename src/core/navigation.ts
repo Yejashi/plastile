@@ -57,3 +57,61 @@ export function neighbour(from: WindowId, dir: Direction, rects: ReadonlyMap<Win
     || b.overlap - a.overlap || a.order - b.order);
   return pool[0].id;
 }
+
+/**
+ * Directional focus with wrap (focusWrap, BEHAVIOR §7): when nothing lies in `dir`, continue
+ * from the opposite end of the same row or column. The current rectangle is placed just past
+ * the far side of the context's bounding box and ranked with `neighbour`, so the result is
+ * the member at the opposite end that overlaps it on the orthogonal axis. A member with no
+ * orthogonal overlap is never a wrap target (no diagonal jump), so a full-height master has
+ * nothing to wrap to upwards. Only the rectangles given (one context) take part: wrap never
+ * leaves the output.
+ */
+export function wrapNeighbour(from: WindowId, dir: Direction, rects: ReadonlyMap<WindowId, Rect>): WindowId | null {
+  const direct = neighbour(from, dir, rects);
+  if (direct !== null) return direct;
+  const cur = rects.get(from);
+  if (!cur || rects.size < 2) return null;
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for (const r of rects.values()) {
+    x0 = Math.min(x0, r.x); y0 = Math.min(y0, r.y); x1 = Math.max(x1, right(r)); y1 = Math.max(y1, bottom(r));
+  }
+  const ghost: Rect =
+    dir === "right" ? { ...cur, x: x0 - cur.width }
+    : dir === "left" ? { ...cur, x: x1 }
+    : dir === "down" ? { ...cur, y: y0 - cur.height }
+    : { ...cur, y: y1 };
+  const shifted = new Map(rects);
+  shifted.set(from, ghost);
+  const id = neighbour(from, dir, shifted);
+  if (id === null) return null;
+  const c = rects.get(id)!;
+  const horizontal = dir === "left" || dir === "right";
+  const overlap = horizontal ? overlapLen(cur.y, bottom(cur), c.y, bottom(c)) : overlapLen(cur.x, right(cur), c.x, right(c));
+  return overlap > 0 ? id : null;
+}
+
+/** An output for cross-output navigation: identity and logical geometry. */
+export interface OutputPlace {
+  readonly id: string;
+  readonly geometry: Rect;
+}
+
+/**
+ * Outputs in topology order (cross-output commands, BEHAVIOR §7): left edge, then top edge,
+ * then id. Enumeration order is not identity and can change on replug, so the order is
+ * derived from geometry alone; a vertical stack orders top to bottom.
+ */
+export function outputOrder<T extends OutputPlace>(outs: readonly T[]): T[] {
+  return outs.slice().sort((a, b) => a.geometry.x - b.geometry.x || a.geometry.y - b.geometry.y
+    || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+}
+
+/** The output after (`step` 1) or before (-1) `from` in topology order, cyclic; null with fewer than two. */
+export function adjacentOutput<T extends OutputPlace>(outs: readonly T[], from: string | null, step: 1 | -1): T | null {
+  const order = outputOrder(outs);
+  if (order.length < 2) return null;
+  const i = order.findIndex((o) => o.id === from);
+  if (i < 0) return step === 1 ? order[0] : order[order.length - 1];
+  return order[(i + step + order.length) % order.length];
+}

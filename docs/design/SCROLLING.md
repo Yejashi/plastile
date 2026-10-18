@@ -1,7 +1,9 @@
 # Scrolling layout addendum (M8, T36)
 
-**Status:** proposal written before implementation, as [ROADMAP §11](../implementation/ROADMAP.md#11-m8-optional-scrolling-mode)
-requires. It refines [BEHAVIOR_SPEC §13](BEHAVIOR_SPEC.md#13-later-scrolling-mode). It reuses the engine's event, ownership,
+**Status:** written before implementation, as [ROADMAP §11](../implementation/ROADMAP.md#11-m8-optional-scrolling-mode)
+requires; now implemented as an experimental layout and tested with mock and nested-KWin 6.7.5
+scenarios only. The physical-session checks in §6 are open. Where the implementation refines or departs from
+this text, [§7](#7-implementation-notes-and-deviations) says so and why. It refines [BEHAVIOR_SPEC §13](BEHAVIOR_SPEC.md#13-later-scrolling-mode). It reuses the engine's event, ownership,
 ledger and teardown machinery and adds a separate viewport model. It does not extend master/stack
 state. Scrolling ships disabled and opt-in (`layout: "scrolling"`), as an experimental layout, under
 [ADR-014](DECISIONS.md#adr-014-start-m8m9-as-experimental-opt-in-layouts-before-g3-physical-sign-off).
@@ -124,3 +126,55 @@ dispatch.
 - Physical session (open gate): no visible pixels or pointer input from parked windows on neighbouring
   monitors at mixed scales; focus and scroll latency measured against a scrolling baseline (Karousel)
   with the same workload, never against a master/stack solver.
+
+## 7. Implementation notes and deviations
+
+Implemented in `src/core/layouts/scrolling.ts` (pure strip, projection and parking) and the engine's
+scrolling section (`src/core/engine.ts`). Tests: `tests/core/scrolling.test.ts`,
+`tests/core/scrollingEngine.test.ts`, `tests/integration/scenarios_scrolling.py` (`scrolling-*-M8`).
+
+Refinements and deviations, each with its reason:
+
+1. **Every window's centre, not the column's.** §3 checks that the parking rectangle's centre is nearest to
+   the strip's output. KWin assigns each window's output from that window's own frame centre, and a tall
+   column's top window can be nearer a neighbour than the column centre is (found by the property test with
+   an output at a negative origin). A candidate therefore qualifies only when the centre of every window in
+   the column is nearest to the strip's output.
+2. **Strictly nearest.** `Workspace::outputAt` keeps the first output on a tie, and enumeration order is not
+   Plastile's to choose, so a tie disqualifies a candidate.
+3. **Unpark of an oversized window.** §5.1 says a window whose clamped virtual position is invalid is
+   centred. Unparking keeps the size (position-only) and clamps the position into the work area; only a
+   window larger than the area is shrunk to it, because a centred oversized window would still lie partly
+   outside its output's work area, which the exit paths must rule out.
+4. **Lazy keeps the viewport inside the strip.** With `lazy` the viewport is clamped so that no empty space
+   shows beside the strip (also after removals, §2). Consequently *Centre focused column* centres an end
+   column only as far as that clamp allows. `centered` always centres the focused column, also at the ends.
+5. **Column pixel width** is `floor(fraction × (usable + gap) − gap)`, at least the widest member's minimum.
+   Fractions that sum to 1 then fill the usable width exactly with their gaps, and rounding never makes a
+   column cross the area edge and get parked.
+6. **Visibility tolerance.** A column is visible when its projection lies inside the area within the
+   ordinary ½ px tolerance; everything else, including a column crossing an edge by one pixel, is parked.
+7. **Commands not listed in §4.** `swap.up/down` and `move.up/down` move the window within its column;
+   `move.left/right` act like `swap.left/right` (the column moves); `swap.next/previous/master` and
+   `focus.next/previous` use strip order; `resize.equalize` resets row weights; an interactive edge drag
+   changes the column width (left/right) or the row weights (top/bottom). `plastile.layout.scrolling`
+   selects the layout; the `layout.next/previous` cycle never enters it, so the existing cycle is unchanged
+   (ADR-014). All scrolling commands are unbound by default.
+8. **Insertion rules.** The rule action `insert: "after-focus"` (the default) puts the new column after the
+   focused one; `end` and `master` put it at the end of the strip.
+9. **Where the scroll happens.** A focus command scrolls and solves synchronously, within the command. An
+   activation by KWin (click, Alt+Tab, an application) scrolls in the next flush, as every event does
+   (ARCHITECTURE §7). The focus used for the viewport is the engine's own focus history (the last activated
+   participant), falling back to KWin's active window at adoption, before any activation was observed.
+10. **Reconcile** brings every parked window back and the solves that follow park whatever their strips still
+    hide, so a model that drifted cannot strand a window off screen.
+11. **Suspended members.** A parked window that becomes fullscreen or maximized, or is being dragged, is left
+    to KWin until that ends; on unload or suspension it is unparked regardless. A minimized parked window is
+    unparked when it stops participating.
+12. **Not persisted.** Columns, widths and the viewport live for the KWin session only, like BSP trees.
+
+Measured in nested KWin 6.7.5 (two virtual outputs side by side, `scrolling-topology-M8`): columns parked
+directly above their output kept that output as `window.output`. Changing the neighbour's scale made KWin pull
+both parked windows partly back on screen (y −848 → −584); Plastile parked them again 5 ms later, so the brief
+visible transient of §5.2 is real. Moving a parked window onto the neighbour changed its `window.output`, and it
+stayed in its strip's context and was parked again.
