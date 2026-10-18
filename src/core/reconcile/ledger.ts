@@ -8,7 +8,7 @@
 // while another request is in flight, recognizes stale observations of older
 // targets, and bounds corrective writes.
 
-import { rectNear, sizeNear, type Rect, type Size } from "../geometry.ts";
+import { rectNear, sizeNear, TOLERANCE, type Rect, type Size } from "../geometry.ts";
 
 export const HISTORY = 4;
 export const CORRECTION_BUDGET = 2;
@@ -39,31 +39,33 @@ export interface LedgerEntry {
   status: LedgerStatus;
   /** When the outstanding request was issued (deadline base). */
   pendingSince: number | null;
+  /** Frame comparison tolerance for this window's output (geometry.frameTolerance). */
+  tol: number;
 }
 
-export function newEntry(observed: Rect | null): LedgerEntry {
+export function newEntry(observed: Rect | null, tol = TOLERANCE): LedgerEntry {
   return { desired: null, request: null, outstanding: false, history: [], corrections: 0, observed,
-           status: "idle", pendingSince: null };
+           status: "idle", pendingSince: null, tol };
 }
 
 export type WriteDecision = "write" | "skip-outstanding" | "skip-noop" | "skip-diverged";
 
 /** Decide whether a plan target needs a frame write. `observedNow` is the current frame. */
 export function decideWrite(e: LedgerEntry, target: Rect, observedNow: Rect | null): WriteDecision {
-  const sameDesired = rectNear(e.desired, target);
+  const sameDesired = rectNear(e.desired, target, e.tol);
   if (e.status === "diverged" && sameDesired) return "skip-diverged";
-  if (e.request && rectNear(e.request.rect, target)) {
+  if (e.request && rectNear(e.request.rect, target, e.tol)) {
     if (e.outstanding) return "skip-outstanding";
-    if (rectNear(observedNow, target)) return "skip-noop";
+    if (rectNear(observedNow, target, e.tol)) return "skip-noop";
     return "write"; // settled earlier but drifted: caller labels it a correction
   }
-  if (!e.outstanding && rectNear(observedNow, target)) return "skip-noop";
+  if (!e.outstanding && rectNear(observedNow, target, e.tol)) return "skip-noop";
   return "write";
 }
 
 /** Record that the policy wants `target` (whether or not a write happens). */
 export function setDesired(e: LedgerEntry, target: Rect): void {
-  if (!rectNear(e.desired, target)) {
+  if (!rectNear(e.desired, target, e.tol)) {
     e.desired = target;
     e.corrections = 0;
     if (e.status === "diverged") e.status = e.outstanding ? "pending" : "idle";
@@ -103,7 +105,7 @@ export function finishWrite(e: LedgerEntry, before: Rect | null, after: Rect | n
   // Settle on readback only if the frame actually changed to the target: when the
   // old committed frame already equals the target while another request is in
   // flight, KWin sends no configure and the late commit must still be caught.
-  if (e.request && !rectNear(before, e.request.rect) && rectNear(after, e.request.rect)) {
+  if (e.request && !rectNear(before, e.request.rect, e.tol) && rectNear(after, e.request.rect, e.tol)) {
     settle(e);
     return true;
   }
@@ -143,11 +145,11 @@ export function observe(e: LedgerEntry, observed: Rect): Observation {
   let late = false;
   for (let i = 0; i <= last; ++i) {
     const h = e.history[i];
-    if (!sizeNear(observed, h.rect)) continue;
-    if (!h.seen && i < last && !sizeNear(h.rect, current)) late = true;
+    if (!sizeNear(observed, h.rect, e.tol)) continue;
+    if (!h.seen && i < last && !sizeNear(h.rect, current, e.tol)) late = true;
     h.seen = true;
   }
-  if (rectNear(observed, current)) {
+  if (rectNear(observed, current, e.tol)) {
     if (e.outstanding) { settle(e); return "settled"; }
     return "confirmed";
   }
@@ -183,13 +185,13 @@ export type Expiry =
  * than fighting; otherwise correct within budget, then diverge.
  */
 export function expire(e: LedgerEntry, observedNow: Rect | null): Expiry {
-  if (e.request && rectNear(observedNow, e.request.rect)) { settle(e); return { kind: "settled" }; }
+  if (e.request && rectNear(observedNow, e.request.rect, e.tol)) { settle(e); return { kind: "settled" }; }
   const target = e.request?.rect ?? null;
   if (target && observedNow) {
-    const minW = observedNow.width > target.width + 0.5 ? observedNow.width : 0;
-    const minH = observedNow.height > target.height + 0.5 ? observedNow.height : 0;
-    const maxW = observedNow.width < target.width - 0.5 ? observedNow.width : Infinity;
-    const maxH = observedNow.height < target.height - 0.5 ? observedNow.height : Infinity;
+    const minW = observedNow.width > target.width + e.tol ? observedNow.width : 0;
+    const minH = observedNow.height > target.height + e.tol ? observedNow.height : 0;
+    const maxW = observedNow.width < target.width - e.tol ? observedNow.width : Infinity;
+    const maxH = observedNow.height < target.height - e.tol ? observedNow.height : Infinity;
     const learnsMin = minW > 0 || minH > 0;
     const learnsMax = maxW < Infinity || maxH < Infinity;
     if (learnsMin || learnsMax) {

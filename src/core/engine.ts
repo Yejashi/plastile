@@ -5,7 +5,7 @@
 // a transaction is applying, in which case they queue in order. Every external
 // frame write goes through applyTarget() and the requested/observed ledger.
 
-import { isValidArea, rectNear, rectOf, type Rect, type Size } from "./geometry.ts";
+import { frameTolerance, isValidArea, rectNear, rectOf, type Rect, type Size } from "./geometry.ts";
 import { classify } from "./classify.ts";
 import { COMMAND_IDS, type CommandResult, type CommandStatus } from "./commands.ts";
 import { DEFAULT_SETTINGS } from "./defaults.ts";
@@ -19,7 +19,7 @@ import { bsp, reinsert as bspReinsert } from "./layouts/bsp.ts";
 import { monocle, floating } from "./layouts/monocle.ts";
 import {
   contextId, sameContext, type Constraints, type ContextId, type ContextKey, type ContextSettings, type Decision,
-  type LayoutKind, type Membership, type PlacementMode, type Suspension, type WindowId, type WindowMeta,
+  type LayoutKind, type Membership, type OutputId, type PlacementMode, type Suspension, type WindowId, type WindowMeta,
   type WindowStates,
 } from "./types.ts";
 
@@ -119,6 +119,8 @@ export class Engine {
   private contexts = new Map<ContextId, Ctx>();
   private dirty = new Set<ContextId>();
   private corrections = new Set<WindowId>();
+  /** Output scales, refreshed on adoption and topology changes (not per command). */
+  private scales = new Map<OutputId, number>();
   private endedInteractions = new Map<WindowId, "move" | "resize">();
   private queued: Array<{ id: string; arg: unknown }> = [];
   private applying = 0;
@@ -150,6 +152,7 @@ export class Engine {
 
   /** Adopt existing windows: classify once, seed order, one solve per visible context. */
   start(initial: readonly WindowSnapshot[]): void {
+    this.refreshScales();
     for (const s of initial) this.add(s, false);
     this.markVisibleDirty();
     this.flushNow();
@@ -396,6 +399,7 @@ export class Engine {
   topologyChanged(): void {
     if (!this.alive) return;
     this.trace.record(this.svc.now(), "topology");
+    this.refreshScales();
     for (const c of this.contexts.values()) { c.settings = null; this.markDirty(c.key); }
     this.ensureFlush();
   }
@@ -628,7 +632,7 @@ export class Engine {
     for (const id of ids) {
       const r = this.recs.get(id);
       if (!r || !this.ownsGeometry(r) || !r.ledger.desired) continue;
-      if (rectNear(r.frame, r.ledger.desired)) continue;
+      if (rectNear(r.frame, r.ledger.desired, r.ledger.tol)) continue;
       if (!L.canCorrect(r.ledger)) continue;
       this.write(r, r.ledger.desired, "correction");
     }
@@ -689,11 +693,13 @@ export class Engine {
     }
     c.plan = res.slots;
     c.applied = c.revision;
+    const tol = frameTolerance(this.scales.get(c.key.output) ?? 1);
     this.applying++;
     try {
       for (const [id, target] of res.slots) {
         const r = this.recs.get(id);
         if (!r || !this.writable(r)) continue;
+        r.ledger.tol = tol;
         this.applyTarget(r, target);
       }
       for (const id of res.raise) {
@@ -707,6 +713,11 @@ export class Engine {
                                    writes: this.counters.writes - writes0 };
   }
 
+  private refreshScales(): void {
+    this.scales.clear();
+    for (const o of this.host.outputs()) this.scales.set(o.id, o.scale);
+  }
+
   private applyTarget(r: Rec, target: Rect): void {
     const now = this.host.frame(r.id, r.gen);
     if (now === null) return; // gone: removal event follows; peers continue
@@ -715,7 +726,7 @@ export class Engine {
       case "skip-outstanding": this.counters.skipOutstanding++; L.setDesired(r.ledger, target); return;
       case "skip-noop": this.counters.skipNoop++; L.acceptNoop(r.ledger, target); return;
       case "skip-diverged": this.counters.skipDiverged++; return;
-      default: this.write(r, target, r.ledger.request && rectNear(r.ledger.request.rect, target) ? "correction" : "plan");
+      default: this.write(r, target, r.ledger.request && rectNear(r.ledger.request.rect, target, r.ledger.tol) ? "correction" : "plan");
     }
   }
 

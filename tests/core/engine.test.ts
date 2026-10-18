@@ -226,6 +226,24 @@ test("G08/E07: a client obeying a larger minimum is learned once; no oscillation
   assert.ok(String(ex.exception).includes("learned") || ex.mode === "floating", JSON.stringify(ex));
 });
 
+test("G03: device-pixel snapping at scale 1.75 settles; nothing is learned, floated or re-written", () => {
+  const h = new MockHost();
+  h.outs = [{ id: "O1", name: "O1", geometry: rect(0, 0, 731.4286, 457.1429), scale: 1.75 }];
+  h.areas.set("O1/D1", rect(0, 0, 731.4286, 457.1429));
+  const e = h.start();
+  const snap = { width: 0, height: 1 / 1.75 }; // one device pixel taller than requested
+  h.open("a", { commitOffset: snap });
+  h.open("b", { commitOffset: snap });
+  h.drain();
+  h.advance(5000);
+  const writes = h.writes.length;
+  h.advance(5000);
+  assert.equal(h.writes.length, writes, "converged: no repeated fractional corrections");
+  assert.equal(e.counters.learned, 0, "a device pixel is not a size constraint");
+  assert.equal(e.counters.overflow, 0);
+  for (const id of ["a", "b"]) assert.equal(e.explain(id)!.mode, "tiled");
+});
+
 test("G11: an application resizing itself is corrected at most twice, then left alone", () => {
   const { h, e } = setup(["a", "b"]);
   for (let i = 0; i < 6; ++i) {

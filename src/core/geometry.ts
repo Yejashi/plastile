@@ -27,6 +27,17 @@ export interface Edges {
 /** Default comparison tolerance in logical pixels. */
 export const TOLERANCE = 0.5;
 
+/**
+ * Tolerance for comparing a requested frame with the frame KWin reports for it.
+ * xdg client sizes are integers (up to ½ px of rounding), and at any scale other
+ * than 1 KWin snaps frame and decoration edges to the device-pixel grid, adding up
+ * to one device pixel (1/scale logical px). Measured in nested KWin 6.7.5: at scale
+ * 1.75 an accepted frame was 0.571 px (one device pixel) taller than its target.
+ */
+export function frameTolerance(scale: number): number {
+  return Number.isFinite(scale) && scale > 0 && scale !== 1 ? TOLERANCE + 1 / scale : TOLERANCE;
+}
+
 export function rect(x: number, y: number, width: number, height: number): Rect {
   return { x, y, width, height };
 }

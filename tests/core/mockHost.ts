@@ -7,7 +7,9 @@
 //    (newer configures supersede older ones, "latest" delay mode);
 //  - a size request equal to the committed size is dropped (no configure) even
 //    while another configure is in flight (E04);
-//  - a client may clamp to its own minimum (KWin itself does not clamp).
+//  - a client may clamp to its own minimum (KWin itself does not clamp);
+//  - at scales other than 1 the committed frame can differ from the request by up to
+//    one device pixel (commitOffset; measured 0.571 px at scale 1.75).
 
 import { rect, rectOf, type Rect } from "../../src/core/geometry.ts";
 import type { FrameWrite, HostPort, OutputInfo, RuntimeServices, WindowSnapshot } from "../../src/core/ports.ts";
@@ -26,6 +28,7 @@ export interface MockWindow {
   delay: number;               // client commit delay (ms)
   clampToMin: boolean;         // client obeys its own minimum
   ignore: boolean;             // client ignores requested sizes
+  commitOffset: { width: number; height: number }; // committed minus requested size (device-pixel snapping)
   nativeTile: boolean;
   noBorder: boolean;
   alive: boolean;
@@ -110,6 +113,8 @@ export class MockHost implements HostPort, RuntimeServices {
     let width = p.width, height = p.height;
     if (w.clampToMin) { width = Math.max(width, w.constraints.minFrame.width); height = Math.max(height, w.constraints.minFrame.height); }
     if (w.ignore) return;
+    width += w.commitOffset.width;
+    height += w.commitOffset.height;
     w.frame = rect(w.frame.x, w.frame.y, width, height);
     this.engine.frameObserved(w.id, w.gen, w.frame);
   }
@@ -178,7 +183,7 @@ export class MockHost implements HostPort, RuntimeServices {
     const w: MockWindow = {
       id, gen: this.nextGen++, meta: meta(id), membership: { output: "O1", desktops: ["D1"], onAllDesktops: false, activities: [] },
       states: NO_STATES, constraints: FREE, frame: rect(100, 100, 400, 300), pending: null, delay: 0, clampToMin: false,
-      ignore: false, nativeTile: false, noBorder: false, alive: true, ...patch,
+      ignore: false, commitOffset: { width: 0, height: 0 }, nativeTile: false, noBorder: false, alive: true, ...patch,
     };
     this.windows.set(id, w);
     return w;

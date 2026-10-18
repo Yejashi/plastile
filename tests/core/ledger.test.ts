@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { rect } from "../../src/core/geometry.ts";
+import { frameTolerance, rect } from "../../src/core/geometry.ts";
 import * as L from "../../src/core/reconcile/ledger.ts";
 
 const A = rect(0, 0, 512, 400);
@@ -81,4 +81,26 @@ test("external change after settlement is reported, not treated as stale", () =>
   L.recordWrite(e, B, 1, 0, "plan", A, A);
   L.observe(e, B);
   assert.equal(L.observe(e, rect(5, 5, 300, 300)), "external");
+});
+
+test("G03: device-pixel snapping at a fractional scale settles instead of being learned as a constraint", () => {
+  // Measured in nested KWin 6.7.5 at scale 1.75: target height 441.14 (457.14 area - 16 gap),
+  // accepted frame 441.71 (integer client height + decoration snapped to 1/1.75 px).
+  const target = rect(1685, 8, 318.2857, 441.1429);
+  const accepted = rect(1685, 8, 318.2857, 441.7143);
+  const strict = L.newEntry(A);
+  L.recordWrite(strict, target, 1, 0, "plan", A, A);
+  assert.equal(L.expire(strict, accepted).kind, "learn", "the scale-1 tolerance misreads a device pixel as a minimum");
+  const scaled = L.newEntry(A, frameTolerance(1.75));
+  L.recordWrite(scaled, target, 1, 0, "plan", A, A);
+  assert.equal(L.observe(scaled, accepted), "settled");
+  assert.equal(L.decideWrite(scaled, target, accepted), "skip-noop", "no repeated fractional correction");
+});
+
+test("frameTolerance: half a pixel at scale 1, plus one device pixel otherwise", () => {
+  assert.equal(frameTolerance(1), 0.5);
+  assert.equal(frameTolerance(2), 1);
+  assert.ok(Math.abs(frameTolerance(1.75) - (0.5 + 1 / 1.75)) < 1e-12);
+  assert.equal(frameTolerance(Number.NaN), 0.5);
+  assert.equal(frameTolerance(0), 0.5);
 });
