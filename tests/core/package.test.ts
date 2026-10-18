@@ -48,3 +48,23 @@ test("command ids are unique and stable-looking", () => {
   const seqs = COMMANDS.map((c) => c.sequence).filter((s) => s !== "");
   assert.equal(new Set(seqs).size, seqs.length, "no two commands share a default binding");
 });
+
+test("default bindings avoid Shift+punctuation and measured collisions (docs/user/SHORTCUTS.md)", () => {
+  // Shift changes the produced key symbol (US: Shift+= is "+", Shift+- is "_"), so such a
+  // sequence never arrives as registered: Meta+Shift+= and Meta+Shift+- were measured not to
+  // reach Plastile with real input in nested KWin 6.7.5.
+  // Taken by stock software: Spectacle (Meta+Shift+S, measured in the registry), KWin Zoom
+  // and Magnifier (Meta+=, Meta++, Meta+-; observed source: src/plugins/zoom/zoom.cpp:54-57).
+  const taken = new Set(["Meta+Shift+S", "Meta+=", "Meta++", "Meta+-"]);
+  for (const c of COMMANDS) {
+    if (c.sequence === "") continue;
+    const parts = c.sequence.endsWith("++") ? [...c.sequence.slice(0, -2).split("+"), "+"] : c.sequence.split("+");
+    const key = parts[parts.length - 1];
+    const mods = parts.slice(0, -1);
+    assert.ok(!(mods.includes("Shift") && key.length === 1 && !/[A-Za-z0-9]/.test(key)),
+      `${c.id}: ${c.sequence} combines Shift with punctuation`);
+    assert.ok(!taken.has(c.sequence), `${c.id}: ${c.sequence} collides with a stock binding`);
+    assert.ok(mods.length > 0 && mods.every((m) => m === "Meta" || m === "Shift" || m === "Ctrl" || m === "Alt"),
+      `${c.id}: ${c.sequence} has an unexpected modifier`);
+  }
+});

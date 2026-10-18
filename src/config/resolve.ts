@@ -4,7 +4,7 @@
 import type { ContextSettings, WindowKind, WindowMeta } from "../core/types.ts";
 import { matchString, subject } from "./matchers.ts";
 import { applyPatch, freezeSettings } from "./patch.ts";
-import type { ConfigSnapshot, ContextInfo, RuleActions, StringMatcher, WindowRuleResult } from "./types.ts";
+import type { CompiledConfig, CompiledRule, ConfigSnapshot, ContextInfo, RuleActions, RuleBase, StringMatcher, WindowRuleResult } from "./types.ts";
 import { EXCLUDED_KINDS } from "../core/classify.ts";
 
 export const RULE_CACHE_LIMIT = 512;
@@ -54,11 +54,14 @@ export function resolveContext(snap: ConfigSnapshot, ctx: ContextInfo): ContextR
   return out;
 }
 
-/** Everything rule matching and built-in exclusion read; the title only when a rule uses it (Q03). */
-export function ruleCacheKey(meta: WindowMeta, snap: ConfigSnapshot): string {
+/**
+ * Shared-cache key: everything title-free rule matching and built-in exclusion read. Titles
+ * never enter it, so a busy title neither misses nor evicts other windows' entries (Q03,
+ * CONFIGURATION §4). `_snap` is kept for callers of the earlier signature.
+ */
+export function ruleCacheKey(meta: WindowMeta, _snap?: ConfigSnapshot): string {
   const flags = (meta.transient ? "t" : "-") + (meta.special ? "s" : "-") + (meta.own ? "o" : "-");
-  const key = `${meta.kind}|${flags}|${part(subject(meta.appId))}${part(subject(meta.resourceName))}`;
-  return snap.usesTitleRules ? key + subject(meta.title) : key;
+  return `${meta.kind}|${flags}|${part(subject(meta.appId))}${part(subject(meta.resourceName))}`;
 }
 
 function builtinBlock(meta: WindowMeta): string | null {
@@ -68,22 +71,33 @@ function builtinBlock(meta: WindowMeta): string | null {
   return null;
 }
 
-/** Context-independent today (rules have no context matchers yet); `_ctx` is reserved for them. */
-export function resolveWindow(snap: ConfigSnapshot, meta: WindowMeta, _ctx: ContextInfo | null): WindowRuleResult {
-  const c = snap.compiled;
-  const key = ruleCacheKey(meta, snap);
+/** Title-free matching, memoized: each rule's appId/resourceName/type matchers run once per metadata. */
+function ruleBase(c: CompiledConfig, meta: WindowMeta): RuleBase {
+  const key = ruleCacheKey(meta);
   const hit = c.ruleCache.get(key);
   if (hit) return hit;
-
   const appId = subject(meta.appId), resourceName = subject(meta.resourceName);
-  const title = snap.usesTitleRules ? subject(meta.title) : "";
-  const actions: { mode?: RuleActions["mode"]; border?: RuleActions["border"]; insert?: RuleActions["insert"] } = {};
-  const reasons: Record<string, string> = {};
-  const ruleIds: string[] = [];
+  const matched: CompiledRule[] = [];
+  let titled = false;
   for (const r of c.rules) {
     if (r.windowType && !r.windowType.has(meta.kind)) continue;
     if (r.transient !== null && r.transient !== meta.transient) continue;
-    if (!opt(r.appId, appId) || !opt(r.resourceName, resourceName) || !opt(r.title, title)) continue;
+    if (!opt(r.appId, appId) || !opt(r.resourceName, resourceName)) continue;
+    matched.push(r);
+    if (r.title !== null) titled = true;
+  }
+  const base: RuleBase = Object.freeze({ matched: Object.freeze(matched), result: titled ? null : build(matched, meta) });
+  if (c.ruleCache.size >= RULE_CACHE_LIMIT) c.ruleCache.clear();
+  c.ruleCache.set(key, base);
+  return base;
+}
+
+/** Apply matched rules in order (later rules win per field); a built-in exclusion overrides them. */
+function build(rules: readonly CompiledRule[], meta: WindowMeta): WindowRuleResult {
+  const actions: { mode?: RuleActions["mode"]; border?: RuleActions["border"]; insert?: RuleActions["insert"] } = {};
+  const reasons: Record<string, string> = {};
+  const ruleIds: string[] = [];
+  for (const r of rules) {
     ruleIds.push(r.id);
     const a = r.actions;
     if (a.mode !== undefined) { actions.mode = a.mode; reasons.mode = `rule ${r.id}`; }
@@ -103,8 +117,21 @@ export function resolveWindow(snap: ConfigSnapshot, meta: WindowMeta, _ctx: Cont
     }
     result = { actions: Object.freeze({ mode: "excluded" as const }), ruleIds: Object.freeze(ruleIds), reasons: Object.freeze(blocked), blockedBy };
   }
-  Object.freeze(result);
-  if (c.ruleCache.size >= RULE_CACHE_LIMIT) c.ruleCache.clear();
-  c.ruleCache.set(key, result);
-  return result;
+  return Object.freeze(result);
+}
+
+/**
+ * Context-independent today (rules have no context matchers yet); `_ctx` is reserved for them.
+ * Without title rules among the candidates the cached result is returned as is. Otherwise only
+ * the title matchers of rules whose other matchers already passed run against the current
+ * title (CONFIGURATION §4: "Title change; evaluate only rules that use title"); per-title
+ * results are not cached.
+ */
+export function resolveWindow(snap: ConfigSnapshot, meta: WindowMeta, _ctx: ContextInfo | null): WindowRuleResult {
+  const base = ruleBase(snap.compiled, meta);
+  if (base.result) return base.result;
+  const title = subject(meta.title);
+  const rules: CompiledRule[] = [];
+  for (const r of base.matched) if (r.title === null || matchString(r.title, title)) rules.push(r);
+  return build(rules, meta);
 }

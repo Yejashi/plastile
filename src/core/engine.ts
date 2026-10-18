@@ -446,6 +446,21 @@ export class Engine {
     this.ensureFlush();
   }
 
+  /**
+   * The usable area changed on these outputs (a panel appeared, went away or moved):
+   * invalidate only their contexts' geometry, without touching policy order or settings.
+   */
+  workAreaChanged(outputs: readonly OutputId[]): void {
+    if (!this.alive) return;
+    this.trace.record(this.svc.now(), "topology", undefined, { workArea: outputs });
+    for (const c of this.contexts.values()) {
+      if (outputs.indexOf(c.key.output) < 0) continue;
+      this.markDirty(c.key);
+      this.retryOverflow(c.id); // the area may have grown (BEHAVIOR §11)
+    }
+    this.ensureFlush();
+  }
+
   /** New configuration activated: settings/rules functions replaced atomically. */
   configure(opts: EngineOptions): void {
     this.trace.record(this.svc.now(), "configure");
@@ -780,6 +795,9 @@ export class Engine {
     for (const id of ids) {
       const r = this.recs.get(id);
       if (!r || !this.ownsGeometry(r) || !r.ledger.desired) continue;
+      // A dirty context is re-solved in this flush and its fresh target supersedes the old
+      // one (e.g. KWin moved a tile off a new panel before the area change was known).
+      if (this.dirty.has(contextId(r.ctx!))) continue;
       if (rectNear(r.frame, r.ledger.desired, r.ledger.tol) || rectNear(r.frame, r.ledger.accepted, r.ledger.tol)) continue;
       if (!L.canCorrect(r.ledger)) continue;
       this.contained("correction", () => this.write(r, r.ledger.desired!, "correction"));
@@ -1359,6 +1377,8 @@ export class Engine {
     if (r.mode !== "tiled") { this.restoreBorder(r); return; }
     const cur = this.host.noBorder(r.id, r.gen);
     if (cur === null || cur === noBorder) return;
+    // Changed by the user since Plastile applied it: yield, as restoreBorder does (Q10).
+    if (r.border && cur !== r.border.applied) return;
     if (!r.border) r.border = { original: cur, applied: noBorder };
     if (this.host.setNoBorder(r.id, r.gen, noBorder)) r.border.applied = noBorder;
   }

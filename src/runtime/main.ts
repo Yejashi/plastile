@@ -48,7 +48,9 @@ export function createRuntime(env: RuntimeEnv): Runtime {
   let snapshot: ConfigSnapshot | null = null;
   const readFlat = (): Record<string, unknown> => {
     const flat: Record<string, unknown> = {};
-    // Flat keys from kwinrc [Script-plastile] (the settings dialog writes these).
+    // Flat keys from kwinrc [Script-plastile] (the settings dialog writes these). readConfig
+    // reads one key by name and cannot list the group, so a mistyped key is never seen here
+    // (the validator's unknown-key warning is reachable only from compileConfig callers).
     for (const k of FLAT_KEYS) flat[k] = env.kwin.readConfig(k, "");
     return flat;
   };
@@ -119,12 +121,20 @@ export function createRuntime(env: RuntimeEnv): Runtime {
   const onConfig = (): void => {
     if (!engine.isAlive()) return;
     if (loadConfig()) {
+      // Caption watching follows the active rules; on activation the current titles are read
+      // before the engine re-classifies.
+      adapter.setWatchTitles(snapshot!.usesTitleRules);
       engine.configure(options(snapshot!));
       log("info", "configuration activated", { revision: snapshot!.revision });
     }
   };
   env.options.configChanged.connect(onConfig);
   optionConns.push({ signal: env.options.configChanged, fn: onConfig });
+  // desktopName matchers read the names when contexts and rules resolve: a rename
+  // re-resolves the active configuration (settings and classification), as an activation does.
+  adapter.onDesktopNamesChanged = () => {
+    if (engine.isAlive() && snapshot) engine.configure(options(snapshot));
+  };
 
   const dispatch = (id: string): CommandResult | null => {
     if (!engine.isAlive()) return null;
