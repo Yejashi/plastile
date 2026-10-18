@@ -23,6 +23,25 @@ const MODES: readonly NonNullable<RuleActions["mode"]>[] = ["tiled", "floating",
 const BORDERS: readonly NonNullable<RuleActions["border"]>[] = ["normal", "none", "keep"];
 const EDGES: readonly (keyof Edges)[] = ["top", "right", "bottom", "left"];
 
+/** Matcher fields for the window's context, shared by overrides and rules (CONFIGURATION §4). */
+const CONTEXT_MATCH = ["outputName", "desktopName", "desktopId", "activityId"];
+
+const PLACEMENT = "not supported: Plastile does not move windows to another output, desktop or activity on its own. " +
+  "Use a KWin window rule (System Settings, Window Rules: Screen, Virtual Desktop, Activities); Plastile then tiles " +
+  "the window where KWin placed it, and a rule here can match that place with outputName, desktopName or activityId";
+
+/**
+ * Rule actions named in CONFIGURATION §4 that this version does not implement, each with
+ * what to use instead. Reported as errors rather than "unknown key", so the fix is in the message.
+ */
+const UNSUPPORTED_ACTIONS: Readonly<Record<string, string>> = {
+  layout: "not a window action: a layout belongs to an output or desktop; use overrides[].set.layout with a match",
+  output: PLACEMENT, outputName: PLACEMENT, screen: PLACEMENT, desktop: PLACEMENT, desktopName: PLACEMENT,
+  desktopId: PLACEMENT, activity: PLACEMENT, activityId: PLACEMENT,
+  overflow: "not supported per window: float-new is the only overflow policy in this version; " +
+    "use minSize to float a window instead of giving it a tile smaller than it can use",
+};
+
 export interface DiagnosticsPatch {
   level?: DiagnosticsLevel;
   traceCapacity?: number;
@@ -327,25 +346,6 @@ function readOverride(s: Sink, o: Record<string, unknown>, path: string, id: str
   if (Object.keys(set).length === 0) warn(s, at(path, "set"), "empty set has no effect");
   return { id, outputName, desktopName, desktopId, activityId, set };
 }
-
-/** Matcher fields for the window's context, shared by overrides and rules (CONFIGURATION §4). */
-const CONTEXT_MATCH = ["outputName", "desktopName", "desktopId", "activityId"];
-
-const PLACEMENT = "not supported: Plastile does not move windows to another output, desktop or activity on its own. " +
-  "Use a KWin window rule (System Settings, Window Rules: Screen, Virtual Desktop, Activities); Plastile then tiles " +
-  "the window where KWin placed it, and a rule here can match that place with outputName, desktopName or activityId";
-
-/**
- * Rule actions named in CONFIGURATION §4 that this version does not implement, each with
- * what to use instead. Reported as errors rather than "unknown key", so the fix is in the message.
- */
-const UNSUPPORTED_ACTIONS: Readonly<Record<string, string>> = {
-  layout: "not a window action: a layout belongs to an output or desktop; use overrides[].set.layout with a match",
-  output: PLACEMENT, outputName: PLACEMENT, screen: PLACEMENT, desktop: PLACEMENT, desktopName: PLACEMENT,
-  desktopId: PLACEMENT, activity: PLACEMENT, activityId: PLACEMENT,
-  overflow: "not supported per window: float-new is the only overflow policy in this version; " +
-    "use minSize to float a window instead of giving it a tile smaller than it can use",
-};
 
 function readRule(s: Sink, o: Record<string, unknown>, path: string, id: string): CompiledRule | null {
   if (!objectWith(s, o, path, ["id", "priority", "match", "actions"])) return null;
