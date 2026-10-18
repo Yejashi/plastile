@@ -29,7 +29,7 @@ occur); `native-editor-toggle-L14` only where compositing is QPainter (the tile 
 |---|---|
 | G0 (APIs and measurement viable) | Passed, nested ([M0 report](M0_PROBE_REPORT.md), [API profile](API_PROFILE.md)) |
 | G1 (backend decision) | Passed, nested: direct geometry (ADR-003) |
-| G2 (integration and performance) | **Open.** Integration passes on 6.7.5; no G2 report yet (`wip/perf-g2`). The P05 burst corrections were a ledger defect fixed in `d6d0de4` ([evidence](evidence/p05-burst-diagnosis.json)) |
+| G2 (integration and performance) | **Report written, nested only** ([G2_REPORT](G2_REPORT.md)): every §4 budget met in nested KWin 6.7.5 except pure-solve p99 at 32 windows (1.06–1.07 ms against 1 ms: a slow mode in 2–3 % of solves, attributed to QV4 garbage collection by duration only). Open: the current code is about 12 % (0.09 ms) slower at the n = 32 median than `b60e618`, cause unknown; physical input-to-visible is G3's |
 | G3 (release) | **Open**: physical session, G2 report, release checklist, licence (ADR-012, owner decision) |
 
 ## Tasks
@@ -43,7 +43,7 @@ Verdicts from a card-by-card audit against each acceptance text (2026-10-18), up
 | Complete (unit/replay evidence) | T09, T11, T12, T17, T21 |
 | Closed as deferred | T31 (ADR-018) |
 | Superseded by G1 | T06, T07 (native spike; ADR-003) |
-| Partial | T04 (raw upstream samples not committed; below 5000 samples), T20 (no G2 report), T26 and T32 (no release-to-release upgrade yet: the old side is a past commit relabelled), T33 (6.8 job provisional: RSS noise), T34 (no G2 protocol run; 6.8 RSS), T35 (no G3 checklist; licence), T36/T37 (experimental, ADR-014) |
+| Partial | T04 (nested baselines committed with raw samples: no tiler, quick tile, Polonium 1.2.2; physical half open), T20 (G2 report: one budget not met, see Gates), T26 and T32 (no release-to-release upgrade yet: the old side is a past commit relabelled), T33 (6.8 job provisional: RSS noise), T34 (nested protocol run in the G2 report; physical soak and latency open; 6.8 RSS), T35 (no G3 checklist; licence), T36/T37 (experimental, ADR-014) |
 
 Recent nested evidence (KWin 6.7.5, each with mutation checks): dialogs follow their parent through minimize,
 desktop moves and close, matching KWin without Plastile (`scenarios_transients.py`); unload and reload in
@@ -98,8 +98,8 @@ Nested only; none is a physical input-to-photon measurement.
 
 ## Next tasks
 
-1. Persistence helper (T27 rework).
-2. G2 report (T20/T34), measured with nothing else running.
+1. First-run diagnosability fixes (notice level, OSD, visible-context targeting), then the physical runbook (owner consented 2026-10-18; P2d/P2e skipped).
+2. Pure-solve p99 (QV4 allocation in `solveAndApply` and the adapter's writes) and the 12 % median slowdown since `b60e618` (G2 report §15).
 3. Remaining partial clauses above; G3 checklist (T35); physical runbook with the owner's consent.
 
 ## Conventions
