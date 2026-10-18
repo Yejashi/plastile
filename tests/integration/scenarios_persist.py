@@ -450,14 +450,15 @@ def master_ratio(snap: dict | None) -> float | None:
 def persist_kwin_exit(out: Path, c: Checks):
     """KWin itself exits (SIGTERM, the signal a session manager sends at logout) while a change is still inside the
     2 s debounce: Plastile's teardown sends the final Write and the helper stores it after KWin is gone. Three times
-    with the helper running, three times with the helper exited for idleness (test knob PLASTILE_STATE_TEST_IDLE_MS),
-    so that the final Write has to activate a new helper while KWin exits. A nested approximation of a logout: the
-    private bus stays up, which a real session's bus and service manager need not do."""
+    with the default idle period, three times with a short one (test knob PLASTILE_STATE_TEST_IDLE_MS, 300 ms) that
+    elapses long before the exit: the helper must still be running then, because it never exits while KWin is on the
+    bus (a final Write that had to activate a new helper as KWin disconnects was lost in 2 of 3 CI runs). A nested
+    approximation of a logout: the private bus stays up, which a real session's bus and service manager need not do."""
     trials = []
-    for mode in ("running", "idle-exited"):
+    for mode in ("running", "short-idle"):
         for i in range(3):
             base = out / f"{mode}-{i}/xdg"
-            env = {"PLASTILE_STATE_TEST_IDLE_MS": "300"} if mode == "idle-exited" else None
+            env = {"PLASTILE_STATE_TEST_IDLE_MS": "300"} if mode == "short-idle" else None
             s = psession(out / f"{mode}-{i}/s", base, helper_env=env)
             with s:
                 s.spawn(1); s.spawn(2)
@@ -465,8 +466,8 @@ def persist_kwin_exit(out: Path, c: Checks):
                 s.act(fx(1), "workspace.activeWindow = w")
                 s.cmd("resize.grow")  # 0.55 -> 0.6, saved by the deadline
                 g1 = wait_generation(s, base, 1, 6)
-                if mode == "idle-exited":
-                    s.wait_for(lambda: helper_pid(s) is None, 5, "the helper exits for idleness")
+                if mode == "short-idle":
+                    time.sleep(1.0)  # more than three idle periods with KWin, its caller, still connected
                 had_helper = helper_pid(s) is not None
                 t_cmd = time.monotonic()
                 s.cmd("resize.grow")  # 0.6 -> 0.65, still inside the debounce at exit
@@ -488,10 +489,10 @@ def persist_kwin_exit(out: Path, c: Checks):
                                "teardownAfterCommandS": [round(t - t_cmd, 3) for t in stops],
                                "generationAfterExit": g2, "ratio": master_ratio(newest(base)),
                                "errors": unexpected(s)[:3]})
-    for mode in ("running", "idle-exited"):
+    for mode in ("running", "short-idle"):
         ts = [t for t in trials if t["mode"] == mode]
-        c(f"precondition ({mode}): the first save landed; the helper was {'running' if mode == 'running' else 'gone'} "
-          "at exit", all(t["firstSave"] == 1 and t["helperRunningAtExit"] == (mode == "running") for t in ts), ts)
+        c(f"({mode}): the first save landed and the helper was still running at exit (it stays while KWin is on the bus)",
+          all(t["firstSave"] == 1 and t["helperRunningAtExit"] for t in ts), ts)
         c(f"KWin exit ({mode}): Plastile's teardown ran before the 2 s deadline could fire (log, under 1.5 s after the "
           "change)", all(len(t["teardownAfterCommandS"]) == 1 and t["teardownAfterCommandS"][0] < 1.5 for t in ts),
           [t["teardownAfterCommandS"] for t in ts])

@@ -1,13 +1,13 @@
 // plastile-state: Plastile's persistence helper (ADR-020).
 //
 // Started by the session bus on the first call to org.kde.plastile.State (D-Bus activation),
-// it owns that name, serves Read/Write on /State and exits after an idle period; the next call
-// starts it again. Owning the bus name is what makes it the only writer of the state files:
+// it owns that name, serves Read/Write on /State and exits an idle period after its last caller
+// (KWin) left the bus; the next call starts it again. Owning the bus name is what makes it the only writer of the state files:
 // a second instance cannot get the name and exits at once.
 //
 // Environment (test only, never needed in normal use):
 //   PLASTILE_STATE_TEST_DELAY_MS  wait this long before processing each request (slow-helper scenarios)
-//   PLASTILE_STATE_TEST_IDLE_MS   idle period before exiting (default 60000)
+//   PLASTILE_STATE_TEST_IDLE_MS   idle period before exiting once no caller is connected (default 60000)
 #include "stateservice.h"
 
 #include <QCoreApplication>

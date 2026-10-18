@@ -29,8 +29,8 @@ damaged. Requests are processed one at a time, in arrival order.
 - No lock file: owning the bus name is what makes one helper the only writer. A second instance
   cannot get the name and exits with status 1.
 - The session bus starts the helper on the first call (D-Bus activation, the
-  `org.kde.plastile.State.service` file). It exits after 60 s without a request, giving its name
-  back first; the next call starts it again. It also exits when the bus goes away.
+  `org.kde.plastile.State.service` file). It stays while a caller (KWin) is on the bus, and exits 60 s
+  after the last caller left, giving its name back first; the next call starts it again. It also exits when the bus goes away.
 - Logging: category `plastile.state`. Failures are warnings; one line per request at debug level
   (`QT_LOGGING_RULES=plastile.state.debug=true`).
 
@@ -60,4 +60,4 @@ These exist for the nested scenarios (`tests/integration/scenarios_persist.py`) 
 in normal use:
 
 - `PLASTILE_STATE_TEST_DELAY_MS`: wait this long before processing each request (a slow helper).
-- `PLASTILE_STATE_TEST_IDLE_MS`: the idle period before exiting (default 60000).
+- `PLASTILE_STATE_TEST_IDLE_MS`: the idle period before exiting once no caller is connected (default 60000).

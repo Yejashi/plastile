@@ -427,7 +427,7 @@ asynchronous versioned messages".
   `Write(i slot, s text) -> b` on `/State`. It stores the slots as `$XDG_STATE_HOME/plastile/state-0.json` and
   `state-1.json` (directory 0700, files 0600) with `QSaveFile`, whose `fsync` now blocks only the helper. It refuses
   a slot other than 0 or 1 and texts over 1 MiB, never interprets the text, answers in arrival order, and exits
-  after 60 s without a request. There is no lock file: owning the bus name makes it the only writer, and a second
+  60 s after its last caller left the bus (see the addendum on KWin's exit below). There is no lock file: owning the bus name makes it the only writer, and a second
   instance exits. The session bus starts it on demand from its activation file.
 - **No persistence file I/O on KWin's thread.** `Persistence.qml` is a thin asynchronous store over KWin's
   `DBusCall` (org.kde.kwin 3.0, as in ADR-015): one call object per request, destroyed with its reply, plus the
@@ -523,8 +523,12 @@ Nested scenarios (each passed twice, KWin 6.7.5):
 - State files of earlier development builds (`state-N.ini`) are not read; no release used them.
 - KWin's own exit was measured in nested sessions only (`persist-kwin-exit-T27`, added in review): with a change
   still inside the debounce, SIGTERM to `kwin_wayland` ran Plastile's teardown 7 ms later and the final `Write`
-  reached the helper after KWin had exited, 6 of 6 times, three of them with the helper exited for idleness so that
-  the `Write` activated a new one. The private bus stayed up there; at a real logout the session bus and the
+  reached the helper after KWin had exited, 6 of 6 times locally, three of them with the helper exited for idleness
+  so that the `Write` activated a new one. On the CI sandbox that activation case lost the `Write` in 2 of 3 runs
+  (run 39138658100; by inference, the bus drops an activation pending for a sender that disconnects). The helper
+  therefore no longer exits while a caller is on the bus: it watches each caller's unique name and starts its 60 s
+  idle period only after the last one left. KWin is one connection for the whole session, so the helper now runs
+  from Plastile's first request until KWin exits, and the final `Write` never needs an activation. The private bus stayed up there; at a real logout the session bus and the
   service manager may already be stopping, so that case stays unverified.
 - Unverified: D-Bus activation and the final `Write` at logout on a physical session bus (dbus-broker under
   systemd); the CI jobs that build the helper; any physical-session timing.

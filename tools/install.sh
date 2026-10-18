@@ -157,8 +157,8 @@ cmd_remove_helper() {
     cat <<EOF
 
 Removed: $SERVICE_FILE${exe:+ and $exe}
-A helper that is running exits on its own within a minute. Plastile then keeps its
-preferences in memory from its next start. The saved state in $STATE_DIR was left as it
+A helper that is running keeps serving this session until KWin exits (a logout). Plastile
+then keeps its preferences in memory from its next start. The saved state in $STATE_DIR was left as it
 is; delete that directory to forget it.
 EOF
 }

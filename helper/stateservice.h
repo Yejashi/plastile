@@ -9,7 +9,9 @@
 #include <QDBusConnection>
 #include <QDBusContext>
 #include <QDBusMessage>
+#include <QDBusServiceWatcher>
 #include <QObject>
+#include <QSet>
 #include <QString>
 #include <QStringList>
 #include <QTimer>
@@ -29,7 +31,7 @@ public:
     struct Options {
         QString directory; // $XDG_STATE_HOME/plastile
         int delayMs = 0; // test only: wait this long before processing each request
-        int idleMs = 60000; // exit after this long without a request
+        int idleMs = 60000; // exit after this long without a request and without a connected caller
     };
 
     StateService(const QDBusConnection &bus, Options options, QObject *parent = nullptr);
@@ -45,7 +47,7 @@ public Q_SLOTS:
     Q_SCRIPTABLE bool Write(int slot, const QString &text);
 
 Q_SIGNALS:
-    /** No request for idleMs and none pending: the process may exit. */
+    /** No request for idleMs, none pending and no caller still on the bus: the process may exit. */
     void idle();
 
 private:
@@ -63,10 +65,15 @@ private:
     bool writeSlot(int slot, const QByteArray &data, QString *why) const;
     bool ensureDirectory(QString *why) const;
     void touch();
+    void track(const QString &caller);
 
     QDBusConnection m_bus;
     Options m_options;
     std::deque<Request> m_queue;
     QTimer m_delay;
     QTimer m_idle;
+    /** Callers (unique bus names) still connected. KWin is one connection for the whole session; while
+     *  it is on the bus the service stays, so its final Write at exit never waits on an activation. */
+    QDBusServiceWatcher m_callers;
+    QSet<QString> m_connected;
 };

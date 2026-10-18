@@ -71,6 +71,15 @@ class HelperBus:
         m = self.conn.get_object(STATE_SERVICE, "/State").get_dbus_method(method, IFACE)
         return m(*args, signature=sig, timeout=timeout) if sig is not None else m(*args, timeout=timeout)
 
+    def call_once(self, method: str, *args, sig: str | None = None, timeout: float = 10):
+        """A call from a connection of its own, closed right after the reply: a caller that then leaves the bus."""
+        conn = self.dbus.bus.BusConnection(self.address)
+        try:
+            m = conn.get_object(STATE_SERVICE, "/State").get_dbus_method(method, IFACE)
+            return m(*args, signature=sig, timeout=timeout) if sig is not None else m(*args, timeout=timeout)
+        finally:
+            conn.close()
+
     def error(self, method: str, *args, sig: str | None = None) -> str | None:
         """The D-Bus error name a call returns (None when it succeeds)."""
         try:
@@ -262,18 +271,26 @@ def persist_helper_contract(out: Path, c: Checks):
 
     b = HelperBus(out / "idle", {"PLASTILE_STATE_TEST_IDLE_MS": "400"})
     try:
+        # A caller that stays on the bus (KWin, for a whole session) keeps the helper: its last Write, at exit,
+        # must not depend on activating a new helper while it disconnects.
         b.call("Write", 0, "one", sig="is")
         pid = b.owner()
         time.sleep(1.2)
-        c("the helper exits after its idle period and gives its name back", b.owner() is None and not alive(pid))
-        r = b.call("Read")
+        c("the helper stays past its idle period while its caller is still on the bus", b.owner() == pid and alive(pid),
+          {"pid": pid, "owner": b.owner()})
+        b.conn.close()
+        b.conn = b.dbus.bus.BusConnection(b.address)  # a new connection that has called nothing
+        time.sleep(1.2)
+        c("once its caller left, the helper exits after its idle period and gives its name back",
+          b.owner() is None and not alive(pid))
+        r = b.call_once("Read")
         pid2 = b.owner()
         c("the next call activates a new helper, which reads the stored slot", r[0] == "one" and pid2 not in (None, pid),
           {"reply": list(r), "pids": [pid, pid2]})
         fails = []
-        for i in range(40):  # calls about one idle period apart straddle the exit again and again
+        for i in range(40):  # callers that leave, about one idle period apart, straddle the exit again and again
             try:
-                if not b.call("Write", i % 2, f"edge {i}", sig="is", timeout=5):
+                if not b.call_once("Write", i % 2, f"edge {i}", sig="is", timeout=5):
                     fails.append((i, "false"))
             except b.dbus.DBusException as e:
                 fails.append((i, e.get_dbus_name()))

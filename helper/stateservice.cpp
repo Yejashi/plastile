@@ -1,5 +1,6 @@
 #include "stateservice.h"
 
+#include <QDBusConnectionInterface>
 #include <QDBusError>
 #include <QDir>
 #include <QFile>
@@ -21,12 +22,37 @@ StateService::StateService(const QDBusConnection &bus, Options options, QObject 
     m_idle.setSingleShot(true);
     m_idle.setInterval(m_options.idleMs);
     connect(&m_idle, &QTimer::timeout, this, [this]() {
+        if (!m_connected.isEmpty())
+            return; // restarted when the last caller leaves the bus
         if (m_queue.empty())
             Q_EMIT idle();
         else
             m_idle.start();
     });
     m_idle.start();
+    // A caller that leaves (KWin exiting, a test's connection closing) had its requests routed
+    // before the bus reports its name gone: the queue still answers or drops them in order.
+    m_callers.setConnection(m_bus);
+    m_callers.setWatchMode(QDBusServiceWatcher::WatchForUnregistration);
+    connect(&m_callers, &QDBusServiceWatcher::serviceUnregistered, this, [this](const QString &caller) {
+        m_callers.removeWatchedService(caller);
+        m_connected.remove(caller);
+        if (m_connected.isEmpty())
+            m_idle.start();
+    });
+}
+
+void StateService::track(const QString &caller)
+{
+    if (caller.isEmpty() || m_connected.contains(caller))
+        return;
+    m_connected.insert(caller);
+    m_callers.addWatchedService(caller);
+    // It may have gone between sending the request and now: then no unregistration will come.
+    if (!m_bus.interface()->isServiceRegistered(caller).value()) {
+        m_callers.removeWatchedService(caller);
+        m_connected.remove(caller);
+    }
 }
 
 QString StateService::slotPath(int slot) const
@@ -63,6 +89,7 @@ void StateService::touch()
 void StateService::enqueue(Request request)
 {
     touch();
+    track(request.message.service());
     m_queue.push_back(std::move(request));
     if (m_options.delayMs <= 0) {
         // No test delay: processed now, so replies leave in arrival order.
