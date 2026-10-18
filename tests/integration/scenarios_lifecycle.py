@@ -405,9 +405,18 @@ def create_remove(out: Path, c: Checks):
               e.get("reason") == "exit-on-map" for e in ev), [e.get("ev") for e in ev][-6:])
             seen = [ln for ln in lis.lines("added", off) + lis.lines("removed", off) if "plastile-fixture 40|" in ln]
             facts["B.kwinReported"] = seen
-            c("B: KWin never reported the window (no windowAdded/windowRemoved; independent listener)", not seen, seen)
             d = delta(a, b)
-            c("B C04: Plastile recorded nothing and wrote nothing", d.get("adopted", 0) == 0 and d.get("writes", 0) == 0, d)
+            if not seen:
+                c("B: KWin never reported the window (no windowAdded/windowRemoved; independent listener)", True, seen)
+                c("B C04: Plastile recorded nothing and wrote nothing", d.get("adopted", 0) == 0 and d.get("writes", 0) == 0, d)
+            else:
+                # Whether KWin reports a window destroyed in its mapping flush is KWin's timing (6.8.0 on
+                # llvmpipe reported it, added and removed within a millisecond). That is case C's race;
+                # hold Plastile to case C's contract for it.
+                c("B: KWin reported the window and its removal (recorded; case C's contract applies)",
+                  len(seen) == 2, seen)
+                c("B C04: adopted and removed in balance, zero placement writes",
+                  d.get("adopted", 0) == d.get("removed", 0) and d.get("writes", 0) == 0, d)
             c("B C04: peers untouched (oracle)", same_frames(keep, frames_of(s, (1, 2))), frames_of(s, (1, 2)))
 
             # C: removed right after mapping (the race Plastile wins: adopted, then removed).

@@ -14,13 +14,14 @@ agent; this file is the short status.
 |---|---|---|
 | Unit/replay | Node 26 (`node --test tests/core/*.test.ts`), mock host and fake KWin | 385/385 |
 | Nested, virtual backend | Reference host: Arch Linux, KWin 6.7.5, Qt 6.12.0, KF 6.30.0 ([ENVIRONMENT](ENVIRONMENT.md)) | `67772ee`: 990/990 checks, 99/99 scenarios, 1 expected SKIP ([evidence](evidence/integration-host-67772ee.json)) |
-| Nested, virtual backend (CI) | Ubuntu 26.10 sandbox: KWin 6.7.5, Qt 6.11.2, KF 6.29.0, QPainter compositing | `67772ee`: 807/807 checks, 88/88 scenarios, 2 expected SKIPs (run 39109880796) |
-| Nested, virtual backend (CI, provisional) | Nix: KWin 6.8.0, Qt 6.11.2, KF 6.30.0, llvmpipe | `67772ee`: 773/778 checks, 84/87 scenarios; failures below |
+| Nested, virtual backend (CI) | Ubuntu 26.10 sandbox: KWin 6.7.5, Qt 6.11.2, KF 6.29.0, QPainter compositing | `a434b29`: 811/811 checks, 88/88 scenarios, 3 SKIPs (run 39114760401; the job failed only on the new plasmashell SKIP, now expected) |
+| Nested, virtual backend (CI, provisional) | Nix: KWin 6.8.0, Qt 6.11.2, KF 6.30.0, llvmpipe | `a434b29`: 779/782 checks, 85/87 scenarios: `reload-Q09` (below) and `create-remove-C04` case B (KWin 6.8 reported a window destroyed in its mapping flush; the check now applies case C's contract when KWin does) |
 | Nested, windowed on the real GPU | Reference host: nested KWin 6.7.5's outputs are windows on the live compositor (`PLASTILE_NESTED_HOST_DISPLAY`), OpenGL on the real GPU, 144 Hz host output; private bus, config and XDG dirs | Latency kit at full protocol (30,000 taps): every Plastile workload `pass` against its matched baseline; 19/19 chords delivered; real apps, real `plasmashell` panels, GL tile editor pass ([runbook §1](../validation/PHYSICAL_RUNBOOK.md#1-what-was-validated-where)). Labelled `nested-windowed-gpu`, never physical |
 | Physical session | [Runbook](../validation/PHYSICAL_RUNBOOK.md) P0–P8 | **Never run** |
 
 Expected SKIPs: `output-negative-origin-G02` (KWin normalizes output origins, so a negative origin cannot
-occur); `native-editor-toggle-L14` only where compositing is QPainter (the tile editor is GL-only).
+occur); `native-editor-toggle-L14` only where compositing is QPainter (the tile editor is GL-only);
+`plasmashell-panels-O07` in CI (no plasmashell in the sandbox images; it runs on the reference host).
 
 ## Gates
 
@@ -48,14 +49,16 @@ Verdicts from a card-by-card audit against each acceptance text (2026-10-18), up
 
 | Item | Where | State |
 |---|---|---|
-| `reload-Q09` and `persist-reload-cycles-Q09`: KWin RSS sometimes grows 20–30 MiB over 100 reloads (bound 16 MiB) | KWin 6.8.0 Nix only (6.7.5: +0.5 MiB) | **Not a regression:** a CI bisect ran Q09 twice at each of 9 commits (`ae4061a`…HEAD, same scenario code): 4 of 18 runs exceeded the bound at 4 different commits, including `ae4061a`, the earlier "passing" one, in 8–10 MiB steps. A control (the same reloads of an empty script) is running to tell KWin 6.8's own allocation noise from Plastile's |
-| `persist-no-qtcore-Q05`: the QtCore shadow does not take effect | KWin 6.8.0 Nix only | Test-environment issue (nixpkgs adds `NIXPKGS_QT6_QML_IMPORT_PATH` above the standard variables). The second fix (`aa9793a`) follows the sandbox's exec chain to the Qt wrapper; waiting for CI |
+| `reload-Q09` and `persist-reload-cycles-Q09`: KWin RSS sometimes grows 20–35 MiB over 100 reloads (bound 16 MiB) | KWin 6.8.0 Nix only (6.7.5: +0.5 MiB) | **KWin 6.8's own allocation, not Plastile:** the same 100 reloads of an *empty* script grew KWin by 45–68 MiB in 3 of 6 reps; Plastile's worst of 6 interleaved reps was 34 MiB ([evidence](evidence/q09-kwin68-control.json)). A bisect over 9 commits found no regression. The bound is unchanged and the 6.8 job stays provisional |
 
-## Fixed from the windowed runs
+## Fixed recently
 
 - **Panels that change only their exclusive zone** (plasmashell auto-hide, *dodge windows*) left tiles in the old
   area: the panel keeps its frame and KWin emits no work-area signal. Docks now also feed `hiddenChanged` and
   `damaged` into the area comparison (`a254d64`; `plasmashell-panels-O07`, adapter test).
+- **`persist-no-qtcore-Q05` on KWin 6.8 Nix** (a test-environment issue: nixpkgs puts
+  `NIXPKGS_QT6_QML_IMPORT_PATH` above the standard variables): the scenario follows the sandbox's exec chain to
+  the Qt wrapper (`aa9793a`) and passes in CI ([evidence](evidence/q09-kwin68-control.json)).
 
 ## Measurements
 
@@ -70,7 +73,7 @@ Nested only; none is a physical input-to-photon measurement.
 
 ## Next tasks
 
-1. KWin 6.8: decide Q09's bound from the control run; confirm the Q05 fix in CI.
+1. KWin 6.8: confirm C04 in CI; Q09 there is KWin's own growth (bound unchanged, job provisional).
 2. G2 report.
 3. Remaining partial-task tests listed above; G3 checklist; physical runbook with the owner's consent.
 
