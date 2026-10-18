@@ -38,6 +38,22 @@ const SHAPES = ["open-close-burst", "output-unplug-replug", "quick-tile-yield", 
 /** Compared as recorded (counters and trace pass through JSON in the recording). */
 function plain(v: unknown): unknown { return JSON.parse(replayJson(v)); }
 
+/**
+ * The engine's model restricted to the fields the recording has: diagnostic fields added to
+ * explain and the context summary after a capture (`suspended`, `paused`, `tiled`) have no
+ * recorded truth. A recorded field the engine no longer has still fails.
+ */
+function recordedFields(actual: unknown, recorded: unknown): unknown {
+  if (Array.isArray(actual) && Array.isArray(recorded)) return actual.map((v, i) => recordedFields(v, recorded[i]));
+  if (actual && recorded && typeof actual === "object" && typeof recorded === "object" && !Array.isArray(actual)) {
+    const out: Record<string, unknown> = {};
+    const a = actual as Record<string, unknown>, r = recorded as Record<string, unknown>;
+    for (const k of Object.keys(a)) if (k in r) out[k] = recordedFields(a[k], r[k]);
+    return out;
+  }
+  return actual;
+}
+
 function within(r: Rect, o: Rect, tol = 0.5): boolean {
   return r.x >= o.x - tol && r.y >= o.y - tol && r.x + r.width <= o.x + o.width + tol && r.y + r.height <= o.y + o.height + tol;
 }
@@ -81,7 +97,7 @@ for (const file of FILES) {
     assert.deepEqual(h.violations, [], "model invariants after every input");
     assert.deepEqual(h.writes.map((w) => ({ id: w.id, gen: w.gen, target: w.target })), f.writes, "plan/writes");
     assert.ok(f.expect.model !== null);
-    assert.deepEqual(h.model, f.expect.model, "final model equals the one the engine in KWin had");
+    assert.deepEqual(recordedFields(h.model, f.expect.model), f.expect.model, "final model equals the one the engine in KWin had");
     assert.deepEqual(plain(h.engine.counters), plain(f.expect.counters), "counters equal KWin's");
     assert.deepEqual(plain(h.engine.trace.snapshot()), plain(f.expect.trace), "trace equals KWin's");
   });
