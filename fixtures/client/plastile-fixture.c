@@ -1416,7 +1416,14 @@ static void handle_command(char *line)
 
 static void handle_stdin(void)
 {
-	ssize_t n = read(STDIN_FILENO, g.stdin_buf + g.stdin_len, sizeof(g.stdin_buf) - 1 - g.stdin_len);
+	/* The tail of this function keeps stdin_len < sizeof - 1; restating it here
+	 * lets _FORTIFY_SOURCE (GCC 15, Ubuntu default) prove the read size cannot wrap. */
+	if (g.stdin_len >= sizeof(g.stdin_buf) - 1)
+		g.stdin_len = 0;
+	size_t room = sizeof(g.stdin_buf) - 1 - g.stdin_len;
+	if (room > sizeof(g.stdin_buf) - 1)
+		return;
+	ssize_t n = read(STDIN_FILENO, &g.stdin_buf[g.stdin_len], room);
 	if (n < 0) {
 		if (errno == EINTR || errno == EAGAIN)
 			return;
