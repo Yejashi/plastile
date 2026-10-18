@@ -86,7 +86,7 @@ Without the helper Plastile tiles normally and logs `plastile warn persistence u
 
 1. Install the new package over the old one: `kpackagetool6 --type KWin/Script --upgrade package` (or `tools/install.sh upgrade`, or either of them with a `dist/plastile-<version>.kwinscript` archive). This works while KWin runs.
 2. **Log out and back in.** The running KWin keeps executing the version it loaded until KWin itself restarts. Unticking and re-ticking Plastile in KWin Scripts is not enough, and neither is disabling it before the upgrade and enabling it after.
-3. Check the version: the log line `plastile info started <version>`, or `kpackagetool6 --type KWin/Script --show plastile` for what is installed.
+3. Check the version: the log line `plastile notice started <version>: ...`, or `kpackagetool6 --type KWin/Script --show plastile` for what is installed.
 
 Measured in nested KWin 6.7.5 (scenario `package-upgrade-bindings-T26-T32`): a package built from an older commit and labelled 0.0.1 was upgraded to 0.1.0 while it ran. After a disable and re-enable through `[Plugins]` plus `Scripting.start`, KWin started 0.0.1 again, although the 0.0.1 files were no longer on disk; the same happened with the script disabled during the upgrade. A KWin restart over the same configuration, data and cache directories started 0.1.0; the cache directory still held the first KWin's QML disk cache (`$XDG_CACHE_HOME/kwin/qmlcache`), as `~/.cache` does after a re-login, and it did not bring the older version back (kpackagetool6 gives the installed files the install time, not the archive's dates, measured). The cause, from KWin's source (observed: v6.7.5 `src/scripting/scripting.cpp`): every declarative script is loaded into one QML engine shared by all scripts, by the same file URL, and KWin never clears that engine's component cache. On Wayland, restarting KWin means ending the session; do **not** run `kwin_wayland --replace`.
 
@@ -106,6 +106,14 @@ Not measured: an upgrade in a physical session, and an upgrade between two relea
 
 The script is **not enabled by default** (`EnabledByDefault: false`).
 
+**First run: is it working?** Open two or three windows on one desktop: they should tile side by side (master/stack). Then check the log:
+
+```sh
+journalctl --user -b | grep plastile
+```
+
+Look for `plastile notice started 0.1.0: N windows, configuration revision 1; layout master-stack on <screen> / <desktop>`. It is shown at the default log level. No such line means the script did not load. A desktop in monocle or floating, or a maximized window, looks like no tiling: `Meta+Shift+Space` cycles the layouts, each change shows an on-screen message and a `plastile notice layout ...` line, and a layout you chose is remembered for that desktop across logins. The [user guide](README.md#is-it-working) has the full checklist. (In the first physical session, KWin 6.7.5, this journal showed KWin's own warnings about the script but none of Plastile's lines: the older default level hid them.)
+
 Equivalent from a terminal in the same session (the path the package scenario measured):
 
 ```sh
@@ -122,7 +130,8 @@ The configure button next to Plastile in KWin Scripts opens KWin's generic scrip
 - **Layout:** default layout, gap between windows, gap at screen edges, keeping screen-edge gaps around a single window, grow/shrink step.
 - **Master and stack:** master area width, windows in the master area, where new windows go.
 - **Binary split (BSP):** which tile a new window splits, split direction.
-- **Advanced:** log level, diagnostic trace size, and the JSON text for per-screen overrides and window rules ([CONFIGURATION](CONFIGURATION.md)).
+- **Layout** also has the on-screen message switch (`osd`): Plasma's on-screen display when a shortcut changes the layout or pauses tiling.
+- **Advanced:** log level (off, errors only, warnings and notices, information, debug), diagnostic trace size, and the JSON text for per-screen overrides and window rules ([CONFIGURATION](CONFIGURATION.md)).
 
 The dialog writes values to `~/.config/kwinrc` under `[Script-plastile]`, using the key names in [CONFIGURATION](CONFIGURATION.md#flat-keys). Choices are stored by name (`layout=bsp`).
 

@@ -9,6 +9,8 @@ Pages in this guide:
 - [CONFIGURATION](CONFIGURATION.md): settings keys, the JSON document (overrides and rules), precedence, classification.
 - [TROUBLESHOOTING](TROUBLESHOOTING.md): diagnostics, logs, known limitations.
 
+New here? Read [Is it working?](#is-it-working) first: some layouts look like no tiling at all.
+
 Labels used in this guide: **measured** (observed in a test run), **observed source** (read in upstream source at a pinned version), **inference** (reasoned, not observed), **untested**.
 
 ## Status: read this first
@@ -53,9 +55,29 @@ The 23 core integration scenarios in `tests/integration/scenarios.py` passed: 10
 
 The engine is designed for these cases, but designed is not tested.
 
+## Is it working?
+
+Monocle, the floating layout and a maximized window all look exactly like no tiling at all. Before you conclude that Plastile does nothing, check these:
+
+- **The log.** Run `journalctl --user -b | grep plastile`. At the default log level you see a few `plastile notice` lines and nothing per window:
+  - `plastile notice started 0.1.0: 3 windows, configuration revision 1; layout master-stack on eDP-1 / Desktop 1` when Plastile loads, with the layout of each screen's visible desktop;
+  - `plastile notice restored saved layout monocle for eDP-1 / Desktop 2` once at load, when a layout you chose earlier comes back ([saved layout preferences](#saved-layout-preferences));
+  - `plastile notice layout monocle on eDP-1 / Desktop 2 (was bsp)` each time a layout command changes a layout;
+  - `plastile notice tiling paused` and `plastile notice tiling resumed` for *Suspend/resume tiling*;
+  - `plastile notice stopped` when Plastile unloads.
+
+  No `started` line means the script is not running (KWin Scripts, [INSTALL](INSTALL.md#3-enable-in-system-settings)). Only the `error` and `off` log levels hide these lines ([TROUBLESHOOTING](TROUBLESHOOTING.md#reading-the-log)).
+- **The on-screen message.** A layout command and *Suspend/resume tiling* show Plasma's own on-screen display, the one used for volume and brightness: "Monocle layout — Desktop 2", "Floating layout (tiling off) — Desktop 2", "Tiling paused". The desktop is named when you have more than one, and the screen when you have more than one. Turn it off with the `osd` setting ([CONFIGURATION](CONFIGURATION.md#flat-keys)). Without plasmashell there is no message, only the log line.
+- **Monocle and floating.** Monocle gives every window the whole screen, one in front of the other; floating tiles nothing. `Meta+Shift+Space` (*Next layout*) cycles master/stack → BSP → monocle → floating → master/stack, so two presses from the default lead to monocle and three to floating. *Reset this layout* (`plastile.context.reset`, unbound by default; [bind it](SHORTCUTS.md#rebinding) or run it from a terminal) returns the desktop on screen to your configured layout.
+- **Layouts are remembered per desktop across logins.** A layout you chose with a command stays on that screen and desktop after a re-login, until you choose another one or reset it ([saved layout preferences](#saved-layout-preferences)). Each desktop has its own: switching desktops can show another layout.
+- **A maximized or full-screen window.** KWin owns it while it is maximized or full screen, so it covers the tiles; Plastile keeps its place and tiles it again when you restore it. *Explain active window* says so in its first line.
+- **Log counters** (`plastile.inspect.counters`) lists, per screen and desktop, the `layout`, the `members`, how many are `tiled` now and how many are `suspended` (maximized, full screen, minimized), and whether all tiling is suspended ([TROUBLESHOOTING](TROUBLESHOOTING.md#log-counters)).
+
+Layout commands (the layout shortcuts, *Grow*/*Shrink*, *More*/*Fewer masters*, *Reset this layout*) change the desktop you are looking at on the active window's screen, also when they arrive over D-Bus while a window of another desktop is active.
+
 ## Layouts
 
-A **context** is one screen, one virtual desktop and one activity. Every context has its own layout, window order and structure. The configured default layout applies everywhere. The layout shortcuts change one context for the current KWin session only ([why only the session](TROUBLESHOOTING.md#known-limitations)). Per-screen or per-desktop defaults that survive restarts go in the configuration as [overrides](CONFIGURATION.md#overrides).
+A **context** is one screen, one virtual desktop and one activity. Every context has its own layout, window order and structure. The configured default layout applies everywhere. The layout shortcuts change the context on screen: the active window's when it is visible, otherwise the visible desktop of the active window's screen (or of the active screen when no window is active). That choice is remembered across logins ([saved layout preferences](#saved-layout-preferences)) until another layout command or *Reset this layout*. Per-screen or per-desktop defaults belong in the configuration as [overrides](CONFIGURATION.md#overrides).
 
 All tiling layouts share these rules:
 
@@ -170,7 +192,7 @@ Plastile never sets a window maximized, minimized, fullscreen or kept-above to m
 
 Plastile remembers some of what you change with its commands across script reloads, KWin restarts and logins:
 
-- **Per screen, desktop and activity:** a layout you chose with a layout command, and a master ratio or master count you changed with *Grow*/*Shrink*, *More*/*Fewer masters* or by dragging the divider. *Reset context* removes them for that screen and desktop.
+- **Per screen, desktop and activity:** a layout you chose with a layout command, and a master ratio or master count you changed with *Grow*/*Shrink*, *More*/*Fewer masters* or by dragging the divider. *Reset this layout* removes them for the screen and desktop on screen. At load, one `plastile notice restored saved layout ...` line names every restored layout that differs from your configuration.
 - **Per application:** where you put a window you floated with *Toggle floating*. The application is identified by its application id, resource name and window role, never by its title. If you disable and re-enable Plastile while the window you floated is still open, that window floats again exactly where it is now, even if you moved it in between and even if its application has other windows open. Otherwise, when that application next has exactly one window open, the window floats at the saved position again (placed on its current screen if that is another one). With two or more windows of the application open, none of them gets the saved position, and they tile as usual. Tiling the window again with *Toggle floating* forgets the application's saved position.
 
 Window order, BSP split structure, quick-tile and maximize states, and per-window choices for applications with several windows are not saved. Your configuration (gaps, rules, overrides) is not part of this state either. It stays in `kwinrc`.
