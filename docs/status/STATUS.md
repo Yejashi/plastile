@@ -12,7 +12,7 @@ agent; this file is the short status.
 
 | Layer | Environment | Last result |
 |---|---|---|
-| Unit/replay | Node 26 (`node --test tests/core/*.test.ts`), mock host and fake KWin | 385/385 |
+| Unit/replay | Node 26 (`node --test tests/core/*.test.ts`), mock host and fake KWin, replay fixtures recorded from nested KWin (`tests/fixtures/replay/`) | 409/409 (`342d82c`) |
 | Nested, virtual backend | Reference host: Arch Linux, KWin 6.7.5, Qt 6.12.0, KF 6.30.0 ([ENVIRONMENT](ENVIRONMENT.md)) | `67772ee`: 990/990 checks, 99/99 scenarios, 1 expected SKIP ([evidence](evidence/integration-host-67772ee.json)) |
 | Nested, virtual backend (CI) | Ubuntu 26.10 sandbox: KWin 6.7.5, Qt 6.11.2, KF 6.29.0, QPainter compositing | `a434b29`: 811/811 checks, 88/88 scenarios, 3 SKIPs (run 39114760401; the job failed only on the new plasmashell SKIP, now expected) |
 | Nested, virtual backend (CI, provisional) | Nix: KWin 6.8.0, Qt 6.11.2, KF 6.30.0, llvmpipe | `a434b29`: 779/782 checks, 85/87 scenarios: `reload-Q09` (below) and `create-remove-C04` case B (KWin 6.8 reported a window destroyed in its mapping flush; the check now applies case C's contract when KWin does) |
@@ -39,11 +39,28 @@ Verdicts from a card-by-card audit against each acceptance text (2026-10-18), up
 
 | State | Tasks |
 |---|---|
-| Complete (nested evidence) | T00–T03, T05, T08, T13–T15, T18, T23, T25, T27 (6.7.5), T29, T30 |
+| Complete (nested evidence) | T00–T03, T05, T08, T10, T13–T16, T18, T22, T23, T25, T27 (6.7.5), T29, T30 |
 | Complete (unit/replay evidence) | T09, T11, T12, T17, T21 |
 | Closed as deferred | T31 (ADR-018) |
 | Superseded by G1 | T06, T07 (native spike; ADR-003) |
-| Partial | T04 (raw upstream samples not committed; below 5000 samples), T10 (no recorded-fixture replay directory), T16 (dialogs following parent visibility), T19 (resume/reconcile with missed events unit-only), T20 (no G2 report), T22 (no unload-in-monocle check), T24 (no per-send reflow count), T26 (rebinds across a package update), T28 (no live preview: ADR-019; settings dialog never clicked through), T32 (no version-to-version upgrade test), T33 (6.8 job red), T34 (no G2 protocol run; 6.8 RSS), T35 (no G3 checklist; licence), T36/T37 (experimental, ADR-014) |
+| Partial | T04 (raw upstream samples not committed; below 5000 samples), T19 (floats across resume), T20 (no G2 report), T24 (multi-context windows, sends during an activity switch), T26 and T32 (no release-to-release upgrade yet: the old side is a past commit relabelled), T27 (saves block the compositor thread; moving them to a helper, see below), T28 (ADR-019; real settings dialog never driven), T33 (6.8 job red), T34 (no G2 protocol run; 6.8 RSS), T35 (no G3 checklist; licence), T36/T37 (experimental, ADR-014) |
+
+Recent nested evidence (KWin 6.7.5, each with mutation checks): dialogs follow their parent through minimize,
+desktop moves and close, matching KWin without Plastile (`scenarios_transients.py`); unload and reload in
+monocle leave no state behind (`monocle-unload-T22`); resume and re-enable adopt events missed while suspended,
+re-placing a window that drifted in place (`scenarios_recovery.py`); a send solves each affected context once;
+recorded replay fixtures (`tests/fixtures/replay/`); a version upgrade keeps user rebindings and config
+(`package-upgrade-bindings-T26-T32`).
+
+**Upgrade finding (documented in [INSTALL](../user/INSTALL.md)):** after a package upgrade, disabling and
+re-enabling the script runs the *old* code again, because KWin keeps every declarative script's QML in one
+engine's component cache. Only a KWin restart (a re-login) starts the new version. Defaults that changed between
+versions stay bound to their old keys for existing users.
+
+**Persistence (T27) is being reworked:** saves currently run `QSettings::sync()` on KWin's compositor thread
+(2–8 ms, up to 20 ms, 31.9 s with a held lock; ADR-013). A `WorkerScript` cannot write files inside KWin
+([probe](evidence/persistence-worker-probe.json)), so saves move to a small D-Bus-activated helper called
+asynchronously; without the helper, preferences stay in memory (owner decision, 2026-10-18).
 
 ## Outstanding failures
 
@@ -73,9 +90,9 @@ Nested only; none is a physical input-to-photon measurement.
 
 ## Next tasks
 
-1. KWin 6.8: confirm C04 in CI; Q09 there is KWin's own growth (bound unchanged, job provisional).
-2. G2 report.
-3. Remaining partial-task tests listed above; G3 checklist; physical runbook with the owner's consent.
+1. Persistence helper (T27 rework).
+2. G2 report (T20/T34), measured with nothing else running.
+3. Remaining partial clauses above; G3 checklist (T35); physical runbook with the owner's consent.
 
 ## Conventions
 
