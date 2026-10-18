@@ -78,6 +78,12 @@ interface Rec {
   learnedMax: Size | null;
   frame: Rect;
   nativeTile: boolean;
+  /**
+   * An explicit native tile action (quick tile, Tile.manage, tile editor) yielded this
+   * window. Sticky: KWin clearing the tile later does not re-adopt it; only adopt-native
+   * or toggle-float does (BEHAVIOR §9).
+   */
+  nativeYield: boolean;
   /** Tile associations we released ourselves (so the resulting signal is not a user action). */
   releasingTile: boolean;
   decision: Decision;
@@ -215,7 +221,8 @@ export class Engine {
     if (existing) this.drop(existing);
     const r: Rec = {
       id: s.id, gen: s.gen, meta: s.meta, membership: s.membership, states: s.states, base: s.constraints,
-      learnedMin: null, learnedMax: null, frame: rectOf(s.frame), nativeTile: s.nativeTile, releasingTile: false,
+      learnedMin: null, learnedMax: null, frame: rectOf(s.frame), nativeTile: s.nativeTile, nativeYield: s.nativeTile,
+      releasingTile: false,
       decision: { mode: "floating", source: "default", reason: "unclassified", ruleIds: [] },
       mode: "pending", userMode: null, ctx: null, suspensions: suspensionsOf(s.states),
       ledger: L.newEntry(rectOf(s.frame)), floatRect: null, insertedAt: ++this.insertSeq, exception: null,
@@ -237,6 +244,7 @@ export class Engine {
   private updateSnapshot(r: Rec, s: WindowSnapshot): void {
     r.meta = s.meta; r.membership = s.membership; r.states = s.states; r.base = s.constraints;
     r.frame = rectOf(s.frame); r.nativeTile = s.nativeTile;
+    if (s.nativeTile) r.nativeYield = true;
     r.suspensions = suspensionsOf(s.states);
     this.reclassify(r, "resync");
   }
@@ -333,9 +341,11 @@ export class Engine {
     if (hasTile) {
       // Explicit native quick tile / tile editor action: yield until adopted (BEHAVIOR §9).
       r.userMode = null;
+      r.nativeYield = true;
       this.reclassify(r, "native-tile");
       this.ensureFlush();
     }
+    // A released tile keeps the yield (mode stays native): only an explicit adopt ends it.
   }
 
   frameObserved(id: WindowId, gen: number, frame: Rect): void {
@@ -455,7 +465,7 @@ export class Engine {
     });
     let mode: PlacementMode = r.decision.mode;
     if (mode !== "excluded") {
-      if (r.nativeTile) mode = "native";
+      if (r.nativeYield) mode = "native";
       else if (r.userMode === "floating") mode = "floating";
       else if (r.userMode === "tiled" && key !== null && r.decision.source !== "membership" && r.meta.resizeable && !r.base.fixed) mode = "tiled";
       else if (r.exception !== null && mode === "tiled" && r.exception.startsWith("overflow")) mode = "floating";
@@ -948,6 +958,7 @@ export class Engine {
         r.releasingTile = true;
         if (!this.host.releaseNativeTile(r.id, r.gen)) r.releasingTile = false;
         r.nativeTile = false;
+        r.nativeYield = false;
         r.userMode = "tiled";
         this.reclassify(r, "adopt-native");
         if (r.ctx) this.solveNow(this.ctxFor(r.ctx));
@@ -1038,6 +1049,7 @@ export class Engine {
         r.releasingTile = true;
         if (!this.host.releaseNativeTile(r.id, r.gen)) r.releasingTile = false;
         r.nativeTile = false;
+        r.nativeYield = false;
       }
       this.reclassify(r, "toggle-tile");
       if ((r.mode as PlacementMode) !== "tiled") return { status: "noop", reason: "cannot tile: " + r.decision.reason, targets: [] };
@@ -1207,7 +1219,7 @@ export class Engine {
       suspensions: [...r.suspensions], constraints: this.effectiveConstraints(r),
       learnedMin: r.learnedMin, learnedMax: r.learnedMax, ledger: { status: r.ledger.status, outstanding: r.ledger.outstanding,
         desired: r.ledger.desired, corrections: r.ledger.corrections }, slot: c?.plan.get(r.id) ?? null,
-      exception: r.exception, nativeTile: r.nativeTile,
+      exception: r.exception, nativeTile: r.nativeTile, nativeYield: r.nativeYield,
     };
   }
 

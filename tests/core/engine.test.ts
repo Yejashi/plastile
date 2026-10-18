@@ -593,3 +593,47 @@ test("G11 after I03: the window resized by the user is still corrected when the 
   assert.ok(rectNear(h.windows.get("a")!.frame, a1), `a back in its slot: ${JSON.stringify(h.windows.get("a")!.frame)}`);
   assert.ok(e.counters.corrections > corrections);
 });
+
+test("L13/L14: a native yield survives the tile being released and later reclassification", () => {
+  const { h, e } = setup(["a", "b"]);
+  const b = h.windows.get("b")!;
+  b.nativeTile = true;
+  e.nativeTileChanged("b", b.gen, true);       // Tile.manage / quick tile: yield
+  h.userSetFrame("b", rect(0, 0, 640, 800));
+  h.drain();
+  b.nativeTile = false;
+  e.nativeTileChanged("b", b.gen, false);      // Tile.unmanage or dragged out by the user
+  h.drain();
+  assert.equal(e.modeOf("b"), "native");
+  const writes = h.writes.filter((w) => w.id === "b").length;
+  e.configure({});                             // configuration activation reclassifies every window
+  h.drain();
+  e.metadataChanged("b", b.gen, meta("b", { title: "renamed", resourceName: "b2" }));
+  h.drain();
+  h.advance(2000);
+  assert.equal(e.modeOf("b"), "native", "still yielded until the user re-adopts it");
+  assert.equal(h.writes.filter((w) => w.id === "b").length, writes, "no write to the yielded window");
+  assert.ok(rectNear(b.frame, rect(0, 0, 640, 800)));
+  h.active = "b";
+  assert.equal(e.execute("plastile.window.adopt-native").status, "accepted");
+  h.drain();
+  assert.equal(e.modeOf("b"), "tiled");
+  assertTiling(tiledFrames(h, ["a", "b"]), AREA);
+});
+
+test("L13: a window already natively tiled at adoption stays yielded when its tile goes away", () => {
+  const h = new MockHost();
+  const snaps = [h.snapshot(h.make("a")), h.snapshot(h.make("b", { nativeTile: true, frame: rect(0, 0, 640, 800) }))];
+  const e = h.start({}, snaps);
+  h.drain();
+  assert.equal(e.modeOf("b"), "native");
+  const b = h.windows.get("b")!;
+  b.nativeTile = false;
+  e.nativeTileChanged("b", b.gen, false);
+  e.configure({});
+  h.drain();
+  assert.equal(e.modeOf("b"), "native");
+  h.active = "b";
+  assert.equal(e.execute("plastile.window.toggle-float").status, "accepted", "toggle re-adopts");
+  assert.equal(e.modeOf("b"), "tiled");
+});
