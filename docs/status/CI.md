@@ -122,6 +122,8 @@ facing tiles (>= the configured gap; one device pixel of tolerance at fractional
 | `native-quicktile-L13`, `native-quicktile-repeat-L13`, `native-adopt-noop-L13` | L13 |
 | `float-toggle-L08` | L08 |
 | `transient-dialog-L07` | transient floats (BEHAVIOR §1); L07: monocle with the dialog's parent selected, dialog visible above it, never written |
+| `transient-parent-minimize-T16`, `transient-parent-desktop-T16`, `transient-parent-close-T16` | T16 "dialogs follow parent visibility": parent minimize/restore, parent moved to another desktop (by the user and by `move.desktop-*`), dialog sent alone, parent closed by the user and an orphaned dialog (fixture `close-main`). Minimize and desktop steps are compared with the same steps in a nested KWin without Plastile; the dialog is never written |
+| `monocle-unload-T22` | T22 "switching layout preserves order and user float geometry" (monocle to master/stack and to BSP after focus commands and a user activation) and "disable does not leave opacity/layer artifacts" (unload, reload, back-to-back reload in monocle: KWin's minimized, hidden, opacity, keepAbove/keepBelow, layer and related properties equal their values before load; every window activates and moves afterwards) |
 | `outputs-O01` | O01 partial: send-to-output with both origins at y = 0 (offset origins: `output-offset-origin-G02`) |
 | `desktops-L15` | L15, send-to-desktop without follow (the source context reflows) |
 | `reload-Q09` | Q09: 100 cycles with pending work; independent checks (KWin script objects, kglobalaccel names, one-step effect size, KWin idle CPU and RSS) |

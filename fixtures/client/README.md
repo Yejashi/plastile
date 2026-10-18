@@ -68,7 +68,9 @@ exit and late-minimum options are refused in panel mode.
 
 `resize W H` (an app-initiated resize: commit a W×H buffer with no configure) ·
 `min W H` / `max W H` (set the hint and make a bufferless commit; 0 = unset) ·
-`child` · `close-child` · `title STR` · `quit`.
+`child` · `close-child` · `close-main` (destroy the main toplevel and keep the child
+open, an orphaned dialog; logs `main_destroyed`, and later commands other than
+`close-child` and `quit` log an `error`) · `title STR` · `quit`.
 In panel mode only `quit` is accepted; other commands log an `error`.
 Each command is logged as a `command` event. Unknown commands or bad arguments
 log an `error` event. EOF on stdin logs `stdin_eof` and stops reading stdin.
@@ -118,6 +120,7 @@ the record is written, and `ev`. Window-scoped records carry `win`
 | `discarded` | `seq` |
 | `size_hints` | `min`, `max` (0 = unset); with `--late-min-size` also `reason:"late-min-size"`, `current_width`, `current_height` |
 | `title_set`, `command`, `stdin_eof`, `signal`, `global_removed` | as named |
+| `main_destroyed` | `close-main` destroyed the main toplevel; `child_exists` |
 | `close_requested` | `xdg_toplevel.close` (or, in panel mode, `zwlr_layer_surface_v1.closed`, with `shell:"layer"`) received. The main window exits cleanly. The child is destroyed (`child_destroyed`). |
 | `error` | `msg` |
 | `exit` | `reason` (`close`, `quit`, `exit-after`, `exit-after-map`, `exit-on-map`, `signal`, `display-error`, …), `code`, `commits` |
