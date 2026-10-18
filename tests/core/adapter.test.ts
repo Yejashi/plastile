@@ -314,6 +314,34 @@ test("a decoration change re-reads the frame/client margin once the client geome
   rt.shutdown();
 });
 
+test("fullscreen (KWin reports not resizable, drops the decoration) keeps the window's slot", () => {
+  const { qt, wins, rt } = setup(1, 3);
+  const w2 = wins[1];
+  const slot = w2.frameGeometry;
+  // KWin: isResizable() is false while fullscreen is requested (xdgshellwindow.cpp:682-686),
+  // and the decoration goes away with fullscreen.
+  w2.resizeable = false;
+  w2.fullScreen = true;
+  w2.fullScreenChanged.emit();
+  w2._setFrame({ x: 0, y: 0, width: 1280, height: 800 }, false);
+  w2._setDecorated(false);
+  qt.drain();
+  w2.minimized = true;
+  w2.minimizedChanged.emit();
+  w2.resizeable = true;
+  w2.fullScreen = false;
+  w2.fullScreenChanged.emit();
+  w2._setDecorated(true);
+  w2._setFrame(slot, false);
+  qt.drain();
+  w2.minimized = false;
+  w2.minimizedChanged.emit();
+  qt.drain();
+  assert.deepEqual(w2.frameGeometry, slot, "back in its own slot (order kept)");
+  assertTiles(wins, FULL);
+  rt.shutdown();
+});
+
 test("a client answering a request with another size gets its constraints re-read once (no deadline needed)", () => {
   const { ws, qt, wins, rt } = setup(1, 2);
   const [w1, w2] = wins;

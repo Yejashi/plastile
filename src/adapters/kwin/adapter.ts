@@ -104,15 +104,21 @@ export function statesOf(w: KWindow): WindowStates {
   };
 }
 
-/** minSize/maxSize are client-space (M0); frame constraints add decoration margins. */
-export function constraintsOf(w: KWindow): Constraints {
+/**
+ * minSize/maxSize are client-space (M0); frame constraints add decoration margins.
+ * `resizeable` defaults to the live property; refreshes pass the sampled metadata value
+ * because KWin reports any window as not resizable while fullscreen is requested
+ * (observed source: xdgshellwindow.cpp:682-686, x11window.cpp:3459), which is a state, not
+ * a size constraint.
+ */
+export function constraintsOf(w: KWindow, resizeable: boolean = !!w.resizeable): Constraints {
   const f = w.frameGeometry, c = w.clientGeometry;
   const mw = Math.max(0, f.width - c.width), mh = Math.max(0, f.height - c.height);
   const min = w.minSize, max = w.maxSize;
   const minW = min.width > 0 ? min.width + mw : 0, minH = min.height > 0 ? min.height + mh : 0;
   const maxW = max.width > 0 && max.width < UNBOUNDED ? max.width + mw : Infinity;
   const maxH = max.height > 0 && max.height < UNBOUNDED ? max.height + mh : Infinity;
-  const fixed = !w.resizeable || (maxW !== Infinity && maxH !== Infinity && Math.abs(maxW - minW) < 1 && Math.abs(maxH - minH) < 1);
+  const fixed = !resizeable || (maxW !== Infinity && maxH !== Infinity && Math.abs(maxW - minW) < 1 && Math.abs(maxH - minH) < 1);
   return { minFrame: { width: minW, height: minH }, maxFrame: { width: maxW, height: maxH }, fixed };
 }
 
@@ -392,7 +398,7 @@ export class KwinAdapter implements HostPort {
       this.queueDeferred();
       return;
     }
-    this.engine.constraintsChanged(e.id, e.gen, constraintsOf(e.w));
+    this.engine.constraintsChanged(e.id, e.gen, constraintsOf(e.w, e.meta.resizeable));
   }
 
   private watchCaption(e: Entry, on: boolean): void {
