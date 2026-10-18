@@ -10,4 +10,5 @@ export const DEFAULT_SETTINGS: ContextSettings = {
   bsp: { insert: "focused", axis: "alternate", initialRatio: 0.5, ratioStep: 0.05 },
   overflow: "float-new",
   singleWindowGaps: true,
+  followOnSend: false,
 };

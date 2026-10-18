@@ -22,6 +22,7 @@ export function applyPatch(base: ContextSettings, p: SettingsPatch): ContextSett
     bsp: p.bsp ? { ...base.bsp, ...p.bsp } : base.bsp,
     overflow: p.overflow !== undefined ? p.overflow : base.overflow,
     singleWindowGaps: p.singleWindowGaps !== undefined ? p.singleWindowGaps : base.singleWindowGaps,
+    followOnSend: p.followOnSend !== undefined ? p.followOnSend : base.followOnSend,
   };
 }
 

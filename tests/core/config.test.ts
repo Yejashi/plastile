@@ -129,7 +129,8 @@ test("CONFIGURATION §2 example compiles", () => {
   assert.deepEqual(s.defaults, DEFAULT_SETTINGS);
   assert.equal(s.traceCapacity, 2048);
   assert.equal(s.diagnostics, "warn");
-  assert.ok(!("followOnSend" in s.defaults) && !("animation" in s.defaults), "inert fields are not surfaced");
+  assert.equal(s.defaults.followOnSend, false);
+  assert.ok(!("animation" in s.defaults) && !("multiContextWindows" in s.defaults), "inert fields are not surfaced");
   assert.deepEqual(resolveContext(s, CTX).chain, ["builtin", "json.defaults"]);
   const dp1 = resolveContext(s, { ...CTX, outputName: "DP-1" });
   assert.equal(dp1.settings.masterStack.ratio, 0.6);
@@ -186,7 +187,7 @@ test("JSON schema violations report precise paths (Q01)", () => {
   hasError(docErrors({ schemaVersion: 2 }), "schemaVersion: unsupported schema version 2");
   hasError(docErrors({ schemaVersion: 1, extra: 1 }), "extra: unknown key");
   hasError(errors({ configJson: '{"schemaVersion":1,"defaults":{"gaps":{"inner":1e999}}}' }), "defaults.gaps.inner: must be a finite number");
-  hasError(docErrors({ schemaVersion: 1, defaults: { followOnSend: true } }), "defaults.followOnSend: not supported in this version");
+  hasError(docErrors({ schemaVersion: 1, defaults: { followOnSend: "yes" } }), "defaults.followOnSend: must be a boolean");
   hasError(docErrors({ schemaVersion: 1, defaults: { animation: { durationMs: 150 } } }), "defaults.animation.durationMs: not supported");
   hasError(docErrors({ schemaVersion: 1, defaults: { multiContextWindows: "tile" } }), "defaults.multiContextWindows: not supported");
   hasError(docErrors({ schemaVersion: 1, overrides: [{ id: "o", match: { outputName: "a" }, set: {}, when: 1 }] }), "overrides[0].when: unknown key");

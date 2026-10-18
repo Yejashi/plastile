@@ -75,6 +75,8 @@ Maintain `Map<WindowId, WindowRecord>` in the model and a separate adapter regis
 
 Output identity is independent of enumeration order. The adapter records available UUID/name/connector information and topology generation. Replug matching may need a persisted preferred output key; ambiguous identical monitors require a deterministic fallback and diagnostic, not silent identity reuse. A context stores a layout type, layout state, ordered eligible IDs, focus history, configuration revision, dirty reason bits, and model/layout revisions.
 
+As implemented (T30): KWin exposes no output UUID to scripts (API_PROFILE E16), so the key is `edid:<manufacturer>/<model>/<serial>` when KWin reports a manufacturer or model, and the connector name otherwise (the virtual backend). Identical monitors (equal triples) add `@<connector>` and are reported once as ambiguous; when such a twin comes or goes while the other stays connected, the engine re-keys that output's contexts and memberships in place (`outputsRekeyed`). User overrides keep matching the connector name (`outputName`). A context left without members is collected at the end of a flush; what it holds beyond the configuration (an explicit layout, a master ratio/count set by command) is kept in a bounded map (64 entries, oldest dropped) and restored when the context is used again. `Engine.contextPreferences()` is the accessor for persistence, since contexts themselves may be collected.
+
 Desktop IDs are stable within the exposed API; display names and positions can change. Activities may be absent/disabled; normalize an explicit default activity. Confirm the all-activity representation at M0. Full context keys accompany every delayed operation and persistence record.
 
 ### Configuration and topology revisions
@@ -208,7 +210,7 @@ Each request records `{instanceEpoch, windowGeneration, contextKey, contextRevis
 ### Ordinary outcomes
 
 - Observed approximately equals current target: mark request settled at the observation layer; do not label it presented.
-- Observed equals a previous target while a newer target remains outstanding: classify as an older observation; do not change policy. Wait for a relevant event/deadline before a correction.
+- Observed equals a previous target while a newer target remains outstanding: classify as an older observation; do not change policy. Wait for a relevant event/deadline before a correction. The exception is a newer request KWin never forwarded: KWin sends a configure only for a size other than the committed one, so a request whose size equalled the frame read just before it was written (the return-to-A case, E04) is corrected once on the late commit. Any other newer request has its own configure in flight, and re-sending it would only duplicate that configure (measured as burst write amplification, D8).
 - Observed reflects an active user resize: update interaction state, not the request completion state. On release, map the accepted boundary movement to layout ratios and solve once.
 - Observed differs because constraints were learned: update accepted constraints and recompute the affected context once.
 - Observed differs after an explicit external/native tiling action: yield according to behavior policy instead of snapping back forever.

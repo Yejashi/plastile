@@ -115,6 +115,8 @@ export interface ContextSettings {
   readonly bsp: BspSettings;
   readonly overflow: "float-new";
   readonly singleWindowGaps: boolean;
+  /** Send to desktop/output also shows that desktop there and activates the window (T24). */
+  readonly followOnSend: boolean;
 }
 
 export interface Result<T = undefined> {

@@ -48,10 +48,12 @@ qdbus6 org.kde.kglobalaccel /component/kwin org.kde.kglobalaccel.Component.invok
 | `counters.commands`, `commandsQueued` | Commands run, and commands deferred because they arrived while geometry was being applied. |
 | `counters.flushes`, `deadlines` | Coalesced passes, and bounded-wait deadlines that fired because a client did not answer in time (750 ms). Both stay flat while idle. |
 | `counters.observations`, `observationsDuringApply` | Geometry change reports from KWin, and the subset that arrived while Plastile was applying geometry. |
-| `counters.settled`, `partial`, `external`, `diverged`, `stale` | How each report was classified: the request settled, settled only in part, was changed by someone else (you or the application), was given up on after bounded corrections, or answered a request that had already been superseded. |
+| `counters.settled`, `partial`, `external`, `diverged` | How each report was classified: the request settled, settled only in part, was changed by someone else (you or the application), or was given up on after bounded corrections. |
+| `counters.stale`, `superseded` | Reports of a size Plastile had requested earlier, arriving after a newer request. `superseded`: the newer request is still on its way to the application (an intermediate size during a burst of changes), so nothing is re-sent. `stale`: KWin did not pass the newer request on because it equalled the size the window had at that moment, so it is re-sent once (counted in `corrections`). |
 | `counters.learned` | Times a client's accepted size taught Plastile a tighter minimum or maximum than the client advertised. A client that has not answered at all teaches nothing. |
 | `counters.accepted` | Times a client settled at most 32 px short of its slot (for example a terminal sizing itself in whole character cells) and Plastile accepted that size instead of learning a maximum. |
 | `counters.overflow` | Windows floated because the layout could not fit them. |
+| `counters.reclassified` | Window classifications: when a window appears, when its identity, transience, membership or size constraints change, and on a configuration activation that changed rules (a gap or ratio change adds none). |
 | `counters.adopted`, `removed`, `staleEvents` | Windows adopted and dropped, and events ignored because they referred to a window generation that no longer exists. |
 | `counters.errors` | Caught exceptions in commands, flushes or restores. Should stay 0. |
 | `outstanding` | Windows with a geometry request not yet settled. Should return to 0 shortly after any action. |

@@ -226,6 +226,61 @@ def per_output_desktops(out: Path, c: Checks):
     c("facts (recorded, always passes)", True, facts)
 
 
+# ---------------------------------------------------------------- T24
+@scenario("follow-on-send-T24")
+def follow_on_send(out: Path, c: Checks):
+    """Send to output/desktop with and without followOnSend, two outputs with per-output desktops.
+
+    Send to desktop: without follow the view stays; with follow the destination desktop is shown
+    on the window's output (only that output: desktops are per output here) and the window is
+    activated. Send to output: KWin itself moves the window onto the destination's current desktop
+    (Window::finishInteractiveOutputChange), so no desktop switch is needed in either mode."""
+    follow_doc = json.dumps({"schemaVersion": 1, "defaults": {"followOnSend": True}})
+    for mode, config in (("default", {}), ("follow", {"configJson": follow_doc})):
+        with PerOutputSession(out / mode, outputs=2, config=config) as s:
+            off = s.kw.mark()
+            s.js("workspace.createDesktop(1, 'Two'); emit(1)")
+            for i in (1, 2, 3):
+                s.spawn(i)
+            s.load(); s.settle()
+            # Virtual-1 shows desktop Two; fixture 3 (Virtual-0, Desktop 1) is sent there.
+            s.js("workspace.setCurrentDesktopForScreen(workspace.desktops[1], workspace.screens[1]); emit(1)")
+            time.sleep(0.3); s.settle()
+            activate(s, 3)
+            s.cmd("move.output-next")
+            time.sleep(0.6); s.settle()
+            f = s.frames()
+            views = per_screen(s)
+            active = json.loads(s.js("emit(workspace.activeWindow ? workspace.activeWindow.caption : null)")[0])
+            two = json.loads(s.js("emit(workspace.desktops[1].id)")[0])
+            a1 = s.area(1)
+            c(f"{mode}: fixture 3 moved to Virtual-1 and onto its current desktop (Two) by KWin",
+              f[fx(3)]["output"] == "Virtual-1" and f[fx(3)]["desktops"] == [two], (f[fx(3)]["output"], f[fx(3)]["desktops"]))
+            c(f"{mode}: no desktop switch for an output send", views == {"Virtual-0": "Desktop 1", "Virtual-1": "Two"}, views)
+            c(f"{mode}: the sent window is active and tiled on Virtual-1", active == fx(3) and near(f[fx(3)]["frame"], full(a1), 1.0),
+              {"active": active, "frame": f[fx(3)]["frame"], "area": a1})
+            # Fixture 2 (Virtual-0) is sent to desktop Two.
+            activate(s, 2)
+            s.cmd("move.desktop-next")
+            time.sleep(0.6); s.settle()
+            f = s.frames()
+            views = per_screen(s)
+            active = json.loads(s.js("emit(workspace.activeWindow ? workspace.activeWindow.caption : null)")[0])
+            a0 = s.area(0)
+            c(f"{mode}: fixture 2 is on desktop Two", f[fx(2)]["desktops"] == [two], f[fx(2)]["desktops"])
+            if mode == "default":
+                # Recorded, not asserted: KWin 6.7.5 leaves the sent window active (measured).
+                c("default: Virtual-0 still shows Desktop 1, its remaining window reflowed",
+                  views["Virtual-0"] == "Desktop 1" and near(f[fx(1)]["frame"], full(a0), 1.0),
+                  {"views": views, "frame": f[fx(1)]["frame"], "active": active})
+            else:
+                c("follow: Virtual-0 shows Two, Virtual-1 unchanged", views == {"Virtual-0": "Two", "Virtual-1": "Two"}, views)
+                c("follow: the sent window is active and tiled on Two", active == fx(2) and near(f[fx(2)]["frame"], full(a0), 1.0),
+                  {"active": active, "frame": f[fx(2)]["frame"], "area": a0})
+            errs = s.log_lines(ERRORS, off)
+            c(f"{mode}: no Plastile errors or JS exceptions", not errs, errs[:3])
+
+
 # ---------------------------------------------------------------- E08
 def kamd_available() -> bool:
     return KAMD is not None

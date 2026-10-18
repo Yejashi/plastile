@@ -6,7 +6,7 @@
 // frame write goes through applyTarget() and the requested/observed ledger.
 
 import { frameTolerance, isValidArea, rectNear, rectOf, type Rect, type Size } from "./geometry.ts";
-import { classify } from "./classify.ts";
+import { classify, TINY_PX, TINY_REASON } from "./classify.ts";
 import { COMMAND_IDS, type CommandResult, type CommandStatus } from "./commands.ts";
 import { DEFAULT_SETTINGS } from "./defaults.ts";
 import { newCounters, Trace, type Counters } from "./diagnostics.ts";
@@ -19,7 +19,7 @@ import { bsp, reinsert as bspReinsert } from "./layouts/bsp.ts";
 import { monocle, floating } from "./layouts/monocle.ts";
 import {
   contextId, sameContext, type ActivityId, type Constraints, type ContextId, type ContextKey, type ContextSettings, type Decision,
-  type LayoutKind, type Membership, type OutputId, type PlacementMode, type Suspension, type WindowId, type WindowMeta,
+  type DesktopId, type LayoutKind, type Membership, type OutputId, type PlacementMode, type Suspension, type WindowId, type WindowMeta,
   type WindowStates,
 } from "./types.ts";
 
@@ -34,6 +34,8 @@ const LAYOUTS: Record<LayoutKind, AnyLayout> = {
 };
 const LAYOUT_CYCLE: readonly LayoutKind[] = ["master-stack", "bsp", "monocle", "floating"];
 const DIVERGED = "did not reach its target after bounded corrections";
+/** Preferences kept for dropped (empty) contexts, most recent first out last. */
+export const RETAINED_MAX = 64;
 
 export interface WindowRules {
   readonly mode?: "tiled" | "floating" | "excluded";
@@ -62,6 +64,28 @@ export interface EngineOptions {
   traceEnabled?: boolean;
   /** Optional high-resolution clock (ns) for measurement builds; never required. */
   clockNs?: () => number;
+  /**
+   * configure() only: what this activation changed (src/config/diff.ts). Absent: anything may
+   * have, as on a first activation, so everything is re-evaluated.
+   */
+  changes?: ConfigChanges;
+}
+
+/**
+ * What a context holds beyond its configuration: an explicit layout choice and a master
+ * ratio/count set by command (window-specific structure such as BSP trees is not kept).
+ */
+export interface ContextPrefs {
+  readonly layout: LayoutKind | null;
+  readonly masterStack: { readonly ratio: number; readonly masterCount: number } | null;
+}
+
+/** The parts of a configuration activation the engine depends on. */
+export interface ConfigChanges {
+  /** Window rule matching may give other results. */
+  readonly rules: boolean;
+  /** Context settings may resolve to other values. */
+  readonly settings: boolean;
 }
 
 /** Timing of the most recent solve+apply (only when a clockNs is supplied). */
@@ -131,6 +155,12 @@ export class Engine {
   private recs = new Map<WindowId, Rec>();
   private tombstones = new Map<WindowId, number>();
   private contexts = new Map<ContextId, Ctx>();
+  /** Contexts that became (or were created) empty: collected at the end of a flush. */
+  private emptied = new Set<ContextId>();
+  /** Preferences of collected contexts, restored when the context is used again (bounded). */
+  private retained = new Map<ContextId, { key: ContextKey; prefs: ContextPrefs }>();
+  /** Outputs last reported as identical monitors told apart by connector (diagnostic, E16). */
+  private ambiguousOutputs = "";
   private dirty = new Set<ContextId>();
   private corrections = new Set<WindowId>();
   /** Overflow floats to reconsider at the next flush: by window, by context, or all. */
@@ -188,6 +218,8 @@ export class Engine {
     this.releaseOwnership();
     this.recs.clear();
     this.contexts.clear();
+    this.emptied.clear();
+    this.retained.clear();
     this.dirty.clear();
     this.corrections.clear();
     this.retryWindows.clear();
@@ -378,6 +410,13 @@ export class Engine {
     r.frame = f;
     this.counters.observations++;
     if (this.applying > 0) this.counters.observationsDuringApply++;
+    if (r.mode === "excluded" && r.decision.reason === TINY_REASON && f.width > TINY_PX && f.height > TINY_PX) {
+      // Mapped helper-sized and sized by its client later: classify it once with its real
+      // size (the decision no longer depends on the frame, so this does not repeat).
+      this.reclassify(r, "grown");
+      this.ensureFlush();
+      return;
+    }
     if (r.mode === "floating" && r.suspensions.size === 0 && r.ledger.status !== "pending") r.floatRect = f;
     if (r.mode !== "tiled") { L.observe(r.ledger, f); return; }
     if (this.inFloatingLayout(r)) {
@@ -400,6 +439,8 @@ export class Engine {
         this.counters.stale++;
         if (this.ownsGeometry(r)) { this.corrections.add(id); this.ensureFlush(); }
         break;
+      case "superseded": this.counters.superseded++; break; // the newer configure follows; deadline-bounded
+
       case "partial": this.counters.partial++; break;
       case "external":
         this.counters.external++;
@@ -449,6 +490,49 @@ export class Engine {
   }
 
   /**
+   * Outputs whose identity key changed while they stayed connected: an identical monitor came
+   * or went, so the connector now tells them apart or no longer needs to (E16). Their contexts,
+   * retained preferences and window memberships take the new key with order and layout state
+   * intact; the topology change that follows re-solves them. A window whose context cannot be
+   * carried over (the new key is already in use) is reclassified instead.
+   */
+  outputsRekeyed(renames: ReadonlyMap<OutputId, OutputId>): void {
+    if (!this.alive || renames.size === 0) return;
+    this.trace.record(this.svc.now(), "topology", undefined, { rekeyed: renames.size });
+    const moved = new Map<ContextId, ContextKey>();
+    for (const c of [...this.contexts.values()]) {
+      const to = renames.get(c.key.output);
+      if (to === undefined) continue;
+      const key: ContextKey = { output: to, desktop: c.key.desktop, activity: c.key.activity };
+      const id = contextId(key);
+      if (this.contexts.has(id)) continue;
+      this.contexts.delete(c.id);
+      if (this.dirty.delete(c.id)) this.dirty.add(id);
+      if (this.emptied.delete(c.id)) this.emptied.add(id);
+      moved.set(c.id, key);
+      c.key = key;
+      c.id = id;
+      this.contexts.set(id, c);
+    }
+    for (const [id, kept] of [...this.retained]) {
+      const to = renames.get(kept.key.output);
+      if (to === undefined) continue;
+      this.retained.delete(id);
+      const key: ContextKey = { output: to, desktop: kept.key.desktop, activity: kept.key.activity };
+      this.retained.set(contextId(key), { key, prefs: kept.prefs });
+    }
+    for (const r of [...this.recs.values()]) {
+      const to = r.membership.output === null ? undefined : renames.get(r.membership.output);
+      if (to === undefined) continue;
+      r.membership = { ...r.membership, output: to };
+      const key = r.ctx ? moved.get(contextId(r.ctx)) : undefined;
+      if (key) r.ctx = key;
+      else if (r.ctx !== null) this.reclassify(r, "output-identity");
+    }
+    this.ensureFlush();
+  }
+
+  /**
    * The usable area changed on these outputs (a panel appeared, went away or moved):
    * invalidate only their contexts' geometry, without touching policy order or settings.
    */
@@ -463,20 +547,57 @@ export class Engine {
     this.ensureFlush();
   }
 
-  /** New configuration activated: settings/rules functions replaced atomically. */
+  /**
+   * New configuration activated: settings/rules functions replaced atomically. Only what the
+   * change can affect is invalidated (T26, BEHAVIOR §12). A rule change re-evaluates every
+   * window's rules, and a context is re-solved only where a window joined or left. A settings
+   * change re-solves the contexts whose effective settings differ (a gap-only change
+   * reclassifies nothing) and reclassifies windows only where tiling was enabled or disabled.
+   * An activation that changed neither (diagnostics) touches no window or context.
+   */
   configure(opts: EngineOptions): void {
-    this.trace.record(this.svc.now(), "configure");
+    const { changes, ...next } = opts;
+    const rules = changes ? changes.rules : true, settings = changes ? changes.settings : true;
+    this.trace.record(this.svc.now(), "configure", undefined, { rules, settings });
+    const prevSettingsFor = this.opts.settingsFor;
     const before = new Map<Ctx, ContextSettings>();
-    for (const c of this.contexts.values()) if (c.states["master-stack"] !== undefined) before.set(c, this.ctxSettings(c));
-    this.opts = { ...this.opts, ...opts, deadlineMs: opts.deadlineMs ?? this.opts.deadlineMs,
-                  readinessMs: opts.readinessMs ?? this.opts.readinessMs };
-    if (opts.traceCapacity !== undefined && opts.traceCapacity !== this.trace.capacity) this.trace.resize(opts.traceCapacity);
-    if (opts.traceEnabled !== undefined) this.trace.enabled = opts.traceEnabled;
-    for (const c of this.contexts.values()) c.settings = null;
-    for (const [c, old] of before) this.rebaseMasterStack(c, old);
-    for (const r of this.recs.values()) this.reclassify(r, "config");
-    for (const c of this.contexts.values()) this.markDirty(c.key);
-    this.retryOverflow("*");
+    if (settings) for (const c of this.contexts.values()) before.set(c, this.ctxSettings(c));
+    this.opts = { ...this.opts, ...next, deadlineMs: next.deadlineMs ?? this.opts.deadlineMs,
+                  readinessMs: next.readinessMs ?? this.opts.readinessMs };
+    if (next.traceCapacity !== undefined && next.traceCapacity !== this.trace.capacity) this.trace.resize(next.traceCapacity);
+    if (next.traceEnabled !== undefined) this.trace.enabled = next.traceEnabled;
+    // Whether tiling was enabled or disabled per context id, filled as contexts are compared.
+    const toggled = new Map<ContextId, boolean>();
+    if (settings) {
+      for (const [c, old] of before) {
+        c.settings = null;
+        const now = this.ctxSettings(c);
+        toggled.set(c.id, old.enabled !== now.enabled);
+        if (sameValue(old, now)) continue;
+        if (c.states["master-stack"] !== undefined) this.rebaseMasterStack(c, old);
+        this.markDirty(c.key);
+        this.retryOverflow(c.id); // layout parameters changed (BEHAVIOR §11)
+      }
+    }
+    if (rules) {
+      for (const r of this.recs.values()) this.reclassify(r, "config");
+      this.retryOverflow("*");
+    } else if (settings) {
+      // Windows floating where tiling was disabled have no context object to compare.
+      const prev = (k: ContextKey): ContextSettings => (prevSettingsFor ? prevSettingsFor(k) : DEFAULT_SETTINGS);
+      for (const r of this.recs.values()) {
+        if (r.mode === "pending" || r.mode === "excluded") continue;
+        const key = this.singleContextKey(r.membership);
+        if (key === null) continue;
+        const id = contextId(key);
+        let flipped = toggled.get(id);
+        if (flipped === undefined) {
+          flipped = prev(key).enabled !== this.settingsFor(key).enabled;
+          toggled.set(id, flipped);
+        }
+        if (flipped) this.reclassify(r, "config");
+      }
+    }
     this.ensureFlush();
   }
 
@@ -561,6 +682,7 @@ export class Engine {
   }
 
   private reclassify(r: Rec, why: string): void {
+    this.counters.reclassified++;
     const key = this.singleContextKey(r.membership);
     const prevMin = r.rules?.minSize;
     r.rules = this.opts.rulesFor ? this.opts.rulesFor(r.meta, key) : null;
@@ -628,8 +750,58 @@ export class Engine {
       c = { key, id, members: [], layoutOverride: null, states: {}, focus: [], revision: 0, applied: -1,
             plan: new Map(), settings: null, failures: 0 };
       this.contexts.set(id, c);
+      const kept = this.retained.get(id);
+      if (kept) {
+        this.retained.delete(id);
+        this.applyPrefs(c, kept.prefs);
+      }
+      this.emptied.add(id); // collected again unless a window joins before the flush ends
     }
     return c;
+  }
+
+  private applyPrefs(c: Ctx, p: ContextPrefs): void {
+    c.layoutOverride = p.layout;
+    if (p.masterStack) {
+      const ms = c.states["master-stack"] as MasterStackState | undefined;
+      c.states["master-stack"] = { ...(ms ?? masterStack.initial(this.ctxSettings(c))), ...p.masterStack };
+    }
+  }
+
+  /** Preferences a context holds beyond its configuration, or null when it holds none. */
+  private prefsOf(c: Ctx): ContextPrefs | null {
+    const ms = c.states["master-stack"] as MasterStackState | undefined;
+    const conf = ms ? masterStack.initial(this.ctxSettings(c)) : null;
+    const tuned = !!ms && !!conf && (ms.ratio !== conf.ratio || ms.masterCount !== conf.masterCount);
+    if (c.layoutOverride === null && !tuned) return null;
+    return { layout: c.layoutOverride, masterStack: tuned ? { ratio: ms!.ratio, masterCount: ms!.masterCount } : null };
+  }
+
+  /**
+   * Drop contexts left without members, e.g. an unplugged output's or a visited desktop's,
+   * so the model stays bounded (T30). What they hold beyond the configuration is kept in a
+   * bounded map (oldest dropped first) and returns with the context. Runs at the end of a
+   * flush, over the contexts that emptied since; a context still dirty waits for the next.
+   */
+  private collectEmpty(): void {
+    if (this.emptied.size === 0) return;
+    const later = new Set<ContextId>();
+    for (const id of this.emptied) {
+      const c = this.contexts.get(id);
+      if (!c || c.members.length > 0) continue;
+      if (this.dirty.has(id)) { later.add(id); continue; }
+      const prefs = this.prefsOf(c);
+      this.contexts.delete(id);
+      if (prefs) this.retain(c.key, prefs);
+    }
+    this.emptied = later;
+  }
+
+  private retain(key: ContextKey, prefs: ContextPrefs): void {
+    const id = contextId(key);
+    this.retained.delete(id);
+    this.retained.set(id, { key, prefs });
+    if (this.retained.size > RETAINED_MAX) this.retained.delete(this.retained.keys().next().value as ContextId);
   }
 
   private ctxSettings(c: Ctx): ContextSettings {
@@ -681,6 +853,7 @@ export class Engine {
     for (const kind of Object.keys(c.states) as LayoutKind[]) c.states[kind] = LAYOUTS[kind].remove(c.states[kind], r.id);
     c.revision++;
     this.markDirty(c.key);
+    if (c.members.length === 0) this.emptied.add(c.id);
   }
 
   /**
@@ -759,6 +932,7 @@ export class Engine {
         if (!this.isVisible(c.key)) { if (c.members.length) c.revision++; continue; }
         this.solveContained(c);
       }
+      this.collectEmpty();
     } catch (e) {
       this.counters.errors++;
       this.svc.log("error", "flush failed", String(e));
@@ -912,7 +1086,20 @@ export class Engine {
 
   private refreshScales(): void {
     this.scales.clear();
-    for (const o of this.host.outputs()) this.scales.set(o.id, o.scale);
+    const twins: string[] = [];
+    for (const o of this.host.outputs()) {
+      this.scales.set(o.id, o.scale);
+      if (o.identity === "ambiguous") twins.push(o.name);
+    }
+    // Identical monitors are told apart by connector only: a port swap swaps their contexts.
+    const note = twins.join(",");
+    if (note !== this.ambiguousOutputs) {
+      this.ambiguousOutputs = note;
+      if (note) {
+        this.trace.record(this.svc.now(), "outputs-ambiguous", undefined, twins);
+        this.svc.log("info", "identical monitors are told apart by their connector", twins);
+      }
+    }
   }
 
   private applyTarget(r: Rec, target: Rect): void {
@@ -1291,6 +1478,16 @@ export class Engine {
     if (clock) this.lastActivateNs = clock() - t0;
   }
 
+  /**
+   * followOnSend (T24): after a send, show the window's desktop on the output it went to and
+   * activate it. The decision is the source context's, read before the send; both calls are
+   * plain property writes, and the visibility change arrives as an ordinary event.
+   */
+  private follow(r: Rec, output: OutputId, desktop: DesktopId | null): void {
+    if (desktop !== null && this.host.visibleDesktop(output) !== desktop) this.host.showDesktop(output, desktop);
+    if (this.recs.get(r.id) === r) this.activate(r);
+  }
+
   private focusCommand(c: Ctx, r: Rec | null, action: string): { status: CommandStatus; reason?: string; targets: string[] } {
     const ids = this.solveInput(c, null).ids;
     if (ids.length === 0) return { status: "noop", reason: "no tiled windows", targets: [] };
@@ -1347,16 +1544,24 @@ export class Engine {
       if (outs.length < 2 || r.membership.output === null) return { status: "noop", reason: "no other output", targets: [] };
       const i = outs.findIndex((o) => o.id === r.membership.output);
       const dest = outs[(i + (action === "output-next" ? 1 : outs.length - 1)) % outs.length];
-      return this.host.sendToOutput(r.id, r.gen, dest.id)
-        ? { status: "accepted", targets: [r.id] } : { status: "rejected", reason: "transfer refused", targets: [] };
+      const follow = this.ctxSettings(c).followOnSend;
+      if (!this.host.sendToOutput(r.id, r.gen, dest.id)) return { status: "rejected", reason: "transfer refused", targets: [] };
+      // KWin moves an interactively sent window to the destination's current desktop (per-output
+      // desktops; Window::finishInteractiveOutputChange) and reports it inside the send, so the
+      // membership read now is where the window is shown.
+      if (follow) this.follow(r, dest.id, r.membership.desktops.length === 1 ? r.membership.desktops[0] : null);
+      return { status: "accepted", targets: [r.id] };
     }
     if (action === "desktop-next" || action === "desktop-previous") {
       const ds = this.host.desktops();
       if (ds.length < 2 || r.membership.desktops.length !== 1) return { status: "noop", reason: "no other desktop", targets: [] };
       const i = ds.indexOf(r.membership.desktops[0]);
       const dest = ds[(i + (action === "desktop-next" ? 1 : ds.length - 1)) % ds.length];
-      return this.host.sendToDesktop(r.id, r.gen, dest)
-        ? { status: "accepted", targets: [r.id] } : { status: "rejected", reason: "transfer refused", targets: [] };
+      const out = r.membership.output;
+      const follow = this.ctxSettings(c).followOnSend;
+      if (!this.host.sendToDesktop(r.id, r.gen, dest)) return { status: "rejected", reason: "transfer refused", targets: [] };
+      if (follow && out !== null) this.follow(r, out, dest);
+      return { status: "accepted", targets: [r.id] };
     }
     // Structural reinsert next to the directional neighbour.
     if (!this.participates(r) || !sameContext(r.ctx, c.key)) return { status: "noop", reason: "active window is not tiled here", targets: [] };
@@ -1452,6 +1657,35 @@ export class Engine {
       revision: c.revision, applied: c.applied }));
   }
 
+  /**
+   * Layout preferences per context key: live contexts that hold any, then those kept for
+   * collected (empty) contexts. The accessor for persistence (T27): contexts themselves may be
+   * collected at any flush, so their preferences are read here rather than from the model.
+   */
+  contextPreferences(): Array<{ key: ContextKey; prefs: ContextPrefs }> {
+    const out: Array<{ key: ContextKey; prefs: ContextPrefs }> = [];
+    for (const c of this.contexts.values()) {
+      const p = this.prefsOf(c);
+      if (p) out.push({ key: c.key, prefs: p });
+    }
+    for (const kept of this.retained.values()) out.push({ key: kept.key, prefs: kept.prefs });
+    return out;
+  }
+
+  /**
+   * Replace a context's preferences (persistence restore): applied to a live context, which is
+   * re-solved once, or kept until the context is next used.
+   */
+  setContextPreferences(key: ContextKey, prefs: ContextPrefs): void {
+    if (!this.alive) return;
+    const c = this.contexts.get(contextId(key));
+    if (!c) { this.retain(key, prefs); return; }
+    this.applyPrefs(c, prefs);
+    c.revision++;
+    this.markDirty(c.key);
+    this.ensureFlush();
+  }
+
   outstandingCount(): number {
     let n = 0;
     for (const r of this.recs.values()) if (r.ledger.outstanding) n++;
@@ -1487,6 +1721,17 @@ function suspensionsOf(s: WindowStates): Set<Suspension> {
 function sameSet<T>(a: Set<T>, b: Set<T>): boolean {
   if (a.size !== b.size) return false;
   for (const v of a) if (!b.has(v)) return false;
+  return true;
+}
+
+/** Structural equality of plain data (settings): primitives, arrays and plain objects. */
+function sameValue(a: unknown, b: unknown): boolean {
+  if (a === b) return true;
+  if (typeof a !== "object" || typeof b !== "object" || a === null || b === null) return false;
+  const x = a as Record<string, unknown>, y = b as Record<string, unknown>;
+  const keys = Object.keys(x);
+  if (keys.length !== Object.keys(y).length) return false;
+  for (const k of keys) if (!sameValue(x[k], y[k])) return false;
   return true;
 }
 

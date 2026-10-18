@@ -21,6 +21,10 @@ export const FLOATING_APPS: ReadonlySet<string> = new Set([
   "polkit-kde-authentication-agent-1", "org.kde.kdeconnect.daemon", "org.kde.plasma.emojier",
 ]);
 
+/** Frames this small (either dimension, logical px) are helper surfaces, not windows to tile. */
+export const TINY_PX = 2;
+export const TINY_REASON = "tiny helper surface";
+
 export interface RuleView {
   readonly mode?: "tiled" | "floating" | "excluded";
   readonly ruleIds: readonly string[];
@@ -48,7 +52,7 @@ export function classify(x: ClassifyInput): Decision {
   if (m.special) return d("excluded", "type", "special window");
   if (!m.managed) return d("excluded", "type", "not managed by KWin");
   if (EXCLUDED_APPS.has(m.appId)) return d("excluded", "builtin", `shell/compositor surface ${m.appId}`);
-  if (x.frameSize && (x.frameSize.width <= 2 || x.frameSize.height <= 2)) return d("excluded", "builtin", "tiny helper surface");
+  if (x.frameSize && (x.frameSize.width <= TINY_PX || x.frameSize.height <= TINY_PX)) return d("excluded", "builtin", TINY_REASON);
 
   const rule = x.rule;
   if (rule && rule.mode === "excluded") return d("excluded", "rule", "excluded by rule", rule.ruleIds);

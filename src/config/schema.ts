@@ -235,8 +235,8 @@ export function readPatch(s: Sink, v: unknown, path: string): SettingsPatch {
       p.bsp = bs;
     }
   }
+  if (has(o, "followOnSend")) { const x = bool(s, o.followOnSend, at(path, "followOnSend")); if (x !== null) p.followOnSend = x; }
   // Accepted for forward compatibility with the documented example, only at their inert values.
-  if (has(o, "followOnSend")) unsupported(s, o.followOnSend, at(path, "followOnSend"), false);
   if (has(o, "multiContextWindows")) unsupported(s, o.multiContextWindows, at(path, "multiContextWindows"), "float");
   if (has(o, "animation")) {
     const ap = at(path, "animation");

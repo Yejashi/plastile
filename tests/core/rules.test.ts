@@ -12,7 +12,7 @@ import { rect } from "../../src/core/geometry.ts";
 
 const AREA = rect(0, 0, 1280, 800);
 const NAMES: Record<string, string> = { D1: "Main", D2: "Writing" };
-const names = { desktopNameOf: (id: string) => NAMES[id] ?? "" };
+const names = { outputNameOf: (key: string) => key, desktopNameOf: (id: string) => NAMES[id] ?? "" };
 
 function snap(doc: unknown, revision = 1): ConfigSnapshot {
   const r = compileConfig({ configJson: JSON.stringify({ schemaVersion: 1, ...(doc as object) }) }, revision);

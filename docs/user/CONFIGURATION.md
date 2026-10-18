@@ -4,7 +4,7 @@
 
 **Where it lives.** Everything is in `~/.config/kwinrc` under `[Script-plastile]`, written by the settings dialog or by hand ([INSTALL](INSTALL.md#4-settings-dialog)).
 
-**When changes take effect.** After *Plastile: Reload configuration*, which asks KWin to re-read `kwinrc`; after any other KWin reconfigure (`qdbus6 org.kde.KWin /KWin reconfigure`); or when the script is (re)enabled. The dialog's Apply alone does **not** reach the running script ([measured, see INSTALL](INSTALL.md#applying-settings-changes)).
+**When changes take effect.** After *Plastile: Reload configuration*, which asks KWin to re-read `kwinrc`; after any other KWin reconfigure (`qdbus6 org.kde.KWin /KWin reconfigure`); or when the script is (re)enabled. The dialog's Apply alone does **not** reach the running script ([measured, see INSTALL](INSTALL.md#applying-settings-changes)). An activation re-evaluates only what changed: a settings change (gaps, ratios, layout, overrides) re-arranges only the screens and desktops whose resolved settings differ and re-classifies no window, except where `enabled` flipped; a rule change re-classifies every window and re-arranges only where a window joined or left the layout; a diagnostics-only change touches no window.
 
 ## Flat keys
 
@@ -72,7 +72,7 @@ A settings patch is used by `defaults` and by each override's `set`. Every field
 | `bsp.ratioStep` | greater than 0, at most 0.5 | |
 | `overflow` | `float-new` | The only implemented policy. Other values are rejected. |
 | `singleWindowGaps` | boolean | |
-| `followOnSend` | `false` only | Accepted at its inert value for compatibility with the design document's example; `true` is rejected as not supported. |
+| `followOnSend` | boolean | Default `false`. When `true`, *Send window to next/previous desktop* also shows that desktop on the window's screen (only that screen when KWin's per-screen desktops are on) and activates the window. *Send window to next/previous output* needs no switch: KWin itself moves the window onto the destination screen's current desktop and keeps it active, so `true` only adds the activation. The value of the context the window is sent **from** decides. JSON only (no flat key). |
 | `multiContextWindows` | `"float"` only | As above: windows on several desktops or activities always float. |
 | `animation` | `{ "enabled": false, "durationMs": 0 }` only | As above: no animation exists. |
 
@@ -252,7 +252,7 @@ All three examples were compiled with the runtime's own `compileConfig` in Node,
 
 ## How windows are classified
 
-**When.** The decision is made when a window appears. It is made again when the window's application id or resource name, transience or modality, or its desktop or output membership change, when a new configuration is activated, and when a desktop is renamed while some override or rule uses `desktopName`. A title change re-evaluates only if some rule uses `title`. The window type is read with the other metadata at those moments; KWin does not report a later type change.
+**When.** The decision is made when a window appears. It is made again when the window's application id or resource name, transience or modality, or its desktop or output membership change, when a configuration with changed rules is activated (or one that enables or disables tiling where the window is), and when a desktop is renamed while some override or rule uses `desktopName`. A title change re-evaluates only if some rule uses `title`. The window type is read with the other metadata at those moments; KWin does not report a later type change.
 
 **Size constraints** (minimum and maximum size, fixed size) have no change notification in KWin 6.7.5. Plastile re-reads them, and re-classifies if they changed, at these points only:
 
@@ -264,7 +264,7 @@ An X11 client that raises its minimum to a size its current tile already satisfi
 
 **Sources.** The decision records a **source**:
 
-- `builtin`: shell surfaces, helper apps and tiny surfaces
+- `builtin`: shell surfaces, helper apps and tiny surfaces (2 px or less in either dimension; such a surface is classified once more when its client gives it a real size)
 - `type`: window type, special or unmanaged windows
 - `constraint`: fixed size
 - `membership`: several desktops or activities, or no output
@@ -327,7 +327,7 @@ The line is `plastile info explain {...}` with these fields:
 - `configJson` longer than 524,288 characters
 - matchers with none or several of `exact`, `glob` and `regex`
 - unsupported regex flags, or patterns that do not compile
-- `followOnSend`, `multiContextWindows` or `animation` at any non-inert value
+- `multiContextWindows` or `animation` at any non-inert value
 - a rule action this version does not support (`layout`, placement on an output, desktop or activity, `overflow`), each with the alternative in the message
 - a `minSize` with neither `width` nor `height`, or a value outside 1–8192
 

@@ -8,6 +8,7 @@ import type { ContextKey } from "../core/types.ts";
 import {
   compileConfig, FLAT_KEYS, formatError, resolveContext, resolveWindow, type ConfigSnapshot, type ContextInfo,
 } from "../config/index.ts";
+import { diffConfig } from "../config/diff.ts";
 import { KwinAdapter } from "../adapters/kwin/adapter.ts";
 import type { KKWin, KOptions, KQt, KSignal, KWorkspace } from "../adapters/kwin/kwinTypes.ts";
 import { describeConflicts, ShortcutAudit, type Bus, type ShortcutReport } from "./shortcuts.ts";
@@ -121,11 +122,14 @@ export function createRuntime(env: RuntimeEnv): Runtime {
   const optionConns: Array<{ signal: KSignal; fn: () => void }> = [];
   const onConfig = (): void => {
     if (!engine.isAlive()) return;
+    const prev = snapshot;
     if (loadConfig()) {
       // Caption watching follows the active rules; on activation the current titles are read
       // before the engine re-classifies.
       adapter.setWatchTitles(snapshot!.usesTitleRules);
-      engine.configure(options(snapshot!));
+      // Only what changed is re-evaluated (T26): a gap-only change reclassifies nothing.
+      const d = diffConfig(prev, snapshot!);
+      engine.configure({ ...options(snapshot!), changes: { rules: d.rules, settings: d.settings } });
       log("info", "configuration activated", { revision: snapshot!.revision });
     }
   };
@@ -249,17 +253,20 @@ export function createRuntime(env: RuntimeEnv): Runtime {
 
 /** Context names for configuration matchers (the adapter in KWin; a table in tests). */
 export interface ContextNames {
+  /** Connector name of an output identity key (E16). */
+  outputNameOf(key: string): string;
   desktopNameOf(id: string): string;
 }
 
 /**
  * Engine options for a configuration snapshot: precedence-resolved settings per context and
- * rule actions per window in its context (CONFIGURATION §3-§4). Output identity is the
- * connector name, so the context's output id is also its outputName.
+ * rule actions per window in its context (CONFIGURATION §3-§4). Context keys carry the
+ * output's identity key (E16); overrides and rules match its connector name.
  */
 export function engineOptions(snap: ConfigSnapshot, names: ContextNames): EngineOptions {
   const info = (key: ContextKey): ContextInfo => ({
-    outputName: key.output, desktopId: key.desktop, desktopName: names.desktopNameOf(key.desktop), activityId: key.activity,
+    outputName: names.outputNameOf(key.output), desktopId: key.desktop, desktopName: names.desktopNameOf(key.desktop),
+    activityId: key.activity,
   });
   return {
     settingsFor: (key) => resolveContext(snap, info(key)).settings,

@@ -67,6 +67,7 @@ export interface SettingsPatch {
   bsp?: Partial<BspSettings>;
   overflow?: "float-new";
   singleWindowGaps?: boolean;
+  followOnSend?: boolean;
 }
 
 export type StringMatcher =
