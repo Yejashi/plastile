@@ -200,5 +200,7 @@ presentation) have no tests because the features do not exist.
   ([tools/sandbox](../../tools/sandbox/README.md)) on the hosted runner and runs the whole suite
   against KWin 6.7.5 (QPainter compositing, so GL-only checks report SKIP). It was enabled once the
   suite passed locally in that sandbox (637/637 checks, 67 scenarios, 2 SKIP on 2026-10-18).
-- KWin 6.8 in CI: the pinned Nix environment ([tools/sandbox/nix](../../tools/sandbox/nix/README.md))
-  runs the suite locally; a CI job follows once the 6.7.5 job is green on the runner.
+- KWin 6.8 in CI: the `integration-nested-kwin68` job runs the suite in the pinned Nix environment
+  ([tools/sandbox/nix](../../tools/sandbox/nix/README.md)). It is `continue-on-error` until seen green on
+  a hosted runner; its outcome is written to the job summary either way. The 6.7.5 job was green on
+  its first hosted run (39094402153).

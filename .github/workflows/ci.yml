@@ -280,3 +280,63 @@ jobs:
             artifacts/integration/**/report.json
             artifacts/integration/**/kwin.log
             artifacts/integration-summary.md
+
+  integration-nested-kwin68:
+    # Second KWin API family: KWin 6.8.0 from the pinned Nix environment in
+    # tools/sandbox/nix (OpenGL via llvmpipe behind an emulated /dev/udmabuf, see its
+    # README). Same suite as integration-nested. continue-on-error until it has been
+    # seen green on a hosted runner (it passes locally: tools/sandbox/nix/README.md);
+    # the outcome is always written to the job summary.
+    name: Nested KWin 6.8 integration (Nix, provisional)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_MAJOR }}
+          cache: npm
+
+      - name: Install Nix (single-user, no daemon)
+        run: |
+          sh <(curl -fsSL https://releases.nixos.org/nix/nix-2.33.0/install) --no-daemon --yes
+          echo "$HOME/.nix-profile/bin" >> "$GITHUB_PATH"
+
+      - name: Build the bundle and fixture clients on the host
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends build-essential pkg-config \
+            libwayland-dev wayland-protocols libxcb1-dev libxcb-icccm4-dev libei-dev
+          npm ci
+          npm run build
+          make -C fixtures/client
+          make -C fixtures/xclient
+          make -C tools/input
+          sudo install -d -m 1777 /tmp/.X11-unix
+
+      - name: Run nested integration scenarios (KWin 6.8)
+        run: |
+          tools/sandbox/nix/run.sh -- kwin_wayland --version
+          tools/sandbox/nix/run.sh -- python3 tests/integration/run.py --markdown artifacts/integration-kwin68-summary.md
+
+      - name: Job summary
+        if: always()
+        run: |
+          echo "Provisional job (continue-on-error); status: ${{ job.status }}" >> "$GITHUB_STEP_SUMMARY"
+          if [ -f artifacts/integration-kwin68-summary.md ]; then
+            cat artifacts/integration-kwin68-summary.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload integration reports and KWin logs
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: nested-integration-kwin68-${{ github.sha }}
+          if-no-files-found: warn
+          retention-days: 14
+          path: |
+            artifacts/integration/**/report.json
+            artifacts/integration/**/kwin.log
+            artifacts/integration-kwin68-summary.md
