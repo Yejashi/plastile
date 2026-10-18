@@ -342,6 +342,26 @@ test("fullscreen (KWin reports not resizable, drops the decoration) keeps the wi
   rt.shutdown();
 });
 
+test("a window mapped already fullscreen joins the layout when it leaves fullscreen", () => {
+  const { ws, qt, wins, rt } = setup(1, 2);
+  const slots = wins.map((w) => w.frameGeometry);
+  // Mapped with fullscreen requested: KWin reports it as not resizable (xdgshellwindow.cpp:682-686).
+  const w3 = ws.window({ caption: "w3", resourceClass: "app3", fullScreen: true, resizeable: false,
+                         frameGeometry: { x: 0, y: 0, width: 1280, height: 800 } }, false);
+  ws.add(w3);
+  qt.drain();
+  assert.deepEqual(wins.map((w) => w.frameGeometry), slots, "KWin owns the fullscreen window: peers untouched");
+  // Fullscreen ends: no restore geometry, so KWin lets the client choose its size (setFullScreen).
+  w3.resizeable = true;
+  w3.fullScreen = false;
+  w3.fullScreenChanged.emit();
+  ws.kwinSetFrame(w3, { x: 0, y: 0, width: 640, height: 480 });
+  qt.drain();
+  assertTiles([...wins, w3], FULL);
+  assert.ok(w3.frameGeometry.x > 600 && w3.frameGeometry.height < 400, `w3 tiled into the stack: ${JSON.stringify(w3.frameGeometry)}`);
+  rt.shutdown();
+});
+
 test("a user's border change under a border rule survives the constraint refresh it causes (Q10)", () => {
   const cfg = { configJson: JSON.stringify({ schemaVersion: 1, rules: [{ id: "nb", match: { appId: { glob: "app*" } }, actions: { border: "none" } }] }) };
   const { ws, qt, wins, rt } = setup(1, 3, cfg);

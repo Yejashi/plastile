@@ -354,7 +354,22 @@ export class KwinAdapter implements HostPort {
       // hints) applied a constraint Plastile may not know. Re-read once per request.
       if (!sameSize(f, q.to)) this.refreshConstraints(e);
     }, e.conns);
-    const states = () => { const g = eng(); if (g) g.statesChanged(id, gen, statesOf(w)); };
+    let fullscreen = !!w.fullScreen;
+    const states = () => {
+      const g = eng();
+      if (!g) return;
+      const st = statesOf(w);
+      g.statesChanged(id, gen, st);
+      const left = fullscreen && !st.fullscreen;
+      fullscreen = st.fullscreen;
+      // KWin reports a window as not resizable while fullscreen is requested, so metadata
+      // sampled then (a window mapped fullscreen) is re-read once the request is gone.
+      if (left && e.meta.resizeable !== !!w.resizeable) {
+        e.meta = metaOf(w);
+        g.metadataChanged(id, gen, e.meta);
+        g.constraintsChanged(id, gen, constraintsOf(w));
+      }
+    };
     for (const s of [w.minimizedChanged, w.fullScreenChanged, w.maximizedChanged, w.moveResizedChanged,
                      w.interactiveMoveResizeStarted, w.interactiveMoveResizeFinished, w.hiddenChanged]) {
       this.own(s, states, e.conns);

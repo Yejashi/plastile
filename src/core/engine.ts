@@ -6,7 +6,7 @@
 // frame write goes through applyTarget() and the requested/observed ledger.
 
 import { frameTolerance, isValidArea, rectNear, rectOf, type Rect, type Size } from "./geometry.ts";
-import { classify } from "./classify.ts";
+import { classify, TINY_PX, TINY_REASON } from "./classify.ts";
 import { COMMAND_IDS, type CommandResult, type CommandStatus } from "./commands.ts";
 import { DEFAULT_SETTINGS } from "./defaults.ts";
 import { newCounters, Trace, type Counters } from "./diagnostics.ts";
@@ -376,6 +376,13 @@ export class Engine {
     r.frame = f;
     this.counters.observations++;
     if (this.applying > 0) this.counters.observationsDuringApply++;
+    if (r.mode === "excluded" && r.decision.reason === TINY_REASON && f.width > TINY_PX && f.height > TINY_PX) {
+      // Mapped helper-sized and sized by its client later: classify it once with its real
+      // size (the decision no longer depends on the frame, so this does not repeat).
+      this.reclassify(r, "grown");
+      this.ensureFlush();
+      return;
+    }
     if (r.mode === "floating" && r.suspensions.size === 0 && r.ledger.status !== "pending") r.floatRect = f;
     if (r.mode !== "tiled") { L.observe(r.ledger, f); return; }
     if (this.inFloatingLayout(r)) {

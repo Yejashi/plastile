@@ -254,7 +254,7 @@ An X11 client that raises its minimum to a size its current tile already satisfi
 
 **Sources.** The decision records a **source**:
 
-- `builtin`: shell surfaces, helper apps and tiny surfaces
+- `builtin`: shell surfaces, helper apps and tiny surfaces (2 px or less in either dimension; such a surface is classified once more when its client gives it a real size)
 - `type`: window type, special or unmanaged windows
 - `constraint`: fixed size
 - `membership`: several desktops or activities, or no output

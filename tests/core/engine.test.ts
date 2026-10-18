@@ -453,6 +453,44 @@ test("L16: all-desktop and dialog windows float by default", () => {
   assert.equal(h.writes.filter((w) => ["pin", "dlg", "dock"].includes(w.id)).length, 0);
 });
 
+test("T16: a tiny helper surface that grows into a real window is classified again, once", () => {
+  const { h, e } = setup(["a"]);
+  h.open("x", { frame: rect(0, 0, 1, 1) }); // mapped at 1x1, sized by the client later
+  h.drain();
+  assert.equal(e.modeOf("x"), "excluded");
+  assert.equal(h.writesTo("x"), 0);
+  const modes = () => e.trace.snapshot().filter((t) => t.kind === "mode" && t.id === "x").length;
+  const before = modes();
+  h.userSetFrame("x", rect(100, 100, 500, 400)); // the client's first real size
+  h.drain();
+  assert.equal(e.modeOf("x"), "tiled");
+  assertTiling(tiledFrames(h, ["a", "x"]), AREA);
+  assert.equal(modes(), before + 1, "classified once more");
+  h.userSetFrame("x", rect(100, 100, 501, 400));
+  h.drain();
+  assert.equal(modes(), before + 1, "later frame changes do not reclassify");
+  // A surface that stays helper-sized is never tiled.
+  h.open("y", { frame: rect(0, 0, 1, 1) });
+  h.drain();
+  h.userSetFrame("y", rect(0, 0, 2, 2));
+  h.drain();
+  assert.equal(e.modeOf("y"), "excluded");
+});
+
+test("L10: a window mapped already fullscreen tiles when it leaves fullscreen", () => {
+  const { h, e } = setup(["a", "b"]);
+  const slots = tiledFrames(h, ["a", "b"]);
+  h.open("f", { states: { ...h.windows.get("a")!.states, fullscreen: true }, frame: rect(0, 0, 1280, 800) });
+  h.drain();
+  assert.equal(h.writesTo("f"), 0, "KWin owns the fullscreen frame");
+  assert.deepEqual(tiledFrames(h, ["a", "b"]), slots, "peers untouched while it is fullscreen");
+  h.setStates("f", { fullscreen: false });
+  h.userSetFrame("f", rect(0, 0, 640, 480)); // KWin lets the client choose its size
+  h.drain();
+  assert.equal(e.modeOf("f"), "tiled");
+  assertTiling(tiledFrames(h, ["a", "b", "f"]), AREA);
+});
+
 test("late metadata: pending window classified at the readiness deadline", () => {
   const h = new MockHost();
   const e = h.start();
