@@ -134,7 +134,7 @@ facing tiles (>= the configured gap; one device pixel of tolerance at fractional
 | `drag-I01-I02` | I01, I02 (real libei input; needs `build/input/plastile-input`) |
 | `resize-I03` | I03 (real libei input) |
 | `drag-teardown-I04` | I04 partial (window removed mid-drag; output removal mid-drag not exercised), I06 partial (unload mid-drag; there is no overlay) |
-| `classify-builtin-T16`, `classify-rule-title-T16`, `classify-rule-title-reconfigure-T16` | T16 classification (BEHAVIOR §1), no matrix ID |
+| `classify-builtin-T16`, `classify-rule-title-T16`, `classify-rule-title-reconfigure-T16`, `classify-tiny-helper-T16` | T16 classification (BEHAVIOR §1), no matrix ID |
 | `config-desktop-rename-Q02` | Q02 partial: a desktopName override follows a desktop rename (precedence order is asserted in pure tests) |
 | `constraints-runtime-min-G08` | G08 family: a minimum set after mapping is read from KWin (not learned); a decoration change updates the frame minimum |
 | `shortcuts-defaults-real-input` | default key bindings reach Plastile with real key events (libei); Q08 partial: reports other registered actions holding a default |

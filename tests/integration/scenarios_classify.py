@@ -350,3 +350,44 @@ def desktop_rename(out: Path, c: Checks):
         cz = s.counters()
         warn = s.log_lines(r"plastile (error|warn)|TypeError|ReferenceError")
         c("no model errors or JS exceptions", cz["counters"]["errors"] == 0 and not warn, warn[:3])
+
+
+@scenario("classify-tiny-helper-T16")
+def classify_tiny_helper(out: Path, c: Checks):
+    """A 1x1 helper surface (bridge/portal-style, undecorated) never takes a tile: before load and opened after."""
+    helper = ("--csd", "--size", "1x1", "--fixed")
+    app = "org.example.bridge-helper"
+    with Session(out) as s:
+        spawn_app(s, 9, app, *helper)
+        h0 = frame_of(s, app, "plastile-fixture 9")
+        c("pre-existing helper maps at 1x1", h0["frame"]["width"] <= 2 and h0["frame"]["height"] <= 2, h0["frame"])
+        s.load()
+        s.spawn(1); s.spawn(2)
+        c1 = s.settle()
+        a = s.area()
+        f = s.frames_list()
+        c("the tiled pair fills the area width (the helper takes no slot)",
+          len(f) == 2 and not tiling_errors(f, a, 8)
+          and abs(sum(x["frame"]["width"] for x in f) - (a["width"] - 24)) <= 2, [x["frame"] for x in f])
+
+        spawn_app(s, 8, app, *helper)
+        c2 = s.settle()
+        f2 = s.frames_list()
+        c("a helper opened after load: tiled pair unchanged, no writes",
+          all(near(x["frame"], y["frame"]) for x, y in zip(f, f2)) and delta(c1, c2).get("writes", 0) == 0,
+          {"delta": delta(c1, c2)})
+        h9 = frame_of(s, app, "plastile-fixture 9")
+        h8 = frame_of(s, app, "plastile-fixture 8")
+        c("helper frames unchanged", near(h9["frame"], h0["frame"]) and h8["frame"]["width"] <= 2, [h9["frame"], h8["frame"]])
+        wb = writes_by_id(s)
+        c("trace: zero writes for both helper ids", wb.get(h9["id"], 0) == 0 and wb.get(h8["id"], 0) == 0
+          and sum(wb.get(x["id"], 0) for x in f) >= 2, wb)
+        e8 = explain(s, "plastile-fixture 8")
+        c("explain helper: excluded as a tiny helper surface (builtin)", e8.get("mode") == "excluded"
+          and (e8.get("decision") or {}).get("source") == "builtin"
+          and "tiny" in str((e8.get("decision") or {}).get("reason", "")), brief(e8))
+        cz = s.counters()
+        c("no model errors", cz["counters"]["errors"] == 0, cz["counters"]["errors"])
+        EVIDENCE["classify-tiny-helper-T16"] = {"explainHelper": brief(e8), "helperFrames": [h9["frame"], h8["frame"]],
+                                                "writesByWindow": {"helper9": wb.get(h9["id"], 0), "helper8": wb.get(h8["id"], 0)}}
+        save(out, "classify-tiny-helper-T16")
