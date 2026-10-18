@@ -64,6 +64,8 @@ qdbus6 org.kde.kglobalaccel /component/kwin org.kde.kglobalaccel.Component.invok
 | `configRevision` | Increases with every configuration attempt that differs from the previous input. |
 | `shortcuts` | The startup shortcut check: `state` (`pending`, `done` or `unavailable`) and the number of `conflicts` ([details](SHORTCUTS.md#conflict-report)). |
 | `inspectorOpen` | Whether the *Explain active window* inspector is open. |
+| `counters.restored`, `restoreAmbiguous` | Saved float positions given to the one open window of their application, and ones withheld because several windows of the application were open. |
+| `persistence` | Saved state: `state` (`active`; `memory` when `QtCore` is unavailable; `read-only` when a newer Plastile's file is present; `off`), the `generation` last loaded or saved, this load's `writes` and `skipped` (unchanged) saves, and whether a save is pending (`dirty`, `armed`). |
 
 A healthy idle session shows no change between two dumps taken a few seconds apart. Measured: 3 s of idle produced no flushes, deadlines or writes.
 
@@ -134,11 +136,18 @@ Check KWin's Window Rules and disable other tiling scripts. Then compare two cou
 - **Script disabled:** KGlobalAccel still accepts the shortcut and nothing runs (measured). That is expected.
 - **Suspended:** layout commands are rejected with `tiling suspended` (visible at `debug`).
 
+## Saved state
+
+- **Preferences not restored:** look for `plastile warn saved state rejected` (a damaged file, or one from a newer Plastile) or `plastile warn persistence unavailable` (Qt's `QtCore` QML module is missing; install your distribution's package for it, such as `qml6-module-qtcore` on Debian and Ubuntu). At `info`, `plastile info saved state loaded` reports what was read. A floated window's position is restored only when exactly one window of that application is open. *Log counters* shows `counters.restored` and `counters.restoreAmbiguous`, and `persistence.state`.
+- **Start over:** disable Plastile, delete `~/.local/state/plastile/`, enable it again.
+- **KWin froze for about 30 seconds after a layout change:** a save waits for the state file's lock. This can only happen when another live process holds `~/.local/state/plastile/state-N.ini.lock`, such as a second Plasma session or a stopped nested KWin using the same home directory and running Plastile (measured: 31.9 s with a held lock). Stop that process. A lock left behind by a crashed process is cleared at once.
+
 ## Known limitations
 
 | Limitation | Detail | Status |
 |---|---|---|
-| Per-session layout changes are not persisted | Layout choices made with the layout shortcuts, master ratio and count changes, BSP structure and ratios, and float toggles live in memory. They are lost when KWin restarts or the script reloads. The script API offers no supported write path (`KWin.readConfig` only), so there is nothing to save them to. Put lasting choices in the configuration as `defaults` or `overrides`. | By design for now; a persistence path is a later milestone |
+| Only some session changes are saved | A layout chosen by command, master ratio and count, and floated windows' positions per application are saved ([saved layout preferences](README.md#saved-layout-preferences)). Window order, BSP structure and per-window choices for applications with several open windows are not. Put lasting choices in the configuration as `defaults` or `overrides`. | By design for now |
+| A save is a synchronous file write in KWin | About 2 to 8 ms per save, up to 20 ms observed, about 2 s after the last change and never during a command or drag (nested measurement). On a slow disk it is longer. | Measured (nested); accepted in ADR-013 |
 | Apply in the settings dialog alone does not reach the running script | `ScriptingConfig::reload()` is a TODO in kwin v6.7.5. Press *Reload configuration* after Apply: it asks KWin to re-read `kwinrc`, which also re-reads KWin's other settings. | Observed source; measured |
 | Default shortcuts tested on one keymap | All 20 defaults reach Plastile with real key presses on the default (US) keymap in a nested session; other layouts and installed software (Spectacle is not installed in the test sandbox) are not covered. | Measured (nested, libei) |
 | Activities untested | The matcher and context key include the activity, but every test ran with the single default activity (no Activities service in nested sessions). Switching activities with tiled windows on each is unverified. | Untested |

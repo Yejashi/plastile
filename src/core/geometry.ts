@@ -122,3 +122,44 @@ export function centreIn(slot: Rect, size: Size): Rect {
 export function formatRect(r: Rect | null | undefined): string {
   return r ? `${r.x},${r.y} ${r.width}x${r.height}` : "null";
 }
+
+/** Share of the work area a floated window takes when it has no float rectangle yet. */
+export const FLOAT_DEFAULT_FRACTION = 0.6;
+
+/**
+ * Move `r` inside `area` with the least displacement; a rectangle larger than the area
+ * is shrunk to it first. Used to keep a restored float visible (BEHAVIOR §3, §6).
+ */
+export function clampInto(r: Rect, area: Rect): Rect {
+  const width = Math.min(r.width, area.width), height = Math.min(r.height, area.height);
+  const x = Math.min(Math.max(r.x, area.x), area.x + area.width - width);
+  const y = Math.min(Math.max(r.y, area.y), area.y + area.height - height);
+  return rect(x, y, width, height);
+}
+
+/**
+ * A float rectangle saved on one work area (`from`), placed on another (`to`), D6: its
+ * centre keeps its relative position in the area, its size is kept (never larger than the
+ * new area), and the result is clamped inside `to`.
+ */
+export function relocate(r: Rect, from: Rect, to: Rect): Rect {
+  const width = Math.min(r.width, to.width), height = Math.min(r.height, to.height);
+  const c = center(r);
+  const fx = from.width > 0 ? (c.x - from.x) / from.width : 0.5;
+  const fy = from.height > 0 ? (c.y - from.y) / from.height : 0.5;
+  const x = Math.round(to.x + fx * to.width - width / 2);
+  const y = Math.round(to.y + fy * to.height - height / 2);
+  return clampInto(rect(x, y, width, height), to);
+}
+
+/**
+ * The bounded centred default for a window floated without a float rectangle (BEHAVIOR §3):
+ * FLOAT_DEFAULT_FRACTION of the area per axis, within the window's own minimum and maximum,
+ * never larger than the area, centred in it.
+ */
+export function centredDefault(area: Rect, min: Size, max: Size): Rect {
+  const dim = (span: number, lo: number, hi: number): number =>
+    Math.min(span, Math.max(lo, Math.min(hi, Math.round(span * FLOAT_DEFAULT_FRACTION))));
+  const width = dim(area.width, min.width, max.width), height = dim(area.height, min.height, max.height);
+  return rect(Math.round(area.x + (area.width - width) / 2), Math.round(area.y + (area.height - height) / 2), width, height);
+}

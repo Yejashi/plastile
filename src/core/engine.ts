@@ -5,7 +5,10 @@
 // a transaction is applying, in which case they queue in order. Every external
 // frame write goes through applyTarget() and the requested/observed ledger.
 
-import { contains, frameTolerance, isValidArea, rect, rectNear, rectOf, type Rect, type Size } from "./geometry.ts";
+import {
+  centredDefault, clampInto, contains, frameTolerance, intersects, isValidArea, rect, rectNear, rectOf, relocate, type Rect,
+  type Size,
+} from "./geometry.ts";
 import { classify, TINY_PX, TINY_REASON } from "./classify.ts";
 import { COMMAND_IDS, type CommandResult, type CommandStatus } from "./commands.ts";
 import { DEFAULT_SETTINGS } from "./defaults.ts";
@@ -17,6 +20,7 @@ import type { Layout, LayoutCommand, SolveInput } from "./layouts/layout.ts";
 import { masterStack, type MasterStackState } from "./layouts/masterStack.ts";
 import { bsp, reinsert as bspReinsert } from "./layouts/bsp.ts";
 import { monocle, floating } from "./layouts/monocle.ts";
+import { identityKey, matchFloat, type AppIdentity } from "../persist/match.ts";
 import {
   centre as scrollCentre, columnNeighbour, consume as scrollConsume, cycleWidth, expel as scrollExpel, moveColumn, scrolling,
   stripOrder, type ScrollState,
@@ -86,6 +90,26 @@ export interface ContextPrefs {
   readonly masterStack: { readonly ratio: number; readonly masterCount: number } | null;
 }
 
+/**
+ * A float rectangle with where it was taken (D6): the output's identity key and that output's
+ * work area then, so a restore on another output (or after the output is gone) can place it
+ * proportionally inside the current work area.
+ */
+export interface FloatRect {
+  readonly rect: Rect;
+  readonly output: OutputId;
+  readonly area: Rect;
+}
+
+/** A user's float decision for an application (T27): kept after its window closes, for persistence. */
+export interface FloatPreference {
+  readonly app: AppIdentity;
+  readonly float: FloatRect;
+}
+
+/** User float decisions kept (newest first out last), as RETAINED_MAX is for contexts. */
+export const FLOATS_MAX = 64;
+
 /** The parts of a configuration activation the engine depends on. */
 export interface ConfigChanges {
   /** Window rule matching may give other results. */
@@ -127,12 +151,14 @@ interface Rec {
   ctx: ContextKey | null;
   suspensions: Set<Suspension>;
   ledger: L.LedgerEntry;
-  floatRect: Rect | null;
+  floatRect: FloatRect | null;
   insertedAt: number;
   exception: string | null;
   readyBy: number | null;
   border: { original: boolean; applied: boolean } | null;
   rules: WindowRules | null;
+  /** Matched once against restored float preferences (T27). */
+  restoreChecked: boolean;
   /** Activation order (0 = never activated while known): cross-output focus picks the most recent. */
   focusSeq: number;
 }
@@ -184,9 +210,23 @@ export class Engine {
   private retryWindows = new Set<WindowId>();
   private retryContexts = new Set<ContextId>();
   private retryAll = false;
-  /** Output scales, refreshed on adoption and topology changes (not per command). */
+  /** Output scales and geometries, refreshed on adoption and topology changes (not per command). */
   private scales = new Map<OutputId, number>();
+  private outputGeom = new Map<OutputId, Rect>();
+  /** Work areas read for float placement, by output and desktop; dropped on topology/work-area changes. */
+  private areaCache = new Map<string, Rect>();
   private endedInteractions = new Map<WindowId, "move" | "resize">();
+  /** User float decisions by application identity (live or closed windows), oldest first, bounded. */
+  private floatPrefs = new Map<string, FloatPreference>();
+  /** Float preferences restored from persistence and not yet matched to a window (T27, Q06). */
+  private pendingFloats = new Map<string, FloatPreference>();
+  /** Windows to match against pendingFloats in the next flush (after a burst of adoptions). */
+  private restoreChecks = new Set<WindowId>();
+  /**
+   * Called (cheaply, possibly from a command) when something persistence saves changed: a
+   * context preference or a user float decision. The listener only marks state dirty.
+   */
+  onPersistChange: (() => void) | null = null;
   /** Windows being resized interactively whose frame changed since the last flush (liveResize). */
   private liveResize = new Set<WindowId>();
   /** The resized frame each live solve used, so an unchanged frame solves nothing. */
@@ -249,6 +289,10 @@ export class Engine {
     this.retryWindows.clear();
     this.retryContexts.clear();
     this.endedInteractions.clear();
+    this.floatPrefs.clear();
+    this.pendingFloats.clear();
+    this.restoreChecks.clear();
+    this.onPersistChange = null;
     this.liveResize.clear();
     this.liveLast.clear();
     this.parked.clear();
@@ -306,7 +350,7 @@ export class Engine {
       decision: { mode: "floating", source: "default", reason: "unclassified", ruleIds: [] },
       mode: "pending", userMode: null, ctx: null, suspensions: suspensionsOf(s.states),
       ledger: L.newEntry(rectOf(s.frame)), floatRect: null, insertedAt: ++this.insertSeq, exception: null,
-      readyBy: null, border: null, rules: null, focusSeq: 0,
+      readyBy: null, border: null, rules: null, restoreChecked: false, focusSeq: 0,
     };
     this.recs.set(r.id, r);
     this.counters.adopted++;
@@ -350,6 +394,20 @@ export class Engine {
     this.liveLast.delete(r.id);
     this.parked.delete(r.id);
     this.recs.delete(r.id);
+    if (r.userMode === "floating") this.releaseFloat(r);
+  }
+
+  /**
+   * A user-floated window closed: its application's float preference waits for the next window of
+   * that application again, as a restored one does (same matching, Q06).
+   */
+  private releaseFloat(r: Rec): void {
+    const key = identityKey(r.meta);
+    const p = key === null ? undefined : this.floatPrefs.get(key);
+    if (!p || key === null) return;
+    this.floatPrefs.delete(key);
+    this.pendingFloats.delete(key);
+    this.pendingFloats.set(key, p);
   }
 
   private live(id: WindowId, gen: number): Rec | null {
@@ -451,12 +509,12 @@ export class Engine {
       this.ensureFlush();
       return;
     }
-    if (r.mode === "floating" && r.suspensions.size === 0 && r.ledger.status !== "pending") r.floatRect = f;
+    if (r.mode === "floating" && r.suspensions.size === 0 && r.ledger.status !== "pending") this.captureFloat(r, f);
     if (r.mode !== "tiled") { L.observe(r.ledger, f); return; }
     if (this.inFloatingLayout(r)) {
       // The floating layout places nothing: where the user puts a member is its float
       // rectangle, so a later return to floating does not restore an older snapshot.
-      if (this.participates(r)) r.floatRect = f;
+      if (this.participates(r)) this.captureFloat(r, f);
       L.observe(r.ledger, f);
       return;
     }
@@ -542,6 +600,7 @@ export class Engine {
   outputsRekeyed(renames: ReadonlyMap<OutputId, OutputId>): void {
     if (!this.alive || renames.size === 0) return;
     this.trace.record(this.svc.now(), "topology", undefined, { rekeyed: renames.size });
+    this.refreshScales();
     const moved = new Map<ContextId, ContextKey>();
     for (const c of [...this.contexts.values()]) {
       const to = renames.get(c.key.output);
@@ -569,6 +628,8 @@ export class Engine {
       if (to !== undefined) this.parked.set(id, { ...p, ctx: { output: to, desktop: p.ctx.desktop, activity: p.ctx.activity } });
     }
     for (const r of [...this.recs.values()]) {
+      const fo = r.floatRect ? renames.get(r.floatRect.output) : undefined;
+      if (fo !== undefined) r.floatRect = { ...r.floatRect!, output: fo };
       const to = r.membership.output === null ? undefined : renames.get(r.membership.output);
       if (to === undefined) continue;
       r.membership = { ...r.membership, output: to };
@@ -586,6 +647,7 @@ export class Engine {
   workAreaChanged(outputs: readonly OutputId[]): void {
     if (!this.alive) return;
     this.trace.record(this.svc.now(), "topology", undefined, { workArea: outputs });
+    this.areaCache.clear();
     for (const c of this.contexts.values()) {
       if (outputs.indexOf(c.key.output) < 0) continue;
       this.markDirty(c.key);
@@ -752,6 +814,10 @@ export class Engine {
     }
     if (mode === "tiled" && !(this.settingsFor(key!).enabled)) mode = "floating";
     this.transition(r, mode, key, why);
+    if (!r.restoreChecked && r.mode !== "pending" && this.pendingFloats.size > 0) {
+      r.restoreChecked = true;
+      this.restoreChecks.add(r.id);
+    }
     if (!this.suspended) this.applyBorderPolicy(r); // suspended: no owned property writes
   }
 
@@ -770,7 +836,7 @@ export class Engine {
       this.leaveContext(r);
       if (why !== "overflow") this.retryOverflow(contextId(prevCtx!)); // its space is free now
     }
-    if (mode === "floating" && wasTiled === false && r.floatRect === null && r.suspensions.size === 0) r.floatRect = r.frame;
+    if (mode === "floating" && wasTiled === false && r.floatRect === null && r.suspensions.size === 0) this.captureFloat(r, r.frame);
     r.mode = mode;
     const nextCtx = mode === "tiled" || mode === "floating" ? key : null;
     if (!sameContext(prevCtx, nextCtx)) {
@@ -967,6 +1033,7 @@ export class Engine {
         this.dirty.clear(); this.corrections.clear(); this.endedInteractions.clear(); this.liveResize.clear();
         return;
       }
+      this.matchRestores();
       this.retryOverflows();
       if (this.endedInteractions.size) {
         const ended = [...this.endedInteractions];
@@ -1155,9 +1222,12 @@ export class Engine {
 
   private refreshScales(): void {
     this.scales.clear();
+    this.outputGeom.clear();
+    this.areaCache.clear();
     const twins: string[] = [];
     for (const o of this.host.outputs()) {
       this.scales.set(o.id, o.scale);
+      this.outputGeom.set(o.id, o.geometry);
       if (o.identity === "ambiguous") twins.push(o.name);
     }
     // Identical monitors are told apart by connector only: a port swap swaps their contexts.
@@ -1367,6 +1437,7 @@ export class Engine {
         if (o.changed) state = o.state;
       }
       c.states[kindL] = state;
+      this.persistChanged(); // a dragged divider is a ratio preference
     }
     L.cancel(r.ledger);
     r.ledger.request = null; // the user owned the frame; the next plan target is a fresh request
@@ -1488,6 +1559,7 @@ export class Engine {
         c.layoutOverride = next;
         if (next === "floating") this.restoreFloatRects(c);
         this.solveNow(c);
+        this.persistChanged();
         return ok(c.members.slice());
       }
       const cmd: LayoutCommand | null =
@@ -1520,6 +1592,7 @@ export class Engine {
       c.layoutOverride = null;
       c.states = {};
       this.solveNow(c);
+      this.persistChanged();
       return ok(c.members.slice());
     }
     if (family === "scroll") return this.scrollCommand(c, r, action);
@@ -1536,6 +1609,7 @@ export class Engine {
     if (!o.changed) return { status: "noop", reason: o.reason ?? "no change", targets: [] };
     c.states[kind] = o.state;
     this.solveNow(c);
+    this.persistChanged();
     return { status: "accepted", targets: c.members.slice() };
   }
 
@@ -1545,7 +1619,10 @@ export class Engine {
       const ctx = r.ctx;
       r.userMode = "floating";
       this.reclassify(r, "toggle-float");
-      if (r.floatRect && !r.suspensions.size) this.writeRestore(r, r.floatRect);
+      if (!r.suspensions.size) {
+        const t = this.floatTarget(r);
+        if (t) { this.writeRestore(r, t); this.captureFloat(r, t); }
+      } else this.rememberFloat(r);
       if (ctx) this.solveNow(this.ctxFor(ctx));
       return { status: "accepted", targets: [r.id] };
     }
@@ -1553,7 +1630,8 @@ export class Engine {
       // Decide before touching anything: a refused tile request changes no state.
       const why = this.whyNotTileable(r, this.singleContextKey(r.membership));
       if (why !== null) return { status: "noop", reason: "cannot tile: " + why, targets: [] };
-      if (r.suspensions.size === 0) r.floatRect = r.frame;
+      if (r.suspensions.size === 0) this.captureFloat(r, r.frame);
+      if (r.userMode === "floating") this.forgetFloat(r);
       r.userMode = "tiled";
       r.exception = null;
       if (r.mode === "native") {
@@ -1584,8 +1662,126 @@ export class Engine {
   private restoreFloatRects(c: Ctx): void {
     for (const id of c.members) {
       const r = this.recs.get(id);
-      if (r && r.floatRect && r.suspensions.size === 0) { L.cancel(r.ledger); this.parked.delete(id); this.writeRestore(r, r.floatRect); }
+      if (!r || !r.floatRect || r.suspensions.size !== 0) continue;
+      const t = this.floatTarget(r);
+      if (t) { L.cancel(r.ledger); this.parked.delete(id); this.writeRestore(r, t); }
     }
+  }
+
+  /**
+   * Remember a floating frame with its output and that output's work area (D6). The output is
+   * the one under the frame's centre: KWin reports the frame of a window it moves to another
+   * output (an unplug, a drag across outputs) before the output change.
+   */
+  private captureFloat(r: Rec, f: Rect): void {
+    const cx = f.x + f.width / 2, cy = f.y + f.height / 2;
+    const under = (g: Rect | undefined): boolean => !!g && cx >= g.x && cx < g.x + g.width && cy >= g.y && cy < g.y + g.height;
+    let out = r.membership.output;
+    if (out === null || !under(this.outputGeom.get(out))) {
+      for (const [id, g] of this.outputGeom) if (under(g)) { out = id; break; }
+    }
+    if (out === null) return;
+    const area = this.areaOf(out, r);
+    if (area === null) return;
+    r.floatRect = { rect: f, output: out, area };
+    if (r.userMode === "floating") this.rememberFloat(r);
+  }
+
+  /** Record a user-floated window's rectangle as its application's float preference (T27). */
+  private rememberFloat(r: Rec): void {
+    const key = identityKey(r.meta);
+    if (key === null || r.floatRect === null) return;
+    const prev = this.floatPrefs.get(key);
+    if (prev && prev.float.output === r.floatRect.output && rectNear(prev.float.rect, r.floatRect.rect, 0)
+        && rectNear(prev.float.area, r.floatRect.area, 0)) return;
+    this.floatPrefs.delete(key);
+    this.pendingFloats.delete(key); // the user's newer decision replaces the saved one
+    this.floatPrefs.set(key, { app: { appId: r.meta.appId, resourceName: r.meta.resourceName, role: r.meta.role }, float: r.floatRect });
+    if (this.floatPrefs.size > FLOATS_MAX) this.floatPrefs.delete(this.floatPrefs.keys().next().value as string);
+    this.persistChanged();
+  }
+
+  /** The user tiled a window they had floated: its application no longer has a float preference. */
+  private forgetFloat(r: Rec): void {
+    const key = identityKey(r.meta);
+    if (key === null) return;
+    const a = this.floatPrefs.delete(key), b = this.pendingFloats.delete(key);
+    if (a || b) this.persistChanged();
+  }
+
+  private persistChanged(): void {
+    if (this.alive && this.onPersistChange) this.onPersistChange();
+  }
+
+  /**
+   * Give windows a restored float preference (T27): only when exactly one live window has the
+   * application identity (Q06); otherwise the window keeps its ordinary insertion and the saved
+   * preference waits. Runs in the flush, after every window of a burst (the adoption) is known.
+   */
+  private matchRestores(): void {
+    if (this.restoreChecks.size === 0) return;
+    const ids = [...this.restoreChecks];
+    this.restoreChecks.clear();
+    for (const id of ids) {
+      if (this.pendingFloats.size === 0) return;
+      const r = this.recs.get(id);
+      if (!r || r.userMode !== null || (r.mode !== "tiled" && r.mode !== "floating")) continue;
+      const key = identityKey(r.meta);
+      let live = 0;
+      if (key !== null && this.pendingFloats.has(key)) {
+        for (const x of this.recs.values()) if (x.mode !== "excluded" && identityKey(x.meta) === key) live++;
+      }
+      const m = matchFloat(this.pendingFloats, key, live);
+      if (m.kind === "ambiguous") {
+        this.counters.restoreAmbiguous++;
+        this.trace.record(this.svc.now(), "restore-ambiguous", r.id, { windows: m.count });
+        continue;
+      }
+      if (m.kind !== "restore") continue;
+      this.pendingFloats.delete(key!);
+      this.counters.restored++;
+      this.trace.record(this.svc.now(), "restore-float", r.id);
+      r.userMode = "floating";
+      r.floatRect = m.entry.float;
+      this.reclassify(r, "restore");
+      if (r.mode === "floating" && r.suspensions.size === 0) {
+        const t = this.floatTarget(r);
+        if (t) { L.cancel(r.ledger); this.writeRestore(r, t); this.captureFloat(r, t); }
+      } else this.rememberFloat(r);
+    }
+  }
+
+  /** Usable area of an output for a window there (cached until the topology or a work area changes). */
+  private areaOf(out: OutputId, r: Rec): Rect | null {
+    const desk = r.ctx && r.ctx.output === out ? r.ctx.desktop
+      : r.membership.desktops.length === 1 ? r.membership.desktops[0] : this.host.visibleDesktop(out);
+    if (desk === null) return null;
+    const k = out + "\u241f" + desk;
+    const hit = this.areaCache.get(k);
+    if (hit) return hit;
+    const a = this.host.workArea(out, desk);
+    if (!isValidArea(a)) return null;
+    this.areaCache.set(k, a);
+    return a;
+  }
+
+  /**
+   * Where a window leaving the tiling goes (BEHAVIOR §3, D6): its float rectangle when that was
+   * taken on its current output (moved inside the area only if it lies outside it), the
+   * rectangle translated proportionally into the current work area when it was taken on another
+   * output (also one since unplugged), or a bounded centred default without one.
+   */
+  private floatTarget(r: Rec): Rect | null {
+    const f = r.floatRect;
+    const out = r.membership.output;
+    const area = out === null ? null : this.areaOf(out, r);
+    if (area === null) return f ? f.rect : null;
+    if (!f) {
+      const c = this.effectiveConstraints(r);
+      return centredDefault(area, c.minFrame, c.maxFrame);
+    }
+    if (f.output !== out) return relocate(f.rect, f.area, area);
+    return intersects(f.rect, area) ? f.rect : clampInto(f.rect, area);
   }
 
   private planRects(c: Ctx): Map<WindowId, Rect> {
@@ -2032,7 +2228,7 @@ export class Engine {
 
   /**
    * Layout preferences per context key: live contexts that hold any, then those kept for
-   * collected (empty) contexts. The accessor for persistence (T27): contexts themselves may be
+   * collected (empty) contexts, most recently collected first. The accessor for persistence (T27): contexts themselves may be
    * collected at any flush, so their preferences are read here rather than from the model.
    */
   contextPreferences(): Array<{ key: ContextKey; prefs: ContextPrefs }> {
@@ -2041,7 +2237,9 @@ export class Engine {
       const p = this.prefsOf(c);
       if (p) out.push({ key: c.key, prefs: p });
     }
-    for (const kept of this.retained.values()) out.push({ key: kept.key, prefs: kept.prefs });
+    const kept: Array<{ key: ContextKey; prefs: ContextPrefs }> = [];
+    for (const k of this.retained.values()) kept.push({ key: k.key, prefs: k.prefs });
+    for (let i = kept.length - 1; i >= 0; --i) out.push(kept[i]);
     return out;
   }
 
@@ -2057,6 +2255,39 @@ export class Engine {
     c.revision++;
     this.markDirty(c.key);
     this.ensureFlush();
+  }
+
+  /** User float decisions per application, newest first: the accessor for persistence (T27). */
+  floatPreferences(): FloatPreference[] {
+    const out: FloatPreference[] = [];
+    for (const p of this.floatPrefs.values()) out.push(p);
+    for (const [k, p] of this.pendingFloats) if (!this.floatPrefs.has(k)) out.push(p);
+    return out.reverse();
+  }
+
+  /**
+   * Float preferences restored from persistence (before start(), or later): each is given to a
+   * window of its application when exactly one live window has that identity.
+   */
+  restoreFloats(prefs: readonly FloatPreference[]): void {
+    if (!this.alive) return;
+    for (const p of prefs) {
+      const key = identityKey(p.app);
+      if (key === null || this.floatPrefs.has(key)) continue;
+      this.pendingFloats.delete(key);
+      this.pendingFloats.set(key, p);
+      if (this.pendingFloats.size > FLOATS_MAX) this.pendingFloats.delete(this.pendingFloats.keys().next().value as string);
+    }
+    for (const r of this.recs.values()) {
+      if (!r.restoreChecked && r.mode !== "pending") { r.restoreChecked = true; this.restoreChecks.add(r.id); }
+    }
+    if (this.restoreChecks.size > 0) this.ensureFlush();
+  }
+
+  /** Some window is being moved or resized interactively (maintenance work waits for the end). */
+  isInteracting(): boolean {
+    for (const r of this.recs.values()) if (r.states.interactive !== "none") return true;
+    return false;
   }
 
   outstandingCount(): number {

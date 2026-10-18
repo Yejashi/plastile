@@ -154,5 +154,6 @@ The `configJson` key holds the JSON document as a single KConfig string. The set
 1. Untick Plastile in KWin Scripts and Apply. This releases windows, borders and connections.
 2. Run `kpackagetool6 --type KWin/Script --remove plastile`.
 3. Optionally, delete the `[Script-plastile]` group and the `plastileEnabled` line from `~/.config/kwinrc`, and the `plastile.*` entries from `~/.config/kglobalshortcutsrc` (they are under the `[kwin]` group).
+4. Optionally, delete `~/.local/state/plastile/`, which holds saved layout preferences ([details](README.md#saved-layout-preferences)).
 
 Windows keep the geometry they had at unload. Nothing is restored to a pre-Plastile arrangement, because no such arrangement is stored.
