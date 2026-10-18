@@ -12,8 +12,8 @@ agent; this file is the short status.
 
 | Layer | Environment | Last result |
 |---|---|---|
-| Unit/replay | Node 26 (`node --test tests/core/*.test.ts`), mock host and fake KWin, replay fixtures recorded from nested KWin (`tests/fixtures/replay/`) | 429/429 (`52314ed`) |
-| Nested, virtual backend | Reference host: Arch Linux, KWin 6.7.5, Qt 6.12.0, KF 6.30.0 ([ENVIRONMENT](ENVIRONMENT.md)) | `52314ed`: 1759/1759 checks, 126/126 scenarios, 1 expected SKIP ([evidence](evidence/integration-host-52314ed.json)) |
+| Unit/replay | Node 26 (`node --test tests/core/*.test.ts`), mock host and fake KWin, replay fixtures recorded from nested KWin (`tests/fixtures/replay/`) | 448/448 (`0f55edf`) |
+| Nested, virtual backend | Reference host: Arch Linux, KWin 6.7.5, Qt 6.12.0, KF 6.30.0 ([ENVIRONMENT](ENVIRONMENT.md)) | `0f55edf`: 1795/1795 checks, 132/132 scenarios, 1 expected SKIP ([evidence](evidence/integration-host-0f55edf.json)) |
 | Nested, virtual backend (CI) | Ubuntu 26.10 sandbox: KWin 6.7.5, Qt 6.11.2, KF 6.29.0, QPainter compositing | `0652336`: 1527/1527 checks, 113/113 scenarios, 4 expected SKIPs (run 39141496877) |
 | Nested, virtual backend (CI, provisional) | Nix: KWin 6.8.0, Qt 6.11.2, KF 6.30.0, llvmpipe | `0652336`: 1484/1484 checks, 110/110 scenarios, 5 expected SKIPs (run 39141496877). Stays provisional: its RSS checks fail in some runs on KWin 6.8's own heap growth (below) |
 | Nested, windowed on the real GPU | Reference host: nested KWin 6.7.5's outputs are windows on the live compositor (`PLASTILE_NESTED_HOST_DISPLAY`), OpenGL on the real GPU, 144 Hz host output; private bus, config and XDG dirs | Latency kit at full protocol (30,000 taps): every Plastile workload `pass` against its matched baseline; 19/19 chords delivered; real apps, real `plasmashell` panels, GL tile editor pass ([runbook §1](../validation/PHYSICAL_RUNBOOK.md#1-what-was-validated-where)). Labelled `nested-windowed-gpu`, never physical |
@@ -98,7 +98,7 @@ Nested only; none is a physical input-to-photon measurement.
 
 ## Next tasks
 
-1. First-run diagnosability fixes (notice level, OSD, visible-context targeting), then the physical runbook (owner consented 2026-10-18; P2d/P2e skipped).
+1. The physical runbook (owner consented 2026-10-18; P2d/P2e skipped).
 2. Pure-solve p99 (QV4 allocation in `solveAndApply` and the adapter's writes) and the 12 % median slowdown since `b60e618` (G2 report §15).
 3. Remaining partial clauses above; G3 checklist (T35); physical runbook with the owner's consent.
 
