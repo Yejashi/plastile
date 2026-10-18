@@ -16,7 +16,7 @@ Plastile is a working automatic tiler, packaged as a KWin 6 declarative script. 
 Plasma session yet.**
 
 - `src/`: a TypeScript core, bundled by esbuild ([tools/build.mjs](../../tools/build.mjs), target ES2016)
-  into `package/contents/code/plastile.mjs`. The bundle is committed, so rebuild it after any `src/` change.
+  into `package/contents/code/plastile.mjs`. The bundle is **not** committed (`/package/contents/code/` is gitignored); run `npm run build` after any `src/` change and before nested runs. CI builds it itself.
   - `src/core/`: the engine, the geometry ledger (desired, requested and observed geometry kept separate),
     classification, commands, navigation, and the layouts (master/stack, BSP, monocle, scrolling).
   - `src/config/`: schema, validation, compilation and rule matchers. Configuration is data; no user JS runs.

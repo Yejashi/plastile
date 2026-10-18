@@ -112,6 +112,8 @@ dispatch.
 6. Floating, fullscreen, maximized and minimized windows keep the existing suspension rules. A
    suspended member keeps its column slot until it rejoins.
 
+**KWin 6.8 confinement (measured in CI, 2026-10-18).** KWin 6.8.0 runs `confineInteractiveMove` on every commit that acknowledges a configure (`XdgToplevelWindow::handleRoleCommit`), so an activation, scale or decoration change briefly pulls a parked window back into the work area; 6.7.5 only did so during an interactive move. The engine re-parks such position-only pull-backs through a separate allowance (`REPARK_LIMIT`, 8 per parking target, restored by activation and topology events) instead of the correction budget, so the strip stays valid; another tool fighting the parking still ends in a bounded divergence. The brief visible flash on those events is a 6.8 cost of off-output parking; whether parking remains the right projection on 6.8 is open (ADR-014).
+
 ## 6. Tests
 
 - Pure: projection never intersects a neighbouring output; parking position is outside `bounds` for

@@ -56,6 +56,21 @@ Measured by compiling each snippet with `new Function` inside the declarative sc
 - A `Qt.callLater` queued during `Component.onDestruction`, and a running QML `Timer` at unload, did **not** fire after teardown (M).
 - After unload, kglobalaccel still accepts `invokeShortcut` for the destroyed action, and no handler runs (M).
 
+## KWin behaviours found on the reference machine and in KWin 6.8 CI (2026-10-18)
+
+The first full nested run on the reference machine's own KWin 6.7.5 (real GPU) and the hosted KWin 6.8.0 job surfaced behaviours the QPainter sandbox did not. Each is handled in code, with a regression test.
+
+| Behaviour | Version | Label | Consequence in Plastile |
+|---|---|---|---|
+| A GTK client-side-decorated X11 window's client geometry includes its shadow (`_GTK_FRAME_EXTENTS`), so frame − client is **negative** (−44 for zenity, −50 for gnome-calculator) | 6.7.5 | measured | Frame-space constraints use the signed margin (bounded below by 0); `realapps-*-x11` |
+| An X11 frame write is applied **inside the setter**; `frameGeometryChanged` echoes the requested size before the client answers with its own ConfigureRequest | 6.7.5 | measured | The echo is not treated as the client's answer; the later self-resize re-reads constraints |
+| `WM_NORMAL_HINTS` changes after `windowAdded` emit **no** script-visible signal unless the allowed actions flip (`maximizeableChanged`) | 6.7.5 | measured (60+ signals hooked) | Constraints are re-read when a client answers a request with another size |
+| With a real GPU, `decorationChanged` arrives ~100 ms after the first tile write and may not be followed by a geometry change | 6.7.5 | measured | The one-shot margin watcher can stay armed while idle; counters report it as `transientConnections` |
+| Default Meta+left/right-drag actions are "Activate, raise and move/resize" (`kwin.kcfg` CommandAll1/CommandAll3); 6.7.5 used "Move"/"Resize" | 6.8.0 | observed source | The dragged window is the command target; a mid-drag slot change voids the drag's edges (`interaction-superseded`) |
+| `XdgToplevelWindow::handleRoleCommit` runs `confineInteractiveMove` on every configure-acknowledging commit, pulling off-screen windows into the work area | 6.8.0 | observed source; measured in CI | Parked scrolling windows are re-parked through their own bounded allowance |
+| `EisContext::updateScreens()` replaces the libeis device under a held button without releasing it; libeis then drops the release and KWin's move stays open | 6.7.5 | observed source; measured (with and without Plastile) | Test-input artifact (a physical mouse is unaffected); the I04 scenario delivers the release through the new device. Persistence postponement is bounded (30 s) so a stuck interaction cannot become polling |
+| Qt searches `QML2_IMPORT_PATH` before `QML_IMPORT_PATH` | Qt 6.11/6.12 | observed source | Test environments must shadow modules on both (`persist-no-qtcore-Q05`) |
+
 ## Formerly unresolved capability items
 
 Every item below now has nested-KWin evidence (KWin 6.7.5). None has been checked in a physical session.
