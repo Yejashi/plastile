@@ -424,7 +424,8 @@ export class Engine {
     const r = this.recs.get(id);
     this.tombstones.set(id, Math.max(gen, this.tombstones.get(id) ?? 0));
     if (this.tombstones.size > 4096) this.tombstones.delete(this.tombstones.keys().next().value as WindowId);
-    if (!r || r.gen > gen) return;
+    if (!r) return;
+    if (r.gen > gen) { this.counters.staleEvents++; return; } // an older generation's removal
     this.drop(r);
     this.counters.removed++;
     this.trace.record(this.svc.now(), "remove", id);

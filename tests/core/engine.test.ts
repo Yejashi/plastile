@@ -55,6 +55,30 @@ test("C02/C03: events after removal or for an old generation are rejected", () =
   assert.deepEqual(e.membersOf({ output: "O1", desktop: "D1", activity: "default" }), ["b"]);
 });
 
+test("C03: an id reused with a newer generation ignores the old generation's callbacks", () => {
+  const { h, e } = setup(["a", "b"]);
+  const old = h.windows.get("a")!;
+  h.close("a");
+  h.drain();
+  const fresh = h.open("a"); // KWin reuses the id (e.g. a restored session); the adapter issues a new generation
+  h.drain();
+  assert.ok(fresh.gen > old.gen);
+  const before = { ...fresh.frame };
+  const stale = e.counters.staleEvents;
+  const writes = h.writes.length;
+  e.frameObserved("a", old.gen, rect(0, 0, 10, 10));
+  e.statesChanged("a", old.gen, { ...old.states, minimized: true });
+  e.membershipChanged("a", old.gen, { ...old.membership, desktops: ["D2"] });
+  e.windowRemoved("a", old.gen);
+  h.drain();
+  assert.equal(e.counters.staleEvents - stale, 4, "all four old-generation callbacks rejected");
+  assert.equal(h.writes.length, writes);
+  assert.equal(e.modeOf("a"), "tiled", "the new record is intact");
+  assert.deepEqual(e.membersOf({ output: "O1", desktop: "D1", activity: "default" }), ["b", "a"]);
+  assert.ok(rectNear(fresh.frame, before));
+  assert.deepEqual(e.check(), []);
+});
+
 test("C04: create then remove before the flush performs no writes", () => {
   const h = new MockHost();
   const e = h.start();
@@ -185,6 +209,7 @@ test("C10: context changes before the flush use the explicit new context", () =>
   assert.deepEqual(e.membersOf({ output: "O1", desktop: "D1", activity: "default" }), ["a"]);
   assert.deepEqual(e.membersOf({ output: "O1", desktop: "D2", activity: "default" }), ["b"]);
   assert.ok(rectNear(h.windows.get("a")!.frame, rect(8, 8, 1264, 784)), "source reflowed once");
+  assert.deepEqual(e.check(), []);
 });
 
 test("C11: a no-op command issues zero writes", () => {
