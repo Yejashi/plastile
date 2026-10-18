@@ -1,11 +1,76 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { rect, shareCuts } from "../../src/core/geometry.ts";
+import { inset, rect, shareCuts, type Rect } from "../../src/core/geometry.ts";
 import { allocate } from "../../src/core/layouts/allocate.ts";
 import { masterStack } from "../../src/core/layouts/masterStack.ts";
+import { monocle } from "../../src/core/layouts/monocle.ts";
+import type { Constraints, WindowId } from "../../src/core/types.ts";
 import { assertTiling, input, minC, prng, settings } from "./helpers.ts";
 
 const S = settings();
+
+/** Floating-point slack for oracles on fractional areas (values are sums of a few floats). */
+const EPS = 1e-6;
+
+/**
+ * Oracle for any area, fractional included (independent of the solver): slots lie in
+ * `inner`, are at least 1 px and at least their minimum, never come closer than `gap`,
+ * and every edge lies on the inner boundary or faces a neighbour exactly `gap` away
+ * (no lost or doubled pixels at shared edges).
+ */
+function assertCover(slots: Map<WindowId, Rect>, inner: Rect, gap: number, constraints: Map<WindowId, Constraints>) {
+  const list = [...slots.entries()];
+  const near = (a: number, b: number) => Math.abs(a - b) <= EPS;
+  const spans = (a0: number, a1: number, b0: number, b1: number) => Math.min(a1, b1) - Math.max(a0, b0) > EPS;
+  for (const [id, r] of list) {
+    assert.ok(r.width >= 1 - EPS && r.height >= 1 - EPS, `${id} below 1 px ${JSON.stringify(r)}`);
+    assert.ok(r.x >= inner.x - EPS && r.y >= inner.y - EPS && r.x + r.width <= inner.x + inner.width + EPS &&
+      r.y + r.height <= inner.y + inner.height + EPS, `${id} ${JSON.stringify(r)} outside ${JSON.stringify(inner)}`);
+    const min = constraints.get(id)?.minFrame;
+    if (min) assert.ok(r.width >= min.width - EPS && r.height >= min.height - EPS, `${id} ${r.width}x${r.height} below minimum ${min.width}x${min.height}`);
+    const ySpan = (s: Rect) => spans(r.y - gap, r.y + r.height + gap, s.y, s.y + s.height);
+    const xSpan = (s: Rect) => spans(r.x - gap, r.x + r.width + gap, s.x, s.x + s.width);
+    const edges: Array<[string, boolean, (s: Rect) => boolean]> = [
+      ["right", near(r.x + r.width, inner.x + inner.width), (s) => near(s.x, r.x + r.width + gap) && ySpan(s)],
+      ["left", near(r.x, inner.x), (s) => near(s.x + s.width + gap, r.x) && ySpan(s)],
+      ["bottom", near(r.y + r.height, inner.y + inner.height), (s) => near(s.y, r.y + r.height + gap) && xSpan(s)],
+      ["top", near(r.y, inner.y), (s) => near(s.y + s.height + gap, r.y) && xSpan(s)],
+    ];
+    for (const [edge, onBoundary, faces] of edges) {
+      if (!onBoundary) assert.ok(list.some(([o, s]) => o !== id && faces(s)), `${id} ${edge} edge neither on boundary nor ${gap} px from a neighbour`);
+    }
+  }
+  for (let i = 0; i < list.length; ++i)
+    for (let j = i + 1; j < list.length; ++j) {
+      const [ia, a] = list[i], [ib, b] = list[j];
+      const dx = Math.max(a.x, b.x) - Math.min(a.x + a.width, b.x + b.width);
+      const dy = Math.max(a.y, b.y) - Math.min(a.y + a.height, b.y + b.height);
+      if (dy < -EPS) assert.ok(dx >= gap - EPS, `${ia} and ${ib} are ${dx} px apart horizontally`);
+      if (dx < -EPS) assert.ok(dy >= gap - EPS, `${ia} and ${ib} are ${dy} px apart vertically`);
+    }
+}
+
+/**
+ * Feasibility from the definition (BEHAVIOR §4, not the solver): every slot is at least
+ * 1 px and its minimum; masters share one column, the rest another, separated by gaps.
+ */
+function msFeasible(ids: WindowId[], masterCount: number, inner: Rect, gap: number, constraints: Map<WindowId, Constraints>): boolean {
+  const w = (id: WindowId) => Math.max(1, constraints.get(id)?.minFrame.width ?? 0);
+  const h = (id: WindowId) => Math.max(1, constraints.get(id)?.minFrame.height ?? 0);
+  const m = Math.max(0, Math.min(masterCount, ids.length));
+  const cols = m === 0 || m === ids.length ? [ids] : [ids.slice(0, m), ids.slice(m)];
+  const width = cols.reduce((s, col) => s + Math.max(...col.map(w)), 0) + gap * (cols.length - 1);
+  if (width > inner.width) return false;
+  return cols.every((col) => col.reduce((s, id) => s + h(id), 0) + gap * (col.length - 1) <= inner.height);
+}
+
+/** Logical work areas as KWin reports them under fractional scaling: RectF(pos, mode / scale). */
+const FRACTIONAL_AREAS = [
+  rect(0, 0, 2560 / 1.5, 1440 / 1.5), // 1706.667 x 960
+  rect(0, 0, 1366 / 1.25, 768 / 1.25), // 1092.8 x 614.4
+  rect(1920, 0, 1920 / 1.75, 1080 / 1.75), // 1097.143 x 617.143, right of a 1920 output
+  rect(-1280, 44.667, 2560 / 2, 1600 / 2 - 44.667), // fractional panel reservation on top
+];
 
 test("shareCuts covers the span exactly with gaps for odd sizes (G01)", () => {
   for (const length of [1079, 1080, 1919, 7, 101]) {
@@ -24,6 +89,75 @@ test("allocate respects minima and reports infeasibility", () => {
   assert.ok(a[0][1] - a[0][0] >= 600);
   assert.equal(a[2][1], 1000);
   assert.equal(allocate(0, 100, [1, 1], [60, 60], 0), null);
+});
+
+test("allocate keeps feasible splits on fractional spans and fractional minima (G03)", () => {
+  const check = (start: number, length: number, weights: number[], mins: number[], gap: number) => {
+    const a = allocate(start, length, weights, mins, gap);
+    assert.ok(a !== null, `feasible split refused: ${JSON.stringify([start, length, weights, mins, gap])}`);
+    assert.equal(a[0][0], start);
+    assert.equal(a[a.length - 1][1], start + length);
+    for (let i = 0; i < a.length; ++i) {
+      assert.ok(a[i][1] - a[i][0] >= Math.max(1, mins[i]) - EPS, `interval ${i} ${JSON.stringify(a[i])} below ${mins[i]}`);
+      if (i > 0) assert.ok(Math.abs(a[i][0] - a[i - 1][1] - gap) <= EPS, "gap must be exact");
+    }
+    return a;
+  };
+  // 2560x1440 at 150 % with 8 px outer gaps, stack window minimum 900 px.
+  const ms = check(8, 2560 / 1.5 - 16, [0.55, 0.45], [1, 900], 8);
+  assert.ok(Number.isInteger(ms[0][1]), "inner cut stays on a whole pixel when one fits");
+  check(0, 1366 / 1.25, [0.5, 0.5], [1, 700], 8); // 1092.8 px
+  // Fractional minimum on an integer span: [0,699) [699,1000) is valid.
+  assert.deepEqual(check(0, 1000, [0.9, 0.1], [0, 300.4], 0), [[0, 699], [699, 1000]]);
+  check(44.667, 755.333, [1, 1, 1], [200.5, 0, 300.25], 8); // fractional start
+  // Under a pixel of slack: the only valid cut is fractional, and it is used.
+  assert.deepEqual(check(0, 1001, [1, 1], [500.5, 500.5], 0), [[0, 500.5], [500.5, 1001]]);
+  assert.equal(allocate(0, 1000.5, [1, 1], [500.5, 500.5], 0), null, "sum of minima exceeds the span");
+
+  const rnd = prng(1706);
+  for (let iter = 0; iter < 3000; ++iter) {
+    const n = 1 + Math.floor(rnd() * 6);
+    const gap = Math.floor(rnd() * 3) * 4;
+    const start = Math.floor(rnd() * 4000) - 2000 + (rnd() < 0.5 ? 0 : [0.333, 0.5, 0.667, 0.8][Math.floor(rnd() * 4)]);
+    const length = (200 + Math.floor(rnd() * 3000)) / [1, 1.25, 1.5, 1.75, 2][Math.floor(rnd() * 5)];
+    const weights = Array.from({ length: n }, () => 0.05 + rnd());
+    const mins = Array.from({ length: n }, () => rnd() < 0.5 ? 0 : Math.floor(rnd() * length / n) + (rnd() < 0.5 ? 0 : rnd()));
+    const need = mins.reduce((s, m) => s + Math.max(1, m), 0) + gap * (n - 1);
+    if (need <= length) check(start, length, weights, mins, gap);
+    else if (need > length + EPS) assert.equal(allocate(start, length, weights, mins, gap), null);
+  }
+});
+
+test("master/stack: feasible layouts on fractional work areas are not overflowed (G03)", () => {
+  const area = FRACTIONAL_AREAS[0];
+  const inner = inset(area, S.gaps.outer);
+  const constraints = new Map([["b", minC(900, 0)]]);
+  const r = masterStack.solve(masterStack.initial(S), input(["a", "b"], { area, constraints }));
+  assert.deepEqual(r.overflow, []);
+  assertCover(r.slots, inner, S.gaps.inner, constraints);
+  assert.ok(Number.isInteger(r.slots.get("b")!.x), "inner cut on a whole pixel");
+
+  const rnd = prng(150);
+  let feasible = 0;
+  for (let iter = 0; iter < 2000; ++iter) {
+    const area = FRACTIONAL_AREAS[iter % FRACTIONAL_AREAS.length];
+    const inner = inset(area, S.gaps.outer);
+    const n = 1 + Math.floor(rnd() * 6);
+    const ids = Array.from({ length: n }, (_, i) => `w${i}`);
+    const frac = () => (rnd() < 0.5 ? 0 : [0.333, 0.571, 0.667][Math.floor(rnd() * 3)]);
+    const constraints = new Map(ids.filter(() => rnd() < 0.6)
+      .map((id) => [id, minC(Math.floor(rnd() * inner.width * 0.7) + frac(), Math.floor(rnd() * inner.height / 2) + frac())] as const));
+    const st = { ratio: 0.05 + rnd() * 0.9, masterCount: Math.floor(rnd() * 3), weights: {} };
+    const r = masterStack.solve(st, input(ids, { area, constraints }));
+    assert.equal(r.slots.size + r.overflow.length, n);
+    if (msFeasible(ids, st.masterCount, inner, S.gaps.inner, constraints)) {
+      ++feasible;
+      assert.deepEqual(r.overflow, [], `feasible layout overflowed: ${r.notes.join("; ")}`);
+    }
+    assertCover(r.slots, inner, S.gaps.inner, constraints);
+    assert.deepEqual([...masterStack.solve(st, input(ids, { area, constraints })).slots], [...r.slots], "deterministic");
+  }
+  assert.ok(feasible > 500, `only ${feasible} feasible samples`);
 });
 
 test("single window fills the area inside outer gaps", () => {
@@ -91,6 +225,54 @@ test("infeasible minima float the newest window (G08 float-new)", () => {
   assert.ok(r.notes.some((n) => n.startsWith("c: does not fit")));
 });
 
+test("overflow floats the window that cannot fit, not newer windows that do (BEHAVIOR §11)", () => {
+  // An old window whose minimum exceeds the output (work-area shrink, learned minimum).
+  const ids = ["old", "n1", "n2", "n3"];
+  const huge = new Map([["old", minC(2500, 100)]]);
+  const r = masterStack.solve(masterStack.initial(S), input(ids, { constraints: huge }));
+  assert.deepEqual(r.overflow, ["old"]);
+  assert.deepEqual([...r.slots.keys()], ["n1", "n2", "n3"]);
+  assertTiling(r.slots, rect(0, 0, 1920, 1080));
+  assert.ok(r.notes.some((n) => n.startsWith("old: does not fit") && n.includes("2500")), r.notes.join("; "));
+  const m = monocle.solve(monocle.initial(S), input(ids, { constraints: huge }));
+  assert.deepEqual(m.overflow, ["old"], "monocle: peers are independent");
+  assert.equal(m.slots.size, 3);
+  assert.ok(m.notes.some((n) => n.startsWith("old: does not fit") && n.includes("old needs 2500")), m.notes.join("; "));
+  // n1 cannot share the area with old; n2 and n3 can and keep their tiles.
+  const wide = new Map([["old", minC(1000, 0)], ["n1", minC(1000, 0)]]);
+  const w = masterStack.solve(masterStack.initial(S), input(ids, { constraints: wide }));
+  assert.deepEqual(w.overflow, ["n1"]);
+  assert.deepEqual([...w.slots.keys()], ["old", "n2", "n3"]);
+});
+
+test("randomized: overflow follows float-new against the feasibility definition", () => {
+  const rnd = prng(911);
+  let overflowed = 0;
+  for (let iter = 0; iter < 600; ++iter) {
+    const n = 2 + Math.floor(rnd() * 6);
+    const ids = Array.from({ length: n }, (_, i) => `w${i}`);
+    const area = rect(0, 0, 800 + Math.floor(rnd() * 1200), 600 + Math.floor(rnd() * 600));
+    const inner = inset(area, S.gaps.outer);
+    const constraints = new Map(ids.filter(() => rnd() < 0.5)
+      .map((id) => [id, minC(Math.floor(rnd() * area.width * 0.8), Math.floor(rnd() * area.height * 0.6))] as const));
+    const order = ids.slice(); // insertion order differs from context order
+    for (let i = n - 1; i > 0; --i) { const j = Math.floor(rnd() * (i + 1)); [order[i], order[j]] = [order[j], order[i]]; }
+    const inp = { ...input(ids, { area, constraints }), insertedAt: new Map(order.map((id, i) => [id, i] as const)) };
+    const masterCount = Math.floor(rnd() * 3);
+    const r = masterStack.solve({ ratio: 0.05 + rnd() * 0.9, masterCount, weights: {} }, inp);
+    const kept = ids.filter((id) => r.slots.has(id));
+    assert.equal(kept.length + r.overflow.length, n);
+    assert.ok(msFeasible(kept, masterCount, inner, S.gaps.inner, constraints), "kept windows fit");
+    for (const w of r.overflow) {
+      // w could not join the windows inserted before it that kept their tiles.
+      const before = ids.filter((id) => id === w || (r.slots.has(id) && order.indexOf(id) < order.indexOf(w)));
+      assert.ok(!msFeasible(before, masterCount, inner, S.gaps.inner, constraints), `${w} floated although it fits`);
+    }
+    if (r.overflow.length) ++overflowed;
+  }
+  assert.ok(overflowed > 100, `only ${overflowed} overflow samples`);
+});
+
 test("max-size windows are centred in their slot, not stretched (G09)", () => {
   const constraints = new Map([["a", { minFrame: { width: 0, height: 0 }, maxFrame: { width: 500, height: 400 }, fixed: false }]]);
   const r = masterStack.solve(masterStack.initial(S), input(["a"], { constraints }));
@@ -135,4 +317,138 @@ test("resize-boundary moves the divider and row weights", () => {
   assert.ok(Math.abs(after.slots.get("b")!.height - before.slots.get("b")!.height - 100) <= 1);
   const none = masterStack.command(st, { kind: "resize-boundary", id: "a", edge: "left", delta: 10 }, inp);
   assert.equal(none.changed, false);
+});
+
+/** True when any slot moved or resized by at least half a pixel (what the user can see). */
+function moved(a: Map<WindowId, Rect>, b: Map<WindowId, Rect>): boolean {
+  if (a.size !== b.size) return true;
+  for (const [id, r] of a) {
+    const q = b.get(id);
+    if (!q || Math.abs(r.x - q.x) >= 0.5 || Math.abs(r.y - q.y) >= 0.5 || Math.abs(r.width - q.width) >= 0.5 ||
+      Math.abs(r.height - q.height) >= 0.5) return true;
+  }
+  return false;
+}
+
+test("dragging a stack window's left edge moves the divider with the edge", () => {
+  const st = masterStack.initial(S);
+  const inp = input(["a", "b", "c"]);
+  const before = masterStack.solve(st, inp).slots;
+  // The engine reports edge movement as frame - slot: negative is a move to the left.
+  for (const delta of [-100, 100]) {
+    const o = masterStack.command(st, { kind: "resize-boundary", id: "b", edge: "left", delta }, inp);
+    assert.ok(o.changed);
+    const after = masterStack.solve(o.state, inp).slots;
+    for (const id of ["b", "c"]) {
+      assert.ok(Math.abs(after.get(id)!.x - before.get(id)!.x - delta) <= 1, `${id} left edge follows the drag (${delta})`);
+      assert.ok(Math.abs(after.get(id)!.width - before.get(id)!.width + delta) <= 1, `${id} width (${delta})`);
+    }
+    assert.ok(Math.abs(after.get("a")!.width - before.get("a")!.width - delta) <= 1, `master width (${delta})`);
+  }
+});
+
+test("divider commands start from the divider that minima hold, not the stored ratio (L02)", () => {
+  // A stored ratio of 0.3 under a master whose minimum is 800 px: the master shows 800 px.
+  const mins = new Map([["a", minC(800, 0)]]);
+  const inp = input(["a", "b"], { constraints: mins });
+  let st = { ratio: 0.3, masterCount: 1, weights: {} };
+  const width = () => masterStack.solve(st, inp).slots.get("a")!.width;
+  assert.equal(width(), 800);
+  const shrink = masterStack.command(st, { kind: "ratio", delta: -0.05 }, inp);
+  assert.equal(shrink.changed, false);
+  assert.equal(shrink.reason, "ratio clamped by minimum sizes");
+  for (let i = 0; i < 3; ++i) {
+    const w0 = width();
+    const o = masterStack.command(st, { kind: "ratio", delta: 0.05 }, inp);
+    assert.ok(o.changed, `grow ${i}: ${o.reason}`);
+    st = o.state;
+    assert.ok(Math.abs(width() - w0 - 0.05 * 1896) <= 1, `grow ${i} moves the divider one step`);
+  }
+  for (let i = 0; i < 3; ++i) st = masterStack.command(st, { kind: "ratio", delta: -0.05 }, inp).state;
+  assert.equal(width(), 800, "shrinking back reaches the minimum without a dead zone");
+
+  // Mouse: master minimum 1400 at the default ratio. Dragging its right edge 200 px right
+  // lands the divider where it was dropped instead of snapping back to 1400.
+  const big = input(["a", "b"], { constraints: new Map([["a", minC(1400, 0)]]) });
+  const s0 = masterStack.initial(S);
+  assert.equal(masterStack.solve(s0, big).slots.get("a")!.width, 1400);
+  const drag = masterStack.command(s0, { kind: "resize-boundary", id: "a", edge: "right", delta: 200 }, big);
+  assert.ok(drag.changed);
+  assert.ok(Math.abs(masterStack.solve(drag.state, big).slots.get("a")!.width - 1600) <= 1);
+});
+
+test("row dividers move from the rows as shown when a minimum height holds them", () => {
+  // b's minimum holds it at 700 px although its weight equals c's.
+  const constraints = new Map([["b", minC(0, 700)]]);
+  const inp = input(["a", "b", "c"], { constraints });
+  const st = masterStack.initial(S);
+  const before = masterStack.solve(st, inp).slots;
+  assert.equal(before.get("b")!.height, 700);
+  const down = masterStack.command(st, { kind: "resize-boundary", id: "b", edge: "bottom", delta: 50 }, inp);
+  assert.ok(down.changed);
+  const after = masterStack.solve(down.state, inp).slots;
+  assert.equal(after.get("b")!.height, 750, "dropped where released, no snap back");
+  assert.equal(after.get("c")!.y, before.get("c")!.y + 50);
+  const up = masterStack.command(st, { kind: "resize-boundary", id: "c", edge: "top", delta: 20 }, inp);
+  assert.equal(masterStack.solve(up.state, inp).slots.get("b")!.height, 720, "c's top edge is the same boundary");
+  const below = masterStack.command(st, { kind: "resize-boundary", id: "b", edge: "bottom", delta: -50 }, inp);
+  assert.equal(below.changed, false);
+  assert.equal(below.reason, "row clamped by minimum sizes");
+});
+
+test("ratio without a visible divider is a no-op with a reason (BEHAVIOR §4)", () => {
+  const one = input(["a"]);
+  let st = masterStack.initial(S);
+  for (let i = 0; i < 20; ++i) {
+    const o = masterStack.command(st, { kind: "ratio", delta: 0.05 }, one);
+    assert.equal(o.changed, false);
+    assert.equal(o.reason, "no divider");
+    st = o.state;
+  }
+  const two = input(["a", "b"]);
+  assert.deepEqual([...masterStack.solve(st, two).slots], [...masterStack.solve(masterStack.initial(S), two).slots],
+    "presses without a divider leave no hidden ratio behind");
+  const allMasters = masterStack.command({ ratio: 0.55, masterCount: 2, weights: {} }, { kind: "ratio", delta: 0.05 }, two);
+  assert.equal(allMasters.reason, "no divider");
+  // A suspended second window (absent from ids) leaves one column too.
+  assert.equal(masterStack.command(st, { kind: "ratio", delta: 0.05 }, input(["a"], { members: ["a", "b"] })).reason, "no divider");
+});
+
+test("randomized: divider commands report a change exactly when the layout moves", () => {
+  const rnd = prng(800);
+  let changed = 0;
+  for (let iter = 0; iter < 1500; ++iter) {
+    const n = 1 + Math.floor(rnd() * 5);
+    const ids = Array.from({ length: n }, (_, i) => `w${i}`);
+    const area = rect(0, 0, 900 + Math.floor(rnd() * 2000), 600 + Math.floor(rnd() * 800));
+    const constraints = new Map(ids.filter(() => rnd() < 0.5)
+      .map((id) => [id, minC(Math.floor(rnd() * area.width * 0.6), Math.floor(rnd() * area.height * 0.3))] as const));
+    const inp = input(ids, { area, constraints });
+    const weights = Object.fromEntries(ids.filter(() => rnd() < 0.3).map((id) => [id, 0.2 + rnd() * 2]));
+    const st = { ratio: 0.05 + rnd() * 0.9, masterCount: Math.floor(rnd() * 3), weights };
+    const before = masterStack.solve(st, inp);
+    if (before.overflow.length) continue;
+    const id = ids[Math.floor(rnd() * n)];
+    const delta = (rnd() < 0.5 ? -1 : 1) * (1 + Math.floor(rnd() * 400));
+    const edges = ["left", "right", "top", "bottom"] as const;
+    const cmd = rnd() < 0.3 ? { kind: "ratio" as const, delta: delta > 0 ? 0.05 : -0.05 }
+      : { kind: "resize-boundary" as const, id, edge: edges[Math.floor(rnd() * 4)], delta };
+    const o = masterStack.command(st, cmd, inp);
+    const after = masterStack.solve(o.state, inp).slots;
+    assert.equal(o.changed, moved(before.slots, after), `${JSON.stringify(cmd)} ${JSON.stringify(st)}: ${o.reason}`);
+    if (!o.changed) { assert.equal(o.state, st); assert.ok(o.reason); continue; }
+    ++changed;
+    if (cmd.kind === "ratio") {
+      // The master grows with a positive ratio step.
+      const grew = after.get(ids[0])!.width - before.slots.get(ids[0])!.width;
+      assert.ok(Math.sign(grew) === Math.sign(cmd.delta), `master width moved ${grew} for ${JSON.stringify(cmd)}`);
+    } else {
+      // The dragged edge moves the way the pointer moved (engine: frame - slot).
+      const edge = (r: Rect) => cmd.edge === "left" ? r.x : cmd.edge === "right" ? r.x + r.width : cmd.edge === "top" ? r.y : r.y + r.height;
+      const step = edge(after.get(id)!) - edge(before.slots.get(id)!);
+      assert.ok(Math.sign(step) === Math.sign(cmd.delta) && Math.abs(step) <= Math.abs(cmd.delta) + 1,
+        `${cmd.edge} edge moved ${step} for ${cmd.delta}`);
+    }
+  }
+  assert.ok(changed > 300, `only ${changed} changes`);
 });

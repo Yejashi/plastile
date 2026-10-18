@@ -66,6 +66,24 @@ test("O07: workAreaChanged re-solves only the named outputs' contexts", () => {
   assertTiling(frames(h, ["b", "c"]), rect(1280, 0, 1280, 760));
 });
 
+test("O07: a panel going away gives an overflow float one new attempt (BEHAVIOR §11)", () => {
+  const h = new MockHost();
+  h.areas.set("O1/D1", rect(0, 0, 1280, 500));
+  h.start();
+  const min = { minFrame: { width: 0, height: 300 }, maxFrame: { width: Infinity, height: Infinity }, fixed: false };
+  for (const id of ["a", "b", "c"]) h.open(id, { constraints: min });
+  h.advance(10);
+  // Stack of b and c needs 2 x 300 + gaps: c does not fit in 500 px and floats.
+  assert.equal(h.engine.modeOf("c"), "floating");
+  const n = h.writes.length;
+  h.areas.set("O1/D1", rect(0, 0, 1280, 800));
+  h.engine.workAreaChanged(["O1"]);
+  h.advance(10);
+  assert.equal(h.engine.modeOf("c"), "tiled");
+  assert.ok(h.writes.slice(n).some((w) => w.id === "c"), "c is placed into a slot");
+  assertTiling(frames(h, ["a", "b", "c"]), rect(0, 0, 1280, 800));
+});
+
 test("an external change is still corrected once when its context is not being re-solved", () => {
   const h = new MockHost();
   h.start();

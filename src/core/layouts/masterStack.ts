@@ -91,31 +91,39 @@ export function fitMaxima(slots: Map<WindowId, Rect>, input: SolveInput, notes: 
   }
 }
 
-/** Shared overflow loop: drop the newest participant until the layout fits (float-new). */
+/**
+ * Shared overflow policy, float-new (BEHAVIOR §11): existing windows keep their tiles and
+ * a window that cannot fit next to them floats. When everything does not fit, windows
+ * are admitted in insertion order and each one that would make the layout infeasible
+ * overflows, with the failure it caused. A window that cannot fit at all (its minimum
+ * exceeds the area even alone) is therefore floated itself, instead of every newer
+ * window being floated ahead of it. Attempts keep context order.
+ */
 export function solveWithOverflow(ids: readonly WindowId[], input: SolveInput,
   tryIds: (ids: readonly WindowId[]) => Attempt): SolveResult {
-  let current = ids.slice();
-  const overflow: WindowId[] = [];
-  const notes: string[] = [];
-  for (let guard = 0; guard <= ids.length; ++guard) {
-    const r = tryIds(current);
-    if (r.failure === null) {
-      notes.push(...r.notes);
-      fitMaxima(r.slots, input, notes);
-      return { slots: r.slots, overflow, notes, raise: [] };
-    }
-    if (current.length === 0) break;
-    let victim = current[current.length - 1];
-    let newest = -Infinity;
-    for (const id of current) {
-      const t = input.insertedAt.get(id) ?? 0;
-      if (t > newest) { newest = t; victim = id; }
-    }
-    overflow.push(victim);
-    notes.push(`${victim}: does not fit (${r.failure}); overflow float-new`);
-    current = current.filter((id) => id !== victim);
+  const done = (r: Attempt, overflow: WindowId[], notes: string[]): SolveResult => {
+    notes.push(...r.notes);
+    fitMaxima(r.slots, input, notes);
+    return { slots: r.slots, overflow, notes, raise: [] };
+  };
+  const all = tryIds(ids);
+  if (all.failure === null) return done(all, [], []);
+  // Ties keep context order explicitly (QV4's sort need not be stable).
+  const at = new Map<WindowId, number>();
+  ids.forEach((id, i) => at.set(id, i));
+  const seq = (id: WindowId) => input.insertedAt.get(id) ?? 0;
+  const older = (a: WindowId, b: WindowId) => seq(a) - seq(b) || at.get(a)! - at.get(b)!;
+  const kept = new Set<WindowId>();
+  const failed = new Map<WindowId, string>();
+  let fits = tryIds([]);
+  for (const id of ids.slice().sort(older)) {
+    const r = tryIds(ids.filter((x) => kept.has(x) || x === id));
+    if (r.failure === null) { kept.add(id); fits = r; } else failed.set(id, r.failure);
   }
-  return { slots: new Map(), overflow, notes, raise: [] };
+  // Report newest first, the order in which float-new gives windows up.
+  const overflow = [...failed.keys()].sort((a, b) => older(b, a));
+  const notes = overflow.map((id) => `${id}: does not fit (${failed.get(id)}); overflow float-new`);
+  return done(fits, overflow, notes);
 }
 
 export type { Attempt };
@@ -149,18 +157,10 @@ export const masterStack: Layout<MasterStackState> = {
   command(state: MasterStackState, cmd: LayoutCommand, input: SolveInput): CommandOutcome<MasterStackState> {
     switch (cmd.kind) {
       case "ratio": {
-        const next = clampRatio(state.ratio + cmd.delta);
-        if (next === state.ratio) return { state, changed: false, reason: "ratio at limit" };
-        const nextState = { ratio: next, masterCount: state.masterCount, weights: state.weights };
-        // Feasibility without solving: column minima bound the achievable ratio. If both
-        // the current and the next ratio clamp to the same boundary, nothing would move.
+        // One column (a single window, or every window a master) has no divider (BEHAVIOR §4).
         const range = feasibleRatio(state, input);
-        if (range !== null) {
-          const now = Math.min(range.hi, Math.max(range.lo, state.ratio));
-          const then = Math.min(range.hi, Math.max(range.lo, next));
-          if (Math.abs(then - now) * range.usable < 0.5) return { state, changed: false, reason: "ratio clamped by minimum sizes" };
-        }
-        return { state: nextState, changed: true };
+        if (range === null) return { state, changed: false, reason: "no divider" };
+        return moveDivider(state, range, cmd.delta);
       }
       case "master-count": {
         const next = Math.max(0, Math.min(MASTER_COUNT_MAX, state.masterCount + cmd.delta));
@@ -194,6 +194,24 @@ function feasibleRatio(state: MasterStackState, input: SolveInput): { lo: number
   return { lo: minMaster / usable, hi: 1 - minStack / usable, usable };
 }
 
+/**
+ * Move the divider by `delta` (ratio units) from where it is shown. Column minima can hold
+ * the divider away from the stored ratio; stepping the stored value would move it inside
+ * that hidden range (grow stuck below the minimum, a drag snapping back). The shown result,
+ * clamped to the feasible range, becomes the stored ratio (BEHAVIOR §4, §8).
+ */
+function moveDivider(state: MasterStackState, range: { lo: number; hi: number; usable: number },
+  delta: number): CommandOutcome<MasterStackState> {
+  const shown = (r: number) => Math.min(range.hi, Math.max(range.lo, r));
+  const base = shown(state.ratio);
+  const free = clampRatio(base + delta);
+  const next = clampRatio(shown(free));
+  if (Math.abs(shown(next) - base) * range.usable < 0.5) {
+    return { state, changed: false, reason: free === clampRatio(base) ? "ratio at limit" : "ratio clamped by minimum sizes" };
+  }
+  return { state: { ratio: next, masterCount: state.masterCount, weights: state.weights }, changed: true };
+}
+
 /** Convert an accepted boundary movement (pixels) into ratio/weight changes. */
 function resizeBoundary(state: MasterStackState, cmd: Extract<LayoutCommand, { kind: "resize-boundary" }>,
   input: SolveInput): CommandOutcome<MasterStackState> {
@@ -203,32 +221,39 @@ function resizeBoundary(state: MasterStackState, cmd: Extract<LayoutCommand, { k
   const m = Math.max(0, Math.min(state.masterCount, ids.length));
   const isMaster = idx < m;
   const a = outerArea(input, ids.length);
-  const usable = a.width - input.settings.gaps.inner;
   if ((cmd.edge === "left" || cmd.edge === "right")) {
-    if (m === 0 || m >= ids.length || usable <= 0) return { state, changed: false, reason: "no vertical divider" };
-    // Master is on the left: its right edge, or the stack's left edge, is the divider.
-    const toward = (isMaster && cmd.edge === "right") ? cmd.delta : (!isMaster && cmd.edge === "left") ? -cmd.delta : 0;
-    if (toward === 0) return { state, changed: false, reason: "edge is not the divider" };
-    const next = clampRatio(state.ratio + toward / usable);
-    if (next === state.ratio) return { state, changed: false, reason: "ratio at limit" };
-    return { state: { ratio: next, masterCount: state.masterCount, weights: state.weights }, changed: true };
+    const range = feasibleRatio(state, input);
+    if (range === null) return { state, changed: false, reason: "no vertical divider" };
+    // Master is on the left: its right edge, or the stack's left edge, is the divider. A
+    // positive delta moves an edge right (engine: frame - slot), which grows the master
+    // from either side.
+    if (cmd.edge !== (isMaster ? "right" : "left")) return { state, changed: false, reason: "edge is not the divider" };
+    return moveDivider(state, range, cmd.delta / range.usable);
   }
-  // Horizontal divider inside a column: move weight between neighbours.
+  // Horizontal divider inside a column: the neighbours trade pixels from the rows as shown.
+  // Minimum heights can hold rows away from their weights, so the column's shown heights
+  // become its weights (they reproduce the same rows), then the boundary moves by the
+  // drag, clamped so neither row drops below its minimum or 5 % of the column.
   const col = isMaster ? ids.slice(0, m) : ids.slice(m);
   const ci = col.indexOf(cmd.id);
-  const neighbour = cmd.edge === "bottom" ? col[ci + 1] : col[ci - 1];
-  if (neighbour === undefined) return { state, changed: false, reason: "no divider on that edge" };
-  const height = a.height - input.settings.gaps.inner * (col.length - 1);
-  if (height <= 0) return { state, changed: false, reason: "no space" };
-  const total = col.reduce((s, id) => s + (state.weights[id] ?? 1), 0);
-  const pxPerWeight = height / total;
-  const dw = (cmd.edge === "bottom" ? cmd.delta : -cmd.delta) / pxPerWeight;
-  const wa = (state.weights[cmd.id] ?? 1) + dw;
-  const wb = (state.weights[neighbour] ?? 1) - dw;
-  const minW = 0.05 * total;
-  if (wa < minW || wb < minW) return { state, changed: false, reason: "weight at limit" };
+  const ni = cmd.edge === "bottom" ? ci + 1 : ci - 1;
+  if (ni < 0 || ni >= col.length) return { state, changed: false, reason: "no divider on that edge" };
+  const gap = input.settings.gaps.inner;
+  const minH = col.map((id) => Math.max(1, minOf(input.constraints, id).height));
+  const rows = allocate(a.y, a.height, col.map((id) => state.weights[id] ?? 1), minH, gap);
+  if (rows === null) return { state, changed: false, reason: "no space" };
+  const h = rows.map(([b, e]) => e - b);
+  const limit = 0.05 * (a.height - gap * (col.length - 1));
+  const floorC = Math.max(minH[ci], limit), floorN = Math.max(minH[ni], limit);
+  const want = cmd.edge === "bottom" ? cmd.delta : -cmd.delta; // pixels the dragged row gains
+  const d = Math.min(Math.max(0, h[ni] - floorN), Math.max(Math.min(0, floorC - h[ci]), want));
+  if (Math.abs(d) < 0.5) {
+    return { state, changed: false, reason: (want > 0 ? floorN : floorC) > limit ? "row clamped by minimum sizes" : "weight at limit" };
+  }
+  h[ci] += d;
+  h[ni] -= d;
+  const mean = h.reduce((s, x) => s + x, 0) / h.length;
   const weights: Record<WindowId, number> = { ...state.weights };
-  weights[cmd.id] = wa;
-  weights[neighbour] = wb;
+  for (let i = 0; i < col.length; ++i) weights[col[i]] = h[i] / mean;
   return { state: { ratio: state.ratio, masterCount: state.masterCount, weights }, changed: true };
 }

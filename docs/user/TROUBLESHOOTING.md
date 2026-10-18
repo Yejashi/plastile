@@ -49,7 +49,8 @@ qdbus6 org.kde.kglobalaccel /component/kwin org.kde.kglobalaccel.Component.invok
 | `counters.flushes`, `deadlines` | Coalesced passes, and bounded-wait deadlines that fired because a client did not answer in time (750 ms). Both stay flat while idle. |
 | `counters.observations`, `observationsDuringApply` | Geometry change reports from KWin, and the subset that arrived while Plastile was applying geometry. |
 | `counters.settled`, `partial`, `external`, `diverged`, `stale` | How each report was classified: the request settled, settled only in part, was changed by someone else (you or the application), was given up on after bounded corrections, or answered a request that had already been superseded. |
-| `counters.learned` | Times a client's accepted size taught Plastile a tighter minimum or maximum than the client advertised. |
+| `counters.learned` | Times a client's accepted size taught Plastile a tighter minimum or maximum than the client advertised. A client that has not answered at all teaches nothing. |
+| `counters.accepted` | Times a client settled at most 32 px short of its slot (for example a terminal sizing itself in whole character cells) and Plastile accepted that size instead of learning a maximum. |
 | `counters.overflow` | Windows floated because the layout could not fit them. |
 | `counters.adopted`, `removed`, `staleEvents` | Windows adopted and dropped, and events ignored because they referred to a window generation that no longer exists. |
 | `counters.errors` | Caught exceptions in commands, flushes or restores. Should stay 0. |
@@ -107,7 +108,7 @@ Run *Explain active window* and read `mode`, `userMode`, `nativeTile`, `decision
   - **Gave up:** the window was tiled but did not reach its slot after two corrections. It stays where the client put it.
   - **Overflow (`overflow: ...`):** the layout could not fit it, so it floats.
 
-  The exception is not reconsidered automatically: changing the layout, gaps, screen area or the client's constraints leaves an overflowed window floating (current limitation; observed source, `src/core/engine.ts`). Toggling the window back to tiled with *Toggle floating* clears the exception and retries.
+  The exception gets one new attempt when its inputs change: the usable area of the screen (outputs, panels), the configuration (layout parameters, gaps), the window's own constraints or desktop/screen membership, or a tile leaving its context. If it still does not fit, it floats again. Focus changes and layout shortcuts do not retry it (observed source, `src/core/engine.ts`). Toggling the window back to tiled with *Toggle floating* clears the exception and retries.
 - **`mode: pending`:** the window has not reported an application id yet. Plastile waits up to 300 ms before classifying it.
 
 ## A window keeps resizing or flickers
@@ -138,8 +139,8 @@ Check KWin's Window Rules and disable other tiling scripts. Then compare two cou
 | Activities untested | The matcher and context key include the activity, but every test ran with the single default activity (no Activities service in nested sessions). Switching activities with tiled windows on each is unverified. | Untested |
 | Physical session unvalidated | All measurements come from nested `kwin_wayland --virtual` sessions: no plasmashell panels, real monitors or everyday applications, and no mixed refresh rates. | Untested |
 | Escape does not cancel a pointer Meta+drag | In KWin 6.7.5, Escape cancels a keyboard-initiated move (the *Move Window* action), and Plastile then keeps the original layout. A drag started with Meta+left-button cannot be cancelled with Escape, and releasing the button commits the drop (swap or snap back). | Measured; KWin behaviour |
-| Windows that ignore sizes are corrected at most twice | A client that refuses or alters the requested size is re-requested at most twice. It is then left alone with `exception` set and the reason shown in *Explain*. A client that accepts a larger size than requested has that size learned as its minimum, and the layout re-solves around it. | Measured; by design |
-| Only `float-new` overflow | When windows cannot fit above their minimum sizes, the newest ones float. There is no stack-in-leaf or new-desktop alternative. | By design for now |
+| Windows that ignore sizes are corrected at most twice | A client that refuses or alters the requested size is re-requested at most twice. It is then left alone with `exception` set and the reason shown in *Explain*. A client that accepts a larger size than requested has that size learned as its minimum, and the layout re-solves around it. A client that settles up to 32 px smaller is accepted as it is, and one that never answers is not learned from (unit-tested with mock clients). | Measured; by design |
+| Only `float-new` overflow | When windows cannot fit above their minimum sizes, the newer ones that do not fit float (and a window too large for the area on its own floats by itself). There is no stack-in-leaf or new-desktop alternative. | By design for now |
 | One `ratioStep` in the dialog | The dialog's grow/shrink step drives both master/stack and BSP. Use the JSON document for different steps. | By design |
 | Rules have no context matchers | A rule cannot depend on the screen or desktop a window is on, and overrides cannot change rules. | Not implemented |
 | Rule `insert` and `border` actions | `border` is covered by a unit test only; `insert` by validation only. | Partly untested |

@@ -103,7 +103,7 @@ export function createRuntime(env: RuntimeEnv): Runtime {
         outputName: key.output, desktopId: key.desktop, desktopName: adapter.desktopNameOf(key.desktop), activityId: key.activity,
       } : null);
       if (r.ruleIds.length === 0) return null;
-      return { mode: r.actions.mode, border: r.actions.border, insert: r.actions.insert, ruleIds: r.ruleIds };
+      return { mode: r.actions.mode, border: r.actions.border, insert: r.actions.insert, ruleIds: r.ruleIds, reasons: r.reasons };
     },
     titleRules: snap.usesTitleRules,
     clockNs: env.clockNs,

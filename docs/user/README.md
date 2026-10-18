@@ -96,7 +96,7 @@ Plastile places nothing in a floating context, and windows keep ordinary KDE beh
 
 ### Overflow
 
-A context may be unable to fit every window above its minimum size. Plastile then floats the newest insertions (`overflow: float-new`, the only policy implemented), and the reason appears in the window's explanation. Existing tiles are never shrunk below their minima, and no desktops are created or removed.
+A context may be unable to fit every window above its minimum size. Plastile then keeps the windows that were there first and floats each newer window that does not fit next to them (`overflow: float-new`, the only policy implemented); a window whose minimum size does not fit the area even on its own floats by itself, without taking newer windows with it. The reason appears in the window's explanation. Existing tiles are never shrunk below their minima, and no desktops are created or removed.
 
 ## Which windows are tiled
 
@@ -123,7 +123,7 @@ Plastile does not fight you or the application indefinitely:
 - **Native quick tiling** (`Meta+Left/Right/Up/Down`, or dragging to a screen edge) is respected. The window is released to KWin's tile, the remaining windows re-solve without it, and nothing snaps back. *Adopt natively tiled window* or *Toggle floating* puts it back in the layout. KWin's tile editor (`Meta+T`) is untouched.
 - **Maximize and fullscreen** suspend Plastile's placement for that window. Leaving the state returns the window to its slot.
 - **Interactive move:** dragging a tile re-tiles nothing while you drag. Dropping it on another tile swaps the two; dropping it anywhere else snaps it back. Meta+right-drag resizing moves the shared divider.
-- **Applications that resize themselves** or refuse the requested size are corrected at most twice per target. Plastile then leaves them alone and records why (see *Explain active window*). A client that settles at a larger size than requested has that size learned as its minimum, and the layout is re-solved around it.
+- **Applications that resize themselves** or refuse the requested size are corrected at most twice per target. Plastile then leaves them alone and records why (see *Explain active window*). A client that settles at a larger size than requested has that size learned as its minimum, and the layout is re-solved around it. A client that settles up to 32 px smaller (a terminal sizing itself in character cells) is accepted as it is.
 
 Plastile never sets a window maximized, minimized, fullscreen or kept-above to make a layout fit. It never changes KWin's focus policy and never moves the cursor. The window state it writes is limited to: frame geometry, activation and raising (focus commands, monocle), the output and desktop (send commands), releasing a native quick tile (adopt), and the border, when a rule asks for `border` (unit-tested only).
 

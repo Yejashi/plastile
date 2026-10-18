@@ -14,11 +14,11 @@ import { neighbour, type Direction } from "./navigation.ts";
 import type { HostPort, RuntimeServices, WindowSnapshot } from "./ports.ts";
 import * as L from "./reconcile/ledger.ts";
 import type { Layout, LayoutCommand, SolveInput } from "./layouts/layout.ts";
-import { masterStack } from "./layouts/masterStack.ts";
+import { masterStack, type MasterStackState } from "./layouts/masterStack.ts";
 import { bsp, reinsert as bspReinsert } from "./layouts/bsp.ts";
 import { monocle, floating } from "./layouts/monocle.ts";
 import {
-  contextId, sameContext, type Constraints, type ContextId, type ContextKey, type ContextSettings, type Decision,
+  contextId, sameContext, type ActivityId, type Constraints, type ContextId, type ContextKey, type ContextSettings, type Decision,
   type LayoutKind, type Membership, type OutputId, type PlacementMode, type Suspension, type WindowId, type WindowMeta,
   type WindowStates,
 } from "./types.ts";
@@ -33,12 +33,16 @@ const LAYOUTS: Record<LayoutKind, AnyLayout> = {
   floating,
 };
 const LAYOUT_CYCLE: readonly LayoutKind[] = ["master-stack", "bsp", "monocle", "floating"];
+const DIVERGED = "did not reach its target after bounded corrections";
 
 export interface WindowRules {
   readonly mode?: "tiled" | "floating" | "excluded";
   readonly border?: "normal" | "none" | "keep";
   readonly insert?: "end" | "after-focus" | "master";
+  /** Every matched rule, in evaluation order. */
   readonly ruleIds: readonly string[];
+  /** Field-level reasons: which rule set each final action (CONFIGURATION §4). */
+  readonly reasons?: Readonly<Record<string, string>>;
 }
 
 export interface EngineOptions {
@@ -77,6 +81,12 @@ interface Rec {
   learnedMax: Size | null;
   frame: Rect;
   nativeTile: boolean;
+  /**
+   * An explicit native tile action (quick tile, Tile.manage, tile editor) yielded this
+   * window. Sticky: KWin clearing the tile later does not re-adopt it; only adopt-native
+   * or toggle-float does (BEHAVIOR §9).
+   */
+  nativeYield: boolean;
   /** Tile associations we released ourselves (so the resulting signal is not a user action). */
   releasingTile: boolean;
   decision: Decision;
@@ -105,6 +115,8 @@ interface Ctx {
   applied: number;
   plan: Map<WindowId, Rect>;
   settings: ContextSettings | null;
+  /** Consecutive failed solves (bounded retry). */
+  failures: number;
 }
 
 export class Engine {
@@ -119,6 +131,10 @@ export class Engine {
   private contexts = new Map<ContextId, Ctx>();
   private dirty = new Set<ContextId>();
   private corrections = new Set<WindowId>();
+  /** Overflow floats to reconsider at the next flush: by window, by context, or all. */
+  private retryWindows = new Set<WindowId>();
+  private retryContexts = new Set<ContextId>();
+  private retryAll = false;
   /** Output scales, refreshed on adoption and topology changes (not per command). */
   private scales = new Map<OutputId, number>();
   private endedInteractions = new Map<WindowId, "move" | "resize">();
@@ -136,6 +152,9 @@ export class Engine {
   private revision = 0;
   private alive = true;
   private suspended = false;
+  /** Activity count and current activity the context keys were derived from. */
+  private actCount = 0;
+  private actCurrent = "";
 
   /** Stable identity so Qt.callLater coalesces repeated scheduling. */
   private readonly flushFn = (): void => this.flush();
@@ -153,6 +172,8 @@ export class Engine {
   /** Adopt existing windows: classify once, seed order, one solve per visible context. */
   start(initial: readonly WindowSnapshot[]): void {
     this.refreshScales();
+    this.actCount = this.host.activityCount();
+    this.actCurrent = this.host.currentActivity();
     for (const s of initial) this.add(s, false);
     this.markVisibleDirty();
     this.flushNow();
@@ -167,6 +188,8 @@ export class Engine {
     this.contexts.clear();
     this.dirty.clear();
     this.corrections.clear();
+    this.retryWindows.clear();
+    this.retryContexts.clear();
     this.endedInteractions.clear();
     this.queued = [];
   }
@@ -214,7 +237,8 @@ export class Engine {
     if (existing) this.drop(existing);
     const r: Rec = {
       id: s.id, gen: s.gen, meta: s.meta, membership: s.membership, states: s.states, base: s.constraints,
-      learnedMin: null, learnedMax: null, frame: rectOf(s.frame), nativeTile: s.nativeTile, releasingTile: false,
+      learnedMin: null, learnedMax: null, frame: rectOf(s.frame), nativeTile: s.nativeTile, nativeYield: s.nativeTile,
+      releasingTile: false,
       decision: { mode: "floating", source: "default", reason: "unclassified", ruleIds: [] },
       mode: "pending", userMode: null, ctx: null, suspensions: suspensionsOf(s.states),
       ledger: L.newEntry(rectOf(s.frame)), floatRect: null, insertedAt: ++this.insertSeq, exception: null,
@@ -236,6 +260,7 @@ export class Engine {
   private updateSnapshot(r: Rec, s: WindowSnapshot): void {
     r.meta = s.meta; r.membership = s.membership; r.states = s.states; r.base = s.constraints;
     r.frame = rectOf(s.frame); r.nativeTile = s.nativeTile;
+    if (s.nativeTile) r.nativeYield = true;
     r.suspensions = suspensionsOf(s.states);
     this.reclassify(r, "resync");
   }
@@ -253,6 +278,7 @@ export class Engine {
 
   private drop(r: Rec): void {
     L.cancel(r.ledger);
+    if (r.mode === "tiled" && r.ctx) this.retryOverflow(contextId(r.ctx));
     this.leaveContext(r);
     this.corrections.delete(r.id);
     this.endedInteractions.delete(r.id);
@@ -282,6 +308,7 @@ export class Engine {
     const r = this.live(id, gen);
     if (!r) return;
     r.membership = m;
+    if (isOverflow(r)) this.retryOverflow(null, r.id); // another context may have room
     this.reclassify(r, "membership");
     this.ensureFlush();
   }
@@ -291,15 +318,16 @@ export class Engine {
     if (!r) return;
     const prevInteractive = r.states.interactive;
     r.states = st;
+    const prevSet = r.suspensions;
     const next = suspensionsOf(st);
-    const changed = !sameSet(next, r.suspensions);
+    const changed = !sameSet(next, prevSet);
     r.suspensions = next;
     if (changed) {
       this.trace.record(this.svc.now(), "suspensions", id, [...next]);
       if (next.size > 0) L.cancel(r.ledger); // KWin or the user owns the frame now; never fight it
       const onlyInteractive = (x: Set<Suspension>) => x.size === 0 || (x.size === 1 && x.has("interactive"));
-      const prevSet = suspensionsOf({ ...st, interactive: prevInteractive });
       // Starting a drag changes no slot; its end is interpreted once by interactionEnded.
+      // Any KWin-owned state appearing or clearing changes participation: one solve.
       if (!(onlyInteractive(prevSet) && onlyInteractive(next)) && r.ctx && r.mode === "tiled") this.markDirty(r.ctx);
       this.ensureFlush();
     }
@@ -317,6 +345,9 @@ export class Engine {
     if (sameConstraints(r.base, c)) return;
     r.base = c;
     r.learnedMin = null; r.learnedMax = null;
+    // Its own overflow, or a peer's in its context, may be resolved by the new constraints.
+    if (isOverflow(r)) this.retryOverflow(null, r.id);
+    else if (r.mode === "tiled" && r.ctx) this.retryOverflow(contextId(r.ctx));
     this.reclassify(r, "constraints");
     if (r.ctx && r.mode === "tiled") this.markDirty(r.ctx);
     this.ensureFlush();
@@ -331,9 +362,11 @@ export class Engine {
     if (hasTile) {
       // Explicit native quick tile / tile editor action: yield until adopted (BEHAVIOR §9).
       r.userMode = null;
+      r.nativeYield = true;
       this.reclassify(r, "native-tile");
       this.ensureFlush();
     }
+    // A released tile keeps the yield (mode stays native): only an explicit adopt ends it.
   }
 
   frameObserved(id: WindowId, gen: number, frame: Rect): void {
@@ -345,11 +378,19 @@ export class Engine {
     if (this.applying > 0) this.counters.observationsDuringApply++;
     if (r.mode === "floating" && r.suspensions.size === 0 && r.ledger.status !== "pending") r.floatRect = f;
     if (r.mode !== "tiled") { L.observe(r.ledger, f); return; }
+    if (this.inFloatingLayout(r)) {
+      // The floating layout places nothing: where the user puts a member is its float
+      // rectangle, so a later return to floating does not restore an older snapshot.
+      if (this.participates(r)) r.floatRect = f;
+      L.observe(r.ledger, f);
+      return;
+    }
     if (r.suspensions.has("interactive")) return; // the user owns the frame during the drag
     const o = L.observe(r.ledger, f);
     switch (o) {
       case "settled":
         this.counters.settled++;
+        if (r.exception === DIVERGED) r.exception = null; // a slow client got there after all
         this.trace.record(this.svc.now(), "settled", id);
         this.disarmIfIdle();
         break;
@@ -380,17 +421,16 @@ export class Engine {
     if (!r || !r.ctx || r.mode !== "tiled") return;
     const c = this.ctxFor(r.ctx);
     c.focus = [id, ...c.focus.filter((x) => x !== id)].slice(0, 16);
-    if (this.layoutKind(c) === "monocle") {
-      c.states.monocle = { selected: id };
-      this.markDirty(c.key);
-      this.ensureFlush();
-    }
+    // Monocle frames do not depend on the selection, and KWin raises an activated
+    // window itself (the focus command raises explicitly): record it, no solve (C12).
+    if (this.layoutKind(c) === "monocle") c.states.monocle = { selected: id };
   }
 
   /** Visible desktop/activity changed on some output. */
   visibilityChanged(): void {
     if (!this.alive) return;
     this.trace.record(this.svc.now(), "visibility");
+    this.syncActivities();
     this.markVisibleDirty(true);
     this.ensureFlush();
   }
@@ -400,6 +440,8 @@ export class Engine {
     if (!this.alive) return;
     this.trace.record(this.svc.now(), "topology");
     this.refreshScales();
+    this.syncActivities();
+    this.retryOverflow("*"); // work areas may have grown
     for (const c of this.contexts.values()) { c.settings = null; this.markDirty(c.key); }
     this.ensureFlush();
   }
@@ -411,32 +453,93 @@ export class Engine {
   workAreaChanged(outputs: readonly OutputId[]): void {
     if (!this.alive) return;
     this.trace.record(this.svc.now(), "topology", undefined, { workArea: outputs });
-    for (const c of this.contexts.values()) if (outputs.indexOf(c.key.output) >= 0) this.markDirty(c.key);
+    for (const c of this.contexts.values()) {
+      if (outputs.indexOf(c.key.output) < 0) continue;
+      this.markDirty(c.key);
+      this.retryOverflow(c.id); // the area may have grown (BEHAVIOR §11)
+    }
     this.ensureFlush();
   }
 
   /** New configuration activated: settings/rules functions replaced atomically. */
   configure(opts: EngineOptions): void {
     this.trace.record(this.svc.now(), "configure");
+    const before = new Map<Ctx, ContextSettings>();
+    for (const c of this.contexts.values()) if (c.states["master-stack"] !== undefined) before.set(c, this.ctxSettings(c));
     this.opts = { ...this.opts, ...opts, deadlineMs: opts.deadlineMs ?? this.opts.deadlineMs,
                   readinessMs: opts.readinessMs ?? this.opts.readinessMs };
     if (opts.traceCapacity !== undefined && opts.traceCapacity !== this.trace.capacity) this.trace.resize(opts.traceCapacity);
     if (opts.traceEnabled !== undefined) this.trace.enabled = opts.traceEnabled;
     for (const c of this.contexts.values()) c.settings = null;
+    for (const [c, old] of before) this.rebaseMasterStack(c, old);
     for (const r of this.recs.values()) this.reclassify(r, "config");
     for (const c of this.contexts.values()) this.markDirty(c.key);
+    this.retryOverflow("*");
     this.ensureFlush();
+  }
+
+  /**
+   * Carry a newly configured master ratio and master count into a live master-stack
+   * state, field by field, unless the user changed that field by command in this
+   * context (it no longer equals the value configured before): session commands own
+   * what they set until a reset (CONFIGURATION §3, BEHAVIOR §12).
+   */
+  private rebaseMasterStack(c: Ctx, old: ContextSettings): void {
+    const ms = c.states["master-stack"] as MasterStackState;
+    const was = masterStack.initial(old), now = masterStack.initial(this.ctxSettings(c));
+    const ratio = ms.ratio === was.ratio ? now.ratio : ms.ratio;
+    const masterCount = ms.masterCount === was.masterCount ? now.masterCount : ms.masterCount;
+    if (ratio === ms.ratio && masterCount === ms.masterCount) return;
+    c.states["master-stack"] = { ...ms, ratio, masterCount };
+    c.revision++;
   }
 
   // ------------------------------------------------------- classification/model
 
   private singleContextKey(m: Membership): ContextKey | null {
     if (m.output === null || m.onAllDesktops || m.desktops.length !== 1) return null;
-    let activity: string;
-    if (this.host.activityCount() <= 1) activity = "default";
-    else if (m.activities.length === 1) activity = m.activities[0];
-    else return null;
-    return { output: m.output, desktop: m.desktops[0], activity };
+    const activity = this.activityKey(m);
+    return activity === null ? null : { output: m.output, desktop: m.desktops[0], activity };
+  }
+
+  /**
+   * Activity part of a context key (ADR-009). With at most one activity (also without
+   * the activity service: one placeholder) every window belongs to the current activity
+   * whatever its own list says; with several, only a window on exactly one activity has
+   * a single context. Keys always name a real (or the placeholder) activity, so a
+   * context never outlives a change in the number of activities unnoticed.
+   */
+  private activityKey(m: Membership): ActivityId | null {
+    if (this.host.activityCount() <= 1) return this.host.currentActivity();
+    return m.activities.length === 1 ? m.activities[0] : null;
+  }
+
+  /**
+   * Re-key windows whose context depends on global activity state. Adding or removing
+   * an activity emits only Workspace.activitiesChanged, and an activity service starting
+   * late only currentActivityChanged (measured, KWin 6.7.5): no window signal follows.
+   * Keys depend on global state only while at most one activity exists, so switching
+   * among several activities re-keys nothing.
+   */
+  private syncActivities(): void {
+    const n = this.host.activityCount(), cur = this.host.currentActivity();
+    if (n === this.actCount && cur === this.actCurrent) return;
+    const rekey = n <= 1 || this.actCount <= 1;
+    this.actCount = n;
+    this.actCurrent = cur;
+    if (!rekey) return;
+    this.trace.record(this.svc.now(), "activities", undefined, { count: n });
+    // Members in context order first: windows moving together keep their relative order.
+    const order: Rec[] = [];
+    const seen = new Set<WindowId>();
+    for (const c of this.contexts.values()) {
+      for (const id of c.members) {
+        const r = this.recs.get(id);
+        if (r && !seen.has(id)) { seen.add(id); order.push(r); }
+      }
+    }
+    for (const r of this.recs.values()) if (!seen.has(r.id)) order.push(r);
+    for (const r of order) if (r.mode !== "pending") this.reclassify(r, "activities");
   }
 
   private effectiveConstraints(r: Rec): Constraints {
@@ -463,20 +566,31 @@ export class Engine {
     });
     let mode: PlacementMode = r.decision.mode;
     if (mode !== "excluded") {
-      if (r.nativeTile) mode = "native";
+      if (r.nativeYield) mode = "native";
       else if (r.userMode === "floating") mode = "floating";
-      else if (r.userMode === "tiled" && key !== null && r.decision.source !== "membership" && r.meta.resizeable && !r.base.fixed) mode = "tiled";
+      else if (r.userMode === "tiled" && this.whyNotTileable(r, key) === null) mode = "tiled";
       else if (r.exception !== null && mode === "tiled" && r.exception.startsWith("overflow")) mode = "floating";
     }
     if (mode === "tiled" && !(this.settingsFor(key!).enabled)) mode = "floating";
     this.transition(r, mode, key, why);
-    this.applyBorderPolicy(r);
+    if (!this.suspended) this.applyBorderPolicy(r); // suspended: no owned property writes
+  }
+
+  /** Why an explicit tile request cannot be honoured (null when it can), from the current decision. */
+  private whyNotTileable(r: Rec, key: ContextKey | null): string | null {
+    if (r.decision.mode === "excluded" || key === null || r.decision.source === "membership") return r.decision.reason;
+    if (!r.meta.resizeable || r.base.fixed) return "fixed size";
+    if (!this.settingsFor(key).enabled) return "tiling is disabled here";
+    return null;
   }
 
   private transition(r: Rec, mode: PlacementMode, key: ContextKey | null, why: string): void {
     const wasTiled = r.mode === "tiled";
     const prevCtx = r.ctx;
-    if (wasTiled && (mode !== "tiled" || !sameContext(prevCtx, key))) this.leaveContext(r);
+    if (wasTiled && (mode !== "tiled" || !sameContext(prevCtx, key))) {
+      this.leaveContext(r);
+      if (why !== "overflow") this.retryOverflow(contextId(prevCtx!)); // its space is free now
+    }
     if (mode === "floating" && wasTiled === false && r.floatRect === null && r.suspensions.size === 0) r.floatRect = r.frame;
     r.mode = mode;
     const nextCtx = mode === "tiled" || mode === "floating" ? key : null;
@@ -502,7 +616,7 @@ export class Engine {
     let c = this.contexts.get(id);
     if (!c) {
       c = { key, id, members: [], layoutOverride: null, states: {}, focus: [], revision: 0, applied: -1,
-            plan: new Map(), settings: null };
+            plan: new Map(), settings: null, failures: 0 };
       this.contexts.set(id, c);
     }
     return c;
@@ -581,6 +695,11 @@ export class Engine {
     return !!c && this.layoutKind(c) !== "floating";
   }
 
+  private inFloatingLayout(r: Rec): boolean {
+    const c = r.ctx ? this.contexts.get(contextId(r.ctx)) : undefined;
+    return !!c && this.layoutKind(c) === "floating";
+  }
+
   // ---------------------------------------------------------------- scheduling
 
   private markDirty(key: ContextKey): void {
@@ -607,16 +726,18 @@ export class Engine {
     this.flushScheduled = false;
     this.counters.flushes++;
     try {
+      this.syncActivities();
       const queued = this.queued;
       this.queued = [];
       for (const q of queued) this.execute(q.id, q.arg);
       if (this.suspended) { this.dirty.clear(); this.corrections.clear(); this.endedInteractions.clear(); return; }
+      this.retryOverflows();
       if (this.endedInteractions.size) {
         const ended = [...this.endedInteractions];
         this.endedInteractions.clear();
         for (const [id, kind] of ended) {
           const r = this.recs.get(id);
-          if (r && r.states.interactive === "none") this.interactionEnded(r, kind);
+          if (r && r.states.interactive === "none") this.contained("interaction end", () => this.interactionEnded(r, kind));
         }
       }
       this.runCorrections();
@@ -626,7 +747,7 @@ export class Engine {
         const c = this.contexts.get(id);
         if (!c) continue;
         if (!this.isVisible(c.key)) { if (c.members.length) c.revision++; continue; }
-        this.solveAndApply(c);
+        this.solveContained(c);
       }
     } catch (e) {
       this.counters.errors++;
@@ -634,6 +755,37 @@ export class Engine {
     }
     if (this.dirty.size > 0 || this.corrections.size > 0 || this.queued.length > 0) this.ensureFlush();
     else this.disarmIfIdle();
+  }
+
+  /** Ask for overflow floats to be reconsidered: "*" for all, a context id, or one window. */
+  private retryOverflow(ctx: ContextId | "*" | null, id?: WindowId): void {
+    if (ctx === "*") this.retryAll = true;
+    else if (ctx !== null) this.retryContexts.add(ctx);
+    if (id !== undefined) this.retryWindows.add(id);
+    this.ensureFlush();
+  }
+
+  /**
+   * Give overflow floats one new attempt when their inputs changed: output area, layout
+   * parameters (configuration), constraints, or a peer leaving (BEHAVIOR §11). They
+   * rejoin in insertion order; a solve that still cannot fit them floats the newest
+   * again, which asks for no further retry. Unrelated events (focus) never retry.
+   */
+  private retryOverflows(): void {
+    if (!this.retryAll && this.retryContexts.size === 0 && this.retryWindows.size === 0) return;
+    const all = this.retryAll, ctxs = this.retryContexts, ids = this.retryWindows;
+    this.retryAll = false;
+    this.retryContexts = new Set();
+    this.retryWindows = new Set();
+    const list: Rec[] = [];
+    for (const r of this.recs.values()) {
+      if (isOverflow(r) && (all || ids.has(r.id) || (r.ctx !== null && ctxs.has(contextId(r.ctx))))) list.push(r);
+    }
+    list.sort((a, b) => a.insertedAt - b.insertedAt);
+    for (const r of list) {
+      r.exception = null;
+      this.reclassify(r, "overflow-retry");
+    }
   }
 
   private runCorrections(): void {
@@ -646,16 +798,37 @@ export class Engine {
       // A dirty context is re-solved in this flush and its fresh target supersedes the old
       // one (e.g. KWin moved a tile off a new panel before the area change was known).
       if (this.dirty.has(contextId(r.ctx!))) continue;
-      if (rectNear(r.frame, r.ledger.desired, r.ledger.tol)) continue;
+      if (rectNear(r.frame, r.ledger.desired, r.ledger.tol) || rectNear(r.frame, r.ledger.accepted, r.ledger.tol)) continue;
       if (!L.canCorrect(r.ledger)) continue;
-      this.write(r, r.ledger.desired, "correction");
+      this.contained("correction", () => this.write(r, r.ledger.desired!, "correction"));
     }
   }
 
+  /** Run one unit of flush work; an exception is logged and stays inside that unit. */
+  private contained(what: string, fn: () => void): boolean {
+    try {
+      fn();
+      return true;
+    } catch (e) {
+      this.counters.errors++;
+      this.svc.log("error", what + " failed", String(e));
+      return false;
+    }
+  }
+
+  /**
+   * Solve one context without letting its failure abandon the others in the same
+   * flush (ARCHITECTURE §7, §13). A failed context is retried once in the next flush,
+   * which recovers a transient error; one that keeps failing waits for its next event.
+   */
+  private solveContained(c: Ctx): void {
+    if (this.contained("solve " + c.id, () => this.solveAndApply(c))) { c.failures = 0; return; }
+    if (++c.failures <= 1) this.markDirty(c.key);
+    else this.trace.record(this.svc.now(), "quarantine", c.id, { failures: c.failures });
+  }
+
   private isVisible(key: ContextKey): boolean {
-    if (this.host.visibleDesktop(key.output) !== key.desktop) return false;
-    if (this.host.activityCount() > 1 && this.host.currentActivity() !== key.activity) return false;
-    return true;
+    return this.host.visibleDesktop(key.output) === key.desktop && this.host.currentActivity() === key.activity;
   }
 
   // ----------------------------------------------------------- solve / apply
@@ -738,7 +911,7 @@ export class Engine {
     const dec = L.decideWrite(r.ledger, target, now);
     switch (dec) {
       case "skip-outstanding": this.counters.skipOutstanding++; L.setDesired(r.ledger, target); return;
-      case "skip-noop": this.counters.skipNoop++; L.acceptNoop(r.ledger, target); return;
+      case "skip-noop": this.counters.skipNoop++; L.acceptNoop(r.ledger, target, this.svc.now()); return;
       case "skip-diverged": this.counters.skipDiverged++; return;
       default: this.write(r, target, r.ledger.request && rectNear(r.ledger.request.rect, target, r.ledger.tol) ? "correction" : "plan");
     }
@@ -816,15 +989,18 @@ export class Engine {
       this.trace.record(now, "deadline", r.id, x.kind);
       if (x.kind === "learn") {
         this.counters.learned++;
-        if (x.min) r.learnedMin = { width: Math.max(r.learnedMin?.width ?? 0, x.min.width), height: Math.max(r.learnedMin?.height ?? 0, x.min.height) };
-        if (x.max) r.learnedMax = { width: Math.min(r.learnedMax?.width ?? Infinity, x.max.width), height: Math.min(r.learnedMax?.height ?? Infinity, x.max.height) };
+        const m = L.mergeLearned(r.learnedMin, r.learnedMax, x.min, x.max);
+        r.learnedMin = m.min;
+        r.learnedMax = m.max;
         r.exception = `accepted ${r.frame.width}x${r.frame.height} instead of the requested size; learned as a constraint`;
         if (r.ctx) this.markDirty(r.ctx);
+      } else if (x.kind === "accepted") {
+        this.counters.accepted++;
       } else if (x.kind === "correct") {
         if (this.ownsGeometry(r)) this.corrections.add(r.id);
       } else if (x.kind === "diverged") {
         this.counters.diverged++;
-        r.exception = "did not reach its target after bounded corrections";
+        r.exception = DIVERGED;
       }
     }
     if (next < Infinity) this.armDeadline(next);
@@ -837,7 +1013,9 @@ export class Engine {
     if (r.mode !== "tiled" || !r.ctx) return;
     const c = this.ctxFor(r.ctx);
     const slot = c.plan.get(r.id);
-    if (!slot) { this.markDirty(c.key); return; }
+    // KWin finished the drag with its own state (drag-to-maximize maximizes before it
+    // reports the end): the drop frame is KWin's, not a swap or boundary intent.
+    if (!slot || !this.participates(r)) { this.markDirty(c.key); return; }
     const f = this.host.frame(r.id, r.gen) ?? r.frame;
     if (kind === "move") {
       // Drop onto another tile swaps positions; anywhere else snaps back (one solve).
@@ -912,8 +1090,7 @@ export class Engine {
     if (out === null) return null;
     const desk = this.host.visibleDesktop(out);
     if (desk === null) return null;
-    const act = this.host.activityCount() <= 1 ? "default" : this.host.currentActivity();
-    return this.ctxFor({ output: out, desktop: desk, activity: act });
+    return this.ctxFor({ output: out, desktop: desk, activity: this.host.currentActivity() });
   }
 
   private solveNow(c: Ctx): void {
@@ -936,6 +1113,12 @@ export class Engine {
       if (action === "toggle-suspend") {
         if (!this.suspended) { this.suspended = true; this.releaseOwnership(); return ok(); }
         this.suspended = false;
+        // Adopt the live state again: owned borders, the readiness waits the suspension
+        // cancelled, and one solve per visible context.
+        for (const w of this.recs.values()) {
+          this.applyBorderPolicy(w);
+          if (w.readyBy !== null) this.armDeadline(w.readyBy);
+        }
         for (const c of this.contexts.values()) { c.revision++; this.markDirty(c.key); }
         this.ensureFlush();
         return ok();
@@ -954,6 +1137,7 @@ export class Engine {
         r.releasingTile = true;
         if (!this.host.releaseNativeTile(r.id, r.gen)) r.releasingTile = false;
         r.nativeTile = false;
+        r.nativeYield = false;
         r.userMode = "tiled";
         this.reclassify(r, "adopt-native");
         if (r.ctx) this.solveNow(this.ctxFor(r.ctx));
@@ -1037,6 +1221,9 @@ export class Engine {
       return { status: "accepted", targets: [r.id] };
     }
     if (r.mode === "floating" || r.mode === "native") {
+      // Decide before touching anything: a refused tile request changes no state.
+      const why = this.whyNotTileable(r, this.singleContextKey(r.membership));
+      if (why !== null) return { status: "noop", reason: "cannot tile: " + why, targets: [] };
       if (r.suspensions.size === 0) r.floatRect = r.frame;
       r.userMode = "tiled";
       r.exception = null;
@@ -1044,6 +1231,7 @@ export class Engine {
         r.releasingTile = true;
         if (!this.host.releaseNativeTile(r.id, r.gen)) r.releasingTile = false;
         r.nativeTile = false;
+        r.nativeYield = false;
       }
       this.reclassify(r, "toggle-tile");
       if ((r.mode as PlacementMode) !== "tiled") return { status: "noop", reason: "cannot tile: " + r.decision.reason, targets: [] };
@@ -1209,11 +1397,11 @@ export class Engine {
     const c = r.ctx ? this.contexts.get(contextId(r.ctx)) : undefined;
     return {
       id: r.id, appId: r.meta.appId, kind: r.meta.kind, mode: r.mode, userMode: r.userMode,
-      decision: r.decision, context: r.ctx, layout: c ? this.layoutKind(c) : null,
+      decision: r.decision, rules: r.rules ? explainRules(r.rules) : null, context: r.ctx, layout: c ? this.layoutKind(c) : null,
       suspensions: [...r.suspensions], constraints: this.effectiveConstraints(r),
       learnedMin: r.learnedMin, learnedMax: r.learnedMax, ledger: { status: r.ledger.status, outstanding: r.ledger.outstanding,
         desired: r.ledger.desired, corrections: r.ledger.corrections }, slot: c?.plan.get(r.id) ?? null,
-      exception: r.exception, nativeTile: r.nativeTile,
+      exception: r.exception, nativeTile: r.nativeTile, nativeYield: r.nativeYield,
     };
   }
 
@@ -1257,6 +1445,20 @@ export class Engine {
     for (const r of this.recs.values()) if (r.ledger.outstanding) n++;
     return n;
   }
+}
+
+/** Matched rules, final rule actions and their per-field reasons (the decision covers mode only). */
+function explainRules(w: WindowRules): Record<string, unknown> {
+  const actions: Record<string, string> = {};
+  if (w.mode !== undefined) actions.mode = w.mode;
+  if (w.border !== undefined) actions.border = w.border;
+  if (w.insert !== undefined) actions.insert = w.insert;
+  return { ids: w.ruleIds.slice(), actions, reasons: { ...(w.reasons ?? {}) } };
+}
+
+/** Floated by the overflow policy (float-new), as opposed to by the user or a rule. */
+function isOverflow(r: Rec): boolean {
+  return r.mode === "floating" && r.exception !== null && r.exception.startsWith("overflow");
 }
 
 function suspensionsOf(s: WindowStates): Set<Suspension> {

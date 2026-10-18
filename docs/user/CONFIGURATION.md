@@ -20,8 +20,8 @@ These are the keys in `kwinrc` and the fields of the settings dialog. Defaults c
 | `gapInner` | `8` | integer 0–200 (px) | Gap between neighbouring tiles. |
 | `gapOuter` | `8` | integer 0–200 (px) | Gap between tiles and the edge of the usable area, the same on all four sides. The JSON document can set each edge. |
 | `singleWindowGaps` | `true` | `true`, `false` | Keeps the outer gap when a context has a single tiled window. `false` lets a lone window fill the area. |
-| `masterRatio` | `0.55` | strictly between 0 and 1. The dialog offers 0.05–0.95, and the layout clamps to 0.05–0.95. | Width share of the master column in master/stack. |
-| `masterCount` | `1` | integer 0–8 | Windows in the master column. `0` stacks everything. |
+| `masterRatio` | `0.55` | strictly between 0 and 1. The dialog offers 0.05–0.95, and the layout clamps to 0.05–0.95. | Width share of the master column in master/stack. A new value also applies to open contexts, except where you changed the ratio with *Grow*/*Shrink* or a resize. |
+| `masterCount` | `1` | integer 0–8 | Windows in the master column. `0` stacks everything. A new value also applies to open contexts, except where you changed the count with a shortcut. |
 | `masterInsert` | `after-focus` | `after-focus`, `end`, `master` | Where a new window enters the master/stack order. |
 | `bspInsert` | `focused` | `focused`, `last` | Which tile a new window splits in BSP. |
 | `bspAxis` | `alternate` | `alternate`, `longest`, `horizontal`, `vertical` | Split direction for new BSP splits. `horizontal` means side by side; `vertical` means stacked. |
@@ -90,7 +90,7 @@ An override changes settings for the contexts it matches:
   - **`outputName`:** the connector name as KWin reports it (`DP-1`, `HDMI-A-1`). The nested test outputs are called `Virtual-0`, `Virtual-1`.
   - **`desktopName`:** the name shown in the pager. Renaming a desktop re-resolves the overrides and the classification of its windows, as an activation does.
   - **`desktopId`:** KWin's desktop UUID.
-  - **`activityId`:** the activity UUID. With only one activity, the context uses the literal value `default`.
+  - **`activityId`:** the activity UUID, also when only one activity exists. Without the activity service (kactivitymanagerd not running), the context uses the literal value `default`; contexts move to the real activity when the service starts.
 - **`set`** (required) is a settings patch. An empty `set` is a warning.
 
 The **override engine** (matching, priority order, field merging) is unit-tested in Node. Settings from flat keys were measured live in nested KWin. A per-desktop or per-output override has **not** been exercised end to end in nested KWin. Activities are **untested**.
@@ -103,7 +103,7 @@ A rule changes how a window is treated:
 { "id": "float-calc", "priority": 0, "match": { "appId": "org.kde.kcalc" }, "actions": { "mode": "floating" } }
 ```
 
-**`id` and `priority`** work as for overrides. Rules apply in ascending priority, then declaration order. A later rule's action wins per field, and every matching rule's id is recorded (`decision.ruleIds` in the explanation).
+**`id` and `priority`** work as for overrides. Rules apply in ascending priority, then declaration order. A later rule's action wins per field, and every matching rule's id is recorded (`rules.ids` in the explanation, which also names the rule behind each action; `decision.ruleIds` when a rule decided the mode).
 
 **`match`** (required; at least one field; all given fields must match):
 
@@ -261,7 +261,7 @@ An X11 client that raises its minimum to a size its current tile already satisfi
 - `rule`
 - `default`
 
-It also records the reason text and the ids of matching rules. Native tiles and your *Toggle floating* choices show in `mode`, `userMode` and `nativeTile` rather than in the source.
+It also records the reason text and, when a rule decided the mode, the ids of the matching rules. Every matched rule, including rules that only set a border or an insertion preference, is listed separately in the explanation's `rules` field together with the rule behind each final action. Native tiles and your *Toggle floating* choices show in `mode`, `userMode`, `nativeTile` and `nativeYield` rather than in the source.
 
 ### Seeing why a window was classified
 
@@ -282,7 +282,8 @@ The line is `plastile info explain {...}` with these fields:
 | `id`, `appId`, `kind` | Window identity and type. |
 | `mode` | `tiled`, `floating`, `excluded`, `native` or `pending`. |
 | `userMode` | Your *Toggle floating* choice, if any. |
-| `decision` | `mode`, `source`, `reason` and `ruleIds`. |
+| `decision` | `mode`, `source`, `reason` and `ruleIds` (the rules that decided the mode). |
+| `rules` | `null` when no rule matches; otherwise `ids` (every matched rule, in evaluation order), the final `actions` (`mode`, `border`, `insert`) and `reasons` (which rule set each action). |
 | `context` | Output name, desktop id and activity. |
 | `layout` | The context's current layout. |
 | `suspensions` | Any of `minimized`, `fullscreen`, `maximized`, `interactive`, `hidden`. |
@@ -292,6 +293,7 @@ The line is `plastile info explain {...}` with these fields:
 | `slot` | The planned rectangle. |
 | `exception` | Why Plastile gave up on the window, for example `did not reach its target after bounded corrections` or `overflow: ...`. |
 | `nativeTile` | Whether KWin's native tile holds the window. |
+| `nativeYield` | Whether a native tile action made Plastile yield the window. It stays yielded after KWin releases the tile, until *Adopt natively tiled window* or *Toggle floating*. |
 
 **Where the log goes.** In the nested tests, the line was read from the compositor's captured stderr. Without `QT_FORCE_STDERR_LOGGING`, Qt sends script log output to the user journal (observed during environment discovery, [ENVIRONMENT](../status/ENVIRONMENT.md)). Reading it with `journalctl` in a physical Plasma session is untested ([TROUBLESHOOTING](TROUBLESHOOTING.md#reading-the-log)).
 

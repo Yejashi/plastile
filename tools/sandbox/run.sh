@@ -44,8 +44,12 @@ WORK=$PWD
 if [ "$BIND" = 1 ]; then
   REPO=$(git -C "$PWD" rev-parse --show-toplevel 2>/dev/null || echo "$PWD")
   case "$REPO" in /|/proc*|/sys*|/dev*) echo "run.sh: refusing to bind $REPO" >&2; exit 2 ;; esac
-  mkdir -p "$ROOT$REPO"
-  mounted "$ROOT$REPO" || mount --bind "$REPO" "$ROOT$REPO"
+  # A worktree inside an already bound repository is visible through that mount;
+  # binding it again would only keep its directory busy after the worktree is removed.
+  if [ ! -e "$ROOT$REPO/.git" ] && ! mounted "$ROOT$REPO"; then
+    mkdir -p "$ROOT$REPO"
+    mount --bind "$REPO" "$ROOT$REPO"
+  fi
 else
   WORK=/
 fi

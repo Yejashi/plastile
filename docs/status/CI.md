@@ -19,20 +19,19 @@ Status of the workflow itself (2026-10-17):
   `python3 tools/check_docs.py` (PASS), `python3 tools/release.py --check --out dist`
   (reproducible), `run.py --list` (34 scenarios), `make -C fixtures/client`,
   `make -C fixtures/xclient`, `make -C tools/input` (all built).
-- `tools/input/plastile-input.c` type-checks (`cc -fsyntax-only -Wall -Wextra -Werror`) against the
-  libei **1.2.1** public header, the version Ubuntu 24.04 ships (measured); it has not been
-  linked against 1.2.1.
-- **The workflow has not run on GitHub**; nothing has been pushed. Runner labels, action versions
-  and Ubuntu package names were checked against `actions/runner-images`, the action release pages
-  and packages.ubuntu.com on 2026-10-17 (observed source), not on a live runner.
+- First GitHub runs (2026-10-18): run 1-2 failed at the `fixtures/client` build (GCC 13 with
+  Ubuntu's `_FORTIFY_SOURCE` rejected a stdin read length under `-Werror`; fixed in `2fd8373`).
+  Run 39087511435 on `2fd8373` was green in every step, including the libei 1.2.1 install, the
+  `tools/input` link against it, and the `native-tools` job on `ubuntu-26.04`. Those steps were
+  then made required.
 
 ## 1. Jobs
 
 | Job | Runner | Fatal? | Steps |
 |---|---|---|---|
 | `core` | `ubuntu-latest` (Ubuntu 24.04 per runner-images on 2026-10-17) | yes | `actions/setup-node@v7` (Node 26) and `actions/setup-python@v7` (3.14), Node major guard, `npm ci`, `npm run typecheck`, `npm test`, `npm run build` + bundle sanity grep, `python3 tools/check_docs.py`, `python3 tools/release.py --check --out dist`, `python3 tests/integration/run.py --list` (import check only), `make -C fixtures/client` (`libwayland-dev wayland-protocols pkg-config`), `make -C fixtures/xclient` (`libxcb1-dev libxcb-icccm4-dev`) |
-| `core`, optional steps | same | no (`continue-on-error`) | `apt-get install libei-dev` (1.2.1 on 24.04) then `make -C tools/input`. Non-fatal until seen green on the runner; the outcome is written to the job summary |
-| `native-tools` | `ubuntu-26.04` | no (job-level `continue-on-error`) | `tools/measure` (needs Qt >= 6.5; 24.04 has Qt 6.4.2) and `tools/settings-check` (needs Qt6 UiTools and KF6Config/KF6ConfigWidgets; 24.04 has no KF6). Ubuntu 26.04 has Qt 6.10 and KF 6.24 (`libkf6configwidgets-dev` 6.24.0, `qt6-tools-dev` ships `Qt6UiToolsConfig.cmake`). Build only: `plastile-settings-check` needs a display to run |
+| `core`, input injector | same | yes (seen green 2026-10-18) | `apt-get install libei-dev` (1.2.1 on 24.04) then `make -C tools/input` |
+| `native-tools` | `ubuntu-26.04` | yes (seen green 2026-10-18) | `tools/measure` (needs Qt >= 6.5; 24.04 has Qt 6.4.2) and `tools/settings-check` (needs Qt6 UiTools and KF6Config/KF6ConfigWidgets; 24.04 has no KF6). Ubuntu 26.04 has Qt 6.10 and KF 6.24 (`libkf6configwidgets-dev` 6.24.0, `qt6-tools-dev` ships `Qt6UiToolsConfig.cmake`). Build only: `plastile-settings-check` needs a display to run |
 
 The release-zip and X11-fixture steps are guarded with `hashFiles(...) != ''` so the workflow
 stays valid if those files are not yet committed; when the files exist the steps are mandatory.
@@ -169,13 +168,11 @@ presentation) have no tests because the features do not exist.
 - It does not measure latency. No timing assertion exists in `tests/core`; performance claims
   come only from the measurement protocol in [PERFORMANCE](../validation/PERFORMANCE.md).
 - It does not prove install/update/remove (Q11); only that the release zip is reproducible.
-- A failing optional step (libei, Qt6/KF6 tools) does not fail the workflow; it is visible in the
-  job summary and should be read, not ignored. Make a step fatal once it has been seen green on
-  the runner image.
+- Every step is required; none is `continue-on-error`.
 
 ## 4. Open items
 
-- First run on GitHub (not pushed). Expect to adjust Ubuntu package names in `native-tools`.
-- Make `tools/input` and `native-tools` fatal after one green run each.
-- Nested scenarios in CI would need a self-hosted runner with KWin 6.7/6.8 installed (the
-  "reproducible nested fixtures for supported KWin families" part of T33); not done.
+- Nested scenarios in CI: the disposable Ubuntu 26.10 sandbox ([tools/sandbox](../../tools/sandbox/README.md))
+  runs on a hosted runner without a self-hosted machine. A CI job using it is prepared and will be
+  enabled once the known nested product failures are fixed, so CI does not go red on known
+  defects. KWin 6.8 coverage is being added separately.
