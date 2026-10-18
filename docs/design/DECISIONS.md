@@ -139,3 +139,46 @@ Persist configuration, layout preferences, ratios/order hints, and user float ch
 **Status:** accepted process; project license remains an owner decision.
 
 Research links and original design descriptions are not a decision to copy upstream implementations. The sampled repositories include MIT, GPL-family, and mixed component notices. Keep original code as the default; any port must identify file-level notices and the resulting distribution obligations before inclusion. Do not silently assign a new project license to someone else's source. The planning commit does not choose the final software license.
+
+## ADR-013: Persist session preferences through QtCore Settings
+
+**Status:** accepted direction (2026-10-18); implementation is task T27.
+
+**Context.** ADR-011 asked for persistence through a supported settings path or an optional helper, and the
+earlier status listed T27 as blocked because the script API offers only `readConfig`. Experiment E12 found
+a supported path inside the script: QtCore's `Settings` QML type is a public Qt API. Plasma's own QML
+packages already depend on it, so it is installed on a Plasma desktop. In nested KWin 6.7.5 a declarative
+script wrote a value and a JSON blob to a file under `StandardPaths.GenericStateLocation`. After unload and
+reload the script read back exactly what it had written
+([probe](../../probes/persistence/run.py), [evidence](../status/evidence/persistence-t27.json)).
+
+**Decision.** Persist only a small, versioned, validated snapshot: per-context layout preferences (layout
+kind, master ratio and count, column/zone choices) and user float decisions/geometry keyed conservatively by
+application identity. Store it as one JSON string under `$XDG_STATE_HOME/plastile/`. Load it once at adoption
+and validate and migrate it there, falling back to ordinary defaults on anything invalid. Never key it by
+session window ids. The write is synchronous file I/O on the compositor thread, so it is maintenance work
+(ARCHITECTURE §7): debounced, only when the snapshot changed, never on the command path, and cancelled on
+unload.
+
+**Consequences.** No helper process and no D-Bus service. A missing QtCore module or an unwritable file
+leaves Plastile working in memory and reports one diagnostic. Configuration stays in KConfig (`readConfig`).
+The persisted file is state, not configuration: deleting it resets layout preferences only.
+
+## ADR-014: Start M8/M9 as experimental opt-in layouts before G3 physical sign-off
+
+**Status:** accepted deviation from the roadmap's ordering (2026-10-18).
+
+**Context.** The roadmap puts scrolling (M8) and zones (M9) after G3, the initial release gate. G3 needs
+physical-session results (input-to-visible latency, real outputs, panels). This environment cannot provide
+them, and the user asked for the whole project to be implemented. Every G3 item that does not need a physical
+session is being completed and tested at the nested layer, so G3 stays open only for its physical checks.
+
+**Decision.** Implement M8 and M9 now, following their design addenda ([SCROLLING](SCROLLING.md),
+[ZONES](ZONES.md)), as layouts that are off unless selected (`layout: "scrolling"` or `"zones"`).
+They are labelled experimental in user documentation. They reuse the shared event, ledger, ownership and
+teardown paths and add no daemon, effect or executable extension. They must not change the behaviour or
+performance counters of the initial layouts: the existing suites gate every change.
+
+**Consequences.** M8/M9 results are nested-only until a physical session runs their physical checks, and
+the release notes must say so. If they turn out to weaken core correctness, they are removed rather than
+patched around. G3 remains the gate for calling any build a release.
