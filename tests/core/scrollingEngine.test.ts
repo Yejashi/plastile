@@ -59,6 +59,16 @@ test("scrolling: opening windows activates each; the active column is visible, o
   for (const id of ids) assert.equal(h.windows.get(id)!.configures.length, 0, "every client committed");
 });
 
+test("adoption: the window active before Plastile started is in a visible column", () => {
+  const h = new MockHost();
+  const snaps = ["a", "b", "c", "d"].map((id) => h.snapshot(h.make(id)));
+  h.active = "d";
+  h.start({ settingsFor: () => SCROLL }, snaps);
+  h.drain();
+  assert.ok(inside(rect(0, 0, 1280, 800), h.windows.get("d")!.frame));
+  assert.deepEqual(parkedIds(h, ["a", "b", "c", "d"]), ["a", "b"]);
+});
+
 test("focus commands produce position-only writes and no client resizes", () => {
   const ids = ["a", "b", "c", "d"];
   const { h, e } = setup(ids);

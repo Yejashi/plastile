@@ -1652,13 +1652,17 @@ export class Engine {
     return { ...input, focused: this.scrollFocus(c), outputs, output: own };
   }
 
-  /** The member whose column must be visible: the most recently focused participant. */
+  /**
+   * The member whose column must be visible: the most recently focused participant, else the
+   * active window when it is a participant (adoption: no activation was observed yet).
+   */
   private scrollFocus(c: Ctx): WindowId | null {
     for (const id of c.focus) {
       const r = this.recs.get(id);
       if (r && this.participates(r) && c.members.includes(id)) return id;
     }
-    return null;
+    const a = this.activeRec();
+    return a && this.participates(a) && c.members.includes(a.id) ? a.id : null;
   }
 
   private revealState(c: Ctx, state: ScrollState, focus: WindowId | null, input: SolveInput): ScrollState {
