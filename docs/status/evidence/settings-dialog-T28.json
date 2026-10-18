@@ -1,0 +1,487 @@
+{
+ "layer": "nested KWin virtual backend (not physical); package installed into the private data home",
+ "implementationCommit": "fdc92f055232c1082442dce9044bbc64cac4e756",
+ "implementationDirty": false,
+ "kwin": "kwin 6.7.5",
+ "kcmshell6": "kcmutils 6.30.0-1",
+ "atspiRegistry": "at-spi2-core 2.62.0.1-1",
+ "entryPoint": "kcmshell6 kcm_kwin_scripts > Plastile > Configure\u2026 (KCMultiDialog with X-KDE-ConfigModule)",
+ "input": "libei (tools/input) pointer clicks and key presses; AT-SPI read-only for positions and values",
+ "configModule": "kwin/effects/configs/kcm_kwin4_genericscripted",
+ "kwinrcBefore": {
+  "diagnostics": "info"
+ },
+ "dialogOpened": {
+  "layout": "Master and stack",
+  "gapInner": 8.0,
+  "singleWindowGaps": true,
+  "applyEnabled": false
+ },
+ "dialogEdited": {
+  "layout": "Binary split (BSP)",
+  "gapInner": 20.0,
+  "singleWindowGaps": false,
+  "applyEnabled": true
+ },
+ "kwinrcAfterApply": {
+  "diagnostics": "info",
+  "gapInner": "20",
+  "layout": "bsp",
+  "singleWindowGaps": "false"
+ },
+ "runtimeParse": {
+  "errors": [],
+  "warnings": [],
+  "patch": {
+   "layout": "bsp",
+   "gaps": {
+    "inner": 20
+   },
+   "singleWindowGaps": false
+  },
+  "diagnostics": {
+   "level": "info"
+  },
+  "json": null
+ },
+ "aloneAfterReload": {
+  "x": 0,
+  "y": 0,
+  "width": 1280,
+  "height": 800
+ },
+ "afterReload": {
+  "left": {
+   "x": 8,
+   "y": 8,
+   "width": 622,
+   "height": 784
+  },
+  "right": {
+   "x": 650,
+   "y": 8,
+   "width": 622,
+   "height": 784
+  },
+  "gap": 20,
+  "widths": [
+   622,
+   622
+  ],
+  "errors": []
+ },
+ "dialogReopened": {
+  "layout": "Binary split (BSP)",
+  "gapInner": 20.0,
+  "singleWindowGaps": false,
+  "applyEnabled": false
+ },
+ "dialogEditedBeforeCancel": {
+  "layout": "Monocle (one window at a time)",
+  "gapInner": 40.0,
+  "singleWindowGaps": true,
+  "applyEnabled": true
+ },
+ "cancel": {
+  "closed": true,
+  "kwinrcUnchanged": true,
+  "logged": [],
+  "kwinConfigChanged": [],
+  "alone": {
+   "x": 0,
+   "y": 0,
+   "width": 1280,
+   "height": 800
+  }
+ },
+ "reconfigureAfterCancel": {
+  "configChanged": true,
+  "activations": [],
+  "tiles": {
+   "left": {
+    "x": 8,
+    "y": 8,
+    "width": 622,
+    "height": 784
+   },
+   "right": {
+    "x": 650,
+    "y": 8,
+    "width": 622,
+    "height": 784
+   },
+   "gap": 20,
+   "widths": [
+    622,
+    622
+   ],
+   "errors": []
+  }
+ },
+ "checks": {
+  "setup: package installed into the private data home": {
+   "pass": true,
+   "detail": {
+    "argv": [
+     "tools/install.sh",
+     "install",
+     "<repo>/artifacts/integration/20261018T093709/settings-dialog-T28/dist/plastile-0.1.0.kwinscript"
+    ],
+    "rc": 0,
+    "stdout": "Successfully installed <session>/data/kwin/scripts/plastile/\n\nInstalled to: <session>/data/kwin/scripts/plastile\nNothing was enabled, reloaded or restarted. KWin discovers packages when it (re)scans\nkwin/scripts; a package installed while KWin is running may not be visible until the\nscript list is refreshed (log out and in). To enable Plastile, either:\n\n  System Settings > Window Management > KWin Scripts > tick \"Plastile\" > Apply\n\nor, from a terminal in the same session:\n\n  kwriteconfig6 --file kwinrc --group Plugins --key plastileEnabled true\n  qdbus6 org.kde.KWin /Scripting org.kde.kwin.Scripting.start\n\nTo disable later, set the same key to false and run the same Scripting.start command.\nThis script prints these commands; it does not execute them.\n",
+    "stderr": "",
+    "kwinrcUnchanged": true
+   }
+  },
+  "setup: master/stack (ratio 0.55, unequal widths) with inner gap 8 (oracle)": {
+   "pass": true,
+   "detail": {
+    "left": {
+     "x": 8,
+     "y": 8,
+     "width": 691,
+     "height": 784
+    },
+    "right": {
+     "x": 707,
+     "y": 8,
+     "width": 565,
+     "height": 784
+    },
+    "gap": 8,
+    "widths": [
+     691,
+     565
+    ],
+    "errors": []
+   }
+  },
+  "the KWin Scripts KCM lists the installed Plastile package (enabled)": {
+   "pass": true,
+   "detail": null
+  },
+  "Configure\u2026 opens KWin's settings dialog for Plastile (a KWin window of the KCM process)": {
+   "pass": true,
+   "detail": [
+    {
+     "caption": "KWin Scripts",
+     "popup": false,
+     "desktops": [
+      "806f9dee-e546-466b-aa1f-bde1b899ab9f"
+     ],
+     "client": {
+      "x": 8,
+      "y": 36,
+      "width": 691,
+      "height": 756
+     },
+     "frame": {
+      "x": 8,
+      "y": 8,
+      "width": 691,
+      "height": 784
+     }
+    },
+    {
+     "caption": "Configure",
+     "popup": false,
+     "desktops": [
+      "806f9dee-e546-466b-aa1f-bde1b899ab9f"
+     ],
+     "client": {
+      "x": 707,
+      "y": 36,
+      "width": 565,
+      "height": 756
+     },
+     "frame": {
+      "x": 707,
+      "y": 8,
+      "width": 565,
+      "height": 784
+     }
+    }
+   ]
+  },
+  "the dialog shows the running settings: main.xml defaults, kwinrc has none of these keys (master/stack, gap 8, single-window gaps on, Apply disabled)": {
+   "pass": true,
+   "detail": {
+    "layout": "Master and stack",
+    "gapInner": 8.0,
+    "singleWindowGaps": true,
+    "applyEnabled": false
+   }
+  },
+  "real input changed the combo (BSP), the spin box (20) and the check box (off); Apply enabled": {
+   "pass": true,
+   "detail": {
+    "layout": "Binary split (BSP)",
+    "gapInner": 20.0,
+    "singleWindowGaps": false,
+    "applyEnabled": true
+   }
+  },
+  "Apply writes kwinrc": {
+   "pass": true,
+   "detail": null
+  },
+  "[Script-plastile] holds exactly the edited keys in the runtime's vocabulary (layout=bsp, gapInner=20, singleWindowGaps=false; diagnostics kept)": {
+   "pass": true,
+   "detail": {
+    "diagnostics": "info",
+    "gapInner": "20",
+    "layout": "bsp",
+    "singleWindowGaps": "false"
+   }
+  },
+  "the runtime's flat-key parser accepts the group with no error or warning and reads the edits": {
+   "pass": true,
+   "detail": {
+    "errors": [],
+    "warnings": [],
+    "patch": {
+     "layout": "bsp",
+     "gaps": {
+      "inner": 20
+     },
+     "singleWindowGaps": false
+    },
+    "diagnostics": {
+     "level": "info"
+    },
+    "json": null
+   }
+  },
+  "Apply changed no other kwinrc group": {
+   "pass": true,
+   "detail": {}
+  },
+  "Apply alone does not reach the running script (ADR-015): no activation, visible tiles unchanged (oracle)": {
+   "pass": true,
+   "detail": {
+    "activations": [],
+    "tiles": [
+     {
+      "KWin Scripts": {
+       "x": 8,
+       "y": 8,
+       "width": 691,
+       "height": 784
+      },
+      "Configure": {
+       "x": 707,
+       "y": 8,
+       "width": 565,
+       "height": 784
+      }
+     },
+     {
+      "KWin Scripts": {
+       "x": 8,
+       "y": 8,
+       "width": 691,
+       "height": 784
+      },
+      "Configure": {
+       "x": 707,
+       "y": 8,
+       "width": 565,
+       "height": 784
+      }
+     }
+    ]
+   }
+  },
+  "OK with nothing pending closes the dialog and leaves kwinrc as Apply wrote it": {
+   "pass": true,
+   "detail": true
+  },
+  "Reload configuration activates the applied settings once": {
+   "pass": true,
+   "detail": [
+    " 72918.564 qml plastile info configuration activated {\"revision\":2}"
+   ]
+  },
+  "singleWindowGaps=false: the lone KWin Scripts window now fills the whole work area (oracle)": {
+   "pass": true,
+   "detail": {
+    "frame": {
+     "x": 0,
+     "y": 0,
+     "width": 1280,
+     "height": 800
+    },
+    "area": {
+     "x": 0,
+     "y": 0,
+     "width": 1280,
+     "height": 800
+    }
+   }
+  },
+  "after the reload: BSP halves (equal widths) with inner gap 20 and outer gap 8 (oracle)": {
+   "pass": true,
+   "detail": {
+    "left": {
+     "x": 8,
+     "y": 8,
+     "width": 622,
+     "height": 784
+    },
+    "right": {
+     "x": 650,
+     "y": 8,
+     "width": 622,
+     "height": 784
+    },
+    "gap": 20,
+    "widths": [
+     622,
+     622
+    ],
+    "errors": []
+   }
+  },
+  "the dialog opens again": {
+   "pass": true,
+   "detail": [
+    {
+     "caption": "KWin Scripts",
+     "popup": false,
+     "desktops": [
+      "806f9dee-e546-466b-aa1f-bde1b899ab9f"
+     ],
+     "client": {
+      "x": 8,
+      "y": 36,
+      "width": 622,
+      "height": 756
+     },
+     "frame": {
+      "x": 8,
+      "y": 8,
+      "width": 622,
+      "height": 784
+     }
+    },
+    {
+     "caption": "Configure",
+     "popup": false,
+     "desktops": [
+      "806f9dee-e546-466b-aa1f-bde1b899ab9f"
+     ],
+     "client": {
+      "x": 650,
+      "y": 36,
+      "width": 622,
+      "height": 756
+     },
+     "frame": {
+      "x": 650,
+      "y": 8,
+      "width": 622,
+      "height": 784
+     }
+    }
+   ]
+  },
+  "reopened, the dialog reads back what Apply wrote (BSP, 20, off)": {
+   "pass": true,
+   "detail": {
+    "layout": "Binary split (BSP)",
+    "gapInner": 20.0,
+    "singleWindowGaps": false,
+    "applyEnabled": false
+   }
+  },
+  "real input changed all three fields again (monocle, 40, on)": {
+   "pass": true,
+   "detail": {
+    "layout": "Monocle (one window at a time)",
+    "gapInner": 40.0,
+    "singleWindowGaps": true,
+    "applyEnabled": true
+   }
+  },
+  "Cancel closes the dialog and kwinrc is byte-for-byte unchanged": {
+   "pass": true,
+   "detail": {
+    "closed": true,
+    "kwinrcUnchanged": true,
+    "logged": [],
+    "kwinConfigChanged": [],
+    "alone": {
+     "x": 0,
+     "y": 0,
+     "width": 1280,
+     "height": 800
+    }
+   }
+  },
+  "Cancel reloads nothing: no activation, reload request, start or stop; the lone window still fills the area (oracle)": {
+   "pass": true,
+   "detail": {
+    "closed": true,
+    "kwinrcUnchanged": true,
+    "logged": [],
+    "kwinConfigChanged": [],
+    "alone": {
+     "x": 0,
+     "y": 0,
+     "width": 1280,
+     "height": 800
+    }
+   }
+  },
+  "Cancel makes KWin re-read nothing: no configChanged reached the passive listener (oracle)": {
+   "pass": true,
+   "detail": {
+    "closed": true,
+    "kwinrcUnchanged": true,
+    "logged": [],
+    "kwinConfigChanged": [],
+    "alone": {
+     "x": 0,
+     "y": 0,
+     "width": 1280,
+     "height": 800
+    }
+   }
+  },
+  "KWin's reconfigure after Cancel re-reads kwinrc (configChanged observed), Plastile finds nothing new (no activation) and keeps BSP halves with gap 20 (oracle)": {
+   "pass": true,
+   "detail": {
+    "configChanged": true,
+    "activations": [],
+    "tiles": {
+     "left": {
+      "x": 8,
+      "y": 8,
+      "width": 622,
+      "height": 784
+     },
+     "right": {
+      "x": 650,
+      "y": 8,
+      "width": 622,
+      "height": 784
+     },
+     "gap": 20,
+     "widths": [
+      622,
+      622
+     ],
+     "errors": []
+    }
+   }
+  },
+  "the settings flow never instantiated Plastile's inspector (KWin window list, Loader state)": {
+   "pass": true,
+   "detail": []
+  },
+  "no Plastile errors, warnings or JS exceptions": {
+   "pass": true,
+   "detail": []
+  }
+ }
+}
