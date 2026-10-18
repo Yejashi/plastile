@@ -824,7 +824,9 @@ export class Engine {
     if (r.mode !== "tiled" || !r.ctx) return;
     const c = this.ctxFor(r.ctx);
     const slot = c.plan.get(r.id);
-    if (!slot) { this.markDirty(c.key); return; }
+    // KWin finished the drag with its own state (drag-to-maximize maximizes before it
+    // reports the end): the drop frame is KWin's, not a swap or boundary intent.
+    if (!slot || !this.participates(r)) { this.markDirty(c.key); return; }
     const f = this.host.frame(r.id, r.gen) ?? r.frame;
     if (kind === "move") {
       // Drop onto another tile swaps positions; anywhere else snaps back (one solve).

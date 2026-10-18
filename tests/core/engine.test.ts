@@ -509,3 +509,20 @@ test("L09/L10/L11: clearing the last suspension re-solves once and peers give th
     assertTiling(tiledFrames(h, ["a", "b"]), AREA);
   }
 });
+
+test("I01/L11: a drag that ends in KWin's drag-to-maximize is not a swap; unmaximize re-tiles in place", () => {
+  const { h, e } = setup(["a", "b", "c"]);
+  const slots = tiledFrames(h, ["a", "b", "c"]);
+  const b = slots.get("b")!;
+  h.setStates("c", { interactive: "move" });
+  h.userSetFrame("c", rect(b.x + b.width / 2 - 282, 0, 565, 388)); // centre inside b's slot
+  // KWin clears the interactive flag, then maximizes (electric border) before it reports the end.
+  h.setStates("c", { interactive: "none", maximized: true });
+  h.userSetFrame("c", rect(0, 0, 1280, 800));
+  h.drain();
+  assert.deepEqual(e.membersOf({ output: "O1", desktop: "D1", activity: "default" }), ["a", "b", "c"], "order unchanged");
+  h.setStates("c", { maximized: false });
+  h.userSetFrame("c", rect(b.x + b.width / 2 - 282, 0, 565, 388)); // KWin restores the pre-maximize frame
+  h.drain();
+  for (const id of ["a", "b", "c"]) assert.ok(rectNear(h.windows.get(id)!.frame, slots.get(id)!), `${id} back in its slot`);
+});
