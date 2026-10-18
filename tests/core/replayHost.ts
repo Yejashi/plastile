@@ -7,6 +7,9 @@
 //    result after delivering the inputs KWin emitted inside it. Anything else is a Divergence;
 //  - queries (clock, outputs, work areas, frames, ...) are answered from a memo that the recorded
 //    answer changes update at the query (the nth of its key in that input) where they were seen;
+//    a read of a key the recording has not answered by then is a Divergence;
+//  - a Divergence raised inside the engine is rethrown after the input, even if a guard in the
+//    engine caught it;
 //  - deferred callbacks and the deadline run only where the recording says they ran.
 // The engine is the real one, built from the recorded configuration exactly as the runtime does
 // (src/runtime/main.ts engineOptions and diffConfig).
@@ -95,6 +98,8 @@ export class ReplayHost implements HostPort, RuntimeServices {
   readonly frames = new Map<string, Rect>();
   /** Generation of each window at its removal. */
   readonly removed = new Map<string, number>();
+  /** Writes the engine issued to a window generation after its removal, at any nesting depth (expected none). */
+  readonly afterRemoval: string[] = [];
   /** Model just before the stop input (null when the recording has none). */
   model: Record<string, unknown> | null = null;
   private memo = new Map<string, unknown>();
@@ -105,6 +110,8 @@ export class ReplayHost implements HostPort, RuntimeServices {
   private snapshot: ConfigSnapshot | null = null;
   private revision = 0;
   private opts: ReplayOptions;
+  /** The first Divergence raised inside the engine (its error guards may catch it and carry on). */
+  private divergence: Divergence | null = null;
 
   constructor(fixture: ReplayFixture, opts: ReplayOptions = {}) {
     this.fixture = fixture;
@@ -162,6 +169,7 @@ export class ReplayHost implements HostPort, RuntimeServices {
     } finally {
       this.scopes.pop();
     }
+    if (this.divergence) throw this.divergence;
     const calls = node.c ? node.c.length : 0;
     if (scope.done !== calls) {
       throw new Divergence(`${path} ${node.k}: the engine made ${scope.done} host operations, the recording ${calls}; ` +
@@ -234,14 +242,19 @@ export class ReplayHost implements HostPort, RuntimeServices {
     }
   }
 
+  /** A Divergence raised from a host method: kept, so a guard in the engine cannot swallow it. */
+  private diverge(message: string): Divergence {
+    return (this.divergence ??= new Divergence(message));
+  }
+
   /** The next recorded host operation of the current input; it must be this one. */
   private op(h: string, args: unknown[]): unknown {
     const s = this.scopes[this.scopes.length - 1];
-    if (!s) throw new Divergence(`${h} outside any recorded input`);
+    if (!s) throw this.diverge(`${h} outside any recorded input`);
     const rec: CallNode | undefined = s.node.c ? s.node.c[s.done] : undefined;
     const got = replayJson(args);
     if (!rec || rec.h !== h || replayJson(rec.a) !== got) {
-      throw new Divergence(`${s.path} ${s.node.k}: host operation ${s.done + 1} was ${h}${got}, ` +
+      throw this.diverge(`${s.path} ${s.node.k}: host operation ${s.done + 1} was ${h}${got}, ` +
         `the recording has ${rec ? rec.h + replayJson(rec.a) : "none"}`);
     }
     s.done++;
@@ -259,6 +272,9 @@ export class ReplayHost implements HostPort, RuntimeServices {
         if (!s.applied[i] && q[0] === key && q[1] <= nth) { s.applied[i] = true; this.memo.set(key, q[2]); }
       });
     }
+    // The recorder records the first answer of every key, so a key with no answer yet is a read
+    // the engine inside KWin had not made at this point.
+    if (!this.memo.has(key)) throw this.diverge(`${s ? `${s.path} ${s.node.k}` : "outside any input"}: the engine read ${key}, never answered by now in the recording`);
     return this.memo.get(key);
   }
 
@@ -282,6 +298,7 @@ export class ReplayHost implements HostPort, RuntimeServices {
   // -------------------------------------------------------------------- host
   applyFrame(id: string, gen: number, target: Rect): FrameWrite | null {
     const s = this.scopes[this.scopes.length - 1];
+    if (this.removed.get(id) === gen) this.afterRemoval.push(`${s ? s.path : ""}: ${id}`);
     this.writes.push({ id, gen, target: { x: target.x, y: target.y, width: target.width, height: target.height },
                        path: s ? s.path : "", t: s ? s.node.t : 0, outputs: this.knownOutputs() });
     return this.op("applyFrame", [id, gen, { x: target.x, y: target.y, width: target.width, height: target.height }]) as FrameWrite | null;

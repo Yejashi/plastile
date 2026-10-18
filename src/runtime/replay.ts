@@ -106,7 +106,10 @@ export class ReplayRecorder {
   private nodes = 0;
   private on = true;
   truncated = false;
-  /** Inputs that arrived outside a host call while the engine was running (not replayable; expected 0). */
+  /**
+   * Not replayable, expected 0: inputs that arrived outside a host call while the engine was
+   * running, and host operations made outside any recorded input.
+   */
   anomalies = 0;
   config: unknown = null;
   private readonly svc: RuntimeServices;
@@ -215,7 +218,9 @@ export class ReplayRecorder {
   private call<T>(h: string, a: unknown[], fn: () => T, res: (v: T) => unknown): T {
     const top = this.top();
     if (!this.on || top === undefined || !("input" in top)) {
-      if (this.on && top !== undefined) this.anomalies++;
+      // Also outside any input: an engine entry point the runtime does not route through the
+      // recorder would otherwise mutate the host unrecorded and the replay diverge unexplained.
+      if (this.on) this.anomalies++;
       return fn();
     }
     const node: CallNode = { h, a, r: null };

@@ -23,7 +23,9 @@ import { readdirSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Rect } from "../../src/core/geometry.ts";
-import { replayJson, type InputNode } from "../../src/runtime/replay.ts";
+import { ReplayRecorder, replayJson, type InputNode } from "../../src/runtime/replay.ts";
+import type { Engine } from "../../src/core/engine.ts";
+import type { HostPort } from "../../src/core/ports.ts";
 import { createRuntime } from "../../src/runtime/main.ts";
 import { Divergence, loadReplay, parseReplay, ReplayHost, type ReplayFixture } from "./replayHost.ts";
 import { desktop, fakeEnv, FakeQt, FakeWorkspace, output } from "./fakeKwin.ts";
@@ -93,6 +95,7 @@ for (const file of FILES) {
       const at = removedAt.get(w.id);
       assert.ok(at === undefined || Number(w.path.slice(1).split(".")[0]) < at, `write to ${w.id} after its removal (${w.path})`);
     }
+    assert.deepEqual(h.afterRemoval, [], "no write after a removal delivered inside a host call either");
     // Every write is a positive finite rectangle inside an output that existed when it was issued.
     for (const w of h.writes) {
       const t = w.target;
@@ -183,17 +186,35 @@ shape("ratio-reversal", (f, h, at) => {
     const later = writesBetween(h, shrinks[k].i, k + 1 < grows.length ? grows[k + 1].i : Infinity);
     assert.ok(later.every((w) => near(w.target, before.get(w.id)!)), `reversal ${k + 1}: only A written after the shrink`);
   }
+  // The shape is the delayed one: A was requested again before any client committed B, and B
+  // commits arrived after it (stale). A capture whose clients answered before the shrink fails here.
+  for (let k = 0; k < 2; ++k) {
+    const before: Map<string, Rect> = at.get(grows[k].i - 1)!;
+    const atShrink: Map<string, Rect> = at.get(shrinks[k].i - 1)!;
+    for (const [id, r] of before) assert.ok(near(atShrink.get(id)!, r), `reversal ${k + 1}: ${id} had not committed B when A was requested again`);
+    const b = writesBetween(h, grows[k].i, grows[k].i + 1);
+    const lateB: InputNode[] = f.events.slice(shrinks[k].i + 1, k + 1 < grows.length ? grows[k + 1].i : f.events.length)
+      .filter((n) => n.k === "frameObserved" && b.some((w) => w.id === n.a[0] && near(w.target, n.a[2] as Rect)));
+    assert.ok(lateB.length >= 1, `reversal ${k + 1}: a client committed B after the shrink (a late commit)`);
+  }
   // Bounded: at most one correction per window per reversal, each for a stale commit (E04).
   const c = h.engine.counters;
   assert.ok(c.corrections <= 3 * grows.length && c.corrections <= c.stale, JSON.stringify({ corrections: c.corrections, stale: c.stale }));
   assert.equal(c.diverged, 0);
 });
 
-shape("output-unplug-replug", (f, h) => {
+shape("output-unplug-replug", (f, h, at) => {
   const counts = f.events.map((n) => (n.q || []).filter((q) => q[0] === "outputs").map((q) => (q[2] as unknown[]).length)).flat();
   const one = counts.indexOf(1);
   assert.ok(counts[0] === 2 && one > 0 && counts.lastIndexOf(2) > one, `outputs 2 -> 1 -> 2 (${counts.join(",")})`);
   assert.ok(inputs(f, "topologyChanged").length >= 2, "topology changes delivered");
+  // The grow left a request outstanding when the output went away: a window it wrote never
+  // reported that frame between the grow and the first input that saw one output.
+  const grow = inputs(f, "command", "plastile.resize.grow")[0];
+  const gone = f.events.findIndex((n) => (n.q || []).some((q) => q[0] === "outputs" && (q[2] as unknown[]).length === 1));
+  assert.ok(grow && gone > grow.i, "the grow precedes the unplug");
+  const committed = (id: string, r: Rect) => { for (let j = grow.i; j < gone; ++j) if (near(at.get(j)!.get(id)!, r)) return true; return false; };
+  assert.ok(writesBetween(h, grow.i, grow.i + 1).some((w) => !committed(w.id, w.target)), "a grow request was still outstanding at the unplug");
   const model = h.model as { windows: Record<string, { mode: string; context: { output: string } }> };
   const modes = Object.values(model.windows).map((w) => w.mode);
   assert.deepEqual(modes, ["tiled", "tiled", "tiled", "tiled"], "all four tiled again at the end");
@@ -250,6 +271,7 @@ test("T10: a recording made through the runtime (fake KWin) replays to the same 
   assert.ok(nested.some((x) => x.call === "applyFrame" && x.k === "windowRemoved"), JSON.stringify(nested));
   const h = new ReplayHost(rec).run();
   assert.deepEqual(h.violations, []);
+  assert.deepEqual(h.afterRemoval, [], "b is never written after its removal inside c's frame write");
   assert.equal(h.writes.length, ws.writes.length, "one replayed write per script write");
   assert.deepEqual(h.writes.map((w) => w.target), ws.writes.map((w) => w.rect));
   assert.deepEqual(h.model, rec.expect.model);
@@ -258,8 +280,25 @@ test("T10: a recording made through the runtime (fake KWin) replays to the same 
 });
 
 test("T10: the player stops at the first host operation the engine does differently", () => {
-  const f = loadReplay(join(DIR, FILES.find((x) => x.startsWith("quick-tile"))!));
+  const file = FILES.find((x) => x.startsWith("quick-tile"));
+  if (!file) return; // a partial PLASTILE_REPLAY_DIR
+  const f = loadReplay(join(DIR, file));
   const first = f.events[0].c!.find((c) => c.h === "applyFrame")!;
   (first.a[2] as { width: number }).width += 10; // as if the engine in KWin had planned another rectangle
   assert.throws(() => new ReplayHost(f).run(), Divergence);
+});
+
+test("T10: a host operation outside any recorded input is an anomaly, not silently dropped", () => {
+  let now = 5;
+  const svc = { now: () => now, callLater: () => {}, deadline: () => () => {}, log: () => {} };
+  const rec = new ReplayRecorder(svc);
+  const host = rec.host({ applyFrame: () => null, frame: () => null } as unknown as HostPort);
+  const sink = rec.sink({ frameObserved: () => { host.applyFrame("x", 1, { x: 0, y: 0, width: 10, height: 10 }); } } as unknown as Engine);
+  sink.frameObserved("x", 1, { x: 0, y: 0, width: 5, height: 5 });
+  assert.equal(rec.anomalies, 0, "inside an input: recorded");
+  assert.equal(rec.events[0].c![0].h, "applyFrame");
+  now = 6;
+  host.applyFrame("x", 1, { x: 0, y: 0, width: 20, height: 20 }); // an entry point the runtime did not route through the recorder
+  assert.equal(rec.anomalies, 1);
+  assert.equal(rec.events.length, 1);
 });
