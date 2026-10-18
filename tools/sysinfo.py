@@ -1,7 +1,9 @@
 """Distribution-neutral package and helper lookups for probes and integration tests.
 
 The first nested runs happened on Arch Linux (pacman, /usr/lib/<helper>); the second
-environment is Ubuntu 26.10 (dpkg, /usr/lib/<multiarch>/libexec/<helper>). Every
+environment is Ubuntu 26.10 (dpkg, /usr/lib/<multiarch>/libexec/<helper>); the Nix
+environment (tools/sandbox/nix) has no package database, so file owners come from the
+`/nix/store/<hash>-<name>-<version>` path and helpers from PATH. Every
 lookup returns None instead of raising when a tool or package is absent, so a
 missing version string can never turn into a scenario failure.
 """
@@ -66,8 +68,12 @@ def component_version(component: str) -> str | None:
 
 def owning_package(path: str) -> str | None:
     """`<package> <version>` owning a file, or None."""
-    fam = packaging()
     real = os.path.realpath(path)
+    # Nix store paths (tools/sandbox/nix) carry `<name>-<version>` in the path itself.
+    m = re.match(r"/nix/store/[0-9a-z]{32}-([^/]+)/", real)
+    if m:
+        return m.group(1)
+    fam = packaging()
     if fam == "pacman":
         out = _run(["pacman", "-Qo", real])
         m = re.search(r"is owned by (\S+) (\S+)", out or "")
