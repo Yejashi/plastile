@@ -588,7 +588,12 @@ export class Engine {
         break;
       case "stale":
         this.counters.stale++;
-        if (this.ownsGeometry(r)) { this.corrections.add(id); this.ensureFlush(); }
+        if (this.ownsGeometry(r)) {
+          // Recorded only when it queues a correction: the reason for that write (T14).
+          this.trace.record(this.svc.now(), "stale", id, { frame: f, request: r.ledger.request?.rect ?? null, before: r.ledger.before });
+          this.corrections.add(id);
+          this.ensureFlush();
+        }
         break;
       case "superseded": this.counters.superseded++; break; // the newer configure follows; deadline-bounded
 
@@ -607,6 +612,7 @@ export class Engine {
         }
         // An application (or another tool) changed a settled tile: bounded correction, then stop.
         if (this.ownsGeometry(r) && r.ledger.desired) {
+          this.trace.record(this.svc.now(), "external", id, { frame: f, desired: r.ledger.desired });
           if (L.canCorrect(r.ledger)) { this.corrections.add(id); this.ensureFlush(); }
           else if (r.ledger.status !== "diverged") {
             L.diverge(r.ledger);

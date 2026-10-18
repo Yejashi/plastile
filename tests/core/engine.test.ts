@@ -1402,6 +1402,17 @@ test("T14: every frame write has a trace record naming the window, in order", ()
   assert.deepEqual(traced, h.writes.map((w) => w.id));
   assert.ok(e.trace.snapshot().some((t) => t.kind === "write" && (t.data as { reason: string }).reason === "restore"));
   assert.equal(e.counters.writes, h.writes.length);
+  // A correction names its cause since that window's previous write: a stale or external observation, or a missed deadline.
+  const snap = e.trace.snapshot();
+  let corrections = 0;
+  snap.forEach((t, i) => {
+    if (t.kind !== "write" || (t.data as { reason: string }).reason !== "correction") return;
+    corrections++;
+    let j = i - 1;
+    while (j >= 0 && !(snap[j].id === t.id && ["write", "stale", "external", "deadline"].includes(snap[j].kind))) j--;
+    assert.ok(j >= 0 && snap[j].kind !== "write", `correction of ${t.id} at ${t.t} has a recorded cause`);
+  });
+  assert.ok(corrections > 0, "the workload exercises corrections");
 });
 
 test("T14: the trace stays within its capacity, oldest first; disabled records nothing", () => {
