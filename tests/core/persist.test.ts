@@ -329,6 +329,26 @@ test("T27: saves are debounced maintenance work: re-armed after the last change,
   assert.equal(store.timer, null, "nothing after shutdown");
 });
 
+test("T27: a save due during an interactive move or resize waits for a quiet period after it", () => {
+  const { h, e } = model();
+  h.open("a");
+  h.drain();
+  const store = new FakeStore();
+  const p = new Persister(store, e, { now: () => h.t, log: () => {}, stamp: () => "t" });
+  p.load();
+  e.setContextPreferences({ output: "O1", desktop: "D1", activity: "default" }, { layout: "bsp", masterStack: null });
+  p.markDirty();
+  h.setStates("a", { interactive: "move" });
+  h.t += DEBOUNCE_MS;
+  store.fire();
+  assert.equal(store.writes.length, 0, "not during the drag");
+  assert.equal(store.timer?.ms, DEBOUNCE_MS);
+  h.setStates("a", { interactive: "none" });
+  h.t += DEBOUNCE_MS;
+  store.fire();
+  assert.equal(store.writes.length, 1, "saved once the drag ended");
+});
+
 // ------------------------------------------------------------------- runtime
 
 function runtimeWith(store: FakeStore) {

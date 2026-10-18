@@ -1896,6 +1896,12 @@ export class Engine {
     if (this.restoreChecks.size > 0) this.ensureFlush();
   }
 
+  /** Some window is being moved or resized interactively (maintenance work waits for the end). */
+  isInteracting(): boolean {
+    for (const r of this.recs.values()) if (r.states.interactive !== "none") return true;
+    return false;
+  }
+
   outstandingCount(): number {
     let n = 0;
     for (const r of this.recs.values()) if (r.ledger.outstanding) n++;

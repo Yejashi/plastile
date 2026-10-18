@@ -39,6 +39,8 @@ export interface PrefsModel {
   setContextPreferences(key: ContextKey, prefs: ContextPrefs): void;
   floatPreferences(): FloatPreference[];
   restoreFloats(prefs: readonly FloatPreference[]): void;
+  /** A window is being moved or resized interactively: a save would stall the drag, so it waits. */
+  isInteracting?(): boolean;
 }
 
 export interface PersistServices {
@@ -154,7 +156,10 @@ export class Persister {
   private onDue(): void {
     this.armed = false;
     if (!this.alive || !this.dirty || !this.store) return;
-    const wait = this.lastChange + DEBOUNCE_MS - this.svc.now();
+    let wait = this.lastChange + DEBOUNCE_MS - this.svc.now();
+    // The save blocks the compositor thread for milliseconds (measured, ADR-013 addendum): not
+    // in the middle of a drag. A drag that keeps going keeps postponing it, a quiet period at a time.
+    if (wait <= SLACK_MS && this.model.isInteracting && this.model.isInteracting()) wait = DEBOUNCE_MS;
     if (wait > SLACK_MS) {
       this.armed = true;
       this.store.schedule(wait, this.due);
