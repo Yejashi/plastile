@@ -1268,3 +1268,92 @@ test("T19: unloading from inside a geometry write drops the queued command and a
   assert.equal(h.writes.length, writes, "no write after unload");
   assert.notEqual(e.modeOf("a"), "floating", "the queued command did not run after unload");
 });
+
+const SLOW = { delay: 120, delayMode: "each" as const };
+
+test("T17: a minimized fullscreen window is not retiled when only fullscreen clears; unminimize restores its slot and order", () => {
+  const { h, e } = setup(["a", "b", "c"], { a: SLOW, b: SLOW, c: SLOW });
+  h.advance(500);
+  h.setStates("a", { fullscreen: true });
+  h.userSetFrame("a", rect(0, 0, 1280, 800));
+  h.setStates("a", { minimized: true });
+  h.advance(500);
+  const aWrites = h.writesTo("a");
+  h.setStates("a", { fullscreen: false, minimized: true });
+  h.advance(1000);
+  assert.equal(h.writesTo("a"), aWrites, "still minimized: no write");
+  assertTiling(tiledFrames(h, ["b", "c"]), AREA);
+  h.setStates("a", { minimized: false });
+  h.advance(1000);
+  assert.deepEqual(e.membersOf({ output: "O1", desktop: "D1", activity: "default" }), ["a", "b", "c"], "peer order kept");
+  assertTiling(tiledFrames(h, ["a", "b", "c"]), AREA);
+  assert.deepEqual(e.check(), []);
+});
+
+test("T17: rapid fullscreen/maximize/minimize toggles under delayed commits settle tiled, learn nothing and stay bounded", () => {
+  const { h, e } = setup(["a", "b", "c"], { a: SLOW, b: SLOW, c: SLOW });
+  h.advance(500);
+  const w0 = h.writes.length;
+  const seq: Array<Partial<{ fullscreen: boolean; maximized: boolean; minimized: boolean }>> = [
+    { fullscreen: true }, { fullscreen: false }, { maximized: true }, { minimized: true },
+    { maximized: false }, { minimized: false }, { fullscreen: true }, { minimized: true },
+    { fullscreen: false }, { minimized: false },
+  ];
+  for (const s of seq) { h.setStates("b", s); h.advance(15); } // faster than the 120 ms client
+  h.advance(3000);
+  assertTiling(tiledFrames(h, ["a", "b", "c"]), AREA);
+  assert.equal(e.modeOf("b"), "tiled");
+  const ex = e.explain("b") as { learnedMin: unknown; learnedMax: unknown };
+  assert.ok("learnedMin" in ex);
+  assert.equal(ex.learnedMin, null, "no intermediate size learned as a constraint");
+  assert.equal(ex.learnedMax, null);
+  assert.ok(h.writes.length - w0 <= 3 * seq.length, `writes bounded: ${h.writes.length - w0}`);
+  assert.deepEqual(e.check(), []);
+});
+
+test("T17: a floating window keeps the user's latest rect across fullscreen and minimize", () => {
+  const { h, e } = setup(["a", "b"], { a: SLOW, b: SLOW });
+  h.advance(500);
+  h.active = "b";
+  e.execute("plastile.window.toggle-float");
+  h.advance(500);
+  h.userSetFrame("b", rect(300, 200, 500, 400));
+  h.setStates("b", { fullscreen: true });
+  h.userSetFrame("b", rect(0, 0, 1280, 800));
+  h.advance(200);
+  h.setStates("b", { fullscreen: false });
+  h.userSetFrame("b", rect(300, 200, 500, 400)); // KWin restores the pre-fullscreen frame
+  h.advance(200);
+  h.userSetFrame("b", rect(320, 240, 480, 360)); // a later user change
+  h.setStates("b", { minimized: true });
+  h.advance(200);
+  h.setStates("b", { minimized: false });
+  h.advance(2000);
+  assert.equal(e.modeOf("b"), "floating");
+  assert.ok(rectNear(h.windows.get("b")!.frame, rect(320, 240, 480, 360)), JSON.stringify(h.windows.get("b")!.frame));
+  assertTiling(tiledFrames(h, ["a"]), AREA);
+});
+
+test("T17: a window minimized on one output and moved to another while minimized restores into the new output only", () => {
+  const h = new MockHost();
+  h.outs.push({ id: "O2", name: "O2", geometry: rect(1280, 0, 1280, 800), scale: 1 });
+  h.visible.set("O2", "D1");
+  const e = h.start();
+  const on = (o: string) => ({ membership: { output: o, desktops: ["D1"], onAllDesktops: false, activities: [] }, ...SLOW });
+  h.open("a", on("O1")); h.open("b", on("O1")); h.open("c", on("O2"));
+  h.advance(500);
+  h.setStates("b", { minimized: true });
+  h.advance(500);
+  const b = h.windows.get("b")!;
+  b.membership = on("O2").membership;
+  e.membershipChanged("b", b.gen, b.membership);
+  h.advance(500);
+  const since = h.writes.length;
+  h.setStates("b", { minimized: false });
+  h.advance(2000);
+  for (const w of h.writes.slice(since).filter((x) => x.id === "b"))
+    assert.ok(w.target.x >= 1280, `no write with the old output's geometry: ${JSON.stringify(w.target)}`);
+  assertTiling(tiledFrames(h, ["a"]), AREA);
+  assertTiling(tiledFrames(h, ["c", "b"]), rect(1280, 0, 1280, 800));
+  assert.deepEqual(e.check(), []);
+});
