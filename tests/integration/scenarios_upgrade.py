@@ -1,8 +1,9 @@
 """Version-to-version upgrade (T26 "user bindings survive updates", T32 "update preserves config";
 TEST_MATRIX Q08, Q11).
 
-An older Plastile package is installed into a private XDG profile (data, config and state
-directories outside any one nested session, so a KWin restart keeps them), configured with
+An older Plastile package is installed into a private XDG profile (data, config, state and cache
+directories outside any one nested session, so a KWin restart keeps them as a re-login keeps the
+home directory, KWin's QML disk cache in $XDG_CACHE_HOME/kwin/qmlcache included), configured with
 non-default kwinrc values and a user rebinding made the way the Shortcuts settings page makes it
 (KGlobalAccel setForeignShortcutKeys on the nested bus), then upgraded with tools/install.sh
 upgrade. The script is restarted (kwinrc + Scripting.start), then the nested KWin itself, and
@@ -16,7 +17,8 @@ used instead; the evidence and a check name say which.
 
 Oracles: geometry from one-shot KWin scripts; bindings from KGlobalAccel's D-Bus answers, the
 private kglobalshortcutsrc and real key presses through libei (tools/input); "reached Plastile"
-from Plastile's debug dispatch line (key routing only, as in shortcuts-defaults-real-input).
+from Plastile's debug dispatch line (key routing only, as in shortcuts-defaults-real-input), and
+for the rebound focus commands also from KWin's active window.
 """
 from __future__ import annotations
 
@@ -134,7 +136,7 @@ class Profile:
 
     def __init__(self, base: Path):
         self.base = base
-        for sub in ("config", "data", "state"):
+        for sub in ("config", "data", "state", "cache"):
             (base / sub).mkdir(parents=True, exist_ok=True)
         self.kwinrc = base / "config/kwinrc"
         self.shortcutsrc = base / "config/kglobalshortcutsrc"
@@ -145,7 +147,12 @@ class Profile:
 
     def env(self) -> dict:
         return {"XDG_CONFIG_HOME": str(self.base / "config"), "XDG_DATA_HOME": str(self.base / "data"),
-                "XDG_STATE_HOME": str(self.base / "state")}
+                "XDG_STATE_HOME": str(self.base / "state"), "XDG_CACHE_HOME": str(self.base / "cache")}
+
+    def qmlcache(self) -> int:
+        """Compiled units in KWin's QML disk cache (keyed by source URL, checked against the source's mtime)."""
+        d = self.base / "cache/kwin/qmlcache"
+        return sum(1 for _ in d.iterdir()) if d.is_dir() else 0
 
     def kwinrc_hash(self) -> str:
         return hashlib.sha256(self.kwinrc.read_bytes()).hexdigest()
@@ -263,6 +270,11 @@ def press_none(s: Session, inp: Input, keys: tuple[str, ...], quiet: float = 1.0
     return s.kw.lines_since(off, ANY_DISPATCH) + s.kw.lines_since(off, r"plastile counters ")
 
 
+def active(s: Session) -> str | None:
+    out = s.js("emit(workspace.activeWindow ? workspace.activeWindow.caption : null)")
+    return json.loads(out[0]) if out else None
+
+
 def config_oracle(s: Session) -> dict:
     """gapOuter 14, gapInner 20, masterRatio 0.6 measured on two fixtures' frames."""
     a = s.area()
@@ -335,15 +347,25 @@ def bindings(s: Session, p: Profile, acc: Accel, c: Checks, phase: str, expect_v
         raise Skipped(f"libei input injector unavailable: {exc}")
     try:
         s.act("plastile-fixture 1", "workspace.activeWindow = w")
-        presses = {
-            "Meta+Alt+N": press_count(s, inp, ("Meta", "Alt", "N"), ANY_DISPATCH),
-            "Meta+Alt+P": press_count(s, inp, ("Meta", "Alt", "P"), ANY_DISPATCH),
-            "Meta+Alt+C": press_count(s, inp, ("Meta", "Alt", "C"), r"plastile counters "),
-            "Meta+Shift+H": press_count(s, inp, ("Meta", "Shift", "H"), ANY_DISPATCH),
-        }
-        none = {"Meta+Shift+N": press_none(s, inp, ("Meta", "Shift", "N")),
-                "Meta+Shift+Return": press_none(s, inp, ("Meta", "Shift", "Return"))}
+        # KWin's active window around the focus presses: with two tiles, next and previous each move to the other.
+        focus = {"start": active(s)}
+        presses = {"Meta+Alt+N": press_count(s, inp, ("Meta", "Alt", "N"), ANY_DISPATCH)}
+        focus["Meta+Alt+N"] = active(s)
+        presses["Meta+Alt+P"] = press_count(s, inp, ("Meta", "Alt", "P"), ANY_DISPATCH)
+        focus["Meta+Alt+P"] = active(s)
+        presses["Meta+Alt+C"] = press_count(s, inp, ("Meta", "Alt", "C"), r"plastile counters ")
+        presses["Meta+Shift+H"] = press_count(s, inp, ("Meta", "Shift", "H"), ANY_DISPATCH)
+        focus["before Meta+Shift+N"] = active(s)
+        none = {"Meta+Shift+N": press_none(s, inp, ("Meta", "Shift", "N"))}
+        focus["Meta+Shift+N"] = active(s)
+        none["Meta+Shift+Return"] = press_none(s, inp, ("Meta", "Shift", "Return"))
         ev["presses"] = {k: [ln.split("plastile ", 1)[-1][:120] for ln in v] for k, v in {**presses, **none}.items()}
+        ev["activeWindow"] = focus
+        c(f"{phase}: Meta+Alt+N, then Meta+Alt+P, move KWin's active window to the other tile and back (KWin oracle)",
+          focus["start"] == "plastile-fixture 1" and focus["Meta+Alt+N"] == "plastile-fixture 2"
+          and focus["Meta+Alt+P"] == "plastile-fixture 1", focus)
+        c(f"{phase}: Meta+Shift+N leaves KWin's active window where it was (KWin oracle)",
+          focus["before Meta+Shift+N"] is not None and focus["Meta+Shift+N"] == focus["before Meta+Shift+N"], focus)
         for chord, cid in (("Meta+Alt+N", "plastile.focus.next"), ("Meta+Alt+P", "plastile.focus.previous"),
                            ("Meta+Shift+H", "plastile.focus.left")):
             lines = presses[chord]
@@ -477,11 +499,20 @@ def package_upgrade_bindings(out: Path, c: Checks):
         c("disable, upgrade, enable: upgrade rc 0 and exactly one Plastile starts again",
           up2["rc"] == 0 and v2b in (OLD_VERSION, NEW_VERSION) and len(s.log_lines(STARTED)) == 3,
           steps["disableUpgradeEnable"])
+        steps["qmlcacheAfterKwin1"] = profile.qmlcache()
         warn = unexpected_warnings(s.log_lines(r"plastile (error|warn)|TypeError|ReferenceError"), replaced)
         c("KWin 1: no Plastile errors, warnings or JS exceptions (beyond conflict reports on the stale defaults)",
           not warn, warn[:3])
 
     # ---------------------------------------------------------------- KWin 2: a compositor restart, same profile
+    # The profile keeps KWin 1's QML disk cache, as ~/.cache survives a re-login, so the restart below also shows
+    # that this cache does not bring the older version back (it is checked against the source file's mtime, and
+    # kpackagetool6 writes the files with the install time, not the archive's 1980 entry dates).
+    mjs = profile.installed / "contents/code/plastile.mjs"
+    steps["beforeKwin2"] = {"qmlcacheEntries": profile.qmlcache(),
+                            "installedBundleMtime": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(mjs.stat().st_mtime))}
+    c("the profile keeps KWin 1's QML disk cache for the restart (a re-login keeps ~/.cache)",
+      steps["qmlcacheAfterKwin1"] > 0 and profile.qmlcache() == steps["qmlcacheAfterKwin1"], steps["beforeKwin2"])
     with ProfileSession(out / "kwin2", profile) as s:
         v3 = wait_started(s, 0)
         starts = s.log_lines(STARTED)
@@ -537,14 +568,17 @@ def package_upgrade_bindings(out: Path, c: Checks):
         c("after removal: the rebound and default chords reach nothing (libei)", not any(gone.values()), gone)
         left = acc.names()
         leftover = profile.entries()
+        kwin_before = len(acc.comp.shortcutNames())
         cleaned = bool(acc.comp.cleanUp())
         after = acc.names()
+        kwin_after = len(acc.comp.shortcutNames())
         try:
             s.wait_for(lambda: not profile.entries(), 10, "kglobalshortcutsrc without plastile entries")
         except NestedError:
             pass
         steps["release"] = {"namesAfterRemove": len(left), "fileEntriesAfterRemove": len(leftover),
                             "cleanUp": cleaned, "namesAfterCleanUp": len(after),
+                            "kwinNamesBeforeCleanUp": kwin_before, "kwinNamesAfterCleanUp": kwin_after,
                             "fileEntriesAfterCleanUp": len(profile.entries())}
         c("after removal: no Plastile action is active in KGlobalAccel (cleanUp(), which keeps live actions, "
           "removes every leftover Plastile registration)", bool(left) and cleaned and not after, steps["release"])

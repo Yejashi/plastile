@@ -226,7 +226,9 @@ def package_install_autoload(out: Path, c: Checks):
             hashlib.sha256((ROOT / "package/metadata.json").read_bytes()).hexdigest()
         c("upgrade: install.sh upgrade with the same zip rc 0, files intact", up["rc"] == 0 and same, up)
 
-        # Re-enable after the upgrade: the upgraded package loads again.
+        # Re-enable after the upgrade: the script loads again. The zip is the same code, so which version runs is
+        # not observable here; with a different version KWin runs the one it loaded first until KWin restarts
+        # (package-upgrade-bindings-T26-T32).
         off = kw.mark()
         set_enabled(kw, True)
         scripting_start(kw)

@@ -21,7 +21,7 @@
    "argv": [
     "tools/install.sh",
     "install",
-    "<repo>/artifacts/integration/20261018T084509/package-upgrade-bindings-T26-T32/old-tree/package"
+    "<repo>/artifacts/integration/20261018T085534/package-upgrade-bindings-T26-T32/old-tree/package"
    ],
    "rc": 0,
    "stdout": "Successfully installed <profile>/data/kwin/scripts/plastile/\n\nInstalled to: <profile>/data/kwin/scripts/plastile\nNothing was enabled, reloaded or restarted. KWin discovers packages when it (re)scans\nkwin/scripts; a package installed while KWin is running may not be visible until the\nscript list is refreshed (log out and in). To enable Plastile, either:\n\n  System Settings > Window Management > KWin Scripts > tick \"Plastile\" > Apply\n\nor, from a terminal in the same session:\n\n  kwriteconfig6 --file kwinrc --group Plugins --key plastileEnabled true\n  qdbus6 org.kde.KWin /Scripting org.kde.kwin.Scripting.start\n\nTo disable later, set the same key to false and run the same Scripting.start command.\nThis script prints these commands; it does not execute them.\n",
@@ -50,10 +50,10 @@
    "argv": [
     "tools/install.sh",
     "upgrade",
-    "<repo>/artifacts/integration/20261018T084509/package-upgrade-bindings-T26-T32/dist/plastile-0.1.0.kwinscript"
+    "<repo>/artifacts/integration/20261018T085534/package-upgrade-bindings-T26-T32/dist/plastile-0.1.0.kwinscript"
    ],
    "rc": 0,
-   "stdout": "Upgrading package from file: <repo>/artifacts/integration/20261018T084509/package-upgrade-bindings-T26-T32/dist/plastile-0.1.0.kwinscript\nSuccessfully upgraded <profile>/data/kwin/scripts/plastile/\n\nUpgraded: <profile>/data/kwin/scripts/plastile\nA running KWin keeps executing the previously loaded version until KWin itself restarts:\nlog out and back in. Disabling and re-enabling the script (System Settings > Window\nManagement > KWin Scripts, or kwriteconfig6 + Scripting.start) is not enough: KWin 6.7.5\nstarts the older version again from its QML cache (measured in a nested session).\nSettings in kwinrc and your shortcut bindings are kept. This script restarts nothing.\n",
+   "stdout": "Upgrading package from file: <repo>/artifacts/integration/20261018T085534/package-upgrade-bindings-T26-T32/dist/plastile-0.1.0.kwinscript\nSuccessfully upgraded <profile>/data/kwin/scripts/plastile/\n\nUpgraded: <profile>/data/kwin/scripts/plastile\nA running KWin keeps executing the previously loaded version until KWin itself restarts:\nlog out and back in. Disabling and re-enabling the script (System Settings > Window\nManagement > KWin Scripts, or kwriteconfig6 + Scripting.start) is not enough: KWin 6.7.5\nstarts the older version again from its QML cache (measured in a nested session).\nSettings in kwinrc and your shortcut bindings are kept. This script restarts nothing.\n",
    "stderr": "",
    "kwinrcUnchanged": true
   },
@@ -136,10 +136,10 @@
     },
     "presses": {
      "Meta+Alt+N": [
-      "debug command {\"command\":\"plastile.focus.next\",\"status\":\"accepted\",\"targets\":[\"{1db22e56-a525-4ecf-bdab-820add82f27f}\"],"
+      "debug command {\"command\":\"plastile.focus.next\",\"status\":\"accepted\",\"targets\":[\"{24cc045c-12f8-4bc3-998f-a1806d221d17}\"],"
      ],
      "Meta+Alt+P": [
-      "debug command {\"command\":\"plastile.focus.previous\",\"status\":\"accepted\",\"targets\":[\"{d9d0f3b8-a922-4154-9a58-288b8584f970"
+      "debug command {\"command\":\"plastile.focus.previous\",\"status\":\"accepted\",\"targets\":[\"{09fe442c-df86-4c49-9488-01749aebbd8b"
      ],
      "Meta+Alt+C": [
       "counters {\"counters\":{\"solves\":1,\"flushes\":1,\"commands\":2,\"commandsQueued\":0,\"writes\":0,\"corrections\":0,\"skipOutstanding"
@@ -149,6 +149,13 @@
      ],
      "Meta+Shift+N": [],
      "Meta+Shift+Return": []
+    },
+    "activeWindow": {
+     "start": "plastile-fixture 1",
+     "Meta+Alt+N": "plastile-fixture 2",
+     "Meta+Alt+P": "plastile-fixture 1",
+     "before Meta+Shift+N": "plastile-fixture 1",
+     "Meta+Shift+N": "plastile-fixture 1"
     },
     "metaT": {
      "holder": [
@@ -163,6 +170,11 @@
   "disableUpgradeEnable": {
    "upgradeRc": 0,
    "startedVersion": "0.0.1"
+  },
+  "qmlcacheAfterKwin1": 56,
+  "beforeKwin2": {
+   "qmlcacheEntries": 56,
+   "installedBundleMtime": "2026-10-18T12:55:43Z"
   },
   "kwinRestart": {
    "startedVersion": "0.1.0",
@@ -242,10 +254,10 @@
     },
     "presses": {
      "Meta+Alt+N": [
-      "debug command {\"command\":\"plastile.focus.next\",\"status\":\"accepted\",\"targets\":[\"{a747d5b2-e238-4d0f-a695-453aaf8d78bd}\"],"
+      "debug command {\"command\":\"plastile.focus.next\",\"status\":\"accepted\",\"targets\":[\"{87e4d711-5960-4ed0-9364-f1deab6e146f}\"],"
      ],
      "Meta+Alt+P": [
-      "debug command {\"command\":\"plastile.focus.previous\",\"status\":\"accepted\",\"targets\":[\"{e411455b-01a5-4227-9319-353ae94f70dc"
+      "debug command {\"command\":\"plastile.focus.previous\",\"status\":\"accepted\",\"targets\":[\"{1448a815-8f92-45eb-a21e-d52632ac1caf"
      ],
      "Meta+Alt+C": [
       "counters {\"counters\":{\"solves\":2,\"flushes\":3,\"commands\":2,\"commandsQueued\":0,\"writes\":3,\"corrections\":0,\"skipOutstanding"
@@ -255,6 +267,13 @@
      ],
      "Meta+Shift+N": [],
      "Meta+Shift+Return": []
+    },
+    "activeWindow": {
+     "start": "plastile-fixture 1",
+     "Meta+Alt+N": "plastile-fixture 2",
+     "Meta+Alt+P": "plastile-fixture 1",
+     "before Meta+Shift+N": "plastile-fixture 1",
+     "Meta+Shift+N": "plastile-fixture 1"
     },
     "metaT": {
      "holder": [
@@ -289,6 +308,8 @@
    "fileEntriesAfterRemove": 68,
    "cleanUp": true,
    "namesAfterCleanUp": 0,
+   "kwinNamesBeforeCleanUp": 235,
+   "kwinNamesAfterCleanUp": 167,
    "fileEntriesAfterCleanUp": 0
   }
  },
@@ -334,7 +355,7 @@
     "argv": [
      "tools/install.sh",
      "install",
-     "<repo>/artifacts/integration/20261018T084509/package-upgrade-bindings-T26-T32/old-tree/package"
+     "<repo>/artifacts/integration/20261018T085534/package-upgrade-bindings-T26-T32/old-tree/package"
     ],
     "rc": 0,
     "stdout": "Successfully installed <profile>/data/kwin/scripts/plastile/\n\nInstalled to: <profile>/data/kwin/scripts/plastile\nNothing was enabled, reloaded or restarted. KWin discovers packages when it (re)scans\nkwin/scripts; a package installed while KWin is running may not be visible until the\nscript list is refreshed (log out and in). To enable Plastile, either:\n\n  System Settings > Window Management > KWin Scripts > tick \"Plastile\" > Apply\n\nor, from a terminal in the same session:\n\n  kwriteconfig6 --file kwinrc --group Plugins --key plastileEnabled true\n  qdbus6 org.kde.KWin /Scripting org.kde.kwin.Scripting.start\n\nTo disable later, set the same key to false and run the same Scripting.start command.\nThis script prints these commands; it does not execute them.\n",
@@ -393,7 +414,7 @@
   "control on 0.0.1: Meta+Alt+N (libei) already reaches focus.next before the upgrade": {
    "pass": true,
    "detail": [
-    " 69794.598 qml plastile debug command {\"command\":\"plastile.focus.next\",\"status\":\"accepted\",\"targets\":[\"{1db22e56-a525-4ecf-bdab-820add82f27f}\"],\"revision\":1,\"requested\":false}"
+    " 70419.712 qml plastile debug command {\"command\":\"plastile.focus.next\",\"status\":\"accepted\",\"targets\":[\"{24cc045c-12f8-4bc3-998f-a1806d221d17}\"],\"revision\":1,\"requested\":false}"
    ]
   },
   "upgrade: install.sh upgrade plastile-0.1.0.kwinscript rc 0, installed version 0.1.0, kwinrc untouched": {
@@ -402,10 +423,10 @@
     "argv": [
      "tools/install.sh",
      "upgrade",
-     "<repo>/artifacts/integration/20261018T084509/package-upgrade-bindings-T26-T32/dist/plastile-0.1.0.kwinscript"
+     "<repo>/artifacts/integration/20261018T085534/package-upgrade-bindings-T26-T32/dist/plastile-0.1.0.kwinscript"
     ],
     "rc": 0,
-    "stdout": "Upgrading package from file: <repo>/artifacts/integration/20261018T084509/package-upgrade-bindings-T26-T32/dist/plastile-0.1.0.kwinscript\nSuccessfully upgraded <profile>/data/kwin/scripts/plastile/\n\nUpgraded: <profile>/data/kwin/scripts/plastile\nA running KWin keeps executing the previously loaded version until KWin itself restarts:\nlog out and back in. Disabling and re-enabling the script (System Settings > Window\nManagement > KWin Scripts, or kwriteconfig6 + Scripting.start) is not enough: KWin 6.7.5\nstarts the older version again from its QML cache (measured in a nested session).\nSettings in kwinrc and your shortcut bindings are kept. This script restarts nothing.\n",
+    "stdout": "Upgrading package from file: <repo>/artifacts/integration/20261018T085534/package-upgrade-bindings-T26-T32/dist/plastile-0.1.0.kwinscript\nSuccessfully upgraded <profile>/data/kwin/scripts/plastile/\n\nUpgraded: <profile>/data/kwin/scripts/plastile\nA running KWin keeps executing the previously loaded version until KWin itself restarts:\nlog out and back in. Disabling and re-enabling the script (System Settings > Window\nManagement > KWin Scripts, or kwriteconfig6 + Scripting.start) is not enough: KWin 6.7.5\nstarts the older version again from its QML cache (measured in a nested session).\nSettings in kwinrc and your shortcut bindings are kept. This script restarts nothing.\n",
     "stderr": "",
     "kwinrcUnchanged": true
    }
@@ -520,10 +541,10 @@
      },
      "presses": {
       "Meta+Alt+N": [
-       "debug command {\"command\":\"plastile.focus.next\",\"status\":\"accepted\",\"targets\":[\"{1db22e56-a525-4ecf-bdab-820add82f27f}\"],"
+       "debug command {\"command\":\"plastile.focus.next\",\"status\":\"accepted\",\"targets\":[\"{24cc045c-12f8-4bc3-998f-a1806d221d17}\"],"
       ],
       "Meta+Alt+P": [
-       "debug command {\"command\":\"plastile.focus.previous\",\"status\":\"accepted\",\"targets\":[\"{d9d0f3b8-a922-4154-9a58-288b8584f970"
+       "debug command {\"command\":\"plastile.focus.previous\",\"status\":\"accepted\",\"targets\":[\"{09fe442c-df86-4c49-9488-01749aebbd8b"
       ],
       "Meta+Alt+C": [
        "counters {\"counters\":{\"solves\":1,\"flushes\":1,\"commands\":2,\"commandsQueued\":0,\"writes\":0,\"corrections\":0,\"skipOutstanding"
@@ -533,6 +554,13 @@
       ],
       "Meta+Shift+N": [],
       "Meta+Shift+Return": []
+     },
+     "activeWindow": {
+      "start": "plastile-fixture 1",
+      "Meta+Alt+N": "plastile-fixture 2",
+      "Meta+Alt+P": "plastile-fixture 1",
+      "before Meta+Shift+N": "plastile-fixture 1",
+      "Meta+Shift+N": "plastile-fixture 1"
      },
      "metaT": {
       "holder": [
@@ -647,16 +675,36 @@
     }
    }
   },
+  "script restart: Meta+Alt+N, then Meta+Alt+P, move KWin's active window to the other tile and back (KWin oracle)": {
+   "pass": true,
+   "detail": {
+    "start": "plastile-fixture 1",
+    "Meta+Alt+N": "plastile-fixture 2",
+    "Meta+Alt+P": "plastile-fixture 1",
+    "before Meta+Shift+N": "plastile-fixture 1",
+    "Meta+Shift+N": "plastile-fixture 1"
+   }
+  },
+  "script restart: Meta+Shift+N leaves KWin's active window where it was (KWin oracle)": {
+   "pass": true,
+   "detail": {
+    "start": "plastile-fixture 1",
+    "Meta+Alt+N": "plastile-fixture 2",
+    "Meta+Alt+P": "plastile-fixture 1",
+    "before Meta+Shift+N": "plastile-fixture 1",
+    "Meta+Shift+N": "plastile-fixture 1"
+   }
+  },
   "script restart: pressing Meta+Alt+N (libei) dispatches plastile.focus.next exactly once": {
    "pass": true,
    "detail": [
-    "debug command {\"command\":\"plastile.focus.next\",\"status\":\"accepted\",\"targets\":[\"{1db22e56-a525-4ecf-bdab-820add82f27f}\"],"
+    "debug command {\"command\":\"plastile.focus.next\",\"status\":\"accepted\",\"targets\":[\"{24cc045c-12f8-4bc3-998f-a1806d221d17}\"],"
    ]
   },
   "script restart: pressing Meta+Alt+P (libei) dispatches plastile.focus.previous exactly once": {
    "pass": true,
    "detail": [
-    "debug command {\"command\":\"plastile.focus.previous\",\"status\":\"accepted\",\"targets\":[\"{d9d0f3b8-a922-4154-9a58-288b8584f970"
+    "debug command {\"command\":\"plastile.focus.previous\",\"status\":\"accepted\",\"targets\":[\"{09fe442c-df86-4c49-9488-01749aebbd8b"
    ]
   },
   "script restart: pressing Meta+Shift+H (libei) dispatches plastile.focus.left exactly once": {
@@ -699,6 +747,13 @@
   "KWin 1: no Plastile errors, warnings or JS exceptions (beyond conflict reports on the stale defaults)": {
    "pass": true,
    "detail": []
+  },
+  "the profile keeps KWin 1's QML disk cache for the restart (a re-login keeps ~/.cache)": {
+   "pass": true,
+   "detail": {
+    "qmlcacheEntries": 56,
+    "installedBundleMtime": "2026-10-18T12:55:43Z"
+   }
   },
   "KWin restart: autoload starts 0.1.0 exactly once": {
    "pass": true,
@@ -808,16 +863,36 @@
     }
    }
   },
+  "KWin restart: Meta+Alt+N, then Meta+Alt+P, move KWin's active window to the other tile and back (KWin oracle)": {
+   "pass": true,
+   "detail": {
+    "start": "plastile-fixture 1",
+    "Meta+Alt+N": "plastile-fixture 2",
+    "Meta+Alt+P": "plastile-fixture 1",
+    "before Meta+Shift+N": "plastile-fixture 1",
+    "Meta+Shift+N": "plastile-fixture 1"
+   }
+  },
+  "KWin restart: Meta+Shift+N leaves KWin's active window where it was (KWin oracle)": {
+   "pass": true,
+   "detail": {
+    "start": "plastile-fixture 1",
+    "Meta+Alt+N": "plastile-fixture 2",
+    "Meta+Alt+P": "plastile-fixture 1",
+    "before Meta+Shift+N": "plastile-fixture 1",
+    "Meta+Shift+N": "plastile-fixture 1"
+   }
+  },
   "KWin restart: pressing Meta+Alt+N (libei) dispatches plastile.focus.next exactly once": {
    "pass": true,
    "detail": [
-    "debug command {\"command\":\"plastile.focus.next\",\"status\":\"accepted\",\"targets\":[\"{a747d5b2-e238-4d0f-a695-453aaf8d78bd}\"],"
+    "debug command {\"command\":\"plastile.focus.next\",\"status\":\"accepted\",\"targets\":[\"{87e4d711-5960-4ed0-9364-f1deab6e146f}\"],"
    ]
   },
   "KWin restart: pressing Meta+Alt+P (libei) dispatches plastile.focus.previous exactly once": {
    "pass": true,
    "detail": [
-    "debug command {\"command\":\"plastile.focus.previous\",\"status\":\"accepted\",\"targets\":[\"{e411455b-01a5-4227-9319-353ae94f70dc"
+    "debug command {\"command\":\"plastile.focus.previous\",\"status\":\"accepted\",\"targets\":[\"{1448a815-8f92-45eb-a21e-d52632ac1caf"
    ]
   },
   "KWin restart: pressing Meta+Shift+H (libei) dispatches plastile.focus.left exactly once": {
@@ -894,6 +969,8 @@
     "fileEntriesAfterRemove": 68,
     "cleanUp": true,
     "namesAfterCleanUp": 0,
+    "kwinNamesBeforeCleanUp": 235,
+    "kwinNamesAfterCleanUp": 167,
     "fileEntriesAfterCleanUp": 0
    }
   },
@@ -904,6 +981,8 @@
     "fileEntriesAfterRemove": 68,
     "cleanUp": true,
     "namesAfterCleanUp": 0,
+    "kwinNamesBeforeCleanUp": 235,
+    "kwinNamesAfterCleanUp": 167,
     "fileEntriesAfterCleanUp": 0
    }
   },
