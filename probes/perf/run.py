@@ -7,8 +7,8 @@ For n in 2/4/8/16/32 windows in one master/stack context: alternating grow/shrin
   dispatchToReturnNs = handler entry -> every frame request issued (t4 - t1)
   solveNs / applyNs  = pure solve / adapter apply for the context
 Harness D-Bus send -> handler entry is reported separately (command API, not input).
-KWin clamps client minimums to >=150x150, so tall virtual outputs are used to fit n
-windows without overflow. Nested virtual backend only: not a physical measurement.
+KWin reports a 150x150 fixture minimum (186 px frame), so tall virtual outputs
+(workloads.stack_output_height, gaps included) are used to fit n windows without overflow. Nested virtual backend only: not a physical measurement.
 
 Usage: python3 probes/perf/run.py [--samples 300] [--counts 2,4,8,16,32] [--seed 1]
 """
@@ -27,6 +27,7 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 sys.path.insert(0, str(ROOT / "tests/integration"))
 from harness import Session  # noqa: E402
+from workloads import stack_output_height  # noqa: E402
 
 PERF = re.compile(r"plastile perf (\{.*\})$")
 MEASURE = ROOT / "build/measure/qml"
@@ -56,7 +57,7 @@ def main() -> int:
               "clock": "CLOCK_MONOTONIC via measurement module", "samplesPerWorkload": args.samples, "counts": {}}
     rng = random.Random(args.seed)
     for n in [int(x) for x in args.counts.split(",")]:
-        height = max(1080, (n - 1) * 186 + 32)
+        height = stack_output_height(n)
         with Session(out / f"n{n}", width=1920, height=height, extra_env={"QML_IMPORT_PATH": str(MEASURE)},
                      qml=HERE / "main.qml", config={"diagnostics": "info"}) as s:
             for i in range(1, n + 1):
