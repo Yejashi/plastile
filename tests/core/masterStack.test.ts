@@ -377,6 +377,25 @@ test("divider commands start from the divider that minima hold, not the stored r
   assert.ok(Math.abs(masterStack.solve(drag.state, big).slots.get("a")!.width - 1600) <= 1);
 });
 
+test("row dividers move from the rows as shown when a minimum height holds them", () => {
+  // b's minimum holds it at 700 px although its weight equals c's.
+  const constraints = new Map([["b", minC(0, 700)]]);
+  const inp = input(["a", "b", "c"], { constraints });
+  const st = masterStack.initial(S);
+  const before = masterStack.solve(st, inp).slots;
+  assert.equal(before.get("b")!.height, 700);
+  const down = masterStack.command(st, { kind: "resize-boundary", id: "b", edge: "bottom", delta: 50 }, inp);
+  assert.ok(down.changed);
+  const after = masterStack.solve(down.state, inp).slots;
+  assert.equal(after.get("b")!.height, 750, "dropped where released, no snap back");
+  assert.equal(after.get("c")!.y, before.get("c")!.y + 50);
+  const up = masterStack.command(st, { kind: "resize-boundary", id: "c", edge: "top", delta: 20 }, inp);
+  assert.equal(masterStack.solve(up.state, inp).slots.get("b")!.height, 720, "c's top edge is the same boundary");
+  const below = masterStack.command(st, { kind: "resize-boundary", id: "b", edge: "bottom", delta: -50 }, inp);
+  assert.equal(below.changed, false);
+  assert.equal(below.reason, "row clamped by minimum sizes");
+});
+
 test("ratio without a visible divider is a no-op with a reason (BEHAVIOR §4)", () => {
   const one = input(["a"]);
   let st = masterStack.initial(S);
@@ -403,23 +422,33 @@ test("randomized: divider commands report a change exactly when the layout moves
     const ids = Array.from({ length: n }, (_, i) => `w${i}`);
     const area = rect(0, 0, 900 + Math.floor(rnd() * 2000), 600 + Math.floor(rnd() * 800));
     const constraints = new Map(ids.filter(() => rnd() < 0.5)
-      .map((id) => [id, minC(Math.floor(rnd() * area.width * 0.6), 0)] as const));
+      .map((id) => [id, minC(Math.floor(rnd() * area.width * 0.6), Math.floor(rnd() * area.height * 0.3))] as const));
     const inp = input(ids, { area, constraints });
-    const st = { ratio: 0.05 + rnd() * 0.9, masterCount: Math.floor(rnd() * 3), weights: {} };
+    const weights = Object.fromEntries(ids.filter(() => rnd() < 0.3).map((id) => [id, 0.2 + rnd() * 2]));
+    const st = { ratio: 0.05 + rnd() * 0.9, masterCount: Math.floor(rnd() * 3), weights };
     const before = masterStack.solve(st, inp);
     if (before.overflow.length) continue;
     const id = ids[Math.floor(rnd() * n)];
     const delta = (rnd() < 0.5 ? -1 : 1) * (1 + Math.floor(rnd() * 400));
-    const cmd = rnd() < 0.5 ? { kind: "ratio" as const, delta: delta > 0 ? 0.05 : -0.05 }
-      : { kind: "resize-boundary" as const, id, edge: rnd() < 0.5 ? "left" as const : "right" as const, delta };
+    const edges = ["left", "right", "top", "bottom"] as const;
+    const cmd = rnd() < 0.3 ? { kind: "ratio" as const, delta: delta > 0 ? 0.05 : -0.05 }
+      : { kind: "resize-boundary" as const, id, edge: edges[Math.floor(rnd() * 4)], delta };
     const o = masterStack.command(st, cmd, inp);
     const after = masterStack.solve(o.state, inp).slots;
     assert.equal(o.changed, moved(before.slots, after), `${JSON.stringify(cmd)} ${JSON.stringify(st)}: ${o.reason}`);
     if (!o.changed) { assert.equal(o.state, st); assert.ok(o.reason); continue; }
     ++changed;
-    // The master grows with a positive ratio step or a right-moving divider edge.
-    const grew = after.get(ids[0])!.width - before.slots.get(ids[0])!.width;
-    assert.ok(Math.sign(grew) === Math.sign(cmd.delta), `master width moved ${grew} for ${JSON.stringify(cmd)}`);
+    if (cmd.kind === "ratio") {
+      // The master grows with a positive ratio step.
+      const grew = after.get(ids[0])!.width - before.slots.get(ids[0])!.width;
+      assert.ok(Math.sign(grew) === Math.sign(cmd.delta), `master width moved ${grew} for ${JSON.stringify(cmd)}`);
+    } else {
+      // The dragged edge moves the way the pointer moved (engine: frame - slot).
+      const edge = (r: Rect) => cmd.edge === "left" ? r.x : cmd.edge === "right" ? r.x + r.width : cmd.edge === "top" ? r.y : r.y + r.height;
+      const step = edge(after.get(id)!) - edge(before.slots.get(id)!);
+      assert.ok(Math.sign(step) === Math.sign(cmd.delta) && Math.abs(step) <= Math.abs(cmd.delta) + 1,
+        `${cmd.edge} edge moved ${step} for ${cmd.delta}`);
+    }
   }
   assert.ok(changed > 300, `only ${changed} changes`);
 });

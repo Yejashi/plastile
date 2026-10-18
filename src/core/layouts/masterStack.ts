@@ -227,22 +227,30 @@ function resizeBoundary(state: MasterStackState, cmd: Extract<LayoutCommand, { k
     if (cmd.edge !== (isMaster ? "right" : "left")) return { state, changed: false, reason: "edge is not the divider" };
     return moveDivider(state, range, cmd.delta / range.usable);
   }
-  // Horizontal divider inside a column: move weight between neighbours.
+  // Horizontal divider inside a column: the neighbours trade pixels from the rows as shown.
+  // Minimum heights can hold rows away from their weights, so the column's shown heights
+  // become its weights (they reproduce the same rows), then the boundary moves by the
+  // drag, clamped so neither row drops below its minimum or 5 % of the column.
   const col = isMaster ? ids.slice(0, m) : ids.slice(m);
   const ci = col.indexOf(cmd.id);
-  const neighbour = cmd.edge === "bottom" ? col[ci + 1] : col[ci - 1];
-  if (neighbour === undefined) return { state, changed: false, reason: "no divider on that edge" };
-  const height = a.height - input.settings.gaps.inner * (col.length - 1);
-  if (height <= 0) return { state, changed: false, reason: "no space" };
-  const total = col.reduce((s, id) => s + (state.weights[id] ?? 1), 0);
-  const pxPerWeight = height / total;
-  const dw = (cmd.edge === "bottom" ? cmd.delta : -cmd.delta) / pxPerWeight;
-  const wa = (state.weights[cmd.id] ?? 1) + dw;
-  const wb = (state.weights[neighbour] ?? 1) - dw;
-  const minW = 0.05 * total;
-  if (wa < minW || wb < minW) return { state, changed: false, reason: "weight at limit" };
+  const ni = cmd.edge === "bottom" ? ci + 1 : ci - 1;
+  if (ni < 0 || ni >= col.length) return { state, changed: false, reason: "no divider on that edge" };
+  const gap = input.settings.gaps.inner;
+  const minH = col.map((id) => Math.max(1, minOf(input.constraints, id).height));
+  const rows = allocate(a.y, a.height, col.map((id) => state.weights[id] ?? 1), minH, gap);
+  if (rows === null) return { state, changed: false, reason: "no space" };
+  const h = rows.map(([b, e]) => e - b);
+  const limit = 0.05 * (a.height - gap * (col.length - 1));
+  const floorC = Math.max(minH[ci], limit), floorN = Math.max(minH[ni], limit);
+  const want = cmd.edge === "bottom" ? cmd.delta : -cmd.delta; // pixels the dragged row gains
+  const d = Math.min(Math.max(0, h[ni] - floorN), Math.max(Math.min(0, floorC - h[ci]), want));
+  if (Math.abs(d) < 0.5) {
+    return { state, changed: false, reason: (want > 0 ? floorN : floorC) > limit ? "row clamped by minimum sizes" : "weight at limit" };
+  }
+  h[ci] += d;
+  h[ni] -= d;
+  const mean = h.reduce((s, x) => s + x, 0) / h.length;
   const weights: Record<WindowId, number> = { ...state.weights };
-  weights[cmd.id] = wa;
-  weights[neighbour] = wb;
+  for (let i = 0; i < col.length; ++i) weights[col[i]] = h[i] / mean;
   return { state: { ratio: state.ratio, masterCount: state.masterCount, weights }, changed: true };
 }
