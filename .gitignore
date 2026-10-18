@@ -8,3 +8,6 @@ __pycache__/
 
 # Generated runtime bundle (npm run build)
 /package/contents/code/
+
+# Agent worktrees (local only)
+/.claude/worktrees/

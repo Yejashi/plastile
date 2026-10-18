@@ -1,0 +1,163 @@
+{
+ "schemaVersion": 1,
+ "collectedAtLocal": "2026-10-18T02:11:10+0000",
+ "collector": "tools/collect_environment.py (read-only)",
+ "repository": {
+  "revision": "09c9c8d11c4e75ce68fc2e081c8c73642130ee1d",
+  "dirty": true
+ },
+ "os": {
+  "NAME": "Ubuntu",
+  "ID": "ubuntu",
+  "VERSION_ID": "26.10"
+ },
+ "kernel": "6.18.44-fc-v139",
+ "hardware": {
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "logicalCpus": 4,
+  "memTotalGiB": 15.7,
+  "gpus": [],
+  "cpuGovernor": null,
+  "cpuEnergyPerformancePreference": null
+ },
+ "session": {
+  "XDG_SESSION_TYPE": null,
+  "XDG_CURRENT_DESKTOP": null,
+  "KDE_SESSION_VERSION": null
+ },
+ "packages": {
+  "kwin-wayland": "4:6.7.5-0ubuntu1",
+  "kwin-common": "4:6.7.5-0ubuntu1",
+  "plasma-workspace": null,
+  "plasma-desktop": null,
+  "kwin-style-breeze": "4:6.7.5-0ubuntu1",
+  "libkdecorations3-6": "4:6.7.5-0ubuntu1",
+  "kscreen": null,
+  "libkscreen-bin": "4:6.7.5-0ubuntu1",
+  "libqt6core6t64": "6.11.2+dfsg-4ubuntu2",
+  "libqt6qml6": "6.11.2+dfsg-2ubuntu1",
+  "qt6-wayland": "6.11.2-1",
+  "libkf6coreaddons6": "6.29.0-0ubuntu1",
+  "libkf6config6": null,
+  "libkf6globalaccel6": "6.29.0-0ubuntu2",
+  "libkf6package6": "6.29.0-0ubuntu1",
+  "libkf6windowsystem6": "6.29.0-0ubuntu2",
+  "kactivitymanagerd": "6.7.5-0ubuntu1",
+  "xwayland": "2:24.1.14-1",
+  "libwayland-client0": "1.26.0-1",
+  "wayland-protocols": "1.49-1",
+  "libgl1-mesa-dri": "26.2.4-1ubuntu1",
+  "libdrm2": "2.4.134-3",
+  "cmake": "4.3.4-1ubuntu1",
+  "gcc": "4:15.2.0-5ubuntu1",
+  "clang": null,
+  "python3": "3.14.7-3",
+  "python3-dbus": "1.4.0-1build2"
+ },
+ "kwin": {
+  "kwinVersion": "6.7.5",
+  "qtVersion": "6.11.2",
+  "operationMode": "Wayland",
+  "compositingType": "QPainter",
+  "openglRenderer": null,
+  "openglVersion": null,
+  "openglPlatform": null,
+  "loadedEffects": [
+   "highlightwindow",
+   "kscreen",
+   "outputlocator",
+   "screenedge",
+   "zoom"
+  ],
+  "options": {
+   "perOutputVirtualDesktops": "false",
+   "separateScreenFocus": "true",
+   "focusPolicy": "ClickToFocus",
+   "electricBorderTiling": "true",
+   "electricBorderMaximize": "true",
+   "borderlessMaximizedWindows": "false",
+   "placement": "5",
+   "windowSnapZone": "10",
+   "focusStealingPreventionLevel": "1",
+   "allowTearing": "true",
+   "animationSpeed": null
+  }
+ },
+ "outputs": [
+  {
+   "connector": "Virtual-0",
+   "type": 0,
+   "enabled": true,
+   "priority": 0,
+   "pos": {
+    "x": 0,
+    "y": 0
+   },
+   "scale": 1,
+   "rotation": 1,
+   "mode": {
+    "size": {
+     "height": 800,
+     "width": 1280
+    },
+    "refreshRate": 60
+   },
+   "vrrPolicy": null,
+   "hdr": null,
+   "sizeMM": {
+    "height": -1,
+    "width": -1
+   }
+  }
+ ],
+ "virtualDesktops": {
+  "count": "1",
+  "rows": "1"
+ },
+ "activities": {
+  "serviceAvailable": false,
+  "count": null
+ },
+ "config": {
+  "pluginsExplicitlyEnabled": [],
+  "pluginsExplicitlyDisabled": [],
+  "nativeTilingSections": 0,
+  "nativeTilingPaddings": [],
+  "decorationLibrary": "org.kde.breeze",
+  "windowRuleCount": 0,
+  "installedScripts": {
+   "/usr/share/kwin-wayland/scripts": [
+    "desktopchangeosd",
+    "minimizeall",
+    "synchronizeskipswitcher",
+    "videowall"
+   ]
+  }
+ },
+ "tools": {
+  "kwin_wayland": true,
+  "kpackagetool6": true,
+  "qdbus6": true,
+  "busctl": true,
+  "dbus-daemon": true,
+  "kscreen-doctor": true,
+  "qml6": true,
+  "wayland-scanner": true,
+  "cmake": true,
+  "g++": true,
+  "clang": false,
+  "node": true,
+  "npm": true,
+  "tsc": false,
+  "python3": true,
+  "getcap": true,
+  "weston": false,
+  "cage": false,
+  "gamescope": false,
+  "wlr-randr": false,
+  "perf": false,
+  "valgrind": false,
+  "kwinWaylandFileCapabilities": "cap_sys_nice=ep",
+  "nodeVersion": "v26.11.1"
+ }
+}

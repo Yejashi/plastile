@@ -58,3 +58,27 @@ Codeberg refresh (E02) has not been attempted in this session.
 | Physical session | the user's active Wayland session | **Not used by any probe.** Requires an explicit user decision; see [STATUS](STATUS.md) |
 
 The nested session is fully isolated. Its D-Bus, runtime directory and configuration are private, and nothing is written to the user's kwinrc, journal or kglobalshortcutsrc. QML log output is forced to the session's own stderr with `QT_FORCE_STDERR_LOGGING=1`; without it, Qt routes script logs to the user journal. A nested session cannot establish physical scanout or input latency.
+
+## Second environment: Ubuntu 26.10 KWin sandbox (cloud container)
+
+Added 2026-10-18 to validate the implementation on a second, independently packaged KWin build and to
+run the nested suite in CI. Profile: [evidence/environment-ubuntu2610-sandbox.json](evidence/environment-ubuntu2610-sandbox.json),
+collected with `tools/collect_environment.py` against a nested session's private bus inside the sandbox.
+
+| Item | Value |
+|---|---|
+| Host | Cloud container (Ubuntu 24.04 userland, Linux 6.18.44), 4 vCPU Intel Xeon @ 2.10 GHz, 15.7 GiB RAM, **no GPU** (no `/dev/dri`) |
+| Sandbox | Ubuntu 26.10 "stonking" chroot built by [tools/sandbox/create.sh](../../tools/sandbox/create.sh) |
+| KWin | `kwin-wayland 4:6.7.5-0ubuntu1` (same upstream release as the Arch build, tag `v6.7.5`), `kwin-style-breeze 4:6.7.5` |
+| Qt / KF | Qt **6.11.2** (Arch: 6.12.0); KF **6.29.0** (Arch: 6.30.0) |
+| Other | Xwayland 24.1.14, Wayland 1.26.0, wayland-protocols 1.49, kactivitymanagerd 6.7.5, Node 26.11.1, Python 3.14.7 |
+| Compositing | **QPainter**: KWin's virtual backend finds no DRM render node, so GL-only effects (tile editor, blur) never load |
+| Layer | Nested KWin virtual backend only (1280×800 virtual outputs, synthetic 60 Hz timeline). No physical session exists here |
+
+What this environment changed in the evidence (details in [STATUS](STATUS.md)):
+
+- It reproduced the same set of known product defects as the Arch runs, and found one new engine defect
+  (fractional-scale tolerance, G03) that the GPU machine's timing had hidden. It is now fixed.
+- QPainter compositing means scenarios that need GL effects report `SKIP` here (`native-editor-toggle-L14`).
+- Timing numbers from this machine (software rendering, shared vCPUs) are not comparable with the Arch
+  reference machine and are not used for the performance tables.

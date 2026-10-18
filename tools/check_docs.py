@@ -55,7 +55,9 @@ def check_links(path: Path) -> int:
 
 def main() -> int:
     markdown = sorted(ROOT.rglob("*.md"))
-    markdown = [p for p in markdown if ".git" not in p.parts]
+    # Skip VCS data and local-only trees (agent worktrees, dependencies, generated results).
+    local = {".git", ".claude", "node_modules", "artifacts"}
+    markdown = [p for p in markdown if not local & set(p.relative_to(ROOT).parts)]
     link_count = sum(check_links(path) for path in markdown)
     lock = json.loads((ROOT / "docs/research/sources.lock.json").read_text())
     repositories = lock["repositories"]
