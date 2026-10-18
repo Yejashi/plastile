@@ -1,0 +1,72 @@
+{"app_id": "plastile-fixture", "args": ["fixtures/client/build/plastile-fixture", "--ssd", "--id", "3", "--app-id", "plastile-fixture", "--title", "plastile-physical 3"], "clamp": false, "configure_delay_ms": 0, "decoration_request": "server_side", "delay_mode": "latest", "ev": "start", "id": 3, "ignore_size": false, "log_clock": "CLOCK_MONOTONIC", "pid": 20048, "size": [400, 300], "t_ns": 5540325541265, "title": "plastile-physical 3"}
+{"ev": "bound", "globals": {"wl_compositor": {"advertised": 6, "bound": 4}, "wl_output": {"advertised": 4, "bound": null}, "wl_shm": {"advertised": 2, "bound": 1}, "wp_presentation": {"advertised": 2, "bound": 2}, "xdg_wm_base": {"advertised": 6, "bound": 6}, "zwlr_layer_shell_v1": {"advertised": 5, "bound": null}, "zxdg_decoration_manager_v1": {"advertised": 2, "bound": 1}}, "t_ns": 5540330878964}
+{"clk_id": 1, "ev": "presentation_clock", "name": "CLOCK_MONOTONIC", "same_as_log_clock": true, "t_ns": 5540331010958}
+{"ev": "initial_commit", "height": 300, "t_ns": 5540331053673, "title": "plastile-physical 3", "width": 400, "win": "main"}
+{"ev": "decoration", "mode": "server_side", "t_ns": 5540331459870, "win": "main"}
+{"caps": ["window_menu", "maximize", "fullscreen", "minimize"], "ev": "wm_capabilities", "t_ns": 5540331487803, "win": "main"}
+{"bounds": [1280, 764], "decoration": "server_side", "ev": "configure", "height": 0, "n": 1, "serial": 814, "states": [], "t_ns": 5540331507324, "width": 0, "win": "main"}
+{"delay_ns": 5580, "ev": "ack", "serial": 814, "t_ns": 5540331512904, "win": "main"}
+{"ev": "commit", "height": 300, "reason": "initial", "seq": 1, "serial": 814, "t_ns": 5540331973363, "width": 400, "win": "main"}
+{"ev": "mapped", "height": 300, "t_ns": 5540331978916, "width": 400, "win": "main"}
+{"bounds": [1280, 764], "decoration": "server_side", "ev": "configure", "height": 300, "n": 2, "serial": 821, "states": ["activated"], "t_ns": 5540333166878, "width": 400, "win": "main"}
+{"delay_ns": 8843, "ev": "ack", "serial": 821, "t_ns": 5540333175721, "win": "main"}
+{"ev": "commit", "height": 300, "reason": "configure", "seq": 2, "serial": 821, "t_ns": 5540333657865, "width": 400, "win": "main"}
+{"bounds": [1280, 764], "decoration": "server_side", "ev": "configure", "height": 352, "n": 3, "serial": 823, "states": ["activated"], "t_ns": 5540333673677, "width": 565, "win": "main"}
+{"delay_ns": 4216, "ev": "ack", "serial": 823, "t_ns": 5540333677893, "win": "main"}
+{"ev": "commit", "height": 352, "reason": "configure", "seq": 3, "serial": 823, "t_ns": 5540334406658, "width": 565, "win": "main"}
+{"ev": "discarded", "seq": 1, "t_ns": 5540334432196, "win": "main"}
+{"ev": "discarded", "seq": 2, "t_ns": 5540334792962, "win": "main"}
+{"cb_time_ms": 5540333, "ev": "frame_done", "seq": 3, "t_ns": 5540358596110, "win": "main"}
+{"cb_time_ms": 5540333, "ev": "frame_done", "seq": 2, "t_ns": 5540358605984, "win": "main"}
+{"cb_time_ms": 5540333, "ev": "frame_done", "seq": 1, "t_ns": 5540358607811, "win": "main"}
+{"ev": "presented", "flags": ["vsync", "hw_clock", "hw_completion"], "flags_raw": 7, "present_ns": 5540366445052, "refresh_ns": 16666666, "seq": 3, "seq_hi": 0, "seq_lo": 0, "t_ns": 5540366960109, "tv_nsec": 366445052, "tv_sec": 5540, "win": "main"}
+{"bounds": [1280, 764], "decoration": "server_side", "ev": "configure", "height": 352, "n": 4, "serial": 833, "states": ["activated"], "t_ns": 5540877483376, "width": 628, "win": "main"}
+{"delay_ns": 29502, "ev": "ack", "serial": 833, "t_ns": 5540877512878, "win": "main"}
+{"ev": "commit", "height": 352, "reason": "configure", "seq": 4, "serial": 833, "t_ns": 5540878436804, "width": 628, "win": "main"}
+{"cb_time_ms": 5540483, "ev": "frame_done", "seq": 4, "t_ns": 5540882484356, "win": "main"}
+{"ev": "presented", "flags": ["vsync", "hw_clock", "hw_completion"], "flags_raw": 7, "present_ns": 5540883111698, "refresh_ns": 16666666, "seq": 4, "seq_hi": 0, "seq_lo": 0, "t_ns": 5540882783481, "tv_nsec": 883111698, "tv_sec": 5540, "win": "main"}
+{"bounds": [1280, 764], "decoration": "server_side", "ev": "configure", "height": 352, "n": 5, "serial": 846, "states": ["activated"], "t_ns": 5540970704705, "width": 565, "win": "main"}
+{"delay_ns": 26161, "ev": "ack", "serial": 846, "t_ns": 5540970730866, "win": "main"}
+{"ev": "commit", "height": 352, "reason": "configure", "seq": 5, "serial": 846, "t_ns": 5540970922706, "width": 565, "win": "main"}
+{"cb_time_ms": 5540899, "ev": "frame_done", "seq": 5, "t_ns": 5540974583107, "win": "main"}
+{"ev": "presented", "flags": ["vsync", "hw_clock", "hw_completion"], "flags_raw": 7, "present_ns": 5540983111694, "refresh_ns": 16666666, "seq": 5, "seq_hi": 0, "seq_lo": 0, "t_ns": 5540983396189, "tv_nsec": 983111694, "tv_sec": 5540, "win": "main"}
+{"bounds": [1280, 764], "decoration": "server_side", "ev": "configure", "height": 352, "n": 6, "serial": 859, "states": ["activated"], "t_ns": 5541055959360, "width": 628, "win": "main"}
+{"delay_ns": 29765, "ev": "ack", "serial": 859, "t_ns": 5541055989125, "win": "main"}
+{"ev": "commit", "height": 352, "reason": "configure", "seq": 6, "serial": 859, "t_ns": 5541056320266, "width": 628, "win": "main"}
+{"cb_time_ms": 5540999, "ev": "frame_done", "seq": 6, "t_ns": 5541060157726, "win": "main"}
+{"ev": "presented", "flags": ["vsync", "hw_clock", "hw_completion"], "flags_raw": 7, "present_ns": 5541066445024, "refresh_ns": 16666666, "seq": 6, "seq_hi": 0, "seq_lo": 0, "t_ns": 5541066530254, "tv_nsec": 66445024, "tv_sec": 5541, "win": "main"}
+{"bounds": [1280, 764], "decoration": "server_side", "ev": "configure", "height": 352, "n": 7, "serial": 872, "states": ["activated"], "t_ns": 5541153603254, "width": 565, "win": "main"}
+{"delay_ns": 18561, "ev": "ack", "serial": 872, "t_ns": 5541153621815, "win": "main"}
+{"ev": "commit", "height": 352, "reason": "configure", "seq": 7, "serial": 872, "t_ns": 5541153793219, "width": 565, "win": "main"}
+{"cb_time_ms": 5541083, "ev": "frame_done", "seq": 7, "t_ns": 5541158062002, "win": "main"}
+{"ev": "presented", "flags": ["vsync", "hw_clock", "hw_completion"], "flags_raw": 7, "present_ns": 5541166445020, "refresh_ns": 16666666, "seq": 7, "seq_hi": 0, "seq_lo": 0, "t_ns": 5541166310390, "tv_nsec": 166445020, "tv_sec": 5541, "win": "main"}
+{"bounds": [1280, 764], "decoration": "server_side", "ev": "configure", "height": 352, "n": 8, "serial": 885, "states": ["activated"], "t_ns": 5541245041840, "width": 628, "win": "main"}
+{"delay_ns": 12549, "ev": "ack", "serial": 885, "t_ns": 5541245054389, "win": "main"}
+{"ev": "commit", "height": 352, "reason": "configure", "seq": 8, "serial": 885, "t_ns": 5541245253358, "width": 628, "win": "main"}
+{"cb_time_ms": 5541183, "ev": "frame_done", "seq": 8, "t_ns": 5541248962119, "win": "main"}
+{"ev": "presented", "flags": ["vsync", "hw_clock", "hw_completion"], "flags_raw": 7, "present_ns": 5541249778350, "refresh_ns": 16666666, "seq": 8, "seq_hi": 0, "seq_lo": 0, "t_ns": 5541249292589, "tv_nsec": 249778350, "tv_sec": 5541, "win": "main"}
+{"bounds": [1280, 764], "decoration": "server_side", "ev": "configure", "height": 352, "n": 9, "serial": 898, "states": ["activated"], "t_ns": 5541323893977, "width": 565, "win": "main"}
+{"delay_ns": 16094, "ev": "ack", "serial": 898, "t_ns": 5541323910071, "win": "main"}
+{"ev": "commit", "height": 352, "reason": "configure", "seq": 9, "serial": 898, "t_ns": 5541324147370, "width": 565, "win": "main"}
+{"cb_time_ms": 5541266, "ev": "frame_done", "seq": 9, "t_ns": 5541327660768, "win": "main"}
+{"ev": "presented", "flags": ["vsync", "hw_clock", "hw_completion"], "flags_raw": 7, "present_ns": 5541333111680, "refresh_ns": 16666666, "seq": 9, "seq_hi": 0, "seq_lo": 0, "t_ns": 5541333073925, "tv_nsec": 333111680, "tv_sec": 5541, "win": "main"}
+{"bounds": [1280, 764], "decoration": "server_side", "ev": "configure", "height": 352, "n": 10, "serial": 911, "states": ["activated"], "t_ns": 5541417946994, "width": 628, "win": "main"}
+{"delay_ns": 17085, "ev": "ack", "serial": 911, "t_ns": 5541417964079, "win": "main"}
+{"ev": "commit", "height": 352, "reason": "configure", "seq": 10, "serial": 911, "t_ns": 5541418189293, "width": 628, "win": "main"}
+{"cb_time_ms": 5541349, "ev": "frame_done", "seq": 10, "t_ns": 5541427159206, "win": "main"}
+{"ev": "presented", "flags": ["vsync", "hw_clock", "hw_completion"], "flags_raw": 7, "present_ns": 5541433111676, "refresh_ns": 16666666, "seq": 10, "seq_hi": 0, "seq_lo": 0, "t_ns": 5541433479827, "tv_nsec": 433111676, "tv_sec": 5541, "win": "main"}
+{"bounds": [1280, 764], "decoration": "server_side", "ev": "configure", "height": 352, "n": 11, "serial": 924, "states": ["activated"], "t_ns": 5541508931500, "width": 565, "win": "main"}
+{"delay_ns": 16367, "ev": "ack", "serial": 924, "t_ns": 5541508947867, "win": "main"}
+{"ev": "commit", "height": 352, "reason": "configure", "seq": 11, "serial": 924, "t_ns": 5541509185052, "width": 565, "win": "main"}
+{"cb_time_ms": 5541449, "ev": "frame_done", "seq": 11, "t_ns": 5541513857259, "win": "main"}
+{"ev": "presented", "flags": ["vsync", "hw_clock", "hw_completion"], "flags_raw": 7, "present_ns": 5541516445006, "refresh_ns": 16666666, "seq": 11, "seq_hi": 0, "seq_lo": 0, "t_ns": 5541516321246, "tv_nsec": 516445006, "tv_sec": 5541, "win": "main"}
+{"bounds": [1280, 764], "decoration": "server_side", "ev": "configure", "height": 352, "n": 12, "serial": 937, "states": ["activated"], "t_ns": 5541590318711, "width": 628, "win": "main"}
+{"delay_ns": 14173, "ev": "ack", "serial": 937, "t_ns": 5541590332884, "win": "main"}
+{"ev": "commit", "height": 352, "reason": "configure", "seq": 12, "serial": 937, "t_ns": 5541590540004, "width": 628, "win": "main"}
+{"cb_time_ms": 5541599, "ev": "frame_done", "seq": 12, "t_ns": 5541607796434, "win": "main"}
+{"ev": "presented", "flags": ["vsync", "hw_clock", "hw_completion"], "flags_raw": 7, "present_ns": 5541616445002, "refresh_ns": 16666666, "seq": 12, "seq_hi": 0, "seq_lo": 0, "t_ns": 5541616108631, "tv_nsec": 616445002, "tv_sec": 5541, "win": "main"}
+{"bounds": [1280, 764], "decoration": "server_side", "ev": "configure", "height": 352, "n": 13, "serial": 950, "states": ["activated"], "t_ns": 5541695402661, "width": 565, "win": "main"}
+{"delay_ns": 15323, "ev": "ack", "serial": 950, "t_ns": 5541695417984, "win": "main"}
+{"ev": "commit", "height": 352, "reason": "configure", "seq": 13, "serial": 950, "t_ns": 5541695608899, "width": 565, "win": "main"}
+{"cb_time_ms": 5541616, "ev": "frame_done", "seq": 13, "t_ns": 5541699236197, "win": "main"}
+{"ev": "presented", "flags": ["vsync", "hw_clock", "hw_completion"], "flags_raw": 7, "present_ns": 5541699778332, "refresh_ns": 16666666, "seq": 13, "seq_hi": 0, "seq_lo": 0, "t_ns": 5541699472388, "tv_nsec": 699778332, "tv_sec": 5541, "win": "main"}

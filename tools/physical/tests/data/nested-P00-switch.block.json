@@ -1,0 +1,7 @@
+{
+ "workload": "P00-switch",
+ "condition": "none",
+ "expect": "activate",
+ "windowCount": 3,
+ "refreshNsObservedAtStart": 16666666
+}

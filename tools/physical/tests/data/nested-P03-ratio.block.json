@@ -1,0 +1,7 @@
+{
+ "workload": "P03-ratio",
+ "condition": "plastile",
+ "expect": "resize",
+ "windowCount": 3,
+ "refreshNsObservedAtStart": 16666666
+}

@@ -1,0 +1,7 @@
+{
+ "workload": "P02-quicktile",
+ "condition": "none",
+ "expect": "resize",
+ "windowCount": 3,
+ "refreshNsObservedAtStart": 16666666
+}
