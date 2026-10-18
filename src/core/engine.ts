@@ -19,7 +19,7 @@ import { bsp, reinsert as bspReinsert } from "./layouts/bsp.ts";
 import { monocle, floating } from "./layouts/monocle.ts";
 import {
   contextId, sameContext, type ActivityId, type Constraints, type ContextId, type ContextKey, type ContextSettings, type Decision,
-  type LayoutKind, type Membership, type OutputId, type PlacementMode, type Suspension, type WindowId, type WindowMeta,
+  type DesktopId, type LayoutKind, type Membership, type OutputId, type PlacementMode, type Suspension, type WindowId, type WindowMeta,
   type WindowStates,
 } from "./types.ts";
 
@@ -1468,6 +1468,16 @@ export class Engine {
     if (clock) this.lastActivateNs = clock() - t0;
   }
 
+  /**
+   * followOnSend (T24): after a send, show the window's desktop on the output it went to and
+   * activate it. The decision is the source context's, read before the send; both calls are
+   * plain property writes, and the visibility change arrives as an ordinary event.
+   */
+  private follow(r: Rec, output: OutputId, desktop: DesktopId | null): void {
+    if (desktop !== null && this.host.visibleDesktop(output) !== desktop) this.host.showDesktop(output, desktop);
+    if (this.recs.get(r.id) === r) this.activate(r);
+  }
+
   private focusCommand(c: Ctx, r: Rec | null, action: string): { status: CommandStatus; reason?: string; targets: string[] } {
     const ids = this.solveInput(c, null).ids;
     if (ids.length === 0) return { status: "noop", reason: "no tiled windows", targets: [] };
@@ -1524,16 +1534,24 @@ export class Engine {
       if (outs.length < 2 || r.membership.output === null) return { status: "noop", reason: "no other output", targets: [] };
       const i = outs.findIndex((o) => o.id === r.membership.output);
       const dest = outs[(i + (action === "output-next" ? 1 : outs.length - 1)) % outs.length];
-      return this.host.sendToOutput(r.id, r.gen, dest.id)
-        ? { status: "accepted", targets: [r.id] } : { status: "rejected", reason: "transfer refused", targets: [] };
+      const follow = this.ctxSettings(c).followOnSend;
+      if (!this.host.sendToOutput(r.id, r.gen, dest.id)) return { status: "rejected", reason: "transfer refused", targets: [] };
+      // KWin moves an interactively sent window to the destination's current desktop (per-output
+      // desktops; Window::finishInteractiveOutputChange) and reports it inside the send, so the
+      // membership read now is where the window is shown.
+      if (follow) this.follow(r, dest.id, r.membership.desktops.length === 1 ? r.membership.desktops[0] : null);
+      return { status: "accepted", targets: [r.id] };
     }
     if (action === "desktop-next" || action === "desktop-previous") {
       const ds = this.host.desktops();
       if (ds.length < 2 || r.membership.desktops.length !== 1) return { status: "noop", reason: "no other desktop", targets: [] };
       const i = ds.indexOf(r.membership.desktops[0]);
       const dest = ds[(i + (action === "desktop-next" ? 1 : ds.length - 1)) % ds.length];
-      return this.host.sendToDesktop(r.id, r.gen, dest)
-        ? { status: "accepted", targets: [r.id] } : { status: "rejected", reason: "transfer refused", targets: [] };
+      const out = r.membership.output;
+      const follow = this.ctxSettings(c).followOnSend;
+      if (!this.host.sendToDesktop(r.id, r.gen, dest)) return { status: "rejected", reason: "transfer refused", targets: [] };
+      if (follow && out !== null) this.follow(r, out, dest);
+      return { status: "accepted", targets: [r.id] };
     }
     // Structural reinsert next to the directional neighbour.
     if (!this.participates(r) || !sameContext(r.ctx, c.key)) return { status: "noop", reason: "active window is not tiled here", targets: [] };

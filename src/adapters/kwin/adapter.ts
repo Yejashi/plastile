@@ -641,6 +641,14 @@ export class KwinAdapter implements HostPort {
     return true;
   }
 
+  showDesktop(output: string, desktop: string): boolean {
+    const o = this.outputByKey(output);
+    const d = this.desktopById(desktop);
+    if (!o || !d) return false;
+    this.ws.setCurrentDesktopForScreen(d, o);
+    return true;
+  }
+
   activeWindow(): string | null {
     const w = this.ws.activeWindow;
     return w ? this.idOf(w) : null;

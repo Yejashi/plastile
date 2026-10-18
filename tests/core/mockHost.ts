@@ -74,6 +74,10 @@ export class MockHost implements HostPort, RuntimeServices {
   windows = new Map<string, MockWindow>();
   outs: OutputInfo[] = [{ id: "O1", name: "O1", geometry: rect(0, 0, 1280, 800), scale: 1 }];
   visible = new Map<string, string>([["O1", "D1"]]);
+  /** KWin's PerOutputVirtualDesktops: showing a desktop changes one output instead of all. */
+  perOutputDesktops = false;
+  /** showDesktop calls, in order. */
+  shown: Array<{ output: string; desktop: string }> = [];
   desks = ["D1", "D2"];
   activities = 1;
   activity = "default";
@@ -207,7 +211,14 @@ export class MockHost implements HostPort, RuntimeServices {
   sendToOutput(id: string, gen: number, output: string): boolean {
     const w = this.windows.get(id);
     if (!w || w.gen !== gen) return false;
+    const prev = w.membership.output === null ? undefined : this.visible.get(w.membership.output);
     w.membership = { ...w.membership, output };
+    // KWin keeps an interactively sent window on the current desktop: it takes the destination
+    // output's current desktop in place of the source's (Window::finishInteractiveOutputChange).
+    const cur = this.visible.get(output), ds = w.membership.desktops;
+    if (cur !== undefined && prev !== undefined && cur !== prev && ds.length > 0 && !ds.includes(cur)) {
+      w.membership = { ...w.membership, desktops: [...ds.filter((d) => d !== prev), cur] };
+    }
     this.engine.membershipChanged(id, gen, w.membership);
     return true;
   }
@@ -216,6 +227,14 @@ export class MockHost implements HostPort, RuntimeServices {
     if (!w || w.gen !== gen) return false;
     w.membership = { ...w.membership, desktops: [desktop] };
     this.engine.membershipChanged(id, gen, w.membership);
+    return true;
+  }
+  showDesktop(output: string, desktop: string): boolean {
+    if (!this.desks.includes(desktop) || !this.outs.some((o) => o.id === output)) return false;
+    this.shown.push({ output, desktop });
+    if (this.perOutputDesktops) this.visible.set(output, desktop);
+    else for (const o of this.outs) this.visible.set(o.id, desktop);
+    this.engine.visibilityChanged(); // KWin emits currentDesktopChanged inside the setter
     return true;
   }
   activeWindow(): string | null { return this.active; }

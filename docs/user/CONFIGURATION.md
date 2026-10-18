@@ -72,7 +72,7 @@ A settings patch is used by `defaults` and by each override's `set`. Every field
 | `bsp.ratioStep` | greater than 0, at most 0.5 | |
 | `overflow` | `float-new` | The only implemented policy. Other values are rejected. |
 | `singleWindowGaps` | boolean | |
-| `followOnSend` | `false` only | Accepted at its inert value for compatibility with the design document's example; `true` is rejected as not supported. |
+| `followOnSend` | boolean | Default `false`. When `true`, *Send window to next/previous desktop* also shows that desktop on the window's screen (only that screen when KWin's per-screen desktops are on) and activates the window. *Send window to next/previous output* needs no switch: KWin itself moves the window onto the destination screen's current desktop and keeps it active, so `true` only adds the activation. The value of the context the window is sent **from** decides. JSON only (no flat key). |
 | `multiContextWindows` | `"float"` only | As above: windows on several desktops or activities always float. |
 | `animation` | `{ "enabled": false, "durationMs": 0 }` only | As above: no animation exists. |
 
@@ -311,7 +311,7 @@ The line is `plastile info explain {...}` with these fields:
 - `configJson` longer than 524,288 characters
 - matchers with none or several of `exact`, `glob` and `regex`
 - unsupported regex flags, or patterns that do not compile
-- `followOnSend`, `multiContextWindows` or `animation` at any non-inert value
+- `multiContextWindows` or `animation` at any non-inert value
 
 **Warnings** (the configuration still activates): an empty `set`, empty `actions`. (Unknown flat keys would be a warning too, but in KWin they never reach the validator; see [Flat keys](#flat-keys).)
 

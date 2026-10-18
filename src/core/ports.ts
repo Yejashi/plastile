@@ -50,6 +50,8 @@ export interface HostPort {
   /** Send to another output/desktop (membership change arrives later as an event). */
   sendToOutput(id: WindowId, gen: number, output: OutputId): boolean;
   sendToDesktop(id: WindowId, gen: number, desktop: DesktopId): boolean;
+  /** Show a desktop on an output (follow on send); without per-output desktops KWin switches every output. */
+  showDesktop(output: OutputId, desktop: DesktopId): boolean;
   activeWindow(): WindowId | null;
   activeOutput(): OutputId | null;
   outputs(): readonly OutputInfo[];
