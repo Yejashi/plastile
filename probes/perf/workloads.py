@@ -75,11 +75,45 @@ class Results:
         return bool(ok)
 
 
-def session(out: Path, n: int, config: dict | None = None) -> Session:
-    # KWin clamps client minimums to >= 150x150 (178 px frame with the titlebar), so n
-    # stacked windows need a tall virtual output to all fit without overflow.
-    return Session(out, width=1920, height=max(1080, n * 186 + 32), extra_env={"QML_IMPORT_PATH": str(MEASURE)},
-                   qml=HERE / "main.qml", config=config)
+# KWin reports a 150x150 minimum size for the fixture (window.minSize, measured in nested
+# KWin 6.7.5) and the server-side titlebar adds 36 px, so a fixture frame is at least 186 px
+# tall. Master/stack with one master stacks n - 1 windows in one column.
+MIN_FRAME_H = 186
+SLACK = 64
+
+
+def stack_output_height(n: int, min_h: int = MIN_FRAME_H, gap: int = GAP) -> int:
+    """Virtual output height that fits n windows in master/stack (one master) above their minima.
+
+    The stack column holds n - 1 rows, with n - 2 inner gaps between them and two outer
+    gaps. The earlier formula n * 186 + 32 left the gaps out: from n = 28 on, the stack no
+    longer fits (n = 32 needs 6022 px, that formula gave 5984), so the newest window was
+    floated by the overflow policy, which is correct behaviour for an infeasible layout.
+    """
+    rows = max(1, n - 1)
+    return max(1080, rows * min_h + (rows - 1) * gap + 2 * gap + SLACK)
+
+
+def stack_feasibility(s: Session, n: int, area: dict, gap: int = GAP) -> dict:
+    """Measured precondition: the column of n - 1 minimum-height frames fits the work area.
+
+    Read from KWin (minSize plus the frame/client margin of one fixture), so a different
+    decoration height (another KWin or theme) shows up as an infeasible workload instead
+    of as an overflow that looks like a product failure.
+    """
+    out = s.js("let r = null; for (const w of workspace.stackingOrder) if (w.caption.indexOf('plastile-fixture') === 0) {"
+               " r = {minH: w.minSize.height, marginH: w.frameGeometry.height - w.clientGeometry.height}; break; } emit(r);")
+    m = json.loads(out[0])
+    min_frame = m["minH"] + m["marginH"] if m else MIN_FRAME_H
+    rows = max(1, n - 1)
+    need = rows * min_frame + (rows - 1) * gap + 2 * gap
+    return {"minFrameHeight": min_frame, "stackRows": rows, "requiredHeight": need, "areaHeight": area["height"],
+            "feasible": need <= area["height"]}
+
+
+def session(out: Path, n: int, config: dict | None = None, qml: Path | None = None) -> Session:
+    return Session(out, width=1920, height=stack_output_height(n), extra_env={"QML_IMPORT_PATH": str(MEASURE)},
+                   qml=qml or HERE / "main.qml", config=config)
 
 
 def load_quiet(s: Session) -> None:
@@ -183,6 +217,10 @@ def p05(res: Results, out: Path, counts=(4, 8, 16, 32)) -> None:
                 time.sleep(0.02)
             c1 = s.settle(timeout=10)
             d_create = delta(c0, c1)
+            # Measured after the burst so the extra oracle query does not perturb its timing.
+            feas = stack_feasibility(s, n, area)
+            res.check(f"P05 n={n}: workload feasible: {n - 1} stacked minimum frames fit the work area (measured)",
+                      feas["feasible"], feas)
             f = s.frames_list()
             errs = tiling_errors(f, area, GAP)
             evs = fixture_events(s)
@@ -192,6 +230,7 @@ def p05(res: Results, out: Path, counts=(4, 8, 16, 32)) -> None:
             last_mapped = max(mapped) if len(mapped) == n else None
             row = {
                 "n": n,
+                "feasibility": feas,
                 "spawnSpanMs": (t_spawn1 - t_spawn0) / 1e6,
                 "mappedSpanMs": (max(mapped) - min(mapped)) / 1e6 if mapped else None,
                 "mappedCount": len(mapped),

@@ -225,6 +225,21 @@ test("infeasible minima float the newest window (G08 float-new)", () => {
   assert.ok(r.notes.some((n) => n.startsWith("c: does not fit")));
 });
 
+test("P05 n=32 boundary: 31 stacked 186 px minima need 6022 px; at 5984 px only the newest floats", () => {
+  // Nested KWin reports a 150x150 fixture minimum plus a 36 px titlebar. The perf workload's
+  // old output height (n * 186 + 32 = 5984) left out the gaps: the newest window overflowing
+  // there is float-new working, not a defect (probes/perf/workloads.py stack_output_height).
+  const ids = Array.from({ length: 32 }, (_, i) => `w${i + 1}`);
+  const constraints = new Map(ids.map((id) => [id, minC(150, 186)] as [WindowId, Constraints]));
+  const tight = masterStack.solve(masterStack.initial(S), input(ids, { area: rect(0, 0, 1920, 5984), constraints }));
+  assert.deepEqual(tight.overflow, ["w32"]);
+  assert.equal(tight.slots.size, 31);
+  assert.ok(tight.notes.some((n) => n.startsWith("w32: does not fit") && n.includes("needs 6006 px height, has 5968")), tight.notes.join("; "));
+  const fits = masterStack.solve(masterStack.initial(S), input(ids, { area: rect(0, 0, 1920, 6022), constraints }));
+  assert.deepEqual(fits.overflow, []);
+  assertTiling(fits.slots, rect(0, 0, 1920, 6022));
+});
+
 test("overflow floats the window that cannot fit, not newer windows that do (BEHAVIOR §11)", () => {
   // An old window whose minimum exceeds the output (work-area shrink, learned minimum).
   const ids = ["old", "n1", "n2", "n3"];
