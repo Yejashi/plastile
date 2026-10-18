@@ -108,17 +108,20 @@ export function solveWithOverflow(ids: readonly WindowId[], input: SolveInput,
   };
   const all = tryIds(ids);
   if (all.failure === null) return done(all, [], []);
+  // Ties keep context order explicitly (QV4's sort need not be stable).
+  const at = new Map<WindowId, number>();
+  ids.forEach((id, i) => at.set(id, i));
   const seq = (id: WindowId) => input.insertedAt.get(id) ?? 0;
-  const byAge = ids.slice().sort((a, b) => seq(a) - seq(b)); // stable: ties keep context order
+  const older = (a: WindowId, b: WindowId) => seq(a) - seq(b) || at.get(a)! - at.get(b)!;
   const kept = new Set<WindowId>();
   const failed = new Map<WindowId, string>();
   let fits = tryIds([]);
-  for (const id of byAge) {
+  for (const id of ids.slice().sort(older)) {
     const r = tryIds(ids.filter((x) => kept.has(x) || x === id));
     if (r.failure === null) { kept.add(id); fits = r; } else failed.set(id, r.failure);
   }
   // Report newest first, the order in which float-new gives windows up.
-  const overflow = [...failed.keys()].sort((a, b) => seq(b) - seq(a));
+  const overflow = [...failed.keys()].sort((a, b) => older(b, a));
   const notes = overflow.map((id) => `${id}: does not fit (${failed.get(id)}); overflow float-new`);
   return done(fits, overflow, notes);
 }
