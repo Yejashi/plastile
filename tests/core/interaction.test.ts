@@ -70,6 +70,20 @@ test("T23: focusWrap never crosses to another output", () => {
   }
 });
 
+test("T23: floating windows are never directional or wrap targets", () => {
+  const { h, e } = setup(["m", "s1", "s2"], { focusWrap: true });
+  // A dialog floating over the stack's right half: right of every tile, but not a tile.
+  h.open("dlg", { meta: { ...h.windows.get("m")!.meta, appId: "dlg", kind: "dialog" }, frame: rect(1100, 300, 150, 150) });
+  h.drain();
+  assert.equal(e.modeOf("dlg"), "floating");
+  h.activate("s1");
+  e.execute("plastile.focus.right");
+  assert.equal(h.active, "m", "wrapped to the master, not the floating dialog");
+  h.activate("m");
+  e.execute("plastile.focus.left");
+  assert.equal(h.active, "s1");
+});
+
 // ------------------------------------------------------------- cross-output focus
 
 /** Three outputs enumerated out of topology order: R (right), L (left), M (middle). */

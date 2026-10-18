@@ -42,6 +42,7 @@ qdbus6 org.kde.kglobalaccel /component/kwin org.kde.kglobalaccel.Component.invok
 |---|---|
 | `counters.solves` | Layout computations. One per lifecycle pass or command on a visible context; none while idle. |
 | `counters.writes` | Frame geometry requests issued to KWin. |
+| `counters.liveSolves` | Solves made while a tile was being resized with the mouse and `liveResize` is on (also counted in `solves`): at most one per update of the resized window. Always 0 with `liveResize` off. |
 | `counters.corrections` | Re-requests after a client settled somewhere other than requested. At most 2 per window per target. |
 | `counters.skipNoop`, `skipOutstanding`, `skipDiverged` | Writes avoided because the window was already at the target, a request was still in flight, or Plastile had given up on that window. |
 | `counters.activations`, `raises` | Focus and raise calls. Focus commands produce these, never `writes`. |
