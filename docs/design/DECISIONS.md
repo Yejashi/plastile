@@ -207,7 +207,9 @@ start-up and only reads.
 asynchronous call whose handler only starts a timer, and KWin's re-read happens on its own timer. A reload
 re-reads all of KWin's settings, as any KDE settings page's Apply does, and Scripting::start then runs and
 skips the loaded script (measured: one engine, one activation for 20 rapid requests). The shortcut report is a
-snapshot (load and reload), limited to single-chord keys and to components KGlobalAccel knows. Replies are
+snapshot (load and reload), limited to single-chord keys and to components KGlobalAccel knows. KWin hosts
+both services in-process, so Qt may deliver these calls locally; measured, `call()` returned within 1 ms
+even for KWin's component (159 shortcuts), and each reply arrives on a later event-loop turn. Replies are
 QV4 array-like sequences, not Arrays (measured), so parsing accepts array-likes.
 
 ## ADR-016: The explain view is a lazily loaded popup marked as Plastile's own UI
