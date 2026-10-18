@@ -1195,6 +1195,22 @@ static void destroy_child(void)
 	lend();
 }
 
+/* close-main: destroy the main toplevel while the child stays open, like an application
+ * that closes its main window but keeps a dialog (xdg-shell then treats the child as
+ * having no parent). The process keeps running until quit. */
+static void destroy_main(void)
+{
+	if (!g.main_win.toplevel) {
+		log_error("no main window to close");
+		return;
+	}
+	window_destroy(&g.main_win);
+	wl_display_flush(g.display);
+	lstart("main_destroyed");
+	lbool("child_exists", g.child_exists);
+	lend();
+}
+
 static void on_mapped(struct window *w)
 {
 	if (w->is_child) {
@@ -1400,6 +1416,10 @@ static void handle_command(char *line)
 		log_error("%s: not supported in panel mode (layer surface, no xdg_toplevel)", cmd);
 		return;
 	}
+	if (!g.main_win.toplevel && strcmp(cmd, "quit") != 0 && strcmp(cmd, "close-child") != 0) {
+		log_error("%s: the main window was closed (close-main)", cmd);
+		return;
+	}
 	if (!strcmp(cmd, "resize")) {
 		if (!rest || sscanf(rest, "%d %d", &a, &b) != 2 || a <= 0 || b <= 0) {
 			log_error("usage: resize W H");
@@ -1438,6 +1458,8 @@ static void handle_command(char *line)
 		spawn_child();
 	} else if (!strcmp(cmd, "close-child")) {
 		destroy_child();
+	} else if (!strcmp(cmd, "close-main")) {
+		destroy_main();
 	} else if (!strcmp(cmd, "title")) {
 		if (!rest || !*rest) {
 			log_error("usage: title STR");
@@ -1531,7 +1553,8 @@ static void usage(FILE *f)
 		"                           layer top, scope dock, anchored to EDGE (top|bottom|left|right)\n"
 		"                           plus both perpendicular edges, exclusive_zone SIZE\n"
 		"  --output NAME            panel mode: wl_output name to anchor to (default: compositor's choice)\n"
-		"stdin commands: resize W H | min W H | max W H | child | close-child | title STR | quit\n"
+		"stdin commands: resize W H | min W H | max W H | child | close-child | close-main |\n"
+		"                title STR | quit\n"
 		"                (panel mode accepts only quit)\n");
 }
 

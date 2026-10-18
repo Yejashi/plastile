@@ -15,6 +15,7 @@ from pathlib import Path
 from harness import (KEY_LEFTMETA, Input, Listener, Session, delta, evidence_file, last_trace_t, near, tiling_errors, trace,
                      window_info)
 from scenarios import STACK_INFO, Checks, Skipped, kscreen, scenario
+from scenarios_topology import until
 
 ERRORS = r"plastile (error|warn)|TypeError|ReferenceError"
 KEY_SHIFT, KEY_CTRL, KEY_N, KEY_L, KEY_EQUAL, KEY_MINUS = 42, 29, 49, 38, 13, 12
@@ -172,6 +173,180 @@ def monocle_focus_cycle(out: Path, c: Checks):
         wid = {x["caption"]: x["id"] for x in s.frames_list()}
         w = [r for r in trace(s) if r.get("kind") == "write" and r.get("id") == wid.get(child)]
         c("T22: Plastile never wrote the dialog (trace)", not w, len(w))
+        c("T22: no errors", not s.log_lines(ERRORS, 0), s.log_lines(ERRORS, 0)[:3])
+
+
+# Every window property a monocle presentation could leave behind (BEHAVIOR §6: layer and visibility changes
+# carry restore ownership). Plastile only raises; this is KWin's view, compared with the state before load.
+# KWin 6.7.5 exposes no `shade` property to scripts (undefined, so JSON would drop it): it is not listed.
+PRESENTATION_FIELDS = ("minimized", "hidden", "opacity", "keepAbove", "keepBelow", "layer", "skipTaskbar", "skipSwitcher",
+                       "skipPager", "noBorder", "fullScreen", "maximizeMode", "onAllDesktops")
+PRESENTATION = ("({" + ", ".join(f"{k}: w.{k}" for k in PRESENTATION_FIELDS) + ", desktops: w.desktops.map(d => d.id)})")
+
+
+def _presentation(s: Session, caps: list[str]) -> dict:
+    return {k: window_info(s, k, PRESENTATION) for k in caps}
+
+
+def _usable(s: Session, caps: list[str], child: str, parent: str) -> list:
+    """Each window activates and is raised above every other window (its own transient excepted): oracle."""
+    bad = []
+    for k in caps:
+        s.act(k, "workspace.activeWindow = w")
+        if not wait_active(s, k):
+            bad.append((k, "not activated", active(s)))
+            continue
+        time.sleep(0.05)
+        info = {x: window_info(s, x, STACK_INFO) for x in caps}
+        above = [x for x in caps if x != k and not (k == parent and x == child) and info[x]["stack"] > info[k]["stack"]]
+        if above or info[k]["minimized"] or info[k]["hidden"]:
+            bad.append((k, "below " + ",".join(above) if above else "minimized or hidden", info[k]))
+    return bad
+
+
+SOLO_T22 = "plastile-solo"
+
+
+def _frames_t22(s: Session) -> dict[str, dict]:
+    return {**s.frames(), **{x["caption"]: x for x in s.kw.fixtures(SOLO_T22)}}
+
+
+@scenario("monocle-unload-T22")
+def monocle_unload(out: Path, c: Checks):
+    """Leaving monocle by layout switch keeps the tile order and the user's float geometry; disabling (unload)
+    and reloading Plastile while in monocle leave no visibility, opacity or layer change behind (KWin's state
+    against the state before load) and every window stays usable (T22 acceptance)."""
+    with Session(out, config={"traceCapacity": 8192}) as s:
+        s.spawn(1); s.spawn(2, "--parent-after-ms", "200"); s.spawn(3)
+        # The float has its own application id: a saved float is restored only to the one live window of its
+        # application (T27, src/core/engine.ts restoreFloats), so the reload half can check it.
+        s.spawn(4, "--app-id", SOLO_T22, wait=False)
+        s.wait_for(lambda: fx(4) in _frames_t22(s), 5, "map the float")
+        child = fx(2) + " child"
+        s.wait_for(lambda: child in _frames_t22(s), 5, "the transient child maps")
+        caps = [fx(1), fx(2), fx(3), fx(4), child]
+        tiles = [fx(1), fx(2), fx(3)]
+        time.sleep(0.3)
+        props0 = _presentation(s, caps)
+        # An undefined property would be dropped from both sides of every comparison below and pass vacuously.
+        missing = {k: [f for f in PRESENTATION_FIELDS + ("desktops",) if (props0[k] or {}).get(f) is None] for k in caps}
+        c("before load: KWin reports every compared property on every window (none undefined)",
+          not any(missing.values()), missing)
+        s.load(); s.settle()
+        area = s.area()
+        whole = {"x": area["x"] + 8, "y": area["y"] + 8, "width": area["width"] - 16, "height": area["height"] - 16}
+
+        # The user floats fixture 4 and places it.
+        float_rect = {"x": 120, "y": 140, "width": 420, "height": 300}
+        s.act(fx(4), "workspace.activeWindow = w")
+        s.cmd("window.toggle-float"); s.settle()
+        s.act(fx(4), f"w.frameGeometry = {json.dumps(float_rect)}")
+        until(lambda: near(_frames_t22(s)[fx(4)]["frame"], float_rect, 1.0), 3.0)
+        s.settle()
+        f = _frames_t22(s)
+        order_ms = {k: f[k]["frame"] for k in tiles}
+        dialog0 = f[child]["frame"]
+        c("setup: fixture 4 floats at the user's rectangle; three tiles in master/stack (oracle)",
+          near(f[fx(4)]["frame"], float_rect, 1.0) and not tiling_errors([f[k] for k in tiles], area, 8),
+          {"float": f[fx(4)]["frame"], "errors": tiling_errors([f[k] for k in tiles], area, 8)})
+
+        # master-stack -> monocle (with focus cycling) -> master-stack, then bsp -> monocle -> bsp.
+        rounds = {}
+        for back in ("master-stack", "bsp"):
+            if back == "bsp":
+                s.cmd("layout.bsp"); s.settle()
+                fb = _frames_t22(s)
+                rounds["bsp-before"] = {k: fb[k]["frame"] for k in tiles}
+            before = order_ms if back == "master-stack" else rounds["bsp-before"]
+            s.act(fx(1), "workspace.activeWindow = w")
+            s.cmd("layout.monocle"); s.settle()
+            fm = _frames_t22(s)
+            mono_ok = all(near(fm[k]["frame"], whole, 1.0) for k in tiles) and near(fm[fx(4)]["frame"], float_rect, 1.0)
+            # Select other members by command and by the user activating one (a click), as in monocle use.
+            focused = []
+            for cmd, want in (("focus.next", fx(2)), ("focus.next", fx(3)), ("focus.previous", fx(2))):
+                s.cmd(cmd)
+                focused.append((cmd, want, wait_active(s, want)))
+            s.act(fx(3), "workspace.activeWindow = w")
+            s.settle()
+            c(f"monocle (entered from {back}): each focus command activates the next member (oracle: active window)",
+              all(ok for _, _, ok in focused), focused)
+            s.cmd(f"layout.{back}"); s.settle()
+            fa = _frames_t22(s)
+            rounds[back] = {"monocle": mono_ok, "after": {k: fa[k]["frame"] for k in tiles + [fx(4), child]}}
+            c(f"monocle: tiles fill the area, the float keeps the user's rectangle (oracle; entered from {back})", mono_ok,
+              {k: fm[k]["frame"] for k in tiles + [fx(4)]})
+            c(f"monocle -> {back}: every tile is back in its slot (order preserved after focus cycling) and the float "
+              "and the dialog keep their frames (oracle)",
+              all(near(fa[k]["frame"], before[k], 1.0) for k in tiles) and near(fa[fx(4)]["frame"], float_rect, 1.0)
+              and near(fa[child]["frame"], dialog0, 0.5),
+              {"before": before, "after": rounds[back]["after"]})
+
+        # Monocle with the dialog's parent selected, then disable.
+        s.act(fx(1), "workspace.activeWindow = w")
+        s.cmd("layout.monocle"); s.settle()
+        s.cmd("focus.next")
+        wait_active(s, fx(2))
+        s.settle()
+        props_mono = _presentation(s, caps)
+        c("monocle (parent selected): no window's presentation differs from before load (oracle)", props_mono == props0,
+          {k: {"before": props0[k], "now": props_mono[k]} for k in caps if props_mono[k] != props0[k]})
+        frames_mono = {k: v["frame"] for k, v in _frames_t22(s).items()}
+        s.unload()
+        c("unload: Plastile is no longer loaded (KWin's script list)", not s.kw.is_loaded("plastile"))
+        time.sleep(0.3)
+        props_u = _presentation(s, caps)
+        c("unload in monocle: no window is left minimized, hidden, transparent, kept above/below or in another layer "
+          "(oracle, every property equals its value before load)", props_u == props0,
+          {k: {"before": props0[k], "now": props_u[k]} for k in caps if props_u[k] != props0[k]} or props_u)
+        fu = _frames_t22(s)
+        c("unload: KWin keeps every frame where monocle left it (nothing restored over the user, nothing moved; oracle)",
+          all(near(fu[k]["frame"], frames_mono[k], 0.5) for k in caps), {k: fu[k]["frame"] for k in caps})
+        bad = _usable(s, [fx(1), fx(3), fx(4), fx(2), child], child, fx(2))
+        c("after unload: every window activates and comes to the top (its own dialog excepted; oracle)", not bad, bad)
+        moved = {"x": 300, "y": 200, "width": 500, "height": 360}
+        s.act(fx(3), f"w.frameGeometry = {json.dumps(moved)}")
+        until(lambda: near(_frames_t22(s)[fx(3)]["frame"], moved, 1.0), 3.0)
+        s.act(fx(1), "w.minimized = true")
+        time.sleep(0.5)  # an observation window: nothing may undo the move or the minimize
+        m1 = window_info(s, fx(1), STACK_INFO)
+        s.act(fx(1), "w.minimized = false")
+        time.sleep(0.5)
+        fu2 = _frames_t22(s)
+        c("after unload: a user move and a minimize/restore stick; no leftover runtime acts on them (oracle)",
+          near(fu2[fx(3)]["frame"], moved, 1.0) and m1["minimized"] and not fu2[fx(1)]["minimized"]
+          and near(fu2[fx(1)]["frame"], frames_mono[fx(1)], 0.5),
+          {"moved": fu2[fx(3)]["frame"], "minimizedThenRestored": [m1["minimized"], fu2[fx(1)]["minimized"]],
+           "fixture1": fu2[fx(1)]["frame"]})
+
+        # Reload: enable again (Plastile re-adopts and restores its saved layout), then disable and enable back to back.
+        s.load(); s.settle()
+        fr = _frames_t22(s)
+        restored_mono = all(near(fr[k]["frame"], whole, 1.0) for k in tiles)
+        c("reload: monocle is restored for the context (T27 layout preference; oracle: tiles fill the area) and the "
+          "float stays where the user left it (oracle)", restored_mono and near(fr[fx(4)]["frame"], float_rect, 1.0),
+          {k: fr[k]["frame"] for k in tiles + [fx(4)]})
+        props_r = _presentation(s, caps)
+        c("reload: no presentation change on any window (oracle)", props_r == props0,
+          {k: {"before": props0[k], "now": props_r[k]} for k in caps if props_r[k] != props0[k]})
+        s.act(fx(3), "workspace.activeWindow = w")
+        s.cmd("focus.next")
+        s.unload(); s.load(); s.settle()
+        props_rr = _presentation(s, caps)
+        c("unload + load back to back in monocle (a focus command pending): no presentation change (oracle)",
+          props_rr == props0, {k: {"before": props0[k], "now": props_rr[k]} for k in caps if props_rr[k] != props0[k]})
+        bad = _usable(s, [fx(1), fx(3), fx(4), fx(2), child], child, fx(2))
+        c("after reload: every window activates and comes to the top in monocle (its own dialog excepted; oracle)",
+          not bad, bad)
+        s.cmd("layout.master-stack"); s.settle()
+        f = _frames_t22(s)
+        c("after reload: leaving monocle tiles three windows without overlap; the float keeps its rectangle (oracle)",
+          not tiling_errors([f[k] for k in tiles], area, 8) and near(f[fx(4)]["frame"], float_rect, 1.0),
+          {"errors": tiling_errors([f[k] for k in tiles], area, 8), "float": f[fx(4)]["frame"]})
+        s.unload()
+        props_end = _presentation(s, caps)
+        c("final unload: no presentation change on any window (oracle)", props_end == props0,
+          {k: {"before": props0[k], "now": props_end[k]} for k in caps if props_end[k] != props0[k]})
         c("T22: no errors", not s.log_lines(ERRORS, 0), s.log_lines(ERRORS, 0)[:3])
 
 
