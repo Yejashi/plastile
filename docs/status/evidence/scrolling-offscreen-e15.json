@@ -1,0 +1,99 @@
+{
+ "experiment": "E15/M8: off-screen parking and writable window properties",
+ "layer": "nested KWin virtual backend (not physical)",
+ "measuredAt": "2026-10-18T02:15:10",
+ "kwin": "kwin 6.7.5",
+ "placements": {
+  "left of all outputs": {
+   "requestedX": -2000,
+   "settled": {
+    "frame": {
+     "x": -2000,
+     "y": 50,
+     "width": 600,
+     "height": 400
+    },
+    "output": "Virtual-0"
+   }
+  },
+  "right of all outputs": {
+   "requestedX": 3060,
+   "settled": {
+    "frame": {
+     "x": 3060,
+     "y": 50,
+     "width": 600,
+     "height": 400
+    },
+    "output": "Virtual-1"
+   }
+  },
+  "partly beyond the right edge": {
+   "requestedX": 2400,
+   "settled": {
+    "frame": {
+     "x": 2400,
+     "y": 50,
+     "width": 600,
+     "height": 400
+    },
+    "output": "Virtual-1"
+   }
+  }
+ },
+ "outputs": [
+  {
+   "name": "Virtual-0",
+   "geometry": {
+    "x": 0,
+    "y": 0,
+    "width": 1280,
+    "height": 800
+   }
+  },
+  {
+   "name": "Virtual-1",
+   "geometry": {
+    "x": 1280,
+    "y": 0,
+    "width": 1280,
+    "height": 800
+   }
+  }
+ ],
+ "afterTopologyChange": {
+  "requestedX": -2000,
+  "change": "Virtual-1 scale 1 -> 1.5",
+  "settled": {
+   "frame": {
+    "x": -280,
+    "y": 50,
+    "width": 600,
+    "height": 400
+   },
+   "output": "Virtual-0"
+  }
+ },
+ "writable": {
+  "opacity": {
+   "set0": 0,
+   "back": 1
+  },
+  "minimized": {
+   "set": true,
+   "back": false
+  },
+  "skipTaskbar": {
+   "set": true,
+   "back": false
+  },
+  "keepBelow": {
+   "set": true,
+   "back": false
+  }
+ },
+ "conclusion": {
+  "parkedOutsideAllOutputsStays": true,
+  "topologyChangePullsBack": true
+ }
+}
