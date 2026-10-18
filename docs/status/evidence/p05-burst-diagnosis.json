@@ -1,0 +1,55 @@
+{
+ "what": "P05-style create burst (fixtures spawned 20 ms apart into one master/stack context on a tall virtual output sized with gaps), diagnosis of the corrections seen at 819a91c. Diagnostic, not a benchmark.",
+ "layer": "nested KWin 6.7.5 (host, virtual backend)",
+ "before": {
+  "implementationCommit": "819a91c16fd44b9910ab2bba8051bf33aae55e76",
+  "source": "evidence/perf-workloads-20261017T211254.json p05.<n>.create",
+  "create": {
+   "8": {
+    "writes": 32,
+    "corrections": 10,
+    "stale": 14,
+    "superseded": 0,
+    "settled": 8
+   },
+   "16": {
+    "writes": 89,
+    "corrections": 20,
+    "stale": 53,
+    "superseded": 0,
+    "settled": 16
+   },
+   "32": {
+    "writes": 309,
+    "corrections": 77,
+    "stale": 155,
+    "superseded": 0,
+    "settled": 76
+   }
+  }
+ },
+ "after": {
+  "implementationCommit": "15fb493",
+  "probe": "scratch p05diag.py: tests/integration harness Session, load, spawn n with 20 ms spacing, settle, dump trace",
+  "create": {
+   "8": {
+    "writes": 30,
+    "corrections": 0,
+    "stale": 0,
+    "superseded": 1,
+    "settled": 29,
+    "overflow": 0
+   },
+   "32": {
+    "writes": 498,
+    "corrections": 0,
+    "stale": 0,
+    "superseded": 11,
+    "settled": 487,
+    "overflow": 0
+   }
+  }
+ },
+ "cause": "Ledger D8 defect fixed in d6d0de4 ('do not correct an intermediate size committed during a burst'): a client committing every configure in order showed intermediate sizes that were classified stale and corrected. Unit test: tests/core/engine.test.ts 'D8/C09: a burst with queued configures writes each target once; intermediate commits are not corrected'.",
+ "overlapAtN32": "Separate workload issue (f5dc18e on wip/perf-g2): the old output height omitted the gaps, so 31 stacked 186 px minimum frames did not fit and the newest window floated by the overflow policy at KWin's placement. The probe here uses the gap-inclusive height; overflow 0."
+}
