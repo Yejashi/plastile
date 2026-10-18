@@ -401,11 +401,9 @@ export class Engine {
     if (!r || !r.ctx || r.mode !== "tiled") return;
     const c = this.ctxFor(r.ctx);
     c.focus = [id, ...c.focus.filter((x) => x !== id)].slice(0, 16);
-    if (this.layoutKind(c) === "monocle") {
-      c.states.monocle = { selected: id };
-      this.markDirty(c.key);
-      this.ensureFlush();
-    }
+    // Monocle frames do not depend on the selection, and KWin raises an activated
+    // window itself (the focus command raises explicitly): record it, no solve (C12).
+    if (this.layoutKind(c) === "monocle") c.states.monocle = { selected: id };
   }
 
   /** Visible desktop/activity changed on some output. */

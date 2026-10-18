@@ -716,6 +716,25 @@ test("late metadata: suspending during the readiness wait does not leave the win
   assert.equal(e.outstandingCount(), 0);
 });
 
+test("C12: in monocle a focus change selects and raises once, with no deferred solve", () => {
+  const { h, e } = setup(["a", "b", "c"]);
+  h.active = "a";
+  e.execute("plastile.layout.monocle");
+  h.drain();
+  const solves = e.counters.solves, raises = h.raises.length, writes = h.writes.length;
+  assert.equal(e.execute("plastile.focus.next").status, "accepted");
+  h.drain();
+  assert.equal(h.active, "b");
+  assert.equal(e.counters.solves, solves, "no solve");
+  assert.deepEqual(h.raises.slice(raises), ["b"], "one raise");
+  h.active = "c";
+  e.activeChanged("c"); // the user clicks another member (KWin raises it itself)
+  h.drain();
+  assert.equal(e.counters.solves, solves);
+  assert.equal(h.writes.length, writes);
+  assert.deepEqual(h.raises.slice(raises), ["b"], "no extra raise");
+});
+
 function onActivities(activities: string[]) {
   return { membership: { output: "O1", desktops: ["D1"], onAllDesktops: false, activities } };
 }
