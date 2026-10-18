@@ -142,5 +142,35 @@
  "observations": [
   "A tiled window that leaves a desktop and comes back is appended to the end of the context (the parent returns to the bottom stack slot, not its old slot). Recorded, not asserted; it is the current re-join policy, not a T16 defect.",
   "A saved float is restored only when exactly one live window has the application's identity (T27); the T22 scenario gives its float its own app id for that reason."
- ]
+ ],
+ "review": {
+  "note": "Adversarial review on top of 93b030a (nested KWin 6.7.5 virtual backend; not physical). Each mutation was applied to src/, rebuilt, run once and reverted.",
+  "scenarioChanges": [
+   "monocle-unload-T22: `shade` removed from the compared properties: KWin 6.7.5 exposes no such script property (undefined, dropped by JSON on both sides, so it was compared vacuously). A new first check fails if any compared property is undefined on any window (21 checks).",
+   "monocle-unload-T22: the float placement and the post-unload user move wait for KWin's frame (until) instead of a fixed sleep; the 0.5 s window after the move stays as the observation window for 'nothing undoes it'.",
+   "transient-parent-close-T16 (b): 'usable' was read passively (the orphan happened to be active after its parent closed). It now activates another window, has the user activate the orphan, checks it is raised above the tiles and that a user move sticks (oracle), and that it still floats (explain)."
+  ],
+  "runs": "After the changes: the four scenarios 3 times sequentially, 58/58 checks each run (close 13, T22 21); neighbouring scenarios (monocle-focus-cycle-T22, transient-dialog-L07, adopt-open-close, focus-output-wrap-T23, live-resize-T29, drag-output-removal-I04, resize-rapid-keys-I05) twice, 79/79 each run. No flakes.",
+  "mutationChecks": {
+   "minimized no longer suspends a tiled window (src/core/engine.ts suspensionsOf)": {
+    "transient-parent-minimize-T16": 1
+   },
+   "monocle raise also minimizes every other normal window (minimize-rest; src/adapters/kwin/adapter.ts raise)": {
+    "monocle-unload-T22": 9
+   },
+   "layout switch writes each floating window of the context 40 px to the right (src/core/engine.ts layout command)": {
+    "monocle-unload-T22": 6
+   },
+   "transients tile (src/core/classify.ts)": {
+    "transient-parent-close-T16": "4, now including the oracle half of the usability check (the user's move is snapped back to the tile)"
+   },
+   "`shade` listed among the compared properties": {
+    "monocle-unload-T22": "1 (the new undefined-property guard)"
+   }
+  },
+  "notDemonstrated": [
+   "A mutation that tiles only parentless transients (transientFor null) did not fail transient-parent-close-T16: after close-main KWin 6.7.5 still reports transient: true and Plastile is given no reclassification that drops the parent, so that defect is unreachable in this sequence. Recorded, not asserted.",
+   "Shifting the float rectangle through restoreFloatRects on a layout switch was a no-op: floating windows are not context members, so no layout-switch code path writes a float today. The float checks guard a future path that does (the write mutation above)."
+  ]
+ }
 }

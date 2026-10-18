@@ -15,6 +15,7 @@ from pathlib import Path
 from harness import (KEY_LEFTMETA, Input, Listener, Session, delta, evidence_file, last_trace_t, near, tiling_errors, trace,
                      window_info)
 from scenarios import STACK_INFO, Checks, Skipped, kscreen, scenario
+from scenarios_topology import until
 
 ERRORS = r"plastile (error|warn)|TypeError|ReferenceError"
 KEY_SHIFT, KEY_CTRL, KEY_N, KEY_L, KEY_EQUAL, KEY_MINUS = 42, 29, 49, 38, 13, 12
@@ -177,10 +178,10 @@ def monocle_focus_cycle(out: Path, c: Checks):
 
 # Every window property a monocle presentation could leave behind (BEHAVIOR §6: layer and visibility changes
 # carry restore ownership). Plastile only raises; this is KWin's view, compared with the state before load.
-PRESENTATION = ("({minimized: w.minimized, hidden: w.hidden, opacity: w.opacity, keepAbove: w.keepAbove,"
-                " keepBelow: w.keepBelow, layer: w.layer, skipTaskbar: w.skipTaskbar, skipSwitcher: w.skipSwitcher,"
-                " skipPager: w.skipPager, noBorder: w.noBorder, fullScreen: w.fullScreen, maximizeMode: w.maximizeMode,"
-                " onAllDesktops: w.onAllDesktops, desktops: w.desktops.map(d => d.id), shade: w.shade})")
+# KWin 6.7.5 exposes no `shade` property to scripts (undefined, so JSON would drop it): it is not listed.
+PRESENTATION_FIELDS = ("minimized", "hidden", "opacity", "keepAbove", "keepBelow", "layer", "skipTaskbar", "skipSwitcher",
+                       "skipPager", "noBorder", "fullScreen", "maximizeMode", "onAllDesktops")
+PRESENTATION = ("({" + ", ".join(f"{k}: w.{k}" for k in PRESENTATION_FIELDS) + ", desktops: w.desktops.map(d => d.id)})")
 
 
 def _presentation(s: Session, caps: list[str]) -> dict:
@@ -227,6 +228,10 @@ def monocle_unload(out: Path, c: Checks):
         tiles = [fx(1), fx(2), fx(3)]
         time.sleep(0.3)
         props0 = _presentation(s, caps)
+        # An undefined property would be dropped from both sides of every comparison below and pass vacuously.
+        missing = {k: [f for f in PRESENTATION_FIELDS + ("desktops",) if (props0[k] or {}).get(f) is None] for k in caps}
+        c("before load: KWin reports every compared property on every window (none undefined)",
+          not any(missing.values()), missing)
         s.load(); s.settle()
         area = s.area()
         whole = {"x": area["x"] + 8, "y": area["y"] + 8, "width": area["width"] - 16, "height": area["height"] - 16}
@@ -236,7 +241,8 @@ def monocle_unload(out: Path, c: Checks):
         s.act(fx(4), "workspace.activeWindow = w")
         s.cmd("window.toggle-float"); s.settle()
         s.act(fx(4), f"w.frameGeometry = {json.dumps(float_rect)}")
-        time.sleep(0.3); s.settle()
+        until(lambda: near(_frames_t22(s)[fx(4)]["frame"], float_rect, 1.0), 3.0)
+        s.settle()
         f = _frames_t22(s)
         order_ms = {k: f[k]["frame"] for k in tiles}
         dialog0 = f[child]["frame"]
@@ -300,8 +306,9 @@ def monocle_unload(out: Path, c: Checks):
         c("after unload: every window activates and comes to the top (its own dialog excepted; oracle)", not bad, bad)
         moved = {"x": 300, "y": 200, "width": 500, "height": 360}
         s.act(fx(3), f"w.frameGeometry = {json.dumps(moved)}")
+        until(lambda: near(_frames_t22(s)[fx(3)]["frame"], moved, 1.0), 3.0)
         s.act(fx(1), "w.minimized = true")
-        time.sleep(0.5)
+        time.sleep(0.5)  # an observation window: nothing may undo the move or the minimize
         m1 = window_info(s, fx(1), STACK_INFO)
         s.act(fx(1), "w.minimized = false")
         time.sleep(0.5)

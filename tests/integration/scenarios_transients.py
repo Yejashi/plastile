@@ -329,9 +329,23 @@ def parent_close(out: Path, c: Checks):
           {"frames": {x["caption"]: x["frame"] for x in mains}, "errors": tiling_errors(mains, area, GAP)})
         c("(b) Plastile dropped the parent only (counters: windows -1)", w5["windows"] == w4["windows"] - 1,
           {"before": w4["windows"], "after": w5["windows"]})
+        # Usable: another window takes focus, then the user activates the orphan and moves it.
+        s.act(OTHER, "workspace.activeWindow = w")
+        s.kw.act(orphan, "workspace.activeWindow = w")
+        activated = until(lambda: state(s, orphan)["active"], 3.0)
+        oa = state(s, orphan)
+        moved = {"x": oa["frame"]["x"] + 60, "y": oa["frame"]["y"] + 40, "width": oa["frame"]["width"], "height": oa["frame"]["height"]}
+        s.act(orphan, f"w.frameGeometry = {json.dumps(moved)}")
+        placed = until(lambda: near(state(s, orphan)["frame"], moved, 0.5), 3.0)
+        s.settle()
+        om = state(s, orphan)
         e = explain(s, orphan)
-        c("(b) the orphan is usable: it activates (oracle) and still floats (explain)",
-          state(s, orphan)["active"] and e.get("mode") == "floating", {"mode": e.get("mode"), "reason": e.get("reason")})
+        c("(b) the orphan is usable: the user activates it, it is raised above the tiles, and a user move sticks "
+          "(oracle) while it still floats (explain)",
+          activated and placed and near(om["frame"], moved, 0.5) and om["stack"] > max(state(s, k)["stack"] for k in (OTHER, LAST, "plastile-fixture 4"))
+          and e.get("mode") == "floating",
+          {"activated": activated, "frame": om["frame"], "moved": moved, "stack": om["stack"], "mode": e.get("mode"),
+           "reason": e.get("reason")})
         wid = {x["caption"]: x["id"] for x in s.frames_list()}
         w = [r for r in trace(s) if r.get("kind") == "write" and r.get("id") == wid.get(orphan)]
         c("(b) Plastile never wrote the orphaned dialog (trace)", not w, len(w))
