@@ -128,6 +128,10 @@ export interface ContextSettings {
   readonly singleWindowGaps: boolean;
   /** Send to desktop/output also shows that desktop there and activates the window (T24). */
   readonly followOnSend: boolean;
+  /** Directional focus continues from the opposite end of the row/column in this context (never another output). */
+  readonly focusWrap: boolean;
+  /** Peers follow an interactive resize live, at most one solve per flush (BEHAVIOR §8); off: on release only. */
+  readonly liveResize: boolean;
 }
 
 export interface Result<T = undefined> {

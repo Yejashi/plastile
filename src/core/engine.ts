@@ -10,7 +10,7 @@ import { classify, TINY_PX, TINY_REASON } from "./classify.ts";
 import { COMMAND_IDS, type CommandResult, type CommandStatus } from "./commands.ts";
 import { DEFAULT_SETTINGS } from "./defaults.ts";
 import { newCounters, Trace, type Counters } from "./diagnostics.ts";
-import { neighbour, type Direction } from "./navigation.ts";
+import { adjacentOutput, neighbour, wrapNeighbour, type Direction } from "./navigation.ts";
 import type { HostPort, RuntimeServices, WindowSnapshot } from "./ports.ts";
 import * as L from "./reconcile/ledger.ts";
 import type { Layout, LayoutCommand, SolveInput } from "./layouts/layout.ts";
@@ -133,6 +133,8 @@ interface Rec {
   readyBy: number | null;
   border: { original: boolean; applied: boolean } | null;
   rules: WindowRules | null;
+  /** Activation order (0 = never activated while known): cross-output focus picks the most recent. */
+  focusSeq: number;
 }
 
 interface Ctx {
@@ -185,6 +187,10 @@ export class Engine {
   /** Output scales, refreshed on adoption and topology changes (not per command). */
   private scales = new Map<OutputId, number>();
   private endedInteractions = new Map<WindowId, "move" | "resize">();
+  /** Windows being resized interactively whose frame changed since the last flush (liveResize). */
+  private liveResize = new Set<WindowId>();
+  /** The resized frame each live solve used, so an unchanged frame solves nothing. */
+  private liveLast = new Map<WindowId, Rect>();
   /** Windows currently parked by a scrolling strip (recorded before each parking write). */
   private parked = new Map<WindowId, Parked>();
   private queued: Array<{ id: string; arg: unknown }> = [];
@@ -194,6 +200,7 @@ export class Engine {
   private deadlineAt = Infinity;
   private seq = 0;
   private insertSeq = 0;
+  private focusSeq = 0;
   /** Last solve timing; null unless EngineOptions.clockNs is set. */
   lastTiming: SolveTiming | null = null;
   /** Duration of the last host activation call (KWin's own focus work), when measured. */
@@ -242,6 +249,8 @@ export class Engine {
     this.retryWindows.clear();
     this.retryContexts.clear();
     this.endedInteractions.clear();
+    this.liveResize.clear();
+    this.liveLast.clear();
     this.parked.clear();
     this.queued = [];
   }
@@ -297,7 +306,7 @@ export class Engine {
       decision: { mode: "floating", source: "default", reason: "unclassified", ruleIds: [] },
       mode: "pending", userMode: null, ctx: null, suspensions: suspensionsOf(s.states),
       ledger: L.newEntry(rectOf(s.frame)), floatRect: null, insertedAt: ++this.insertSeq, exception: null,
-      readyBy: null, border: null, rules: null,
+      readyBy: null, border: null, rules: null, focusSeq: 0,
     };
     this.recs.set(r.id, r);
     this.counters.adopted++;
@@ -337,6 +346,8 @@ export class Engine {
     this.leaveContext(r);
     this.corrections.delete(r.id);
     this.endedInteractions.delete(r.id);
+    this.liveResize.delete(r.id);
+    this.liveLast.delete(r.id);
     this.parked.delete(r.id);
     this.recs.delete(r.id);
   }
@@ -387,6 +398,7 @@ export class Engine {
       if (!(onlyInteractive(prevSet) && onlyInteractive(next)) && r.ctx && r.mode === "tiled") this.markDirty(r.ctx);
       this.ensureFlush();
     }
+    if (st.interactive !== "resize") { this.liveResize.delete(id); this.liveLast.delete(id); }
     if (prevInteractive !== "none" && st.interactive === "none") {
       // Interpret the drop in the next flush: on Escape KWin reports the end of the
       // interaction before restoring the start geometry (measured with real input).
@@ -448,7 +460,12 @@ export class Engine {
       L.observe(r.ledger, f);
       return;
     }
-    if (r.suspensions.has("interactive")) return; // the user owns the frame during the drag
+    if (r.suspensions.has("interactive")) {
+      // The user owns the frame during the drag. With liveResize, peers follow a resize in the
+      // next flush: frames arriving in one event-loop turn coalesce into one solve.
+      if (r.states.interactive === "resize" && this.liveResizeOn(r)) { this.liveResize.add(id); this.ensureFlush(); }
+      return;
+    }
     const o = L.observe(r.ledger, f);
     switch (o) {
       case "settled":
@@ -484,6 +501,7 @@ export class Engine {
     if (!this.alive || id === null) return;
     const r = this.recs.get(id);
     if (!r) return;
+    r.focusSeq = ++this.focusSeq;
     if (!r.ctx || r.mode !== "tiled") { this.revealTransientParent(r); return; }
     const c = this.ctxFor(r.ctx);
     c.focus = [id, ...c.focus.filter((x) => x !== id)].slice(0, 16);
@@ -945,7 +963,10 @@ export class Engine {
       const queued = this.queued;
       this.queued = [];
       for (const q of queued) this.execute(q.id, q.arg);
-      if (this.suspended) { this.dirty.clear(); this.corrections.clear(); this.endedInteractions.clear(); return; }
+      if (this.suspended) {
+        this.dirty.clear(); this.corrections.clear(); this.endedInteractions.clear(); this.liveResize.clear();
+        return;
+      }
       this.retryOverflows();
       if (this.endedInteractions.size) {
         const ended = [...this.endedInteractions];
@@ -963,6 +984,16 @@ export class Engine {
         if (!c) continue;
         if (!this.isVisible(c.key)) { if (c.members.length) c.revision++; continue; }
         this.solveContained(c);
+      }
+      if (this.liveResize.size) {
+        // After the full solves: a context solved above from the committed state gets the
+        // live boundary back in the same flush.
+        const live = [...this.liveResize];
+        this.liveResize.clear();
+        for (const id of live) {
+          const r = this.recs.get(id);
+          if (r && r.states.interactive === "resize") this.contained("live resize", () => this.liveSolve(r));
+        }
       }
       this.collectEmpty();
       this.sweepParked();
@@ -1244,6 +1275,71 @@ export class Engine {
 
   // ------------------------------------------------------------- interaction
 
+  private liveResizeOn(r: Rec): boolean {
+    if (!this.participates(r)) return false;
+    const c = this.contexts.get(contextId(r.ctx!));
+    if (!c || !this.ctxSettings(c).liveResize) return false;
+    const kind = this.layoutKind(c);
+    return kind === "master-stack" || kind === "bsp";
+  }
+
+  /** The boundary commands a resized frame implies: one per edge that moved by at least 1 px from its slot. */
+  private boundaryCommands(id: WindowId, f: Rect, slot: Rect): Array<LayoutCommand & { kind: "resize-boundary" }> {
+    const out: Array<LayoutCommand & { kind: "resize-boundary" }> = [];
+    const edges: Array<["left" | "right" | "top" | "bottom", number]> = [
+      ["left", f.x - slot.x], ["right", (f.x + f.width) - (slot.x + slot.width)],
+      ["top", f.y - slot.y], ["bottom", (f.y + f.height) - (slot.y + slot.height)],
+    ];
+    for (const [edge, delta] of edges) if (Math.abs(delta) >= 1) out.push({ kind: "resize-boundary", id, edge, delta });
+    return out;
+  }
+
+  /**
+   * Live peer update during an interactive resize (liveResize, BEHAVIOR §8): the committed
+   * layout state with the dragged boundary applied, solved once and written to the peers whose
+   * target changed (applyTarget skips the rest). The committed state, plan and revision are not
+   * touched: the release still commits the final boundary once (interactionEnded), and a cancel
+   * restores the committed slots. The resized window is never written (it is not writable while
+   * interactive). Runs only from a flush, so frames in one event-loop turn give one solve.
+   */
+  private liveSolve(r: Rec): void {
+    if (!this.liveResizeOn(r)) return;
+    const c = this.contexts.get(contextId(r.ctx!))!;
+    const slot = c.plan.get(r.id);
+    if (!slot || c.applied !== c.revision || !this.isVisible(c.key)) return;
+    const f = r.frame;
+    const last = this.liveLast.get(r.id);
+    if (last && rectNear(last, f)) return;
+    this.liveLast.set(r.id, f);
+    const area = this.host.workArea(c.key.output, c.key.desktop);
+    if (!isValidArea(area)) return;
+    const kind = this.layoutKind(c);
+    const lay = LAYOUTS[kind];
+    const input = this.solveInput(c, area);
+    let state = this.layoutState(c, kind);
+    for (const cmd of this.boundaryCommands(r.id, f, slot)) {
+      const o = lay.command(state, cmd, input);
+      if (o.changed) state = o.state;
+    }
+    const res = lay.solve(state, input);
+    this.counters.solves++;
+    this.counters.liveSolves++;
+    this.trace.record(this.svc.now(), "live-solve", c.id, { id: r.id, n: input.ids.length });
+    const tol = frameTolerance(this.scales.get(c.key.output) ?? 1);
+    this.applying++;
+    try {
+      for (const [id, target] of res.slots) {
+        if (id === r.id) continue;
+        const p = this.recs.get(id);
+        if (!p || !this.writable(p)) continue;
+        p.ledger.tol = tol;
+        this.applyTarget(p, target);
+      }
+    } finally {
+      this.applying--;
+    }
+  }
+
   private interactionEnded(r: Rec, kind: "move" | "resize"): void {
     if (r.mode !== "tiled" || !r.ctx) return;
     const c = this.ctxFor(r.ctx);
@@ -1266,14 +1362,7 @@ export class Engine {
       const kindL = this.layoutKind(c);
       const lay = LAYOUTS[kindL];
       let state = this.layoutState(c, kindL);
-      const edges: Array<[LayoutCommand & { kind: "resize-boundary" }, number]> = [
-        [{ kind: "resize-boundary", id: r.id, edge: "left", delta: f.x - slot.x }, Math.abs(f.x - slot.x)],
-        [{ kind: "resize-boundary", id: r.id, edge: "right", delta: (f.x + f.width) - (slot.x + slot.width) }, Math.abs(f.x + f.width - slot.x - slot.width)],
-        [{ kind: "resize-boundary", id: r.id, edge: "top", delta: f.y - slot.y }, Math.abs(f.y - slot.y)],
-        [{ kind: "resize-boundary", id: r.id, edge: "bottom", delta: (f.y + f.height) - (slot.y + slot.height) }, Math.abs(f.y + f.height - slot.y - slot.height)],
-      ];
-      for (const [cmd, mag] of edges) {
-        if (mag < 1) continue;
+      for (const cmd of this.boundaryCommands(r.id, f, slot)) {
         const o = lay.command(state, cmd, input);
         if (o.changed) state = o.state;
       }
@@ -1533,6 +1622,7 @@ export class Engine {
   }
 
   private focusCommand(c: Ctx, r: Rec | null, action: string): { status: CommandStatus; reason?: string; targets: string[] } {
+    if (action === "output-next" || action === "output-previous") return this.focusOutput(r, action === "output-next" ? 1 : -1);
     const scroll = this.layoutKind(c) === "scrolling";
     const ids = scroll ? this.scrollOrder(c) : this.solveInput(c, null).ids;
     if (ids.length === 0) return { status: "noop", reason: "no tiled windows", targets: [] };
@@ -1545,6 +1635,7 @@ export class Engine {
       if (cur === null && action === "previous") target = ids[ids.length - 1];
     } else if (cur === null) target = c.focus.find((id) => ids.includes(id)) ?? ids[0];
     else if (scroll && (action === "up" || action === "down")) target = columnNeighbour(this.layoutState(c, "scrolling"), cur, action, ids);
+    else if (this.ctxSettings(c).focusWrap) target = wrapNeighbour(cur, action as Direction, this.planRects(c));
     else target = neighbour(cur, action as Direction, this.planRects(c));
     if (target === null) return { status: "noop", reason: `nothing ${action}`, targets: [] };
     if (target === cur) return { status: "noop", reason: "already focused", targets: [] };
@@ -1557,6 +1648,41 @@ export class Engine {
       if (this.host.raise(t.id, t.gen)) this.counters.raises++;
     }
     return { status: "accepted", targets: [target] };
+  }
+
+  /**
+   * Cross-output focus (BEHAVIOR §7): the output after/before the current one in topology
+   * order (navigation.outputOrder, not enumeration order), then the most recently activated
+   * eligible window shown there: tiled or floating, not minimized or hidden, on the desktop
+   * that output shows and the current activity. Without activation history there, the
+   * output's visible context's first tile. Focus only: no solve, no write.
+   */
+  private focusOutput(r: Rec | null, step: 1 | -1): { status: CommandStatus; reason?: string; targets: string[] } {
+    const from = r && r.membership.output !== null ? r.membership.output : this.host.activeOutput();
+    const dest = adjacentOutput(this.host.outputs(), from, step);
+    if (dest === null) return { status: "noop", reason: "no other output", targets: [] };
+    const desk = this.host.visibleDesktop(dest.id);
+    const act = this.host.currentActivity();
+    let best: Rec | null = null;
+    for (const w of this.recs.values()) {
+      if (w.mode !== "tiled" && w.mode !== "floating") continue;
+      if (w.membership.output !== dest.id || w.states.minimized || w.states.hidden) continue;
+      if (!w.membership.onAllDesktops && (desk === null || !w.membership.desktops.includes(desk))) continue;
+      if (w.membership.activities.length > 0 && !w.membership.activities.includes(act)) continue;
+      if (w.focusSeq > 0 && (!best || w.focusSeq > best.focusSeq)) best = w;
+    }
+    if (!best && desk !== null) {
+      const c = this.contexts.get(contextId({ output: dest.id, desktop: desk, activity: act }));
+      const first = c ? this.solveInput(c, null).ids[0] : undefined;
+      if (first !== undefined) best = this.recs.get(first) ?? null;
+    }
+    if (!best) return { status: "noop", reason: `no window on output ${dest.name}`, targets: [] };
+    this.activate(best);
+    if (best.ctx && best.mode === "tiled") {
+      const c = this.ctxFor(best.ctx);
+      if (this.layoutKind(c) === "monocle" && this.host.raise(best.id, best.gen)) this.counters.raises++;
+    }
+    return { status: "accepted", targets: [best.id] };
   }
 
   private swapIn(c: Ctx, a: WindowId, b: WindowId): void {
@@ -1589,10 +1715,10 @@ export class Engine {
   private moveCommand(c: Ctx, r: Rec | null, action: string): { status: CommandStatus; reason?: string; targets: string[] } {
     if (!r) return { status: "noop", reason: "no active window", targets: [] };
     if (action === "output-next" || action === "output-previous") {
-      const outs = this.host.outputs();
-      if (outs.length < 2 || r.membership.output === null) return { status: "noop", reason: "no other output", targets: [] };
-      const i = outs.findIndex((o) => o.id === r.membership.output);
-      const dest = outs[(i + (action === "output-next" ? 1 : outs.length - 1)) % outs.length];
+      // Topology order, shared with focus.output-next/previous (navigation.outputOrder).
+      const dest = r.membership.output === null ? null
+        : adjacentOutput(this.host.outputs(), r.membership.output, action === "output-next" ? 1 : -1);
+      if (dest === null) return { status: "noop", reason: "no other output", targets: [] };
       const follow = this.ctxSettings(c).followOnSend;
       if (!this.host.sendToOutput(r.id, r.gen, dest.id)) return { status: "rejected", reason: "transfer refused", targets: [] };
       // KWin moves an interactively sent window to the destination's current desktop (per-output

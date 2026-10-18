@@ -12,4 +12,6 @@ export const DEFAULT_SETTINGS: ContextSettings = {
   overflow: "float-new",
   singleWindowGaps: true,
   followOnSend: false,
+  focusWrap: false,
+  liveResize: false,
 };
