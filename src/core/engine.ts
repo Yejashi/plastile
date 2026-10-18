@@ -240,6 +240,13 @@ export class Engine {
   /** Work areas read for float placement, by output and desktop; dropped on topology/work-area changes. */
   private areaCache = new Map<string, Rect>();
   private endedInteractions = new Map<WindowId, "move" | "resize">();
+  /**
+   * Where each interactive move/resize started (context, layout, member index). A command that
+   * moves the window to another slot mid-drag (swap, layout switch, transfer) makes the drag's
+   * edges refer to the old slot, so its boundary is not applied (measured on KWin 6.8, whose
+   * default Meta+drag also activates the window and so retargets swap commands to it).
+   */
+  private interactionStart = new Map<WindowId, { ctx: ContextId; kind: LayoutKind; index: number }>();
   /** User float decisions by application identity (live or closed windows), oldest first, bounded. */
   private floatPrefs = new Map<string, FloatPreference>();
   /** Float preferences restored from persistence and not yet matched to a window (T27, Q06). */
@@ -317,6 +324,7 @@ export class Engine {
     this.retryWindows.clear();
     this.retryContexts.clear();
     this.endedInteractions.clear();
+    this.interactionStart.clear();
     this.floatPrefs.clear();
     this.pendingFloats.clear();
     this.restoreChecks.clear();
@@ -420,6 +428,7 @@ export class Engine {
     this.leaveContext(r);
     this.corrections.delete(r.id);
     this.endedInteractions.delete(r.id);
+    this.interactionStart.delete(r.id);
     this.liveResize.delete(r.id);
     this.liveLast.delete(r.id);
     this.parked.delete(r.id);
@@ -488,6 +497,10 @@ export class Engine {
       this.ensureFlush();
     }
     if (st.interactive !== "resize") { this.liveResize.delete(id); this.liveLast.delete(id); }
+    if (prevInteractive === "none" && st.interactive !== "none" && r.mode === "tiled" && r.ctx) {
+      const c = this.ctxFor(r.ctx);
+      this.interactionStart.set(id, { ctx: c.id, kind: this.layoutKind(c), index: c.members.indexOf(id) });
+    }
     if (prevInteractive !== "none" && st.interactive === "none") {
       // Interpret the drop in the next flush: on Escape KWin reports the end of the
       // interaction before restoring the start geometry (measured with real input).
@@ -1417,9 +1430,16 @@ export class Engine {
    * restores the committed slots. The resized window is never written (it is not writable while
    * interactive). Runs only from a flush, so frames in one event-loop turn give one solve.
    */
+  /** The window is still in the slot its interaction started in (same context, layout and position). */
+  private interactionSlotKept(r: Rec, c: Ctx): boolean {
+    const s = this.interactionStart.get(r.id);
+    return !!s && s.ctx === c.id && s.kind === this.layoutKind(c) && s.index === c.members.indexOf(r.id);
+  }
+
   private liveSolve(r: Rec): void {
     if (!this.liveResizeOn(r)) return;
     const c = this.contexts.get(contextId(r.ctx!))!;
+    if (!this.interactionSlotKept(r, c)) return; // the drag no longer refers to the window's slot
     const slot = c.plan.get(r.id);
     if (!slot || c.applied !== c.revision || !this.isVisible(c.key)) return;
     const f = r.frame;
@@ -1456,6 +1476,14 @@ export class Engine {
   }
 
   private interactionEnded(r: Rec, kind: "move" | "resize"): void {
+    try {
+      this.interpretInteraction(r, kind);
+    } finally {
+      this.interactionStart.delete(r.id);
+    }
+  }
+
+  private interpretInteraction(r: Rec, kind: "move" | "resize"): void {
     if (r.mode !== "tiled" || !r.ctx) return;
     const c = this.ctxFor(r.ctx);
     const slot = c.plan.get(r.id);
@@ -1473,6 +1501,10 @@ export class Engine {
           break;
         }
       }
+    } else if (!this.interactionSlotKept(r, c)) {
+      // A command moved the window to another slot during the resize: its edges describe the
+      // old slot. The window takes its new slot; the layout's ratios stay as they are.
+      this.trace.record(this.svc.now(), "interaction-superseded", r.id, { kind });
     } else {
       const input = this.solveInput(c, this.host.workArea(c.key.output, c.key.desktop));
       const kindL = this.layoutKind(c);

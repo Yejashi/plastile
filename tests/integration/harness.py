@@ -111,10 +111,12 @@ class Session:
     """One nested KWin plus the Plastile package and fixture clients."""
 
     def __init__(self, out: Path, outputs: int = 1, config: dict | None = None, width=1280, height=800,
-                 extra_env: dict | None = None, qml: Path = PACKAGE_QML, xwayland: bool = False):
+                 extra_env: dict | None = None, qml: Path = PACKAGE_QML, xwayland: bool = False, kwinrc_extra: str = ""):
         self.out = out
         out.mkdir(parents=True, exist_ok=True)
         self.config = {"diagnostics": "info", **(config or {})}
+        # Extra kwinrc groups (e.g. [MouseBindings]) for scenarios that pin KWin defaults across versions.
+        self.kwinrc_extra = kwinrc_extra
         self.qml = qml
         self.kw = NestedKwin(out, outputs=outputs, width=width, height=height, kwinrc=self.kwinrc(), extra_env=extra_env,
                              xwayland=xwayland)
@@ -123,7 +125,8 @@ class Session:
 
     def kwinrc(self) -> str:
         lines = ["[Script-plastile]"] + [f"{k}={v}" for k, v in self.config.items()]
-        return "\n".join(lines) + "\n"
+        extra = self.kwinrc_extra.strip()
+        return "\n".join(lines) + "\n" + (("\n" + extra + "\n") if extra else "")
 
     def __enter__(self) -> "Session":
         self.kw.start()

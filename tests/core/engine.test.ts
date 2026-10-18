@@ -1155,3 +1155,23 @@ test("T11: a queued command whose target closed before the flush is a no-op, not
   assert.equal(e.modeOf("b"), "tiled", "b was never the target");
   assert.deepEqual(e.check(), []);
 });
+
+test("I05/KWin 6.8: a resize whose window moved to another slot mid-drag does not apply its edges", () => {
+  const { h, e } = setup(["a", "b", "c"]);
+  const master0 = { ...h.windows.get("a")!.frame };
+  // KWin 6.8's default Meta+right-drag activates the resized window, so swap.next targets it.
+  h.active = "a";
+  h.setStates("a", { interactive: "resize" });
+  h.userSetFrame("a", rect(master0.x, master0.y, master0.width + 160, master0.height));
+  e.execute("plastile.swap.next"); // a and b exchange slots while a is being resized
+  h.drain();
+  h.setStates("a", { interactive: "none" });
+  h.drain();
+  const b = h.windows.get("b")!.frame;
+  assert.ok(Math.abs(b.width - master0.width) <= 1,
+    `the master slot (now b) keeps the pre-drag ratio: ${b.width} vs ${master0.width}`);
+  assert.ok(!rectNear(h.windows.get("a")!.frame, rect(master0.x, master0.y, master0.width + 160, master0.height)),
+    "a takes its new stack slot instead of keeping the dragged frame");
+  assertTiling(tiledFrames(h, ["a", "b", "c"]), AREA);
+  assert.deepEqual(e.check(), []);
+});

@@ -340,12 +340,19 @@ def _keys(inp: Input, *combo: int) -> None:
         inp.do(f"key {k} up")
 
 
-def _rapid_keys(out: Path, c: Checks, live: bool) -> dict:
-    tag = "liveResize on" if live else "liveResize off"
+# KWin 6.8 changed the default Meta+drag actions to "Activate, raise and move/resize" (kwin.kcfg
+# CommandAll1/CommandAll3), which focuses the window being resized; 6.7.5 used plain "Move"/"Resize".
+# The plain variants pin 6.7's binding so commands keep targeting another window on both versions;
+# the activate variant reproduces 6.8's default (the resized window is the command target).
+PIN_PLAIN_DRAG = "[MouseBindings]\nCommandAll1=Move\nCommandAll3=Resize"
+
+
+def _rapid_keys(out: Path, c: Checks, live: bool, activate_resized: bool = False) -> dict:
+    tag = ("liveResize on" if live else "liveResize off") + (", resized window active" if activate_resized else "")
     cfg = {"diagnostics": "debug", "traceCapacity": 16384}
     if live:
         cfg["configJson"] = json.dumps({"schemaVersion": 1, "defaults": {"liveResize": True}})
-    with Session(out, config=cfg) as s:
+    with Session(out, config=cfg, kwinrc_extra=PIN_PLAIN_DRAG) as s:
         s.spawn(1); s.spawn(2); s.spawn(3)
         s.load(); s.settle()
         try:
@@ -355,7 +362,7 @@ def _rapid_keys(out: Path, c: Checks, live: bool) -> dict:
         try:
             m = s.frames()[fx(1)]["frame"]
             x0, y0 = m["x"] + m["width"] - 20, m["y"] + m["height"] - 20
-            s.act(fx(2), "workspace.activeWindow = w")
+            s.act(fx(1) if activate_resized else fx(2), "workspace.activeWindow = w")
             wid = {x["caption"]: x["id"] for x in s.frames_list()}
             t_start = last_trace_t(s)
             off = s.kw.mark()
@@ -409,9 +416,26 @@ def _rapid_keys(out: Path, c: Checks, live: bool) -> dict:
             w1 = [r for r in tr if r.get("kind") == "write" and r.get("id") == wid[fx(1)] and t_start < r["t"] <= t_release]
             c(f"I05 [{tag}]: the window being resized is never written while the commands run (trace)", not w1, len(w1))
             m1 = g[fx(1)]["frame"]
-            c(f"I05 [{tag}]: release commits the boundary where the user let go (master right edge, oracle)",
-              abs((m1["x"] + m1["width"]) - (before_release["x"] + before_release["width"])) <= 2,
-              {"atRelease": before_release, "after": m1})
+            if not activate_resized:
+                c(f"I05 [{tag}]: release commits the boundary where the user let go (master right edge, oracle)",
+                  abs((m1["x"] + m1["width"]) - (before_release["x"] + before_release["width"])) <= 2,
+                  {"atRelease": before_release, "after": m1})
+            else:
+                # swap.next moved the resized window out of the master slot mid-drag: its edges describe
+                # the old slot, so the release applies none of them. The ratio is what the commands made
+                # it: with the resized window active, the keys' grow and shrink both hit the master (net 0);
+                # in the burst, grow hits the master (+1 step) and shrink, after the swap, hits a stack
+                # window, which grows the master too (+1): net +2 ratio steps of the usable width.
+                area = s.area()
+                usable = area["width"] - 2 * 8 - 8
+                expect = m["x"] + m["width"] + round(2 * 0.05 * usable)
+                master = min(g.values(), key=lambda x: (x["frame"]["x"], x["frame"]["y"]))["frame"]
+                c(f"I05 [{tag}]: a resize superseded by a swap applies no edge: master boundary = commands' ratio (oracle)",
+                  abs((master["x"] + master["width"]) - expect) <= 2,
+                  {"preDrag": m, "masterAfter": master, "expectedRightEdge": expect,
+                   "draggedRightEdge": before_release["x"] + before_release["width"]})
+                c(f"I05 [{tag}]: the resized window takes its new slot, not the dragged frame (oracle)",
+                  not near(m1, before_release, 2.0), {"atRelease": before_release, "after": m1})
             fl = s.frames_list()
             c(f"I05 [{tag}]: layout valid after the release (oracle)", not tiling_errors(fl, s.area(), 8), tiling_errors(fl, s.area(), 8))
             c(f"I05 [{tag}]: no errors", not s.log_lines(ERRORS, off) and e["counters"]["errors"] == 0, s.log_lines(ERRORS, off)[:3])
@@ -425,5 +449,6 @@ def resize_rapid_keys(out: Path, c: Checks):
     """Rapid commands during an interactive resize: real key presses (and a faster D-Bus burst) reach Plastile while
     KWin runs the resize, run at once in arrival order (no queue behind the interaction), never write the window
     being resized, and the release commits the boundary where the user let go. Once with liveResize off, once on."""
-    res = {"off": _rapid_keys(out / "off", c, False), "on": _rapid_keys(out / "on", c, True)}
+    res = {"off": _rapid_keys(out / "off", c, False), "on": _rapid_keys(out / "on", c, True),
+           "offActive": _rapid_keys(out / "off-active", c, False, activate_resized=True)}
     evidence_file("resize-rapid-keys-I05.json").write_text(json.dumps(res, indent=1))

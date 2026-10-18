@@ -488,7 +488,7 @@ def persist_damaged(out: Path, c: Checks):
 def persist_no_qtcore(out: Path, c: Checks):
     """QtCore Settings unavailable: Plastile tiles, reports once, and writes nothing.
 
-    The failure is induced with a QtCore module on QML_IMPORT_PATH (which takes precedence) whose Settings type names
+    The failure is induced with a QtCore module first on QML2_IMPORT_PATH and QML_IMPORT_PATH (which take precedence) whose Settings type names
     a missing file, so creating Settings throws in KWin's engine. Hiding the real module does not work here: a qmldir
     whose plugin is missing still resolves Settings, because QtCore's types are already registered in the process
     (measured in nested KWin 6.7.5, Qt 6.11.2), so this is the closest reproducible stand-in for a missing module."""
@@ -496,7 +496,12 @@ def persist_no_qtcore(out: Path, c: Checks):
     shadow.mkdir(parents=True, exist_ok=True)
     (shadow / "qmldir").write_text("module QtCore\nSettings 6.0 Missing.qml\n")
     base = out / "xdg"
-    with psession(out / "s", base, extra_env={"QML_IMPORT_PATH": str(shadow.parent)}) as s:
+    # Qt searches QML2_IMPORT_PATH before QML_IMPORT_PATH (qqmltypeloader.cpp, "5. $QML2_IMPORT_PATH
+    # 6. $QML_IMPORT_PATH"), and some environments (the Nix KWin 6.8 wrapper) set both, so the shadow
+    # goes first on both or the real QtCore is still found.
+    paths = {v: os.pathsep.join([str(shadow.parent)] + ([os.environ[v]] if os.environ.get(v) else []))
+             for v in ("QML2_IMPORT_PATH", "QML_IMPORT_PATH")}
+    with psession(out / "s", base, extra_env=paths) as s:
         s.spawn(1); s.spawn(2); s.spawn(3)
         s.load(); s.settle()
         area = s.area()
