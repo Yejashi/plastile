@@ -10,7 +10,7 @@ import { rect, rectNear } from "../../src/core/geometry.ts";
 import { buildSnapshot, contentKey, MAX_CONTEXTS, MAX_TEXT, parse, SCHEMA_VERSION, serialize, validate } from "../../src/persist/snapshot.ts";
 import { migrate, type RawSnapshot } from "../../src/persist/migrate.ts";
 import { identityKey, matchFloat } from "../../src/persist/match.ts";
-import { DEBOUNCE_MS, Persister, type StateStore } from "../../src/runtime/persistence.ts";
+import { DEBOUNCE_MS, MAX_POSTPONE_MS, Persister, type StateStore } from "../../src/runtime/persistence.ts";
 import { createRuntime } from "../../src/runtime/main.ts";
 import { Engine } from "../../src/core/engine.ts";
 import { MockHost, meta } from "./mockHost.ts";
@@ -371,6 +371,36 @@ test("T27: a save due during an interactive move or resize waits for a quiet per
   h.t += DEBOUNCE_MS;
   store.fire();
   assert.equal(store.writes.length, 1, "saved once the drag ended");
+});
+
+test("T27: an interaction that never ends postpones a save at most MAX_POSTPONE_MS, then stops polling", () => {
+  const { h, e } = model();
+  h.open("a");
+  h.drain();
+  const store = new FakeStore();
+  const p = new Persister(store, e, { now: () => h.t, log: () => {}, stamp: () => "t" });
+  p.load();
+  e.setContextPreferences({ output: "O1", desktop: "D1", activity: "default" }, { layout: "bsp", masterStack: null });
+  p.markDirty();
+  // KWin's move never ends (measured: an EIS device swap under a held button).
+  h.setStates("a", { interactive: "move" });
+  h.t += DEBOUNCE_MS;
+  // Fire every armed deadline in turn (bounded loop), returning how many fired.
+  const runTimers = (): number => {
+    let n = 0;
+    for (let t = store.timer; t && n < 1000; t = store.timer) { h.t += t.ms; store.fire(); n++; }
+    return n;
+  };
+  let fires = runTimers();
+  assert.equal(store.writes.length, 1, "saved once despite the open interaction");
+  assert.ok(fires <= MAX_POSTPONE_MS / DEBOUNCE_MS + 2, `bounded postponements (${fires})`);
+  assert.equal(store.timer, null, "nothing re-armed after the save: no polling");
+  // A later change during the same endless interaction is again bounded.
+  e.setContextPreferences({ output: "O1", desktop: "D1", activity: "default" }, { layout: "monocle", masterStack: null });
+  p.markDirty();
+  fires = runTimers();
+  assert.equal(store.writes.length, 2);
+  assert.ok(fires <= MAX_POSTPONE_MS / DEBOUNCE_MS + 2, `bounded again (${fires})`);
 });
 
 // ------------------------------------------------------------------- runtime

@@ -16,6 +16,12 @@ import { buildSnapshot, contentKey, parse, serialize, type Snapshot } from "../p
 export const DEBOUNCE_MS = 2000;
 /** Re-arming for less than this would be noise: write now instead. */
 const SLACK_MS = 50;
+/**
+ * A save postponed by an ongoing interaction runs anyway this long after it first came due.
+ * An interaction that never ends (measured: KWin's EIS backend can leave a move open when the
+ * output under a held button disappears) must not turn the 2 s postponement into polling.
+ */
+export const MAX_POSTPONE_MS = 30000;
 export const SLOTS = 2;
 
 /** The QML side (Persistence.qml). Every call is synchronous; open/read/write do file I/O. */
@@ -62,6 +68,8 @@ export class Persister {
   private dirty = false;
   private armed = false;
   private lastChange = 0;
+  /** When the pending save first came due while an interaction postponed it; null when not postponed. */
+  private postponedSince: number | null = null;
   private generation = 0;
   private lastSlot = SLOTS - 1;
   private lastContent: string | null = null;
@@ -159,12 +167,17 @@ export class Persister {
     let wait = this.lastChange + DEBOUNCE_MS - this.svc.now();
     // The save blocks the compositor thread for milliseconds (measured, ADR-013 addendum): not
     // in the middle of a drag. A drag that keeps going keeps postponing it, a quiet period at a time.
-    if (wait <= SLACK_MS && this.model.isInteracting && this.model.isInteracting()) wait = DEBOUNCE_MS;
+    if (wait <= SLACK_MS && this.model.isInteracting && this.model.isInteracting()) {
+      const now = this.svc.now();
+      if (this.postponedSince === null) this.postponedSince = now;
+      if (now - this.postponedSince < MAX_POSTPONE_MS) wait = DEBOUNCE_MS; // bounded: then save anyway
+    }
     if (wait > SLACK_MS) {
       this.armed = true;
       this.store.schedule(wait, this.due);
       return;
     }
+    this.postponedSince = null;
     this.flush("deadline");
   }
 
