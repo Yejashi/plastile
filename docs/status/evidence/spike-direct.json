@@ -1,0 +1,344 @@
+{
+ "backend": "direct",
+ "reps": 10,
+ "checks": {
+  "adopt-3-tiled-no-overlap": {
+   "pass": true,
+   "detail": []
+  },
+  "noop-zero-mutations": {
+   "pass": true,
+   "detail": {
+    "solves": 10,
+    "commands": 10,
+    "skipNoop": 30
+   }
+  },
+  "focus-zero-solves-writes": {
+   "pass": true,
+   "detail": {
+    "commands": 10,
+    "focusCommands": 10,
+    "observations": 1
+   }
+  },
+  "ratio-converges": {
+   "pass": true,
+   "detail": []
+  },
+  "swap-even-returns-to-initial": {
+   "pass": true,
+   "detail": {
+    "plastile-fixture 1": [
+     {
+      "x": 4,
+      "y": 4,
+      "width": 695,
+      "height": 792
+     },
+     {
+      "x": 4,
+      "y": 4,
+      "width": 695,
+      "height": 792
+     }
+    ],
+    "plastile-fixture 2": [
+     {
+      "x": 707,
+      "y": 4,
+      "width": 569,
+      "height": 392
+     },
+     {
+      "x": 707,
+      "y": 4,
+      "width": 569,
+      "height": 392
+     }
+    ],
+    "plastile-fixture 3": [
+     {
+      "x": 707,
+      "y": 404,
+      "width": 569,
+      "height": 392
+     },
+     {
+      "x": 707,
+      "y": 404,
+      "width": 569,
+      "height": 392
+     }
+    ]
+   }
+  },
+  "reversal-final-A": {
+   "pass": true,
+   "detail": [
+    true,
+    true,
+    true,
+    true,
+    true
+   ]
+  },
+  "burst-6-no-overlap": {
+   "pass": true,
+   "detail": []
+  },
+  "burst-returns-to-3": {
+   "pass": true,
+   "detail": {
+    "plastile-fixture 1": {
+     "x": 4,
+     "y": 4,
+     "width": 695,
+     "height": 792
+    },
+    "plastile-fixture 2": {
+     "x": 707,
+     "y": 4,
+     "width": 569,
+     "height": 392
+    },
+    "plastile-fixture 3": {
+     "x": 707,
+     "y": 404,
+     "width": 569,
+     "height": 392
+    }
+   }
+  },
+  "minsize-bounded": {
+   "pass": true,
+   "detail": {
+    "solves": 1,
+    "flushes": 1,
+    "adopted": 1,
+    "writes": 3,
+    "skipNoop": 1,
+    "observations": 3,
+    "settled": 2,
+    "partialObservations": 1,
+    "outstanding": 1,
+    "tiled": 1
+   }
+  },
+  "fullscreen-respected": {
+   "pass": true,
+   "detail": {
+    "x": 0,
+    "y": 0,
+    "width": 1280,
+    "height": 800
+   }
+  },
+  "fullscreen-restore-layout": {
+   "pass": true,
+   "detail": {
+    "plastile-fixture 1": {
+     "x": 4,
+     "y": 4,
+     "width": 695,
+     "height": 792
+    },
+    "plastile-fixture 2": {
+     "x": 707,
+     "y": 4,
+     "width": 569,
+     "height": 392
+    },
+    "plastile-fixture 3": {
+     "x": 707,
+     "y": 404,
+     "width": 569,
+     "height": 392
+    }
+   }
+  },
+  "quicktile-not-fought": {
+   "pass": true,
+   "detail": {
+    "x": 0,
+    "y": 0,
+    "width": 640,
+    "height": 800
+   }
+  },
+  "reload-10-no-errors": {
+   "pass": true,
+   "detail": []
+  }
+ },
+ "workloads": {
+  "noop": {
+   "solves": 10,
+   "commands": 10,
+   "skipNoop": 30
+  },
+  "focus": {
+   "commands": 10,
+   "focusCommands": 10,
+   "observations": 1
+  },
+  "ratio": {
+   "counters": {
+    "solves": 10,
+    "commands": 10,
+    "writes": 30,
+    "observations": 30,
+    "settled": 30
+   },
+   "sendToAllSettledNs": [
+    300776099,
+    300849417,
+    300879330,
+    300881449,
+    300886359,
+    300887398,
+    300913908,
+    300959787,
+    301032757,
+    301737504
+   ]
+  },
+  "swap": {
+   "solves": 4,
+   "commands": 4,
+   "writes": 8,
+   "skipNoop": 4,
+   "observations": 8,
+   "settled": 8
+  },
+  "reversal": {
+   "counters": {
+    "solves": 10,
+    "commands": 10,
+    "writes": 35,
+    "observations": 30,
+    "settled": 25,
+    "staleObservations": 5,
+    "corrections": 5
+   },
+   "finalEqualsA": [
+    true,
+    true,
+    true,
+    true,
+    true
+   ]
+  },
+  "burst": {
+   "create": {
+    "solves": 2,
+    "flushes": 2,
+    "adopted": 3,
+    "writes": 10,
+    "skipNoop": 2,
+    "observations": 7,
+    "settled": 5,
+    "staleObservations": 2,
+    "corrections": 2,
+    "tiled": 3
+   },
+   "remove": {
+    "solves": 2,
+    "flushes": 2,
+    "removed": 3,
+    "writes": 6,
+    "skipNoop": 2,
+    "observations": 4,
+    "settled": 4,
+    "tiled": -3
+   }
+  },
+  "minsize": {
+   "solves": 1,
+   "flushes": 1,
+   "adopted": 1,
+   "writes": 3,
+   "skipNoop": 1,
+   "observations": 3,
+   "settled": 2,
+   "partialObservations": 1,
+   "outstanding": 1,
+   "tiled": 1
+  },
+  "fullscreen": {
+   "solves": 2,
+   "flushes": 2,
+   "suspended": 2,
+   "writes": 2,
+   "skipNoop": 3,
+   "observations": 4,
+   "settled": 2,
+   "externalChanges": 1
+  },
+  "quicktile": {
+   "solves": 1,
+   "flushes": 1,
+   "yielded": 1,
+   "writes": 1,
+   "skipNoop": 1,
+   "observations": 2,
+   "settled": 1,
+   "externalChanges": 1,
+   "tiled": -1
+  }
+ },
+ "initialFrames": {
+  "plastile-fixture 2": {
+   "x": 707,
+   "y": 4,
+   "width": 569,
+   "height": 392
+  },
+  "plastile-fixture 1": {
+   "x": 4,
+   "y": 4,
+   "width": 695,
+   "height": 792.0000000000001
+  },
+  "plastile-fixture 3": {
+   "x": 707,
+   "y": 404,
+   "width": 569,
+   "height": 392
+  }
+ },
+ "final": {
+  "backend": "direct",
+  "t": 35505285524960,
+  "solves": 1,
+  "flushes": 1,
+  "commands": 0,
+  "focusCommands": 0,
+  "adopted": 2,
+  "removed": 0,
+  "suspended": 0,
+  "yielded": 1,
+  "errors": 0,
+  "writes": 2,
+  "skipOutstanding": 0,
+  "skipNoop": 0,
+  "observations": 2,
+  "observationsDuringApply": 0,
+  "settled": 2,
+  "staleObservations": 0,
+  "partialObservations": 0,
+  "externalChanges": 0,
+  "corrections": 0,
+  "correctionBudgetExhausted": 0,
+  "unmanaged": 0,
+  "outstanding": 0,
+  "tiled": 2,
+  "ratio": 0.55
+ },
+ "settleReasons": {
+  "plan": 100,
+  "correction": 7
+ },
+ "failures": [],
+ "pass": true
+}

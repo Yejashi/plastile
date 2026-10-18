@@ -266,6 +266,56 @@ class NestedKwin:
         return self.call(f"/component/{component}", "org.kde.kglobalaccel.Component",
                          "shortcutNames", service="org.kde.kglobalaccel")[0]
 
+    # ------------------------------------------------------- one-shot oracles
+    ORACLE_FIELDS = (
+        "({id: String(w.internalId), caption: w.caption, appId: w.resourceClass,"
+        " frame: {x: w.frameGeometry.x, y: w.frameGeometry.y, width: w.frameGeometry.width, height: w.frameGeometry.height},"
+        " client: {x: w.clientGeometry.x, y: w.clientGeometry.y, width: w.clientGeometry.width, height: w.clientGeometry.height},"
+        " minimized: w.minimized, fullScreen: w.fullScreen, maximizeMode: w.maximizeMode, active: w.active,"
+        " tile: w.tile !== null, output: w.output ? w.output.name : null,"
+        " desktops: w.desktops.map(d => d.id), onAllDesktops: w.onAllDesktops, keepAbove: w.keepAbove,"
+        " noBorder: w.noBorder, transient: w.transient, normal: w.normalWindow})"
+    )
+
+    def run_js(self, body: str, timeout: float = 5.0) -> list[str]:
+        """Run a one-shot *plain JS* KWin script (global `workspace`) and unload it.
+
+        This is the harness's independent oracle/actor: it is not Plastile code.
+        `body` may call emit(obj) to return JSON values; returns the emitted JSON strings.
+        """
+        self._oneshot = getattr(self, "_oneshot", 0) + 1
+        name = f"plt-oneshot-{self._oneshot}"
+        tag = f"PLT-ONESHOT-{self._oneshot} "
+        path = self.root / f"{name}.js"
+        path.write_text(
+            f"function emit(v) {{ print({json.dumps(tag)} + JSON.stringify(v)); }}\n"
+            f"try {{\n{body}\n}} catch (e) {{ emit({{error: String(e)}}); }}\n"
+            f"print({json.dumps(tag.strip() + '-END')});\n")
+        off = self.mark()
+        self.load_script(path, name)
+        self.wait_log(re.escape(tag.strip() + "-END"), timeout, off)
+        self.unload(name)
+        return [ln.split(tag, 1)[1] for ln in self.lines_since(off, re.escape(tag))]
+
+    def fixtures(self, app_id: str = "plastile-fixture") -> list[dict]:
+        """Independent snapshot of every window with the given app id."""
+        out = self.run_js(
+            f"emit(workspace.windowList().filter(w => w.resourceClass === {json.dumps(app_id)})"
+            f".map(w => {self.ORACLE_FIELDS}));")
+        data = json.loads(out[0])
+        if isinstance(data, dict) and "error" in data:
+            raise NestedError(data["error"])
+        return data
+
+    def act(self, caption: str, statement: str) -> None:
+        """Run `statement` with `w` bound to the window whose caption matches (user-style action)."""
+        out = self.run_js(
+            f"const w = workspace.windowList().find(x => x.caption === {json.dumps(caption)});\n"
+            f"if (!w) emit({{error: 'no window ' + {json.dumps(caption)}}}); else {{ {statement}; emit({{ok: true}}); }}")
+        res = json.loads(out[0])
+        if "error" in res:
+            raise NestedError(res["error"])
+
     # ------------------------------------------------------------------ logs
     def log_text(self) -> str:
         return self.kwin_log.read_text(errors="replace") if self.kwin_log.exists() else ""

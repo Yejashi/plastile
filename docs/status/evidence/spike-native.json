@@ -1,0 +1,392 @@
+{
+ "backend": "native",
+ "reps": 10,
+ "checks": {
+  "adopt-3-tiled-no-overlap": {
+   "pass": true,
+   "detail": []
+  },
+  "noop-zero-mutations": {
+   "pass": true,
+   "detail": {
+    "solves": 10,
+    "commands": 10
+   }
+  },
+  "focus-zero-solves-writes": {
+   "pass": true,
+   "detail": {
+    "commands": 10,
+    "focusCommands": 10
+   }
+  },
+  "ratio-converges": {
+   "pass": false,
+   "detail": []
+  },
+  "swap-even-returns-to-initial": {
+   "pass": true,
+   "detail": {
+    "plastile-fixture 1": [
+     {
+      "x": 4,
+      "y": 4,
+      "width": 697,
+      "height": 792
+     },
+     {
+      "x": 4,
+      "y": 4,
+      "width": 697,
+      "height": 792
+     }
+    ],
+    "plastile-fixture 2": [
+     {
+      "x": 705,
+      "y": 4,
+      "width": 571,
+      "height": 394
+     },
+     {
+      "x": 705,
+      "y": 4,
+      "width": 571,
+      "height": 394
+     }
+    ],
+    "plastile-fixture 3": [
+     {
+      "x": 705,
+      "y": 402,
+      "width": 571,
+      "height": 394
+     },
+     {
+      "x": 705,
+      "y": 402,
+      "width": 571,
+      "height": 394
+     }
+    ]
+   }
+  },
+  "reversal-final-A": {
+   "pass": false,
+   "detail": [
+    false,
+    false,
+    false,
+    false,
+    false
+   ]
+  },
+  "burst-6-no-overlap": {
+   "pass": false,
+   "detail": [
+    "plastile-fixture 1 overlaps plastile-fixture 5",
+    "plastile-fixture 1 overlaps plastile-fixture 6",
+    "plastile-fixture 2 overlaps plastile-fixture 6",
+    "plastile-fixture 3 overlaps plastile-fixture 6",
+    "plastile-fixture 4 overlaps plastile-fixture 6",
+    "plastile-fixture 5 overlaps plastile-fixture 6"
+   ]
+  },
+  "burst-returns-to-3": {
+   "pass": false,
+   "detail": {
+    "plastile-fixture 1": {
+     "x": 4,
+     "y": 4,
+     "width": 697,
+     "height": 792
+    },
+    "plastile-fixture 2": {
+     "x": 705,
+     "y": 4,
+     "width": 571,
+     "height": 394
+    },
+    "plastile-fixture 3": {
+     "x": 705,
+     "y": 402,
+     "width": 571,
+     "height": 394
+    }
+   }
+  },
+  "minsize-bounded": {
+   "pass": true,
+   "detail": {
+    "solves": 1,
+    "flushes": 1,
+    "adopted": 1,
+    "nativeSplit": 3,
+    "nativeRemove": 2,
+    "nativeResize": 1,
+    "nativeRelGeomWrites": 3,
+    "nativeManage": 4,
+    "tileGeometrySignals": 4,
+    "tileWindowSignals": 4,
+    "observations": 3,
+    "writes": 4,
+    "outstanding": 1,
+    "leaves": 1,
+    "tiled": 1
+   }
+  },
+  "fullscreen-respected": {
+   "pass": false,
+   "detail": {
+    "x": 466.6666666666667,
+    "y": 252.66666666666666,
+    "width": 400.00000000000006,
+    "height": 328
+   }
+  },
+  "fullscreen-restore-layout": {
+   "pass": true,
+   "detail": {
+    "plastile-fixture 1": {
+     "x": 4,
+     "y": 4,
+     "width": 697,
+     "height": 792
+    },
+    "plastile-fixture 2": {
+     "x": 705,
+     "y": 4,
+     "width": 571,
+     "height": 394
+    },
+    "plastile-fixture 3": {
+     "x": 705,
+     "y": 402,
+     "width": 571,
+     "height": 394
+    }
+   }
+  },
+  "quicktile-not-fought": {
+   "pass": false,
+   "detail": {
+    "x": 705,
+    "y": 4,
+    "width": 571,
+    "height": 394
+   }
+  },
+  "reload-10-no-errors": {
+   "pass": true,
+   "detail": []
+  }
+ },
+ "workloads": {
+  "noop": {
+   "solves": 10,
+   "commands": 10
+  },
+  "focus": {
+   "commands": 10,
+   "focusCommands": 10
+  },
+  "ratio": {
+   "counters": {
+    "solves": 10,
+    "commands": 10,
+    "nativeResize": 10,
+    "tileGeometrySignals": 30,
+    "observations": 30
+   },
+   "sendToAllSettledNs": []
+  },
+  "swap": {
+   "solves": 4,
+   "commands": 4,
+   "nativeManage": 8,
+   "tileWindowSignals": 16,
+   "observations": 8,
+   "writes": 8
+  },
+  "reversal": {
+   "counters": {
+    "solves": 10,
+    "commands": 10,
+    "nativeResize": 10,
+    "tileGeometrySignals": 30,
+    "observations": 25
+   },
+   "finalEqualsA": [
+    false,
+    false,
+    false,
+    false,
+    false
+   ],
+   "mismatches": [
+    {
+     "plastile-fixture 3": {
+      "A": {
+       "x": 705,
+       "y": 402,
+       "width": 571,
+       "height": 394
+      },
+      "final": {
+       "x": 768,
+       "y": 402,
+       "width": 508,
+       "height": 394
+      }
+     }
+    },
+    {
+     "plastile-fixture 3": {
+      "A": {
+       "x": 768,
+       "y": 402,
+       "width": 508,
+       "height": 394
+      },
+      "final": {
+       "x": 705,
+       "y": 402,
+       "width": 571,
+       "height": 394
+      }
+     }
+    }
+   ]
+  },
+  "burst": {
+   "create": {
+    "solves": 2,
+    "flushes": 2,
+    "adopted": 3,
+    "nativeSplit": 8,
+    "nativeRemove": 4,
+    "nativeResize": 2,
+    "nativeRelGeomWrites": 8,
+    "nativeManage": 10,
+    "tileGeometrySignals": 9,
+    "tileWindowSignals": 10,
+    "observations": 7,
+    "writes": 10,
+    "outstanding": 3,
+    "leaves": 3,
+    "tiled": 3
+   },
+   "remove": {
+    "solves": 3,
+    "flushes": 3,
+    "removed": 3,
+    "nativeSplit": 9,
+    "nativeRemove": 6,
+    "nativeResize": 3,
+    "nativeRelGeomWrites": 9,
+    "nativeManage": 12,
+    "nativeUnmanage": 3,
+    "tileGeometrySignals": 12,
+    "tileWindowSignals": 15,
+    "observations": 5,
+    "writes": 12,
+    "outstanding": -3,
+    "leaves": -3,
+    "tiled": -3
+   }
+  },
+  "minsize": {
+   "solves": 1,
+   "flushes": 1,
+   "adopted": 1,
+   "nativeSplit": 3,
+   "nativeRemove": 2,
+   "nativeResize": 1,
+   "nativeRelGeomWrites": 3,
+   "nativeManage": 4,
+   "tileGeometrySignals": 4,
+   "tileWindowSignals": 4,
+   "observations": 3,
+   "writes": 4,
+   "outstanding": 1,
+   "leaves": 1,
+   "tiled": 1
+  },
+  "fullscreen": {
+   "solves": 2,
+   "flushes": 2,
+   "suspended": 2,
+   "nativeSplit": 3,
+   "nativeRemove": 4,
+   "nativeResize": 2,
+   "nativeRelGeomWrites": 2,
+   "nativeManage": 5,
+   "tileGeometrySignals": 5,
+   "tileWindowSignals": 5,
+   "observations": 5,
+   "writes": 5
+  },
+  "quicktile": {
+   "tileWindowSignals": 1
+  }
+ },
+ "initialFrames": {
+  "plastile-fixture 1": {
+   "x": 4,
+   "y": 4,
+   "width": 697,
+   "height": 792
+  },
+  "plastile-fixture 2": {
+   "x": 705,
+   "y": 4,
+   "width": 571,
+   "height": 394
+  },
+  "plastile-fixture 3": {
+   "x": 705,
+   "y": 402,
+   "width": 571,
+   "height": 394
+  }
+ },
+ "final": {
+  "backend": "native",
+  "t": 35827333234487,
+  "solves": 1,
+  "flushes": 1,
+  "commands": 0,
+  "focusCommands": 0,
+  "adopted": 3,
+  "removed": 0,
+  "suspended": 0,
+  "yielded": 0,
+  "errors": 0,
+  "nativeSplit": 2,
+  "nativeRemove": 2,
+  "nativeResize": 1,
+  "nativeRelGeomWrites": 2,
+  "nativeManage": 3,
+  "nativeUnmanage": 0,
+  "manageRejected": 0,
+  "tileGeometrySignals": 3,
+  "tileWindowSignals": 3,
+  "observations": 1,
+  "settled": 0,
+  "writes": 3,
+  "outstanding": 3,
+  "leaves": 3,
+  "tiled": 3,
+  "ratio": 0.55
+ },
+ "settleReasons": {},
+ "failures": [
+  "ratio-converges",
+  "reversal-final-A",
+  "burst-6-no-overlap",
+  "burst-returns-to-3",
+  "fullscreen-respected",
+  "quicktile-not-fought"
+ ],
+ "pass": false
+}

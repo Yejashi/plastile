@@ -32,6 +32,46 @@ Begin with a direct geometry adapter for a small prototype. It has a clear singl
 
 **Consequence of direct choice:** keep requested/observed geometry separate; yield to native quick tiling until explicit adoption; record API limitations. Do not ship an unused second backend merely because it was prototyped.
 
+### G1 resolution (2026-10-17): direct geometry selected
+
+**Status:** accepted at the nested-compositor layer. KWin 6.7.5 (tag `ab7df7cc`), Qt 6.12.0, virtual backend, 1280×800.
+
+**Workload.** Both spikes (`probes/spikes`) share one core: adoption, order, master/stack solve, commands, and a coalesced flush. They ran the same experiment script, `probes/spikes/run.py --reps 10`:
+
+- three controlled fixture clients, one of which delays every commit by 300 ms;
+- no-op, focus, ratio, swap and A→B→A reversal commands;
+- a burst create/remove;
+- a client that obeys its own minimum size;
+- user fullscreen and native quick-tile actions;
+- 10 reloads with pending work.
+
+Correctness is judged by an independent oracle: one-shot KWin scripts reading the real window state. Raw results: [`spike-direct.json`](../status/evidence/spike-direct.json), [`spike-native.json`](../status/evidence/spike-native.json).
+
+**Results.**
+
+| Experiment | Direct (ledger) | Native tiles |
+|---|---|---|
+| No-op ×10 | 0 writes | 0 mutations |
+| Focus ×10 | 0 solves, 0 writes | 0 solves, 0 mutations |
+| Ratio step ×10 | 30 frame writes (3 per step) | 10 `resizeByPixels`, 30 tile geometry signals |
+| Swap ×4 | 8 writes | 8 `manage`, 16 tile window signals |
+| **A→B→A with delayed client ×5** | **final A 5/5**, using exactly 1 bounded correction per reversal | **final B 5/5: tile at A, window stuck at B.** KWin drops the return-to-A configure (M0 E04) and the native path has no script lever to correct it |
+| Burst +3 / −3 windows | 2 solves each; 10 and 6 writes | 8 splits, 4 removes, 8 relative-geometry writes (+3); 9 splits, 6 removes (−3); the spike projector also produced overlaps |
+| User fullscreen | respected; layout restored afterwards | **the structural rebuild after the window count changed cancelled the user's fullscreen** and floated the window |
+| User native quick-tile | yielded (window kept its quick-tile rect) | quick-tile-left did not take effect on a custom-tiled window |
+| Reload ×10 with pending work | no errors | no errors |
+
+Native tile frames also differ from the plan by about 2 px, because KWin rounds tile geometry itself. Shared-edge ownership therefore moves into KWin.
+
+**Decision.** Direct geometry is the production backend. Native tiles do not avoid the reproduced direct-path failure, because the same xdg configure skip affects them. They add structural mutation churn and harmful side effects on user state, and they conflict with native quick-tile. The native spike stays in `probes/spikes/native` as evidence only. No native tile backend ships.
+
+**Native capability spike (T08):** not required. The one reproduced limitation, the dropped return-to-A configure, is handled within the script API by the requested/observed ledger: an outstanding-request memory plus a bounded correction on the stale observation. No other script-API gap blocked the experiments.
+
+**Remaining limitations.**
+- The comparison is nested-only. A physical-session repeat is part of G3.
+- The native projector was a simple rebuild-on-count-change design. A cleverer incremental projector might reduce churn, but it could not fix the reversal or the fullscreen side effect.
+- A direct-backend client that obeys a minimum larger than its slot stays "outstanding" in the spike. The production ledger needs a deadline and constraint learning (T15/T18).
+
 ## ADR-004: One pure model; one geometry writer
 
 **Status:** accepted.
