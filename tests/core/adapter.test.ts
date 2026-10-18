@@ -394,3 +394,30 @@ test("a client answering a request with another size gets its constraints re-rea
   assertTiles([w1, w2, w3], FULL);
   rt.shutdown();
 });
+
+test("the armed decoration watcher is a transient connection: counted, dropped when the margin settles, released at detach", () => {
+  const ws = new FakeWorkspace([output("O1", { x: 0, y: 0, width: 1280, height: 800 })], [desktop("D1")]);
+  const qt = new FakeQt();
+  const a = new KwinAdapter(ws as never, qt as never);
+  const engine = new Proxy({}, { get: () => () => {} });
+  a.attach(engine as never, false);
+  const w = ws.window({ caption: "w" });
+  ws.add(w);
+  const base = a.connectionCount();
+  assert.equal(a.transientConnectionCount(), 0);
+  // Measured on KWin 6.7.5 with a real GPU: decorationChanged ~100 ms after the first tile
+  // write, and no geometry change after it, so the watcher can stay armed while idle.
+  w.decorationChanged.emit();
+  assert.equal(a.transientConnectionCount(), 1);
+  assert.equal(a.connectionCount(), base + 1, "the watcher is an owned connection");
+  w.decorationChanged.emit(); // a second change does not arm a second watcher
+  assert.equal(a.transientConnectionCount(), 1);
+  w.clientGeometryChanged.emit();
+  qt.drain();
+  assert.equal(a.transientConnectionCount(), 0, "settled: one-shot watcher dropped");
+  assert.equal(a.connectionCount(), base, "steady count restored");
+  w.decorationChanged.emit(); // armed again, then the adapter goes away
+  a.detach();
+  assert.equal(a.connectionCount(), 0, "detach releases the armed watcher too");
+  assert.equal(w.clientGeometryChanged.fns.length, 0);
+});

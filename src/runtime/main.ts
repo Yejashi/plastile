@@ -231,7 +231,8 @@ export function createRuntime(env: RuntimeEnv): Runtime {
     if (id === "plastile.inspect.explain-window") { explainWindow(); return null; }
     if (id === "plastile.inspect.counters") {
       env.print("plastile counters " + safeJson({ counters: engine.counters, outstanding: engine.outstandingCount(),
-        connections: adapter.connectionCount(), windows: adapter.windowCount(), contexts: engine.contextSummary(),
+        connections: adapter.connectionCount(), transientConnections: adapter.transientConnectionCount(),
+        windows: adapter.windowCount(), contexts: engine.contextSummary(),
         configRevision: snapshot?.revision ?? null,
         shortcuts: shortcuts ? { state: shortcuts.state, conflicts: shortcuts.conflicts.length } : null,
         inspectorOpen: env.inspector ? env.inspector.isOpen() : null, zoneOverlay: env.zones ? env.zones.state() : null,

@@ -28,6 +28,12 @@ interface Entry {
   caption: Conn | null;
   /** Sizes around the last frame request until the client answers it (constraint refresh on deviation). */
   req: { from: Size; to: Size } | null;
+  /**
+   * One-shot clientGeometryChanged watcher armed by decorationChanged until the margin settles.
+   * It can stay armed while the window is idle (measured: decorationChanged ~100 ms after the
+   * first tile write, then no geometry change), so it is counted as transient.
+   */
+  margin: Conn | null;
 }
 
 /** Constraint re-reads are bounded: one per frame request that the client answered with another size. */
@@ -281,6 +287,13 @@ export class KwinAdapter implements HostPort {
     return n;
   }
 
+  /** Armed one-shot watchers included in connectionCount(): at most one per window. */
+  transientConnectionCount(): number {
+    let n = 0;
+    for (const e of this.entries.values()) if (e.margin) n++;
+    return n;
+  }
+
   windowCount(): number { return this.entries.size; }
 
   private own(signal: KSignal, fn: (...args: unknown[]) => void, into: Conn[]): Conn {
@@ -406,7 +419,7 @@ export class KwinAdapter implements HostPort {
     const id = this.idOf(w);
     if (this.entries.has(id)) return this.snapshot(this.entries.get(id)!);
     const gen = ++this.lastGen;
-    const e: Entry = { w, id, gen, conns: [], meta: metaOf(w), hooked: false, caption: null, req: null };
+    const e: Entry = { w, id, gen, conns: [], meta: metaOf(w), hooked: false, caption: null, req: null, margin: null };
     this.entries.set(id, e);
     if (e.meta.kind === "dock") {
       // Panels change the usable area; KWin has no script-visible work-area signal.
@@ -475,12 +488,11 @@ export class KwinAdapter implements HostPort {
     // (measured order: decorationPolicyChanged, decorationChanged, clientGeometryChanged),
     // so that signal is watched once instead of on every resize.
     if (w.decorationChanged && w.clientGeometryChanged) {
-      let margin: Conn | null = null;
       const settled = (): void => {
-        if (margin) { this.drop(margin, e.conns); margin = null; }
+        if (e.margin) { this.drop(e.margin, e.conns); e.margin = null; }
         this.refreshConstraints(e);
       };
-      this.own(w.decorationChanged, () => { if (!margin) margin = this.own(w.clientGeometryChanged, settled, e.conns); }, e.conns);
+      this.own(w.decorationChanged, () => { if (!e.margin) e.margin = this.own(w.clientGeometryChanged, settled, e.conns); }, e.conns);
     }
     this.watchCaption(e, this.watchTitles);
   }

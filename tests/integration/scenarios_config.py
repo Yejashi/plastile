@@ -13,7 +13,7 @@ import subprocess
 import time
 from pathlib import Path
 
-from harness import Input, Session, delta, evidence_file, near, tiling_errors
+from harness import Input, Session, delta, evidence_file, near, tiling_errors, steady_connections
 from scenarios import Checks, Skipped, scenario
 from scenarios_classify import brief, explain, rejected
 
@@ -170,13 +170,15 @@ def reload_config(out: Path, c: Checks):
         ev["storm"] = {"requests": 20, "sendSeconds": storm_s, "activations": len(acts), "gap": inner_gap(s),
                        "started": len(started), "stopped": len(stopped),
                        "connections": [base["connections"], cc["connections"]],
+                       "transientConnections": [base.get("transientConnections"), cc.get("transientConnections")],
+                       "steadyConnections": [steady_connections(base), steady_connections(cc)],
                        "windows": [base["windows"], cc["windows"]], "shortcutNames": [names0, names1]}
         c("Q04: 20 rapid reloads activate the new gap 12 once (oracle + one activation)",
           abs(inner_gap(s) - 12) <= 0.5 and len(acts) == 1, ev["storm"])
         c("Q04: one engine: started once, never stopped, script still loaded", len(started) == 1 and not stopped
           and s.kw.is_loaded("plastile"), ev["storm"])
         c("Q04: connection and window counts unchanged, one shortcut per command",
-          cc["connections"] == base["connections"] and cc["windows"] == base["windows"] and names0 == names1, ev["storm"])
+          steady_connections(cc) == steady_connections(base) and cc["windows"] == base["windows"] and names0 == names1, ev["storm"])
         ok, warn = no_errors(s)
         c("no model errors or JS exceptions", ok, warn)
     evidence_file("reload-config-D9-Q04.json").write_text(json.dumps(ev, indent=1) + "\n")

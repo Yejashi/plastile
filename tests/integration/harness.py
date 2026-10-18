@@ -301,6 +301,20 @@ def centre(r: dict) -> tuple[float, float]:
     return r["x"] + r["width"] / 2, r["y"] + r["height"] / 2
 
 
+def steady_connections(c: dict) -> int:
+    """Owned connections minus one-shot watchers still armed (at most one per window).
+
+    The adapter arms a clientGeometryChanged watcher on decorationChanged until the margin
+    settles; on a real GPU KWin emits decorationChanged ~100 ms after the first tile write and
+    then nothing, so the watcher can stay armed while idle (measured, KWin 6.7.5). A count that
+    includes it is not a steady baseline. A transient count above the window count is a leak.
+    """
+    transient = c.get("transientConnections", 0)
+    if transient > c.get("windows", 0):
+        raise AssertionError(f"transientConnections {transient} exceeds windows {c.get('windows')}")
+    return c["connections"] - transient
+
+
 def delta(a: dict, b: dict) -> dict:
     ca, cb = a["counters"], b["counters"]
     return {k: cb[k] - ca[k] for k in cb if cb[k] != ca[k]}

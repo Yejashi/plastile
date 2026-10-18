@@ -8,7 +8,7 @@ from pathlib import Path
 import os
 import re
 
-from harness import Session, delta, explain, fixture_events, near, tiling_errors, trace
+from harness import Session, delta, explain, fixture_events, near, tiling_errors, trace, steady_connections
 
 SCENARIOS = {}
 
@@ -509,8 +509,9 @@ def reload(out: Path, c: Checks):
             s.unload()
             s.load()
             cc = s.settle()
-            if cc["connections"] != base["connections"] or cc["windows"] != base["windows"]:
-                errors.append((i, cc["connections"], cc["windows"]))
+            if steady_connections(cc) != steady_connections(base) or cc["windows"] != base["windows"]:
+                errors.append((i, cc["connections"], cc.get("transientConnections"), cc["windows"],
+                               base["connections"], base.get("transientConnections")))
             if i % 10 == 9:
                 rss.append(s.kw.kwin_rss_kib())
         names1 = s.kw.shortcut_names()

@@ -298,7 +298,21 @@ def drag_output_removal(out: Path, c: Checks):
             for i in range(1, 6):
                 inp.do(f"move {300 + 40 * i} {300 + 20 * i}")
                 time.sleep(0.03)
-            inp.do("release left", f"key {KEY_LEFTMETA} up")
+            inp.do("release left")
+            time.sleep(0.1)
+            st = window_info(s, fx(3), "({move: w.move})")
+            eis_stuck = bool(st and st["move"])
+            if eis_stuck:
+                # KWin 6.7.5 EisContext::updateScreens() replaces the libeis device under the held button
+                # without releasing it (changeDevice keeps KWin's pressedButtons; the new libeis device has
+                # none), so libeis drops the release above and KWin's move never ends, with or without
+                # Plastile (measured on the reference machine). A press on the replacement device (dropped
+                # by KWin as a duplicate) plus a release delivers the button-up. A physical mouse's device
+                # is not replaced on output removal, so this is a test-input artifact.
+                inp.do("press left", "release left")
+            inp.do(f"key {KEY_LEFTMETA} up")
+            c("I04 note: KWin EIS dropped the release after the device swap (KWin behaviour, recorded)", True,
+              {"releaseDroppedByEis": eis_stuck})
             time.sleep(0.8); b = s.settle()
             area = area_of(s, "Virtual-0")
             fl = s.frames_list()

@@ -19,7 +19,7 @@ import threading
 import time
 from pathlib import Path
 
-from harness import ROOT, Session, delta, explain, near, tiling_errors, window_info
+from harness import ROOT, Session, delta, explain, near, tiling_errors, window_info, steady_connections
 from scenarios import Checks, script_objects, scenario
 
 GAP = 8
@@ -552,8 +552,9 @@ def persist_reload_cycles(out: Path, c: Checks):
             gens.append(generation(base))
             s.load()
             cc = s.settle()
-            if cc["connections"] != first["connections"] or cc["windows"] != first["windows"]:
-                errors.append((i, cc["connections"], cc["windows"]))
+            if steady_connections(cc) != steady_connections(first) or cc["windows"] != first["windows"]:
+                errors.append((i, cc["connections"], cc.get("transientConnections"), cc["windows"],
+                               first["connections"], first.get("transientConnections")))
             fds.append(fd_count(s))
             rss.append(s.kw.kwin_rss_kib())
         time.sleep(2.8)
