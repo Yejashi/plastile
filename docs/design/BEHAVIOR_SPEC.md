@@ -110,6 +110,8 @@ Output reconfiguration must preserve application visibility, logical ordering, a
 
 Recompute areas when panels, rotation, scaling, or output geometry change. Dirty only affected contexts. A temporary zero-sized/invalid output snapshot does not justify placing windows at `(0,0,0,0)`. Retain the last valid plan, defer through bounded topology convergence, and revalidate the epoch before applying.
 
+*Observed behavior (physical KWin 6.7.5 runbook session; nested KWin 6.7.5, `workarea-hidden-desktop-O07`):* KWin itself confines the windows of a desktop that is not shown when the work area or output geometry changes (`checkWorkspacePosition`: a move, or a resize the client commits later). Plastile never writes to a window whose context is hidden. Such a frame change, a correction queued before the context was hidden, and a request whose deadline expires while it is hidden are not treated as drift: no correction is spent, nothing is learned as a constraint, nothing diverges, and the context is re-solved against the then-current area when it is shown. Visible contexts keep their bounded correction.
+
 Test fractional scales, negative origins, portrait orientation, mixed refresh rates, docking/undocking, mirror-like arrangements, and per-output desktop visibility. The core stays in logical coordinates. Compare final frames against adapter-accepted constraints with explicit tolerance; physical screenshot pixels require the appropriate scale/transform conversion.
 
 ## 11. Overflow and constraints
