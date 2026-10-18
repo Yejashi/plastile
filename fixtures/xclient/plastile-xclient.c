@@ -136,6 +136,7 @@ static struct {
 	struct size size, min, max, inc;
 	int aspect_n, aspect_d;
 	bool fixed, dialog;
+	bool main_destroyed; /* close-main: the dialog outlives its parent */
 	int exit_after_ms;
 
 	xcb_connection_t *c;
@@ -468,8 +469,26 @@ static void handle_command(char *line)
 		g.exit_reason = "quit";
 		return;
 	}
+	if (strcmp(line, "close-main") == 0) {
+		/* The application destroys its main window and keeps the dialog (an orphaned transient). */
+		if (!g.main.id || g.main_destroyed) {
+			log_error("close-main: no main window");
+			return;
+		}
+		xcb_destroy_window(g.c, g.main.id);
+		xcb_flush(g.c);
+		g.main_destroyed = true;
+		lstart("main_destroyed");
+		lbool("dialog_kept", g.dialog);
+		lend();
+		return;
+	}
 	int w, h;
 	if (sscanf(line, "resize %d %d", &w, &h) == 2 && w > 0 && h > 0) {
+		if (g.main_destroyed) {
+			log_error("resize: main window destroyed");
+			return;
+		}
 		uint32_t v[2] = {(uint32_t)w, (uint32_t)h};
 		xcb_configure_window(g.c, g.main.id, XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT, v);
 		xcb_flush(g.c);
@@ -488,7 +507,7 @@ static void usage(FILE *f)
 	fprintf(f,
 		"usage: plastile-xclient [--title STR] [--class STR] [--size WxH] [--min WxH] [--max WxH]\n"
 		"                        [--inc WxH] [--aspect N:M] [--fixed] [--dialog] [--exit-after-ms N]\n"
-		"stdin commands: 'resize W H', 'quit'. JSON Lines log on stdout.\n");
+		"stdin commands: 'resize W H', 'close-main', 'quit'. JSON Lines log on stdout.\n");
 }
 
 int main(int argc, char **argv)

@@ -1,0 +1,192 @@
+{
+ "task": "T16 (X11 half), T19",
+ "layer": "nested KWin virtual backend + nested Xwayland (not physical)",
+ "kwin": "kwin 6.7.5",
+ "implementationCommit": "ddca2659e8c2b70f994d945fde566108f02a5317",
+ "implementationDirty": false,
+ "integration": {
+  "runs": 3,
+  "perRun": [
+   {
+    "xtransient-parent-minimize-T16": {
+     "pass": true,
+     "checks": 12,
+     "failedChecks": []
+    },
+    "xtransient-parent-desktop-T16": {
+     "pass": true,
+     "checks": 12,
+     "failedChecks": []
+    },
+    "xtransient-parent-close-T16": {
+     "pass": true,
+     "checks": 13,
+     "failedChecks": []
+    },
+    "resume-floats-T19": {
+     "pass": true,
+     "checks": 17,
+     "failedChecks": []
+    },
+    "reenable-floats-T19": {
+     "pass": true,
+     "checks": 10,
+     "failedChecks": []
+    }
+   },
+   {
+    "xtransient-parent-minimize-T16": {
+     "pass": true,
+     "checks": 12,
+     "failedChecks": []
+    },
+    "xtransient-parent-desktop-T16": {
+     "pass": true,
+     "checks": 12,
+     "failedChecks": []
+    },
+    "xtransient-parent-close-T16": {
+     "pass": true,
+     "checks": 13,
+     "failedChecks": []
+    },
+    "resume-floats-T19": {
+     "pass": true,
+     "checks": 17,
+     "failedChecks": []
+    },
+    "reenable-floats-T19": {
+     "pass": true,
+     "checks": 10,
+     "failedChecks": []
+    }
+   },
+   {
+    "xtransient-parent-minimize-T16": {
+     "pass": true,
+     "checks": 12,
+     "failedChecks": []
+    },
+    "xtransient-parent-desktop-T16": {
+     "pass": true,
+     "checks": 12,
+     "failedChecks": []
+    },
+    "xtransient-parent-close-T16": {
+     "pass": true,
+     "checks": 13,
+     "failedChecks": []
+    },
+    "resume-floats-T19": {
+     "pass": true,
+     "checks": 17,
+     "failedChecks": []
+    },
+    "reenable-floats-T19": {
+     "pass": true,
+     "checks": 10,
+     "failedChecks": []
+    }
+   }
+  ]
+ },
+ "kwinNativeBehaviour": {
+  "note": "Measured in a nested KWin without Plastile (the same steps as the Plastile run); Plastile's run matched it at every step.",
+  "xDialogVisibilityPerMinimizeStep": {
+   "initial": {
+    "minimized": false,
+    "hidden": false,
+    "desktops": [
+     1
+    ]
+   },
+   "parent minimized": {
+    "minimized": true,
+    "hidden": false,
+    "desktops": [
+     1
+    ]
+   },
+   "parent restored": {
+    "minimized": false,
+    "hidden": false,
+    "desktops": [
+     1
+    ]
+   },
+   "dialog minimized alone": {
+    "minimized": true,
+    "hidden": false,
+    "desktops": [
+     1
+    ]
+   },
+   "dialog restored": {
+    "minimized": false,
+    "hidden": false,
+    "desktops": [
+     1
+    ]
+   }
+  },
+  "xParentMovedToDesktop2": "the X dialog moves to desktop 2 with its parent (as the Wayland transient does)",
+  "xDialogSentAlone": "only the X dialog moves; the parent stays",
+  "xParentDestroyedDialogKept": {
+   "transient": true,
+   "transientFor": null,
+   "minimized": false
+  }
+ },
+ "mutationChecks": {
+  "note": "Each mutation was applied to src/, rebuilt, run once in a nested session and reverted (dirty tree); the counts are failed checks.",
+  "classify: dialogs and transients no longer float (src/core/classify.ts, the dialog, transient and window-type rules)": {
+   "xtransient-parent-minimize-T16": 3,
+   "xtransient-parent-desktop-T16": 6,
+   "xtransient-parent-close-T16": 6
+  },
+  "classify: the dialog and transient rules removed, the window-type rule kept (an equivalent mutant)": {
+   "xtransient-parent-*-T16": "0 failed: the window-type rule still floats an X11 dialog-typed window, so the mutation needed that rule too"
+  },
+  "resume clears user floats and native yields (src/core/engine.ts toggle-suspend)": {
+   "resume-floats-T19": 6
+  },
+  "nativeTileChanged ignored while suspended": {
+   "resume-floats-T19": 5
+  },
+  "float capture skipped while suspended, and each float's remembered rectangle written on resume": {
+   "resume-floats-T19": 3
+  },
+  "float capture skipped while suspended, with restoreFloatRects on resume (no effect on behaviour)": {
+   "resume-floats-T19": "0 failed: floats are not context members, so restoreFloatRects writes none, and toggling a float to tile re-captures its live frame; the user-visible outcome is unchanged"
+  },
+  "saved-float restores skipped at adoption (matchRestores)": {
+   "reenable-floats-T19": 4
+  }
+ },
+ "observations": [
+  "Toggle floating while suspended is rejected with `tiling suspended` (documented in docs/user/SHORTCUTS.md); a float made while suspended is honoured when it is KWin's own quick tile (an explicit native placement, BEHAVIOR §9).",
+  "A float moved by the user while Plastile was disabled is put back at the rectangle saved at unload on re-enable (one restore write). Saved floats are keyed by application identity, never by window (src/persist/match.ts), so the new runtime cannot tell this live window from a reopened one. Recorded, not asserted: {\"frame\": {\"x\": 640, \"y\": 300, \"width\": 460, \"height\": 340}, \"saved\": {\"x\": 640, \"y\": 300, \"width\": 460, \"height\": 340}, \"moved\": {\"x\": 420, \"y\": 210, \"width\": 500, \"height\": 360}, \"keptLive\": false, \"restoredSaved\": true, \"writes\": 1}",
+  "A float of an application with several open windows is not restored after re-enable (Q06, documented in docs/user/TROUBLESHOOTING.md); the scenario gives its restored floats their own app ids for that reason."
+ ],
+ "review": {
+  "layer": "nested KWin 6.7.5 virtual backend + nested Xwayland (not physical)",
+  "baseCommit": "7cd74ac (unchanged branch): 3 runs of the five new scenarios, 64/64 checks each",
+  "findings": [
+   "quick_tile_left waited only for w.tile !== null. A probe in nested KWin read tile set and the frame still at the old slot in the same script tick after slotWindowQuickTileLeft() (Wayland: the frame follows the client's commit), so the quick-tile frame recorded as q5/q2 could be stale under load (latent flake). It now waits for the tile and a left-half frame.",
+   "The after-resume Toggle floating and adopt-native steps used time.sleep(0.2) before settle(); they now wait for the command in the trace (run_command) and fold that into the check.",
+   "The mutant 'float capture skipped while suspended' was recorded as not changing user-visible behaviour. It does: a later disable/re-enable puts the float back at its pre-suspend rectangle. resume-floats-T19 now gives 2 and 4 their own application ids and ends the resume part with an unload/load that must restore both at their latest rectangles unwritten. ids() lists only the default app id, so the window-id map and live-window count were adjusted for the two own-app fixtures."
+  ],
+  "mutationChecks": {
+   "classify: dialog, transient and window-type rules tile (rerun)": {
+    "xtransient-parent-*-T16": "15 of 37 failed"
+   },
+   "float capture skipped while suspended (engine observe path)": {
+    "resume-floats-T19": "2 of 18 failed: re-enable restored 4 at the pre-suspend rectangle with 1 write; the toggle check that follows also fails"
+   },
+   "resume releases every native yield (reclassify native windows)": {
+    "resume-floats-T19": "3 of 18 failed"
+   }
+  },
+  "runs": "after the review changes: 3 runs of resume-floats-T19, reenable-floats-T19, the three xtransient scenarios, resume-missed-events-T19 and reenable-missed-events-T19: 103/103 checks each, no flakes"
+ }
+}
