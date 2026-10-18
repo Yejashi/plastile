@@ -637,3 +637,27 @@ test("L13: a window already natively tiled at adoption stays yielded when its ti
   assert.equal(e.execute("plastile.window.toggle-float").status, "accepted", "toggle re-adopts");
   assert.equal(e.modeOf("b"), "tiled");
 });
+
+test("L08/L13: toggle-float on a window that cannot tile is a no-op without side effects", () => {
+  const fixed = { minFrame: { width: 400, height: 300 }, maxFrame: { width: 400, height: 300 }, fixed: true };
+  const { h, e } = setup(["a", "x"], { x: { constraints: fixed } });
+  const x = h.windows.get("x")!;
+  assert.equal(e.modeOf("x"), "floating");
+  x.nativeTile = true;
+  e.nativeTileChanged("x", x.gen, true);
+  h.userSetFrame("x", rect(0, 0, 640, 800));
+  h.drain();
+  const before = e.explain("x")!;
+  h.active = "x";
+  const r = e.execute("plastile.window.toggle-float");
+  assert.equal(r.status, "noop");
+  assert.equal(x.nativeTile, true, "native tile not released");
+  const after = e.explain("x")!;
+  assert.equal(after.mode, "native");
+  assert.equal(after.userMode, before.userMode);
+  // A fixed floating window: same, no sticky tile request left behind.
+  const { h: h2, e: e2 } = setup(["a", "y"], { y: { constraints: fixed } });
+  h2.active = "y";
+  assert.equal(e2.execute("plastile.window.toggle-float").status, "noop");
+  assert.equal(e2.explain("y")!.userMode, null);
+});

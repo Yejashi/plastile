@@ -467,12 +467,20 @@ export class Engine {
     if (mode !== "excluded") {
       if (r.nativeYield) mode = "native";
       else if (r.userMode === "floating") mode = "floating";
-      else if (r.userMode === "tiled" && key !== null && r.decision.source !== "membership" && r.meta.resizeable && !r.base.fixed) mode = "tiled";
+      else if (r.userMode === "tiled" && this.whyNotTileable(r, key) === null) mode = "tiled";
       else if (r.exception !== null && mode === "tiled" && r.exception.startsWith("overflow")) mode = "floating";
     }
     if (mode === "tiled" && !(this.settingsFor(key!).enabled)) mode = "floating";
     this.transition(r, mode, key, why);
     this.applyBorderPolicy(r);
+  }
+
+  /** Why an explicit tile request cannot be honoured (null when it can), from the current decision. */
+  private whyNotTileable(r: Rec, key: ContextKey | null): string | null {
+    if (r.decision.mode === "excluded" || key === null || r.decision.source === "membership") return r.decision.reason;
+    if (!r.meta.resizeable || r.base.fixed) return "fixed size";
+    if (!this.settingsFor(key).enabled) return "tiling is disabled here";
+    return null;
   }
 
   private transition(r: Rec, mode: PlacementMode, key: ContextKey | null, why: string): void {
@@ -1042,6 +1050,9 @@ export class Engine {
       return { status: "accepted", targets: [r.id] };
     }
     if (r.mode === "floating" || r.mode === "native") {
+      // Decide before touching anything: a refused tile request changes no state.
+      const why = this.whyNotTileable(r, this.singleContextKey(r.membership));
+      if (why !== null) return { status: "noop", reason: "cannot tile: " + why, targets: [] };
       if (r.suspensions.size === 0) r.floatRect = r.frame;
       r.userMode = "tiled";
       r.exception = null;
