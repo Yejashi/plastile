@@ -17,7 +17,8 @@ run bootstrap) so that the published numbers are checked by a second implementat
 
 Nested KWin virtual backend only; nothing here is physical.
 
-Usage: python3 probes/perf/g2_review.py [--rerun DIR ...] [--ab-old DIR ...] [--ab-new DIR ...] [--out FILE]
+Usage: python3 probes/perf/g2_review.py [--rerun DIR ...] [--pack-reruns FILE.csv.xz] [--ab-old DIR ...] [--ab-new DIR ...]
+           [--p04 pure.json --p04-provenance TEXT] [--out FILE]
 """
 from __future__ import annotations
 
@@ -257,6 +258,43 @@ def p04_compare(path: Path) -> dict:
             "cells": out}
 
 
+RERUN_COLUMNS = ["unit", "runId", "implementationCommit", "workload", "cmd", "block", "k", "warmup", "outerNs", "innerNs", "solveNs",
+        "applyNs", "activateNs", "solves", "geometryWrites", "expectedWrites", "configureCount", "sendToDispatchNs",
+        "requestToFirstConfigureNs", "requestToLastCommitNs", "requestToVirtualPresentNs", "success", "failureReason"]
+
+
+def pack_reruns(dirs: list[Path], out: Path) -> int:
+    """Raw samples of the review re-runs, redacted (no titles, no paths), times relative to the last request."""
+    cols = RERUN_COLUMNS
+    buf = io.StringIO()
+    w = csv.writer(buf)
+    w.writerow(cols)
+    n = 0
+    for d in dirs:
+        unit = d.name
+        for ln in (d / "samples.jsonl").read_text().splitlines():
+            r = json.loads(ln)
+            req = r["lastRequestNs"]
+
+            def rel(k):
+                return r[k] - req if r.get(k) is not None and req is not None else None
+            row = {"unit": unit, "runId": r["runId"], "implementationCommit": r["implementationCommit"], "workload": r["workload"],
+                   "cmd": r["cmd"], "block": r["block"], "k": r["k"], "warmup": int(r["warmup"]), "outerNs": r["outerNs"],
+                   "innerNs": r.get("innerNs"), "solveNs": r.get("solveNs"), "applyNs": r.get("applyNs"),
+                   "activateNs": r.get("activateNs"), "solves": r.get("solves"), "geometryWrites": r.get("geometryWrites"),
+                   "expectedWrites": r.get("expectedWrites"), "configureCount": r.get("configureCount"),
+                   "sendToDispatchNs": r["dispatchNs"] - r["sendNs"] if r.get("sendNs") else None,
+                   "requestToFirstConfigureNs": rel("firstConfigureNs"), "requestToLastCommitNs": rel("lastCommitNs"),
+                   "requestToVirtualPresentNs": rel("virtualPresentedNs"), "success": int(bool(r["success"])),
+                   "failureReason": r.get("failureReason")}
+            w.writerow(["" if row[c] is None else row[c] for c in cols])
+            n += 1
+    text = buf.getvalue()
+    assert "/home" not in text and "/tmp" not in text
+    out.write_bytes(lzma.compress(text.encode(), preset=9 | lzma.PRESET_EXTREME))
+    return n
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--rerun", type=Path, action="append", default=[], help="a qualify.py unit directory")
@@ -265,6 +303,7 @@ def main() -> int:
     ap.add_argument("--ab-note", default="")
     ap.add_argument("--p04", type=Path, default=None, help="a fresh pure.ts JSON output, run from this tree")
     ap.add_argument("--p04-provenance", default="", help="commit and tree state when the P04 re-run was taken")
+    ap.add_argument("--pack-reruns", type=Path, default=None, help="also write the re-runs' raw samples (xz CSV) here")
     ap.add_argument("--out", type=Path, default=None)
     args = ap.parse_args()
     rows, meta = load_rows()
@@ -283,6 +322,9 @@ def main() -> int:
         result["reruns"] = {"machine": perfcommon.machine_state(), "units": rerun_units(args.rerun, meta)}
     if args.ab_old or args.ab_new:
         result["abB60e618Workload"] = {"note": args.ab_note, **ab_runs(args.ab_old, args.ab_new)}
+    if args.pack_reruns:
+        result.setdefault("reruns", {})["rawSamples"] = {"path": args.pack_reruns.name, "rows": pack_reruns(args.rerun, args.pack_reruns),
+                                                         "columns": RERUN_COLUMNS, "times": "ns; request* relative to the last request"}
     if args.p04:
         result["p04Rerun"] = {"provenance": args.p04_provenance, **p04_compare(args.p04)}
     text = json.dumps(result, indent=1) + "\n"
