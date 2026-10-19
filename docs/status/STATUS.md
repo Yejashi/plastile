@@ -12,7 +12,7 @@ agent; this file is the short status.
 
 | Layer | Environment | Last result |
 |---|---|---|
-| Unit/replay | Node 26 (`node --test tests/core/*.test.ts`), mock host and fake KWin, replay fixtures recorded from nested KWin (`tests/fixtures/replay/`) | 488/488 (`5773b61`) |
+| Unit/replay | Node 26 (`node --test tests/core/*.test.ts`), mock host and fake KWin, replay fixtures recorded from nested KWin (`tests/fixtures/replay/`) | 493/493 (`main`) |
 | Nested, virtual backend | Reference host: Arch Linux, KWin 6.7.5, Qt 6.12.0, KF 6.30.0 ([ENVIRONMENT](ENVIRONMENT.md)) | `5773b61`: 1897/1897 checks, 141/141 scenarios, 1 expected SKIP ([evidence](evidence/integration-host-5773b61.json)) |
 | Nested, virtual backend (CI) | Ubuntu 26.10 sandbox: KWin 6.7.5, Qt 6.11.2, KF 6.29.0, QPainter compositing | `459bae8`: 1664/1664 checks, 128/128 scenarios, 4 expected SKIPs (run 39219911863). Red from `97fec4a` to `eca2df5`: the fake OSD needed PyGObject, missing from the image, and one maximized-open race check did not reproduce there; both fixed in `459bae8` |
 | Nested, virtual backend (CI, provisional) | Nix: KWin 6.8.0, Qt 6.11.2, KF 6.30.0, llvmpipe | `459bae8`: 1617/1619 checks, 123/125 scenarios, 5 expected SKIPs (run 39219911863); the two failures are `reload-Q09` and `persist-reload-cycles-Q09` RSS bounds. `workarea-hidden-desktop-O07` now expects 6.8 to leave hidden windows in place (6.8 removed `checkWorkspacePosition`'s strut confinement). Stays provisional: its RSS checks fail in some runs on KWin 6.8's own heap growth (below) |
@@ -29,7 +29,7 @@ occur); `native-editor-toggle-L14` only where compositing is QPainter (the tile 
 |---|---|
 | G0 (APIs and measurement viable) | Passed, nested ([M0 report](M0_PROBE_REPORT.md), [API profile](API_PROFILE.md)) |
 | G1 (backend decision) | Passed, nested: direct geometry (ADR-003) |
-| G2 (integration and performance) | **Report written, nested only** ([G2_REPORT](G2_REPORT.md)): every §4 budget met in nested KWin 6.7.5 except pure-solve p99 at 32 windows (1.06–1.07 ms against 1 ms: a slow mode in 2–3 % of solves, attributed to QV4 garbage collection by duration only). Open: the current code is about 12 % (0.09 ms) slower at the n = 32 median than `b60e618`, cause unknown; physical input-to-visible is G3's |
+| G2 (integration and performance) | **Passed, nested only** ([G2_REPORT](G2_REPORT.md), [§16](G2_REPORT.md#16-follow-up-the-median-slowdown-and-the-pure-solve-p99-nested-virtual-kwin-675-2026-10-19)): every §4 budget is now met in nested KWin 6.7.5. Pure-solve p99 at 32 windows fell from 1.00–1.10 to 0.166–0.170 ms: the slow mode was QV4 garbage collection (151 of 153 slow solves had a collection start in their interval), and the solve path now allocates 46 % less. The ratio median is 0.11 ms below `b60e618`; of the earlier 0.09–0.12 ms slowdown, 0.04–0.06 ms was a Set iterator in `participates()` (`8a4bea5`), and the rest is attributed only to commit ranges. Physical input-to-visible is G3's |
 | G3 (release) | **Open**: physical session, G2 report, release checklist, licence (ADR-012, owner decision) |
 
 ## Tasks
@@ -99,7 +99,7 @@ Nested only; none is a physical input-to-photon measurement.
 ## Next tasks
 
 1. Physical: after the owner's re-login, re-check the hidden-desktop panel case (P3) and windows that open maximized; re-run P6 at 100 Hz with P00-switch-tiled; a soak during normal use (P8a).
-2. Pure-solve p99 (QV4 allocation in `solveAndApply` and the adapter's writes) and the 12 % median slowdown since `b60e618` (G2 report §15).
+2. Audit loops where a called function deletes from the Map or Set being walked: QV4's `for...of` then skips an entry, unlike V8 and the Node tests ([PERFORMANCE §7.1](../validation/PERFORMANCE.md), `probes/perf/qv4iter`). Optional: the adapter's per-write allocations (outer p99 1.1–1.6 ms).
 3. The open rows of the [G3 checklist](G3_CHECKLIST.md); owner decisions: licence (ADR-012), scrolling/zones (ADR-014), P2d/P2e.
 
 ## Conventions
