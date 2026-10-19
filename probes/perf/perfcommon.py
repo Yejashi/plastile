@@ -29,10 +29,11 @@ CLK_TCK = os.sysconf("SC_CLK_TCK")
 
 def git_meta() -> dict:
     def git(*a: str) -> str:
-        return subprocess.run(["git", "-C", str(ROOT), *a], capture_output=True, text=True).stdout.strip()
-    dirty = git("status", "--porcelain", "--", *TRACKED)
-    return {"implementationCommit": git("rev-parse", "HEAD"), "implementationDirty": bool(dirty),
-            "dirtyPaths": [ln[3:] for ln in dirty.splitlines()][:20]}
+        return subprocess.run(["git", "-C", str(ROOT), *a], capture_output=True, text=True).stdout
+    # Porcelain lines are "XY path"; X is a space for an unstaged change, so the output is not stripped.
+    dirty = [ln for ln in git("status", "--porcelain", "--", *TRACKED).splitlines() if ln]
+    return {"implementationCommit": git("rev-parse", "HEAD").strip(), "implementationDirty": bool(dirty),
+            "dirtyPaths": [ln[3:] for ln in dirty][:20]}
 
 
 def sha256(path: Path) -> str | None:
