@@ -106,6 +106,7 @@ test("ADR-021: a maximize the user makes after the window was tiled is honoured 
   h.start();
   h.open("a"); h.open("b");
   h.drain();
+  h.advance(5);                                        // a person: not within 1 ms of the first tile
   const writes = h.writes.length;
   h.setStates("b", { maximized: true });
   h.userSetFrame("b", FULL);
@@ -225,6 +226,7 @@ test("ADR-021: a client that sets maximized after its first commit (before its t
   assert.ok(rectNear(onlyTile(h, "late"), ALONE));
   assert.equal(h.engine.counters.corrections, 0, "placed by a plan write, not a correction");
   // After its tile settled, a maximize is the user's or the application's later choice: honoured.
+  h.advance(5);
   h.setStates("late", { maximized: true });
   h.userSetFrame("late", FULL);
   h.drain(); h.advance(2000);
@@ -368,7 +370,7 @@ test("ADR-021: a maximize acknowledged in the same commit as the first tile (KWi
   assert.equal(h.engine.counters.corrections, 0);
   // On a later turn the open phase is over: a maximize is honoured.
   const v = h.open("later", { delay: 10 });
-  h.drain(); h.advance(10);
+  h.drain(); h.advance(15);
   assert.ok(v.frame.width < 700 && v.frame.x > 600, `tiled beside it: ${JSON.stringify(v.frame)}`);
   h.setStates("later", { maximized: true });          // a later turn: the user's maximize
   h.drain(); h.advance(1000);

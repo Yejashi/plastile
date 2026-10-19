@@ -349,15 +349,6 @@ export class Engine {
   /** Stable identity so Qt.callLater coalesces repeated scheduling. */
   private readonly flushFn = (): void => this.flush();
   private readonly deadlineFn = (): void => this.onDeadline();
-  /** Windows whose first tile settled: their open phase ends on the next event-loop turn (ADR-021). */
-  private watchEnds = new Set<WindowId>();
-  private readonly watchEndFn = (): void => {
-    for (const id of this.watchEnds) {
-      const r = this.recs.get(id);
-      if (r && r.open === "watch") r.open = null;
-    }
-    this.watchEnds.clear();
-  };
 
   constructor(host: HostPort, svc: RuntimeServices, opts: EngineOptions = {}) {
     this.host = host;
@@ -425,7 +416,6 @@ export class Engine {
     this.pendingFloats.clear();
     this.restoreChecks.clear();
     this.openChecks.clear();
-    this.watchEnds.clear();
     this.onPersistChange = null;
     this.onLayoutChange = null;
     this.onSuspendChange = null;
@@ -1649,14 +1639,13 @@ export class Engine {
   }
 
   /**
-   * The window's first tile settled: its open phase ends on the next event-loop turn, not now.
-   * KWin applies a commit's geometry before its acknowledged states, so a client that asked to be
-   * maximized right after mapping reports the maximize just after the tile, in the same commit.
+   * The window's first tile settled: its open phase ends within a millisecond (Date.now() has 1 ms
+   * resolution, hence + 1), not at once. KWin applies a commit's geometry before its acknowledged
+   * states, so a client that asked to be maximized right after mapping reports the maximize
+   * microseconds after the tile, in the same commit; no person maximizes a window that fast.
    */
   private endWatch(r: Rec): void {
-    if (r.open !== "watch") return;
-    this.watchEnds.add(r.id);
-    this.svc.callLater(this.watchEndFn);
+    if (r.open === "watch") r.openUntil = Math.min(r.openUntil, this.svc.now() + 1);
   }
 
   private runOpenChecks(): void {

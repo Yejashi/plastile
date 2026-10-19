@@ -132,6 +132,7 @@ test("explain says plainly that a maximized tiled window's tiling is suspended; 
   h.start();
   h.open("a"); h.open("b");
   h.drain();
+  h.advance(5); // past the open phase (ADR-021)
   assert.equal(h.engine.explain("a")!.suspended, null);
   h.setStates("a", { maximized: true });
   h.drain();
