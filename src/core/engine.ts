@@ -1169,8 +1169,10 @@ export class Engine {
    */
   private participates(r: Rec): boolean {
     if (r.mode !== "tiled" || r.ctx === null) return false;
-    for (const s of r.suspensions) if (s !== "interactive") return false;
-    return true;
+    // Only "interactive" (or nothing) suspends it. Size checks, not for-of: iterating a Set
+    // allocates an iterator per call in QV4, and this runs per member in every solve (§16).
+    const s = r.suspensions;
+    return s.size === 0 || (s.size === 1 && s.has("interactive"));
   }
 
   /** Participates and may receive frame requests (the user owns the frame while dragging). */
