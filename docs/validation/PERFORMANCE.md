@@ -164,6 +164,34 @@ Use counters to test hypotheses:
 
 Only after these are addressed should an agent consider array pooling, specialized data structures, compiled solver code, or a daemon. Verify every optimization with the same behavior fixtures and benchmark workload. Do not make the core harder to reason about for a statistically insignificant gain.
 
+### 7.1 QV4 iteration allocates (measured)
+
+Finding from the G2 follow-up (2026-10-19, nested KWin 6.7.5 / Qt 6.12.0, [G2 report §16](../status/G2_REPORT.md#16-follow-up-the-median-slowdown-and-the-pure-solve-p99-nested-virtual-kwin-675-2026-10-19), [evidence](../status/evidence/g2-followup.json)). Nested only; not physical.
+
+**Why it matters.** The bundle targets ES2016, so `for…of`, spread and array destructuring run in KWin's QV4 as written. Each loop allocates an iterator object. Each step allocates a `{value, done}` result object. A `Map` entry is a new `[key, value]` array, which destructuring iterates again (observed source: qtdeclarative v6.12.0 `qv4mapiterator.cpp`). These are garbage-collected objects.
+
+**How collections reach a span.** QV4 starts a collection at the allocation that finds the heap full (`qv4mm_p.h` `MemoryManager::allocate`). With the default 5 ms incremental limit, a cycle of about 0.8 ms finishes inside the span that triggered it.
+
+**What was measured at 32 windows** (G2 protocol, 5 × 1000 per command, `eca2df5` → `212d86b`):
+
+- The pure-solve slow mode was collections. In a diagnostic unit, 151 of 153 solves above 0.5 ms had a collection start in their command's interval. Without one, a solve was slow 0.04 % of the time.
+- A `Set` walked with `for…of` in `participates()`, once per window per solve and per write, cost 0.042 ms per command on its own. That was most of the median slowdown since `b60e618`.
+- Rewriting the master/stack solve, `allocate()`, the solve input and the apply loop changed three things:
+  - pure-solve p99 from 1.055–1.092 ms to **0.166–0.170 ms**;
+  - p50 from 0.17–0.18 ms to 0.09–0.10 ms;
+  - garbage per command, across the whole engine, down by about 46 %.
+
+  The rewrite used index loops, `Map.forEach`, and flat cut arrays instead of `[begin, end]` tuples. The solver output is bit-for-bit unchanged (`tests/core/solveAlloc.test.ts`).
+
+**Rule for code on the command path** (solve, apply, adapter writes, observation handlers):
+
+- Iterate arrays with index loops and Maps with `forEach`.
+- Do not spread into calls.
+- Do not `map`/`slice` per window when an index range will do.
+- Return flat arrays rather than one small array per item.
+
+Verify any such change with the QV4 probes ([qv4solve](../../probes/perf/qv4solve/run.py), [ab_bundles](../../probes/perf/ab_bundles.py), [ab_qualify](../../probes/perf/ab_qualify.py)). A Node benchmark does not measure QV4's iterator or collector costs. Collections still happen, now mostly outside the solve span (apply, KWin's frame writes, observations), so they remain in the command path's outer p99 (1.1–1.6 ms nested). A physical session's heap is larger and has not been measured.
+
 ## 8. Raw result schema
 
 Store JSONL/CSV records with at least:
