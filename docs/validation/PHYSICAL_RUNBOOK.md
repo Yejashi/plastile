@@ -301,7 +301,11 @@ The matched baselines for the verdict are P02-quicktile for P03-ratio and P03-sw
 
 **Steps, once per refresh rate** (DP-1 60 Hz, DP-2 100 Hz, HDMI-A-1 144 Hz):
 
-1. Switch the output under test to an empty virtual desktop and leave the pointer on it. New fixture windows open on the active output; the run checks this from the refresh interval in their presentation feedback and stops if they opened elsewhere (outputs with equal refresh rates cannot be told apart this way; check visually then).
+1. Switch the output under test to an empty virtual desktop and leave the pointer on it. KWin's active screen follows the
+   mouse by default, so the fixtures open where the pointer is. Unattended, `python3 tools/physical/pointer_to.py left|right|N`
+   moves it there through a temporary uinput pointer (moves only, no buttons; consent C3): `left`/`right` clamp on the
+   leftmost/rightmost output, `N` pushes left and then moves N slow steps right (5000 reached HDMI-A-1 on the reference
+   machine). It prints KWin's `activeOutputName()` to confirm. New fixture windows open on the active output; the run checks this from the refresh interval in their presentation feedback and stops if they opened elsewhere (outputs with equal refresh rates cannot be told apart this way; check visually then).
 2. Preview the randomized plan: `python3 tools/physical/orchestrate.py plan --rounds 5 --samples 1000 --windows 4 --seed 60`.
 3. Run it:
 
