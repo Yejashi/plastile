@@ -198,24 +198,30 @@ def qualify_campaign(d: Path, rows: list[dict], label: str, ref: str) -> dict:
 
 
 def gc_attrib(d: Path, v: dict) -> list[dict]:
-    """Per gcstats unit: collections logged between consecutive perf lines, and the slow solves.
+    """Per gcstats unit: where collections start relative to the commands, and the slow solves.
 
-    A collection's block is printed when it ends. One printed after perf line k-1 and before
-    perf line k ran after command k-1 returned and before command k printed; command k's
-    handler or the event-loop work between the two commands. Collections in a solve span show
-    up as a slow solve whose command interval holds one.
+    qt.qml.gc.allocatorStats prints a header when a cycle starts: at the allocation that triggered
+    it, inside the first step (qv4mm.cpp runGC -> CollectorStatistics::start). A header printed
+    after perf line k-1 and before perf line k belongs to a cycle triggered after command k-1
+    returned and before command k printed: in command k's handler or in event-loop work between
+    the two. The logging itself makes each cycle longer than QV4's 5 ms incremental time limit,
+    so logged cycles continue over later event-loop turns: their "took" figures are wall time
+    under logging, not production cycle durations, and are not used for attribution.
     """
     import re
-    took = re.compile(r"Garbage collection took (\d+) us")
+    header = re.compile(r"========== GC ==========")
     freed = re.compile(r"Freed up bytes\s*: (\d+)")
     after = re.compile(r"Regular item memory after GC: (\d+)")
     perf = re.compile(r"plastile perf (\{.*\})$")
     out = []
     for ud in sorted(d.glob(f"u*-{v['name']}")):
         log = (ud / "diag.log").read_text().splitlines() if (ud / "diag.log").exists() else []
-        cmds, pend = [], []
+        cmds, starts = [], 0
         freed_total, n_freed, live_after = 0, 0, []
         for ln in log:
+            if header.search(ln):
+                starts += 1
+                continue
             f = freed.search(ln)
             if f:
                 freed_total += int(f.group(1))
@@ -225,32 +231,27 @@ def gc_attrib(d: Path, v: dict) -> list[dict]:
             if a:
                 live_after.append(int(a.group(1)))
                 continue
-            m = took.search(ln)
-            if m:
-                pend.append(int(m.group(1)) / 1e3)
-                continue
             p = perf.search(ln)
             if p:
                 r = json.loads(p.group(1))
                 t = r.get("timing") or {}
-                cmds.append({"solve": (t.get("solveNs") or 0) / 1e6 if t else None, "gc": pend})
-                pend = []
+                cmds.append({"solve": (t.get("solveNs") or 0) / 1e6 if t else None, "starts": starts})
+                starts = 0
         solving = [c for c in cmds if c["solve"] is not None]
         slow_ = [c for c in solving if c["solve"] > SLOW_MS]
-        gcs = [g for c in cmds for g in c["gc"]]
-        with_gc = [c for c in solving if c["gc"]]
-        out.append({"unit": ud.name, "commands": len(cmds), "collections": len(gcs),
-                    # Managed-heap bytes freed by the collections logged in the measured part, per command: the
-                    # allocation that did not survive, i.e. the per-command garbage (all of KWin's QV4 engine).
+        with_gc = [c for c in solving if c["starts"]]
+        without = [c for c in solving if not c["starts"]]
+        out.append({"unit": ud.name, "commands": len(cmds), "cycleStarts": sum(c["starts"] for c in cmds),
+                    "cycleStartsPer1000Commands": r4(1000 * sum(c["starts"] for c in cmds) / max(1, len(cmds))),
+                    # Managed-heap bytes freed by the cycles logged during the measured blocks, per command: the
+                    # garbage per command of KWin's whole QV4 engine (Plastile and every other script).
                     "freedBytesPerCommand": round(freed_total / max(1, len(cmds))) if n_freed else None,
                     "liveAfterCollectionBytes": {"p50": nr(live_after, 0.5), "max": max(live_after) if live_after else None},
-                    "collectionsPer1000Commands": r4(1000 * len(gcs) / max(1, len(cmds))),
-                    "collectionMs": {"p50": r4(nr(gcs, 0.5)), "p95": r4(nr(gcs, 0.95)), "max": r4(max(gcs)) if gcs else None},
-                    "solvingCommands": len(solving), "solvingCommandsWithCollection": len(with_gc),
-                    "slowSolves": len(slow_), "slowSolvesWithCollection": sum(1 for c in slow_ if c["gc"]),
-                    "slowShareAmongSolvesWithCollection": r4(sum(1 for c in with_gc if c["solve"] > SLOW_MS) / max(1, len(with_gc))),
-                    "slowShareAmongSolvesWithout": r4(sum(1 for c in solving if not c["gc"] and c["solve"] > SLOW_MS)
-                                                      / max(1, len(solving) - len(with_gc)))})
+                    "solvingCommands": len(solving), "solvingCommandsWithCycleStart": len(with_gc),
+                    "slowSolves": len(slow_), "slowSolvesWithCycleStart": sum(1 for c in slow_ if c["starts"]),
+                    "slowShareWithCycleStart": r4(sum(1 for c in with_gc if c["solve"] > SLOW_MS) / max(1, len(with_gc))),
+                    "slowShareWithoutCycleStart": r4(sum(1 for c in without if c["solve"] > SLOW_MS) / max(1, len(without))),
+                    "solveMaxWithoutCycleStart": r4(max((c["solve"] for c in without), default=None))})
     return out
 
 
