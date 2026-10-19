@@ -4,13 +4,15 @@ G3 ([ROADMAP §10](../implementation/ROADMAP.md#10-m7-packaging-documentation-an
 
 Reference machine ([ENVIRONMENT](../status/ENVIRONMENT.md#reference-machine)): Arch Linux, KWin 6.7.5, Qt 6.12, AMD RX 9070 XT (OpenGL), three outputs: DP-1 1920×1080 @ 60 Hz, HDMI-A-1 2560×1440 @ 144 Hz (primary), DP-2 1920×1080 @ 100 Hz, all scale 1, VRR incapable.
 
-The runbook itself has not been run. Plastile ran in a physical session once, run by the owner by hand on a
+Plastile first ran in a physical session by hand, run by the owner on a
 laptop (KWin 6.7.5, eDP-1 2256×1504 @ 60 Hz, scale 1.35, package 0.1.0 and the persistence helper): install,
 shortcut registration, placement and persistence across a re-login worked, and the session exposed first-run
 diagnosability problems (a user could not tell monocle from a dead tiler)
-([evidence](../status/evidence/physical-first-run-20261018.json)). That covers part of P0 and P1 only. The runbook then ran on the reference desktop with the owner's consent
-(P0, P1, P2a–c, P3, P4, P5, P7 so far; [evidence](../status/evidence/physical-runbook-20261018.json)). Until it is
-complete, Plastile remains a **candidate** with the physical gate open.
+([evidence](../status/evidence/physical-first-run-20261018.json)). That covers part of P0 and P1 only. The runbook then ran on the reference desktop with the owner's consent, on
+build `97fec4a` ([evidence](../status/evidence/physical-runbook-20261018.json)): P0, P1, P2a–c, P3, P4, P5, P7 and
+P8b (idle) passed; P6 passed at 60 Hz, failed at 144 Hz (ratio and focus) and is incomplete at 100 Hz; P8a (soak)
+is in progress; the owner skipped P2d and P2e; P9 and the uninstall (§6) have not run. Until it is complete,
+Plastile remains a **candidate** with the physical gate open ([G3 checklist](../status/G3_CHECKLIST.md)).
 
 ## 1. What was validated where
 
