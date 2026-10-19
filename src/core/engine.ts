@@ -1421,6 +1421,22 @@ export class Engine {
     };
   }
 
+  /**
+   * Position of `id` among the windows the context's solve takes part in (solveInput's `ids`),
+   * or -1. The same order without building a whole SolveInput (its maps and KWin reads).
+   */
+  private participantIndex(c: Ctx, id: WindowId): number {
+    const members = c.members;
+    let k = 0;
+    for (let i = 0; i < members.length; ++i) {
+      const r = this.recs.get(members[i]);
+      if (!r || !this.participates(r)) continue;
+      if (members[i] === id) return k;
+      k++;
+    }
+    return -1;
+  }
+
   private solveAndApply(c: Ctx): void {
     if (c.members.length === 0 && c.plan.size === 0) { c.applied = c.revision; return; }
     const area = this.host.workArea(c.key.output, c.key.desktop);
@@ -2136,7 +2152,7 @@ export class Engine {
         // Master/stack: growing a stack window shrinks the master column.
         if (kind === "master-stack" && r && r.ctx && sameContext(r.ctx, c.key)) {
           const ms = this.layoutState(c, "master-stack");
-          const idx = this.solveInput(c, null).ids.indexOf(r.id);
+          const idx = this.participantIndex(c, r.id);
           if (idx >= ms.masterCount) delta = -delta;
         }
         return this.layoutCommand(c, { kind: "ratio", delta });
