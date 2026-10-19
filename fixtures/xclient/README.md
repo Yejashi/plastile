@@ -34,6 +34,7 @@ make clean
 | `--fixed` | min = max = `--size`. |
 | `--dialog` | Also map a 300x200 second window with `WM_TRANSIENT_FOR` = main and `_NET_WM_WINDOW_TYPE_DIALOG`. |
 | `--exit-after-ms N` | Exit cleanly after N ms (timerfd). |
+| `--start-maximized` | Set `_NET_WM_STATE` to `_NET_WM_STATE_MAXIMIZED_VERT` and `_NET_WM_STATE_MAXIMIZED_HORZ` on the main window before it is mapped (EWMH: the client sets the property itself before mapping), so the window manager maps it maximized. |
 
 Both windows set `WM_PROTOCOLS` (`WM_DELETE_WINDOW`), `_NET_WM_PID`, `WM_CLIENT_LEADER`
 and `_NET_WM_WINDOW_TYPE` (`NORMAL` for the main window). Each window is filled with a
@@ -46,6 +47,7 @@ its own size except on the `resize` command.
 | Command | Effect |
 |---|---|
 | `resize W H` | `ConfigureWindow` width/height on the main window (a client-initiated resize request). |
+| `maximize` / `unmaximize` | The application's own request: an EWMH `_NET_WM_STATE` client message to the root window (add or remove both maximized states, source indication 1 = application). |
 | `close-main` | Destroy the main window only and keep running; with `--dialog` the dialog stays mapped, its `WM_TRANSIENT_FOR` and `WM_CLIENT_LEADER` still naming the destroyed window (an application that closes its main window and keeps a dialog). Logged as `main_destroyed`. |
 | `quit` | Exit cleanly. End of stdin is logged and otherwise ignored. |
 

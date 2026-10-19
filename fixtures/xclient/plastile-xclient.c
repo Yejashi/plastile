@@ -136,6 +136,7 @@ static struct {
 	struct size size, min, max, inc;
 	int aspect_n, aspect_d;
 	bool fixed, dialog;
+	bool start_maximized; /* _NET_WM_STATE maximized (both) set before the main window is mapped */
 	bool main_destroyed; /* close-main: the dialog outlives its parent */
 	int exit_after_ms;
 
@@ -143,7 +144,8 @@ static struct {
 	xcb_screen_t *screen;
 	struct win main, dlg;
 	xcb_atom_t WM_PROTOCOLS, WM_DELETE_WINDOW, _NET_WM_NAME, UTF8_STRING, _NET_WM_PID, _NET_WM_WINDOW_TYPE,
-		_NET_WM_WINDOW_TYPE_DIALOG, _NET_WM_WINDOW_TYPE_NORMAL, WM_CLIENT_LEADER;
+		_NET_WM_WINDOW_TYPE_DIALOG, _NET_WM_WINDOW_TYPE_NORMAL, WM_CLIENT_LEADER, _NET_WM_STATE,
+		_NET_WM_STATE_MAXIMIZED_VERT, _NET_WM_STATE_MAXIMIZED_HORZ;
 	int exit_tfd;
 	bool stdin_open;
 	bool quit;
@@ -281,6 +283,11 @@ static void create_window(struct win *w, const char *name, int width, int height
 	xcb_change_property(g.c, XCB_PROP_MODE_REPLACE, w->id, g._NET_WM_WINDOW_TYPE, XCB_ATOM_ATOM, 32, 1, &type);
 	if (is_dialog)
 		xcb_icccm_set_wm_transient_for(g.c, w->id, g.main.id);
+	if (!is_dialog && g.start_maximized) {
+		/* EWMH: a client sets _NET_WM_STATE itself before the window is mapped. */
+		xcb_atom_t st[2] = {g._NET_WM_STATE_MAXIMIZED_VERT, g._NET_WM_STATE_MAXIMIZED_HORZ};
+		xcb_change_property(g.c, XCB_PROP_MODE_REPLACE, w->id, g._NET_WM_STATE, XCB_ATOM_ATOM, 32, 2, st);
+	}
 
 	apply_normal_hints(w, is_dialog);
 
@@ -469,6 +476,27 @@ static void handle_command(char *line)
 		g.exit_reason = "quit";
 		return;
 	}
+	if (strcmp(line, "maximize") == 0 || strcmp(line, "unmaximize") == 0) {
+		/* EWMH _NET_WM_STATE client message to the root window: the application's own request. */
+		if (g.main_destroyed) {
+			log_error("%s: main window destroyed", line);
+			return;
+		}
+		xcb_client_message_event_t ev;
+		memset(&ev, 0, sizeof(ev));
+		ev.response_type = XCB_CLIENT_MESSAGE;
+		ev.format = 32;
+		ev.window = g.main.id;
+		ev.type = g._NET_WM_STATE;
+		ev.data.data32[0] = line[0] == 'm' ? 1 : 0; /* _NET_WM_STATE_ADD / _REMOVE */
+		ev.data.data32[1] = g._NET_WM_STATE_MAXIMIZED_VERT;
+		ev.data.data32[2] = g._NET_WM_STATE_MAXIMIZED_HORZ;
+		ev.data.data32[3] = 1; /* source: application */
+		xcb_send_event(g.c, 0, g.screen->root,
+			       XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT | XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY, (const char *)&ev);
+		xcb_flush(g.c);
+		return;
+	}
 	if (strcmp(line, "close-main") == 0) {
 		/* The application destroys its main window and keeps the dialog (an orphaned transient). */
 		if (!g.main.id || g.main_destroyed) {
@@ -507,7 +535,8 @@ static void usage(FILE *f)
 	fprintf(f,
 		"usage: plastile-xclient [--title STR] [--class STR] [--size WxH] [--min WxH] [--max WxH]\n"
 		"                        [--inc WxH] [--aspect N:M] [--fixed] [--dialog] [--exit-after-ms N]\n"
-		"stdin commands: 'resize W H', 'close-main', 'quit'. JSON Lines log on stdout.\n");
+		"                        [--start-maximized]\n"
+		"stdin commands: 'resize W H', 'maximize', 'unmaximize', 'close-main', 'quit'. JSON Lines log on stdout.\n");
 }
 
 int main(int argc, char **argv)
@@ -518,6 +547,7 @@ int main(int argc, char **argv)
 		{"max", required_argument, 0, 'M'},   {"inc", required_argument, 0, 'i'},
 		{"aspect", required_argument, 0, 'a'}, {"fixed", no_argument, 0, 'f'},
 		{"dialog", no_argument, 0, 'd'},      {"exit-after-ms", required_argument, 0, 'e'},
+		{"start-maximized", no_argument, 0, 'X'},
 		{"help", no_argument, 0, 'h'},        {0, 0, 0, 0},
 	};
 	int opt;
@@ -537,6 +567,7 @@ int main(int argc, char **argv)
 		}
 		case 'f': g.fixed = true; break;
 		case 'd': g.dialog = true; break;
+		case 'X': g.start_maximized = true; break;
 		case 'e': g.exit_after_ms = atoi(optarg); ok = g.exit_after_ms > 0; break;
 		case 'h': usage(stdout); return 0;
 		default: usage(stderr); return 2;
@@ -576,6 +607,9 @@ int main(int argc, char **argv)
 	g._NET_WM_WINDOW_TYPE_DIALOG = intern("_NET_WM_WINDOW_TYPE_DIALOG");
 	g._NET_WM_WINDOW_TYPE_NORMAL = intern("_NET_WM_WINDOW_TYPE_NORMAL");
 	g.WM_CLIENT_LEADER = intern("WM_CLIENT_LEADER");
+	g._NET_WM_STATE = intern("_NET_WM_STATE");
+	g._NET_WM_STATE_MAXIMIZED_VERT = intern("_NET_WM_STATE_MAXIMIZED_VERT");
+	g._NET_WM_STATE_MAXIMIZED_HORZ = intern("_NET_WM_STATE_MAXIMIZED_HORZ");
 
 	lstart("start");
 	lint("pid", getpid());
@@ -594,6 +628,7 @@ int main(int argc, char **argv)
 	lint("aspect_d", g.aspect_d);
 	lbool("fixed", g.fixed);
 	lbool("dialog", g.dialog);
+	lbool("start_maximized", g.start_maximized);
 	lint("exit_after_ms", g.exit_after_ms);
 	lint("root_w", g.screen->width_in_pixels);
 	lint("root_h", g.screen->height_in_pixels);
