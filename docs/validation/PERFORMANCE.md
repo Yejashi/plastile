@@ -201,7 +201,7 @@ Verify any such change with the QV4 probes ([qv4solve](../../probes/perf/qv4solv
   - 80 of 210 cases differ. All of them walk a Map or Set through its iterator while entries are deleted.
 - `forEach` on a Map or Set follows ECMAScript in QV4 in every case. So does array iteration (`for…of` and `forEach`), which is index-based in both engines.
 - Node runs V8, which follows the specification, so a unit test cannot see the difference.
-- The deletion need not be in the loop body. The audit for ADR-022 found five loops that could delete from their collection through called functions: a HostPort read or `settingsFor` resolves an output key in the adapter, which can call `engine.outputsRekeyed`, which deletes and re-adds contexts.
+- The deletion need not be in the loop body. The audit for ADR-022 found five loops that could delete from their collection through called functions: a HostPort read or `settingsFor` resolved an output key in the adapter, which could call `engine.outputsRekeyed`, which deletes and re-adds contexts. The adapter's queries have been read-only since the ADR-022 follow-up (the re-key is committed outside engine calls); the loops keep `forEach`.
 
 What to write:
 
@@ -220,10 +220,11 @@ What to write:
 - Array destructuring of a Map or Set is not checked: QV4 gave the ECMAScript result in the two deleting cases tried.
 - `npm run build` fails with the sites and points here.
 
-[qv4iteration.test.ts](../../tests/core/qv4iteration.test.ts) runs code in QV4 through the `qml` tool and skips with a message when no tool is installed:
+[qv4iteration.test.ts](../../tests/core/qv4iteration.test.ts) runs code in QV4 through the Qt 6 `qml` tool. It skips with a message when no tool is installed, or fails instead with `PLASTILE_REQUIRE_QV4=1` (set in CI's `native-tools` job; unverified until a hosted run):
 
 - It checks that `forEach` and arrays still match ECMAScript in QV4.
 - It runs engine scenarios for each hazard in QV4 and in V8 and requires equal results ([evidence](../status/evidence/qv4-iteration-engine.json)). Before the fix (`5229536`), QV4 failed five scenarios. V8 failed one of the five, where live iteration saved one preference twice.
+- Since the adapter's queries became read-only, the adapter scenarios run twice: as the adapter is, and `reentrant/…`, which forces the old synchronous re-key inside the loop ([evidence](../status/evidence/output-rekey-convergence.json)).
 
 ## 8. Raw result schema
 

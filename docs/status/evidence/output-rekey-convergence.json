@@ -1,0 +1,433 @@
+{
+ "probe": "probes/perf/qv4iter/engine.ts (same tests/core/qv4Scenarios.ts over src/ at two commits)",
+ "layer": "QV4 in the qml tool (offscreen) and V8 in Node; not KWin, not nested, not physical",
+ "qml": "Qml Runtime 6.12.0",
+ "node": "v26.11.1",
+ "changeSrcCommit": "521eb6cfc7a387449f3bd44c059f27e2e5035935",
+ "changeSrcDirty": false,
+ "baseSrcCommit": "cd59372c2121dcd0c3fa6c698d948a18c9d9c44f",
+ "meaning": {
+  "rekeys": "outputsRekeyed calls in the scenario: total, and inside = made while another engine call was running",
+  "adapter/*": "the adapter as it is; ok requires rekeys {total 1, inside 0}",
+  "reentrant/*": "the first key-resolving read commits the keys synchronously (the pre-change keyOf); ok requires {total 1, inside 1}",
+  "final": "state after the adapter's turn, screensChanged and every queued turn: contexts, frames, saved preferences, check()"
+ },
+ "rows": [
+  {
+   "scenario": "adapter/visibility-switch",
+   "change": {
+    "qv4Ok": true,
+    "v8Ok": true,
+    "qv4SameAsV8": true,
+    "rekeys": {
+     "total": 1,
+     "inside": 0
+    }
+   },
+   "base": {
+    "qv4Ok": false,
+    "v8Ok": false,
+    "qv4SameAsV8": true,
+    "rekeys": {
+     "total": 1,
+     "inside": 1
+    }
+   },
+   "finalEqualAcrossCommits": {
+    "qv4": true,
+    "v8": true
+   },
+   "final": {
+    "contexts": [
+     "edid:Dell/U2720Q/ABC␟desk-D2␟default:master-stack:3/3",
+     "edid:LG/27UL/@DP-1␟desk-D1␟default:master-stack:2/2",
+     "edid:LG/27UL/@DP-1␟desk-D2␟default:master-stack:1/1"
+    ],
+    "frames": {
+     "a1": "8,8 691x784",
+     "a2": "707,8 565x784",
+     "c1": "1288,8 691x784",
+     "c2": "1987,8 565x388",
+     "b1": "8,8 1264x784",
+     "c3": "1987,404 565x388"
+    },
+    "prefs": [],
+    "check": []
+   }
+  },
+  {
+   "scenario": "adapter/configure-gaps",
+   "change": {
+    "qv4Ok": true,
+    "v8Ok": true,
+    "qv4SameAsV8": true,
+    "rekeys": {
+     "total": 1,
+     "inside": 0
+    }
+   },
+   "base": {
+    "qv4Ok": false,
+    "v8Ok": false,
+    "qv4SameAsV8": true,
+    "rekeys": {
+     "total": 1,
+     "inside": 1
+    }
+   },
+   "finalEqualAcrossCommits": {
+    "qv4": true,
+    "v8": true
+   },
+   "final": {
+    "contexts": [
+     "edid:Dell/U2720Q/ABC␟desk-D2␟default:master-stack:1/1",
+     "edid:Dell/U2720Q/ABC␟desk-D1␟default:master-stack:2/2",
+     "edid:LG/27UL/@DP-1␟desk-D1␟default:master-stack:2/2",
+     "edid:LG/27UL/@DP-1␟desk-D2␟default:master-stack:1/1"
+    ],
+    "frames": {
+     "a1": "8,8 684x784",
+     "a2": "712,8 560x784",
+     "c1": "1320,40 300x200",
+     "d1": "1288,8 684x784",
+     "d2": "1992,8 560x784",
+     "b1": "40,40 300x200"
+    },
+    "prefs": [],
+    "check": []
+   }
+  },
+  {
+   "scenario": "adapter/saved-preferences",
+   "change": {
+    "qv4Ok": true,
+    "v8Ok": true,
+    "qv4SameAsV8": true,
+    "rekeys": {
+     "total": 1,
+     "inside": 0
+    }
+   },
+   "base": {
+    "qv4Ok": false,
+    "v8Ok": false,
+    "qv4SameAsV8": true,
+    "rekeys": {
+     "total": 1,
+     "inside": 1
+    }
+   },
+   "finalEqualAcrossCommits": {
+    "qv4": true,
+    "v8": true
+   },
+   "final": {
+    "contexts": [
+     "edid:Dell/U2720Q/ABC␟desk-D2␟default:master-stack:1/1",
+     "edid:Dell/U2720Q/ABC␟desk-D1␟default:master-stack:1/1",
+     "edid:LG/27UL/@DP-1␟desk-D1␟default:master-stack:1/1",
+     "edid:LG/27UL/@DP-1␟desk-D2␟default:master-stack:1/1"
+    ],
+    "frames": {
+     "a1": "8,8 1264x784",
+     "c1": "1320,40 300x200",
+     "d1": "1288,8 1264x784",
+     "b1": "40,40 300x200"
+    },
+    "prefs": [
+     "edid:Dell/U2720Q/ABC␟desk-D2␟default={\"layout\":null,\"masterStack\":{\"ratio\":0.6,\"masterCount\":1}}",
+     "edid:Dell/U2720Q/ABC␟desk-D1␟default={\"layout\":null,\"masterStack\":{\"ratio\":0.7,\"masterCount\":1}}",
+     "edid:LG/27UL/@DP-1␟desk-D1␟default={\"layout\":null,\"masterStack\":{\"ratio\":0.45,\"masterCount\":1}}",
+     "edid:LG/27UL/@DP-1␟desk-D2␟default={\"layout\":null,\"masterStack\":{\"ratio\":0.65,\"masterCount\":1}}"
+    ],
+    "check": []
+   }
+  },
+  {
+   "scenario": "adapter/suspend-zones",
+   "change": {
+    "qv4Ok": true,
+    "v8Ok": true,
+    "qv4SameAsV8": true,
+    "rekeys": {
+     "total": 1,
+     "inside": 0
+    }
+   },
+   "base": {
+    "qv4Ok": false,
+    "v8Ok": false,
+    "qv4SameAsV8": true,
+    "rekeys": {
+     "total": 1,
+     "inside": 1
+    }
+   },
+   "finalEqualAcrossCommits": {
+    "qv4": true,
+    "v8": true
+   },
+   "final": {
+    "contexts": [
+     "edid:Dell/U2720Q/ABC␟desk-D1␟default:zones:1/1",
+     "edid:LG/27UL/@DP-1␟desk-D1␟default:zones:1/1"
+    ],
+    "frames": {
+     "a1": "8,8 628x784",
+     "c1": "1500,300 420x260"
+    },
+    "prefs": [],
+    "check": []
+   }
+  },
+  {
+   "scenario": "reentrant/visibility-switch",
+   "change": {
+    "qv4Ok": true,
+    "v8Ok": true,
+    "qv4SameAsV8": true,
+    "rekeys": {
+     "total": 1,
+     "inside": 1
+    }
+   },
+   "base": {
+    "qv4Ok": true,
+    "v8Ok": true,
+    "qv4SameAsV8": true,
+    "rekeys": {
+     "total": 1,
+     "inside": 1
+    }
+   },
+   "finalEqualAcrossCommits": {
+    "qv4": true,
+    "v8": true
+   },
+   "final": {
+    "contexts": [
+     "edid:Dell/U2720Q/ABC␟desk-D2␟default:master-stack:3/3",
+     "edid:LG/27UL/@DP-1␟desk-D1␟default:master-stack:2/2",
+     "edid:LG/27UL/@DP-1␟desk-D2␟default:master-stack:1/1"
+    ],
+    "frames": {
+     "a1": "8,8 691x784",
+     "a2": "707,8 565x784",
+     "c1": "1288,8 691x784",
+     "c2": "1987,8 565x388",
+     "b1": "8,8 1264x784",
+     "c3": "1987,404 565x388"
+    },
+    "prefs": [],
+    "check": []
+   }
+  },
+  {
+   "scenario": "reentrant/configure-gaps",
+   "change": {
+    "qv4Ok": true,
+    "v8Ok": true,
+    "qv4SameAsV8": true,
+    "rekeys": {
+     "total": 1,
+     "inside": 1
+    }
+   },
+   "base": {
+    "qv4Ok": true,
+    "v8Ok": true,
+    "qv4SameAsV8": true,
+    "rekeys": {
+     "total": 1,
+     "inside": 1
+    }
+   },
+   "finalEqualAcrossCommits": {
+    "qv4": true,
+    "v8": true
+   },
+   "final": {
+    "contexts": [
+     "edid:Dell/U2720Q/ABC␟desk-D2␟default:master-stack:1/1",
+     "edid:Dell/U2720Q/ABC␟desk-D1␟default:master-stack:2/2",
+     "edid:LG/27UL/@DP-1␟desk-D1␟default:master-stack:2/2",
+     "edid:LG/27UL/@DP-1␟desk-D2␟default:master-stack:1/1"
+    ],
+    "frames": {
+     "a1": "8,8 684x784",
+     "a2": "712,8 560x784",
+     "c1": "1320,40 300x200",
+     "d1": "1288,8 684x784",
+     "d2": "1992,8 560x784",
+     "b1": "40,40 300x200"
+    },
+    "prefs": [],
+    "check": []
+   }
+  },
+  {
+   "scenario": "reentrant/saved-preferences",
+   "change": {
+    "qv4Ok": true,
+    "v8Ok": true,
+    "qv4SameAsV8": true,
+    "rekeys": {
+     "total": 1,
+     "inside": 1
+    }
+   },
+   "base": {
+    "qv4Ok": true,
+    "v8Ok": true,
+    "qv4SameAsV8": true,
+    "rekeys": {
+     "total": 1,
+     "inside": 1
+    }
+   },
+   "finalEqualAcrossCommits": {
+    "qv4": true,
+    "v8": true
+   },
+   "final": {
+    "contexts": [
+     "edid:Dell/U2720Q/ABC␟desk-D2␟default:master-stack:1/1",
+     "edid:Dell/U2720Q/ABC␟desk-D1␟default:master-stack:1/1",
+     "edid:LG/27UL/@DP-1␟desk-D1␟default:master-stack:1/1",
+     "edid:LG/27UL/@DP-1␟desk-D2␟default:master-stack:1/1"
+    ],
+    "frames": {
+     "a1": "8,8 1264x784",
+     "c1": "1320,40 300x200",
+     "d1": "1288,8 1264x784",
+     "b1": "40,40 300x200"
+    },
+    "prefs": [
+     "edid:Dell/U2720Q/ABC␟desk-D2␟default={\"layout\":null,\"masterStack\":{\"ratio\":0.6,\"masterCount\":1}}",
+     "edid:Dell/U2720Q/ABC␟desk-D1␟default={\"layout\":null,\"masterStack\":{\"ratio\":0.7,\"masterCount\":1}}",
+     "edid:LG/27UL/@DP-1␟desk-D1␟default={\"layout\":null,\"masterStack\":{\"ratio\":0.45,\"masterCount\":1}}",
+     "edid:LG/27UL/@DP-1␟desk-D2␟default={\"layout\":null,\"masterStack\":{\"ratio\":0.65,\"masterCount\":1}}"
+    ],
+    "check": []
+   }
+  },
+  {
+   "scenario": "reentrant/suspend-zones",
+   "change": {
+    "qv4Ok": true,
+    "v8Ok": true,
+    "qv4SameAsV8": true,
+    "rekeys": {
+     "total": 1,
+     "inside": 1
+    }
+   },
+   "base": {
+    "qv4Ok": true,
+    "v8Ok": true,
+    "qv4SameAsV8": true,
+    "rekeys": {
+     "total": 1,
+     "inside": 1
+    }
+   },
+   "finalEqualAcrossCommits": {
+    "qv4": true,
+    "v8": true
+   },
+   "final": {
+    "contexts": [
+     "edid:Dell/U2720Q/ABC␟desk-D1␟default:zones:1/1",
+     "edid:LG/27UL/@DP-1␟desk-D1␟default:zones:1/1"
+    ],
+    "frames": {
+     "a1": "8,8 628x784",
+     "c1": "1500,300 420x260"
+    },
+    "prefs": [],
+    "check": []
+   }
+  },
+  {
+   "scenario": "engine/apply-leaves",
+   "change": {
+    "qv4Ok": true,
+    "v8Ok": true,
+    "qv4SameAsV8": true,
+    "rekeys": null
+   },
+   "base": {
+    "qv4Ok": true,
+    "v8Ok": true,
+    "qv4SameAsV8": true,
+    "rekeys": null
+   },
+   "finalEqualAcrossCommits": {
+    "qv4": true,
+    "v8": true
+   },
+   "final": null
+  },
+  {
+   "scenario": "engine/collect-emptied",
+   "change": {
+    "qv4Ok": true,
+    "v8Ok": true,
+    "qv4SameAsV8": true,
+    "rekeys": null
+   },
+   "base": {
+    "qv4Ok": true,
+    "v8Ok": true,
+    "qv4SameAsV8": true,
+    "rekeys": null
+   },
+   "finalEqualAcrossCommits": {
+    "qv4": true,
+    "v8": true
+   },
+   "final": null
+  }
+ ],
+ "mutation": {
+  "method": "each ADR-022 loop fix in src/core/engine.ts reverted on its own at the change commit; probe and tests/core/qv4iteration.test.ts + rekey.test.ts run; restored",
+  "results": [
+   {
+    "reverted": "markVisibleDirty for...of",
+    "tests": "ℹ fail 1 (exit 1)",
+    "failingScenarios": [
+     "reentrant/visibility-switch FAIL ok NO"
+    ]
+   },
+   {
+    "reverted": "configure for...of",
+    "tests": "ℹ fail 1 (exit 1)",
+    "failingScenarios": [
+     "reentrant/configure-gaps FAIL ok NO"
+    ]
+   },
+   {
+    "reverted": "releaseAllZones for...of",
+    "tests": "ℹ fail 1 (exit 1)",
+    "failingScenarios": [
+     "reentrant/suspend-zones FAIL ok NO"
+    ]
+   },
+   {
+    "reverted": "collectEmpty for...of",
+    "tests": "ℹ fail 1 (exit 1)",
+    "failingScenarios": [
+     "engine/collect-emptied FAIL ok NO"
+    ]
+   },
+   {
+    "reverted": "contextPreferences live for...of",
+    "tests": "ℹ fail 2 (exit 1)",
+    "failingScenarios": [
+     "reentrant/saved-preferences FAIL FAIL NO"
+    ]
+   }
+  ]
+ }
+}
