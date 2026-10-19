@@ -632,14 +632,21 @@ client.
   start, at a re-enable or reload, at a resume or by `reconcile` are left as they are. Only windows that would
   otherwise tile, in a context that places them: rule floats and exclusions, dialogs and transients, user floats,
   native-tile yields, multi-context windows, the floating layout and unassigned zones members keep their maximize.
-  A window that opens full screen keeps it (full screen on open stays honoured).
+  A window that opens full screen or minimized keeps it (full screen on open stays honoured), decided then and not
+  revisited when the user later restores it. A window the layout has no room for (it would overflow and float)
+  keeps its maximize: un-maximized, it would float at KWin's restore geometry, not tile.
 - **When.** Once per window, at its first readiness: in the first flush after it is classified, which is after the
   bounded late-metadata wait (BEHAVIOR §1). A maximize reported before its first tile settled still counts (a
   client that sets it after its first commit; KWin reports a commit's geometry before its acknowledged states, so
   that maximize can arrive just after the tile, in the same commit): the open phase ends 1 ms after the first tile
-  settles (`Date.now()` resolution; no timer) and at most `deadlineMs` (750 ms) after the decision.
-- **How.** The adapter calls `setMaximize(false, false)` when `maximizable` is true, and the solve of the same
-  flush writes the window's tile. The tile is a plan write on a fresh ledger entry, written even when the maximized
+  settles (`Date.now()` resolution; no timer) and at most `deadlineMs` (750 ms) after the decision. A window whose
+  context is not shown (it opened on another desktop or activity) is decided when that context is shown: nothing is
+  written to a window whose context is hidden (O07), and an un-maximize then would leave it at its restore
+  geometry (on Wayland a 0x0 configure: the client's own size) until shown, a second placement.
+- **How.** The window takes part in the flush's solve with its maximize suspension lifted. Only when that solve
+  gives it a slot does the adapter call `setMaximize(false, false)` (when `maximizable` is true), before the solve
+  writes anything; then the solve writes its tile. If KWin refuses, the window stays maximized and the context is
+  solved again without it, still before any write. The tile is a plan write on a fresh ledger entry, written even when the maximized
   frame already equals it (no gaps, one window), because KWin's un-maximize moved its requested geometry to the
   restore rectangle. On Wayland KWin's configure timer sends both as one configure; until the client acknowledges
   it, KWin still reports `maximizeMode` 3, which is then not a suspension.
@@ -677,6 +684,24 @@ mutations each fail a scenario:
   (`--maximize-after-map`), also a 40 ms client whose maximize KWin reports in the same commit as the tile, ends
   tiled and not maximized.
 
+*Review amendment (2026-10-19, branch `wf/maximized-open-review`).* The first implementation un-maximized the
+window in the open check, before the solve, and did so whatever the context's visibility. Two defects followed,
+both reproduced in nested KWin 6.7.5 against that engine: a window that opened maximized on a desktop not shown
+got a 0x0 un-maximized configure while hidden and a second placement when shown; a window the layout had no room
+for (minimum sizes) got a 0x0 configure and became an overflow float at the client's own size, while explain said
+it was un-maximized on open. Now the un-maximize happens in the solve that gives the window a slot, a hidden
+context defers the decision, and overflow and minimized-on-open keep the maximize. Evidence: unit
+(`tests/core/maximizedOpen.test.ts`, 26 tests; 18 engine mutations, the branch's own and the amendment's, each fail
+a test) and two more nested scenarios, each passed three times:
+
+- `maximized-open-hidden-T17`: a window placed on desktop 2 (a placer script, as a KWin rule would) while desktop 1
+  is shown stays maximized and receives no un-maximized configure; when desktop 2 is shown, it gets one configure,
+  un-maximized at its tile size, and the trace records `deferred` then `unmaximized`. The original engine fails 5
+  of 9 checks (its configures: maximized, then `0x0` while hidden).
+- `maximized-open-overflow-T17`: with two 700 px minimum widths on a 1280 px output, the window stays maximized,
+  receives no un-maximized configure, the peer is not written, and explain says there is no room. The original
+  engine fails 3 of 5 checks (a `0x0` configure, then an overflow float).
+
 **Consequences.**
 
 - Applications that open maximized are tiled. A user who wants them maximized sets `keep`, or maximizes them
@@ -690,6 +715,11 @@ mutations each fail a scenario:
 - Not verified: a KWin rule that forces maximize (unit and fake-KWin only: `maximizable` false); KWin 6.8.0 (same
   source semantics, not run); the physical case that prompted it (the owner's kitty), which is the runbook's to
   confirm.
+- A KWin rule *Maximized: Apply initially* is the user's configuration, but Plastile cannot tell it from an
+  application's own maximize: with `tile` such a window is un-maximized. A *Force* rule makes the window not
+  maximizable (observed source), so Plastile leaves it maximized; `keep` is the other way out.
+- Session restore: an application that the session manager restores maximized after Plastile started arrives
+  maximized and is un-maximized, as any window opened while Plastile runs (follows from the rule; not tested).
 
 **Revisit if** a common application maximizes itself repeatedly after mapping, users report windows they wanted
 maximized being tiled, or KWin exposes whether a maximize came from the user.
