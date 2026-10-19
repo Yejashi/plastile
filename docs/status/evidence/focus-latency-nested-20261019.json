@@ -2554,5 +2554,971 @@
     }
    }
   }
+ },
+ "review": {
+  "date": "2026-10-19",
+  "layer": "nested KWin, virtual backend; NOT physical (except physicalPhase, which re-reads the physical raw logs)",
+  "samplesPerCondition": "3 blocks x 300 (5 warm-up taps per block discarded), one fresh nested session per block, randomized block order",
+  "probe": "probes/perf/focus/run.py (--floating added in review), probes/perf/focus/area.py, probes/perf/focus/phase.py",
+  "runs": {
+   "aurorae-floating": {
+    "description": "Aurorae v2 + the reference desktop's SVG theme; Plastile loaded with its context's layout floating before the fixtures map (--floating), so every condition, Plastile's focus.next included, activates KWin's 400x300 placement (as the physical P03-focus context at 100 Hz)",
+    "implementationCommit": "c54cfcf469473305d62db1f5b33c2eebf36d87ba",
+    "plan": [
+     "minimal",
+     "plastile-focus",
+     "kwin-switch",
+     "plastile-kwin-switch",
+     "plastile-focus",
+     "plastile-kwin-switch",
+     "minimal",
+     "kwin-switch",
+     "plastile-focus",
+     "kwin-switch",
+     "minimal",
+     "plastile-kwin-switch"
+    ],
+    "frames": {
+     "plastile-fixture 1": {
+      "x": 1076,
+      "y": 548,
+      "width": 408,
+      "height": 344
+     },
+     "plastile-fixture 2": {
+      "x": 1129.3333333333333,
+      "y": 578,
+      "width": 408,
+      "height": 344
+     },
+     "plastile-fixture 3": {
+      "x": 1182.6666666666665,
+      "y": 608,
+      "width": 408,
+      "height": 344
+     },
+     "plastile-fixture 4": {
+      "x": 1235.9999999999998,
+      "y": 638,
+      "width": 408,
+      "height": 344
+     }
+    },
+    "stagesMs": {
+     "minimal": {
+      "tap_entry": {
+       "n": 900,
+       "p05": 0.204,
+       "p50": 0.224,
+       "p95": 0.262,
+       "max": 0.666
+      },
+      "tap_active": {
+       "n": 900,
+       "p05": 1.644,
+       "p50": 1.921,
+       "p95": 2.165,
+       "max": 2.558
+      },
+      "active_turn": {
+       "n": 900,
+       "p05": 0.058,
+       "p50": 0.079,
+       "p95": 1.705,
+       "max": 2.632
+      },
+      "turn_config": {
+       "n": 900,
+       "p05": 0.032,
+       "p50": 0.039,
+       "p95": 0.05,
+       "max": 0.154
+      },
+      "tap_config": {
+       "n": 900,
+       "p05": 1.823,
+       "p50": 2.198,
+       "p95": 3.754,
+       "max": 5.249
+      },
+      "assign": {
+       "n": 900,
+       "p05": 1.411,
+       "p50": 1.683,
+       "p95": 1.886,
+       "max": 2.243
+      },
+      "dispatch": null
+     },
+     "plastile-focus": {
+      "tap_entry": {
+       "n": 900,
+       "p05": 0.223,
+       "p50": 0.248,
+       "p95": 0.295,
+       "max": 0.498
+      },
+      "tap_active": {
+       "n": 900,
+       "p05": 1.671,
+       "p50": 1.947,
+       "p95": 2.187,
+       "max": 3.026
+      },
+      "active_turn": {
+       "n": 900,
+       "p05": 0.104,
+       "p50": 0.139,
+       "p95": 1.754,
+       "max": 2.909
+      },
+      "turn_config": {
+       "n": 900,
+       "p05": 0.032,
+       "p50": 0.039,
+       "p95": 0.053,
+       "max": 0.496
+      },
+      "tap_config": {
+       "n": 900,
+       "p05": 1.845,
+       "p50": 2.243,
+       "p95": 3.849,
+       "max": 5.979
+      },
+      "assign": {
+       "n": 900,
+       "p05": 1.427,
+       "p50": 1.691,
+       "p95": 1.94,
+       "max": 2.712
+      },
+      "dispatch": {
+       "n": 900,
+       "p05": 1.489,
+       "p50": 1.764,
+       "p95": 2.022,
+       "max": 2.811
+      }
+     },
+     "kwin-switch": {
+      "tap_entry": null,
+      "tap_active": {
+       "n": 900,
+       "p05": 1.705,
+       "p50": 1.884,
+       "p95": 2.107,
+       "max": 2.727
+      },
+      "active_turn": {
+       "n": 900,
+       "p05": 0.054,
+       "p50": 0.072,
+       "p95": 1.708,
+       "max": 2.798
+      },
+      "turn_config": {
+       "n": 900,
+       "p05": 0.033,
+       "p50": 0.041,
+       "p95": 0.053,
+       "max": 0.43
+      },
+      "tap_config": {
+       "n": 900,
+       "p05": 1.849,
+       "p50": 2.147,
+       "p95": 3.69,
+       "max": 5.041
+      },
+      "assign": null,
+      "dispatch": null
+     },
+     "plastile-kwin-switch": {
+      "tap_entry": null,
+      "tap_active": {
+       "n": 900,
+       "p05": 1.61,
+       "p50": 1.876,
+       "p95": 2.135,
+       "max": 2.927
+      },
+      "active_turn": {
+       "n": 900,
+       "p05": 0.085,
+       "p50": 0.118,
+       "p95": 1.765,
+       "max": 2.893
+      },
+      "turn_config": {
+       "n": 900,
+       "p05": 0.034,
+       "p50": 0.041,
+       "p95": 0.053,
+       "max": 0.485
+      },
+      "tap_config": {
+       "n": 900,
+       "p05": 1.766,
+       "p50": 2.198,
+       "p95": 3.817,
+       "max": 5.619
+      },
+      "assign": null,
+      "dispatch": null
+     }
+    },
+    "tapToConfigureMedianPerBlock": {
+     "000-minimal": {
+      "n": 300,
+      "medianMs": 2.224
+     },
+     "001-plastile-focus": {
+      "n": 300,
+      "medianMs": 2.241
+     },
+     "002-kwin-switch": {
+      "n": 300,
+      "medianMs": 2.191
+     },
+     "003-plastile-kwin-switch": {
+      "n": 300,
+      "medianMs": 2.131
+     },
+     "004-plastile-focus": {
+      "n": 300,
+      "medianMs": 2.239
+     },
+     "005-plastile-kwin-switch": {
+      "n": 300,
+      "medianMs": 2.384
+     },
+     "006-minimal": {
+      "n": 300,
+      "medianMs": 2.185
+     },
+     "007-kwin-switch": {
+      "n": 300,
+      "medianMs": 2.125
+     },
+     "008-plastile-focus": {
+      "n": 300,
+      "medianMs": 2.251
+     },
+     "009-kwin-switch": {
+      "n": 300,
+      "medianMs": 2.155
+     },
+     "010-minimal": {
+      "n": 300,
+      "medianMs": 2.211
+     },
+     "011-plastile-kwin-switch": {
+      "n": 300,
+      "medianMs": 2.196
+     }
+    },
+    "byWindowPair": {
+     "kwin-switch": {
+      "1<-4": {
+       "n": 225,
+       "mpx": 0.24,
+       "medianMs": 2.147
+      },
+      "2<-1": {
+       "n": 225,
+       "mpx": 0.24,
+       "medianMs": 2.123
+      },
+      "3<-2": {
+       "n": 225,
+       "mpx": 0.24,
+       "medianMs": 2.19
+      },
+      "4<-3": {
+       "n": 225,
+       "mpx": 0.24,
+       "medianMs": 2.173
+      }
+     },
+     "minimal": {
+      "1<-4": {
+       "n": 225,
+       "mpx": 0.24,
+       "medianMs": 2.659
+      },
+      "2<-1": {
+       "n": 225,
+       "mpx": 0.24,
+       "medianMs": 2.186
+      },
+      "3<-2": {
+       "n": 225,
+       "mpx": 0.24,
+       "medianMs": 2.184
+      },
+      "4<-3": {
+       "n": 225,
+       "mpx": 0.24,
+       "medianMs": 2.161
+      }
+     },
+     "plastile-focus": {
+      "1<-4": {
+       "n": 225,
+       "mpx": 0.24,
+       "medianMs": 2.212
+      },
+      "2<-1": {
+       "n": 225,
+       "mpx": 0.24,
+       "medianMs": 2.216
+      },
+      "3<-2": {
+       "n": 225,
+       "mpx": 0.24,
+       "medianMs": 2.248
+      },
+      "4<-3": {
+       "n": 225,
+       "mpx": 0.24,
+       "medianMs": 2.33
+      }
+     },
+     "plastile-kwin-switch": {
+      "1<-4": {
+       "n": 225,
+       "mpx": 0.24,
+       "medianMs": 2.191
+      },
+      "2<-1": {
+       "n": 225,
+       "mpx": 0.24,
+       "medianMs": 2.204
+      },
+      "3<-2": {
+       "n": 225,
+       "mpx": 0.24,
+       "medianMs": 2.198
+      },
+      "4<-3": {
+       "n": 225,
+       "mpx": 0.24,
+       "medianMs": 2.202
+      }
+     }
+    }
+   },
+   "aurorae-tiled": {
+    "description": "repeat of aurorae-tiled (Aurorae + SVG theme, tiled frames), 3 blocks per condition",
+    "implementationCommit": "c54cfcf469473305d62db1f5b33c2eebf36d87ba",
+    "plan": [
+     "minimal",
+     "plastile-focus",
+     "kwin-switch",
+     "minimal",
+     "kwin-switch",
+     "plastile-focus",
+     "plastile-focus",
+     "minimal",
+     "kwin-switch"
+    ],
+    "frames": {
+     "plastile-fixture 1": {
+      "x": 8,
+      "y": 8,
+      "width": 1395,
+      "height": 1424
+     },
+     "plastile-fixture 2": {
+      "x": 1411,
+      "y": 8,
+      "width": 1141,
+      "height": 469
+     },
+     "plastile-fixture 3": {
+      "x": 1411,
+      "y": 485,
+      "width": 1141,
+      "height": 470
+     },
+     "plastile-fixture 4": {
+      "x": 1411,
+      "y": 963,
+      "width": 1141,
+      "height": 469
+     }
+    },
+    "stagesMs": {
+     "minimal": {
+      "tap_entry": {
+       "n": 900,
+       "p05": 0.204,
+       "p50": 0.227,
+       "p95": 0.266,
+       "max": 0.603
+      },
+      "tap_active": {
+       "n": 900,
+       "p05": 3.044,
+       "p50": 4.552,
+       "p95": 6.36,
+       "max": 7.561
+      },
+      "active_turn": {
+       "n": 900,
+       "p05": 0.07,
+       "p50": 1.965,
+       "p95": 3.015,
+       "max": 4.766
+      },
+      "turn_config": {
+       "n": 900,
+       "p05": 0.034,
+       "p50": 0.052,
+       "p95": 0.071,
+       "max": 0.243
+      },
+      "tap_config": {
+       "n": 900,
+       "p05": 3.831,
+       "p50": 6.032,
+       "p95": 9.182,
+       "max": 12.382
+      },
+      "assign": {
+       "n": 900,
+       "p05": 2.807,
+       "p50": 4.311,
+       "p95": 6.124,
+       "max": 7.307
+      },
+      "dispatch": null
+     },
+     "plastile-focus": {
+      "tap_entry": {
+       "n": 900,
+       "p05": 0.226,
+       "p50": 0.248,
+       "p95": 0.286,
+       "max": 36.433
+      },
+      "tap_active": {
+       "n": 900,
+       "p05": 2.805,
+       "p50": 4.28,
+       "p95": 5.435,
+       "max": 39.517
+      },
+      "active_turn": {
+       "n": 900,
+       "p05": 0.131,
+       "p50": 2.001,
+       "p95": 3.049,
+       "max": 3.816
+      },
+      "turn_config": {
+       "n": 900,
+       "p05": 0.035,
+       "p50": 0.05,
+       "p95": 0.071,
+       "max": 0.657
+      },
+      "tap_config": {
+       "n": 900,
+       "p05": 3.365,
+       "p50": 5.797,
+       "p95": 8.358,
+       "max": 41.263
+      },
+      "assign": {
+       "n": 900,
+       "p05": 2.566,
+       "p50": 4.02,
+       "p95": 5.188,
+       "max": 6.13
+      },
+      "dispatch": {
+       "n": 900,
+       "p05": 2.636,
+       "p50": 4.113,
+       "p95": 5.268,
+       "max": 6.221
+      }
+     },
+     "kwin-switch": {
+      "tap_entry": null,
+      "tap_active": {
+       "n": 900,
+       "p05": 4.442,
+       "p50": 5.013,
+       "p95": 5.704,
+       "max": 39.651
+      },
+      "active_turn": {
+       "n": 900,
+       "p05": 0.07,
+       "p50": 2.427,
+       "p95": 2.979,
+       "max": 3.962
+      },
+      "turn_config": {
+       "n": 900,
+       "p05": 0.035,
+       "p50": 0.059,
+       "p95": 0.078,
+       "max": 0.196
+      },
+      "tap_config": {
+       "n": 900,
+       "p05": 4.874,
+       "p50": 7.461,
+       "p95": 8.432,
+       "max": 43.408
+      },
+      "assign": null,
+      "dispatch": null
+     }
+    },
+    "tapToConfigureMedianPerBlock": {
+     "000-minimal": {
+      "n": 300,
+      "medianMs": 5.473
+     },
+     "001-plastile-focus": {
+      "n": 300,
+      "medianMs": 5.361
+     },
+     "002-kwin-switch": {
+      "n": 300,
+      "medianMs": 7.668
+     },
+     "003-minimal": {
+      "n": 300,
+      "medianMs": 6.204
+     },
+     "004-kwin-switch": {
+      "n": 300,
+      "medianMs": 7.17
+     },
+     "005-plastile-focus": {
+      "n": 300,
+      "medianMs": 6.139
+     },
+     "006-plastile-focus": {
+      "n": 300,
+      "medianMs": 5.421
+     },
+     "007-minimal": {
+      "n": 300,
+      "medianMs": 6.426
+     },
+     "008-kwin-switch": {
+      "n": 300,
+      "medianMs": 7.514
+     }
+    },
+    "byWindowPair": {
+     "kwin-switch": {
+      "1<-3": {
+       "n": 450,
+       "mpx": 2.397,
+       "medianMs": 7.319
+      },
+      "3<-1": {
+       "n": 450,
+       "mpx": 2.397,
+       "medianMs": 7.577
+      }
+     },
+     "minimal": {
+      "1<-4": {
+       "n": 225,
+       "mpx": 2.396,
+       "medianMs": 8.64
+      },
+      "2<-1": {
+       "n": 225,
+       "mpx": 2.396,
+       "medianMs": 7.707
+      },
+      "3<-2": {
+       "n": 225,
+       "mpx": 0.964,
+       "medianMs": 5.477
+      },
+      "4<-3": {
+       "n": 225,
+       "mpx": 0.964,
+       "medianMs": 5.24
+      }
+     },
+     "plastile-focus": {
+      "1<-4": {
+       "n": 225,
+       "mpx": 2.396,
+       "medianMs": 7.451
+      },
+      "2<-1": {
+       "n": 225,
+       "mpx": 2.396,
+       "medianMs": 7.604
+      },
+      "3<-2": {
+       "n": 225,
+       "mpx": 0.964,
+       "medianMs": 5.14
+      },
+      "4<-3": {
+       "n": 225,
+       "mpx": 0.964,
+       "medianMs": 5.151
+      }
+     }
+    }
+   },
+   "breeze-tiled": {
+    "description": "repeat of breeze-tiled (Breeze, tiled frames), 3 blocks per condition",
+    "implementationCommit": "c54cfcf469473305d62db1f5b33c2eebf36d87ba",
+    "plan": [
+     "kwin-switch",
+     "minimal",
+     "plastile-focus",
+     "minimal",
+     "kwin-switch",
+     "plastile-focus",
+     "plastile-focus",
+     "minimal",
+     "kwin-switch"
+    ],
+    "frames": {
+     "plastile-fixture 1": {
+      "x": 8,
+      "y": 8,
+      "width": 1395,
+      "height": 1424
+     },
+     "plastile-fixture 2": {
+      "x": 1411,
+      "y": 8,
+      "width": 1141,
+      "height": 469
+     },
+     "plastile-fixture 3": {
+      "x": 1411,
+      "y": 485,
+      "width": 1141,
+      "height": 470
+     },
+     "plastile-fixture 4": {
+      "x": 1411,
+      "y": 963,
+      "width": 1141,
+      "height": 469
+     }
+    },
+    "stagesMs": {
+     "kwin-switch": {
+      "tap_entry": null,
+      "tap_active": {
+       "n": 900,
+       "p05": 0.309,
+       "p50": 1.635,
+       "p95": 2.61,
+       "max": 4.622
+      },
+      "active_turn": {
+       "n": 900,
+       "p05": 0.049,
+       "p50": 0.059,
+       "p95": 1.845,
+       "max": 3.259
+      },
+      "turn_config": {
+       "n": 900,
+       "p05": 0.032,
+       "p50": 0.04,
+       "p95": 0.052,
+       "max": 0.703
+      },
+      "tap_config": {
+       "n": 900,
+       "p05": 0.405,
+       "p50": 1.828,
+       "p95": 4.369,
+       "max": 5.225
+      },
+      "assign": null,
+      "dispatch": null
+     },
+     "minimal": {
+      "tap_entry": {
+       "n": 900,
+       "p05": 0.2,
+       "p50": 0.222,
+       "p95": 1.303,
+       "max": 3.12
+      },
+      "tap_active": {
+       "n": 900,
+       "p05": 0.356,
+       "p50": 1.106,
+       "p95": 2.167,
+       "max": 4.524
+      },
+      "active_turn": {
+       "n": 900,
+       "p05": 0.053,
+       "p50": 0.064,
+       "p95": 1.456,
+       "max": 3.904
+      },
+      "turn_config": {
+       "n": 900,
+       "p05": 0.032,
+       "p50": 0.039,
+       "p95": 0.051,
+       "max": 1.477
+      },
+      "tap_config": {
+       "n": 900,
+       "p05": 0.457,
+       "p50": 1.219,
+       "p95": 3.395,
+       "max": 5.486
+      },
+      "assign": {
+       "n": 900,
+       "p05": 0.134,
+       "p50": 0.855,
+       "p95": 1.081,
+       "max": 1.429
+      },
+      "dispatch": null
+     },
+     "plastile-focus": {
+      "tap_entry": {
+       "n": 900,
+       "p05": 0.22,
+       "p50": 0.243,
+       "p95": 1.305,
+       "max": 3.06
+      },
+      "tap_active": {
+       "n": 900,
+       "p05": 0.395,
+       "p50": 1.137,
+       "p95": 2.172,
+       "max": 4.282
+      },
+      "active_turn": {
+       "n": 900,
+       "p05": 0.098,
+       "p50": 0.118,
+       "p95": 1.525,
+       "max": 3.674
+      },
+      "turn_config": {
+       "n": 900,
+       "p05": 0.033,
+       "p50": 0.04,
+       "p95": 0.053,
+       "max": 0.457
+      },
+      "tap_config": {
+       "n": 900,
+       "p05": 0.541,
+       "p50": 1.307,
+       "p95": 3.466,
+       "max": 5.206
+      },
+      "assign": {
+       "n": 900,
+       "p05": 0.153,
+       "p50": 0.857,
+       "p95": 1.096,
+       "max": 1.691
+      },
+      "dispatch": {
+       "n": 900,
+       "p05": 0.22,
+       "p50": 0.927,
+       "p95": 1.177,
+       "max": 1.792
+      }
+     }
+    },
+    "tapToConfigureMedianPerBlock": {
+     "000-kwin-switch": {
+      "n": 300,
+      "medianMs": 1.817
+     },
+     "001-minimal": {
+      "n": 300,
+      "medianMs": 1.22
+     },
+     "002-plastile-focus": {
+      "n": 300,
+      "medianMs": 1.334
+     },
+     "003-minimal": {
+      "n": 300,
+      "medianMs": 1.22
+     },
+     "004-kwin-switch": {
+      "n": 300,
+      "medianMs": 1.822
+     },
+     "005-plastile-focus": {
+      "n": 300,
+      "medianMs": 1.295
+     },
+     "006-plastile-focus": {
+      "n": 300,
+      "medianMs": 1.289
+     },
+     "007-minimal": {
+      "n": 300,
+      "medianMs": 1.215
+     },
+     "008-kwin-switch": {
+      "n": 300,
+      "medianMs": 1.846
+     }
+    },
+    "byWindowPair": {
+     "kwin-switch": {
+      "1<-3": {
+       "n": 450,
+       "mpx": 2.452,
+       "medianMs": 1.898
+      },
+      "3<-1": {
+       "n": 450,
+       "mpx": 2.452,
+       "medianMs": 1.619
+      }
+     },
+     "minimal": {
+      "1<-4": {
+       "n": 225,
+       "mpx": 2.451,
+       "medianMs": 1.213
+      },
+      "2<-1": {
+       "n": 225,
+       "mpx": 2.451,
+       "medianMs": 1.214
+      },
+      "3<-2": {
+       "n": 225,
+       "mpx": 1.008,
+       "medianMs": 1.222
+      },
+      "4<-3": {
+       "n": 225,
+       "mpx": 1.008,
+       "medianMs": 1.228
+      }
+     },
+     "plastile-focus": {
+      "1<-4": {
+       "n": 225,
+       "mpx": 2.451,
+       "medianMs": 1.286
+      },
+      "2<-1": {
+       "n": 225,
+       "mpx": 2.451,
+       "medianMs": 1.307
+      },
+      "3<-2": {
+       "n": 225,
+       "mpx": 1.008,
+       "medianMs": 1.29
+      },
+      "4<-3": {
+       "n": 225,
+       "mpx": 1.008,
+       "medianMs": 1.336
+      }
+     }
+    }
+   }
+  },
+  "physicalPhase": {
+   "source": "physical P6 run 2026-10-18, raw samples and fixture logs re-read by probes/perf/focus/phase.py",
+   "layer": "physical",
+   "method": "phase of the key-down within the refresh cycle, from the latest wp_presentation timestamp before it (within 1 s) extended by refresh_ns; eight equal bins from that vblank; median inputToConfigure ms per bin",
+   "byRefresh": {
+    "144Hz": {
+     "P00-switch": [
+      2.689,
+      2.535,
+      2.565,
+      3.018,
+      4.299,
+      4.305,
+      3.27,
+      2.969
+     ],
+     "P03-focus": [
+      10.017,
+      9.894,
+      9.883,
+      9.984,
+      9.857,
+      9.855,
+      9.947,
+      9.844
+     ]
+    },
+    "100Hz": {
+     "P00-switch": [
+      4.566,
+      4.798,
+      4.749,
+      3.158,
+      3.169,
+      2.892,
+      2.748,
+      3.539
+     ],
+     "P03-focus": [
+      5.131,
+      5.141,
+      5.191,
+      5.143,
+      5.214,
+      5.144,
+      5.127,
+      5.167
+     ]
+    },
+    "60Hz": {
+     "P00-switch": [
+      2.353,
+      2.338,
+      2.329,
+      2.356,
+      3.677,
+      3.769,
+      3.774,
+      3.737
+     ],
+     "P03-focus": [
+      5.768,
+      5.762,
+      5.871,
+      6.896,
+      6.796,
+      6.82,
+      6.84,
+      6.711
+     ]
+    }
+   }
+  },
+  "note": "src/ and the bundle at c54cfcf; the probe ran from the review's working tree (run.py with --floating, otherwise unchanged)"
  }
 }
