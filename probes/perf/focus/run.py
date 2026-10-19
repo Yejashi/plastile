@@ -23,14 +23,16 @@ Conditions (randomized blocks; the window frames are the same in every condition
 
 The frames: fixtures are tiled by Plastile once at start (master/stack); unloading Plastile leaves
 them where they are, so the no-Plastile conditions activate the same rectangles. --small skips the
-tiling (KWin's 400x300 placement, as the physical kit's P00-switch). Every block runs in a fresh
+tiling (KWin's 400x300 placement, as the physical kit's P00-switch). --floating keeps that placement
+with Plastile loaded and its context's layout floating before the fixtures map (as the physical
+P03-focus context at 100 Hz), so focus.next can be timed at KWin's geometry. Every block runs in a fresh
 nested session. The decoration matters (docs/validation/PERFORMANCE.md section 5.1): --decoration
 breeze|aurorae, and --aurorae-theme DIR for an Aurorae SVG theme, copied into the session's private
 data directory. --qml runs another build's measurement root (bisecting; --diagnostics info for
 builds that log their start at info). probes/perf/focus/area.py splits the result by window pair.
 
     python3 probes/perf/focus/run.py [--width 2560 --height 1440] [--windows 4] [--extra 0]
-        [--desktops 1] [--samples 200] [--rounds 2] [--conditions ...] [--small]
+        [--desktops 1] [--samples 200] [--rounds 2] [--conditions ...] [--small | --floating]
         [--decoration breeze|aurorae] [--aurorae-theme DIR] [--qml PATH] [--diagnostics LEVEL] [--out DIR]
 
 Prerequisites: npm run build; make -C fixtures/client; make -C tools/physical ei;
@@ -137,9 +139,23 @@ class Bench:
         self.s.kw.wait_log(r"plastile (notice|info) stopped", 10, off)
         self.s.loaded = False
 
+    def load_plastile(self) -> None:
+        """Session.load, but older builds log their start at `info` ("plastile info started")."""
+        s = self.s
+        off = s.kw.mark()
+        s.kw.load_declarative(s.qml, PLUGIN)
+        s.kw.wait_log(r"plastile (notice|info) started ", 10, off)
+        s.loaded = True
+
     def setup(self) -> None:
         s = self.s
         s.kw.load_declarative(OBSERVER, "plastile-focus-observer")
+        if self.args.floating:
+            # Floating before any fixture maps: Plastile tracks the windows and never moves them.
+            self.load_plastile()
+            off = s.kw.mark()
+            s.cmd("layout.floating")
+            s.kw.wait_log(r"plastile notice layout floating ", 10, off)
         for i in range(1, self.args.windows + 1):
             s.spawn(i)
         # Extra windows (other desktops) stand in for a populated session: Plastile tiles them in
@@ -150,12 +166,9 @@ class Bench:
             if self.args.desktops > 1:
                 d = 1 + k % (self.args.desktops - 1)
                 s.act(f"plastile-fixture {ident}", f"w.desktops = [workspace.desktops[{d}]]")
-        if not self.args.small:
-            # Session.load, but older builds log their start at `info` ("plastile info started").
-            off = s.kw.mark()
-            s.kw.load_declarative(s.qml, PLUGIN)
-            s.kw.wait_log(r"plastile (notice|info) started ", 10, off)
-            s.loaded = True
+        if not self.args.small and not self.args.floating:
+            self.load_plastile()
+        if s.loaded:
             s.settle(timeout=6)
         s.act("plastile-fixture 1", "workspace.activeWindow = w")
         time.sleep(0.3)
@@ -268,11 +281,15 @@ def main(argv: list[str] | None = None) -> int:
                          "(with --decoration aurorae)")
     ap.add_argument("--small", action="store_true",
                     help="never tile: the fixtures keep KWin's placement (400x300); conditions without Plastile only")
+    ap.add_argument("--floating", action="store_true",
+                    help="Plastile loaded with its layout floating before the fixtures map: KWin's placement, every condition")
     ap.add_argument("--diagnostics", default="warn",
                     help="Plastile's diagnostics level (builds before the notice level need `info` to log their start)")
     ap.add_argument("--qml", type=Path, default=PERF_QML, help="the Plastile root to load (default: the measurement root)")
     ap.add_argument("--out", type=Path, default=None)
     args = ap.parse_args(argv)
+    if args.small and args.floating:
+        ap.error("--small and --floating are exclusive")
     conds = [c for c in args.conditions.split(",") if c]
     for c in conds:
         if c not in CHORDS:
@@ -314,6 +331,7 @@ def main(argv: list[str] | None = None) -> int:
         "windows": args.windows, "extra": args.extra, "desktops": args.desktops,
         "diagnostics": args.diagnostics,
         "decoration": args.decoration and DECORATIONS[args.decoration], "small": args.small,
+        "floating": args.floating,
         "auroraeTheme": args.aurorae_theme and args.aurorae_theme.name,
         "samplesPerBlock": args.samples, "rounds": args.rounds, "plan": [b["cond"] for b in blocks],
         "frames": frames,
