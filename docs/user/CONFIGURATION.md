@@ -378,7 +378,7 @@ The line is `plastile notice explain {...}` with these fields:
 | `nativeYield` | Whether a native tile action made Plastile yield the window. It stays yielded after KWin releases the tile, until *Adopt natively tiled window* or *Toggle floating*. |
 | `shortcutConflicts` | Present only when the startup shortcut check found conflicts: each `key`, the Plastile `command` and the `others` holding that key ([SHORTCUTS](SHORTCUTS.md#conflict-report)). |
 
-**Where the log goes.** In the nested tests, the line was read from the compositor's captured stderr. Without `QT_FORCE_STDERR_LOGGING`, Qt sends script log output to the user journal (observed during environment discovery, [ENVIRONMENT](../status/ENVIRONMENT.md)). Reading it with `journalctl` in a physical Plasma session is untested ([TROUBLESHOOTING](TROUBLESHOOTING.md#reading-the-log)).
+**Where the log goes.** In the nested tests, the line was read from the compositor's captured stderr. Without `QT_FORCE_STDERR_LOGGING`, Qt sends script log output to the user journal (observed during environment discovery, [ENVIRONMENT](../status/ENVIRONMENT.md)). In a physical Plasma session (the reference desktop, KWin 6.7.5) the explain line was read from the user journal with `journalctl --user` ([TROUBLESHOOTING](TROUBLESHOOTING.md#reading-the-log)).
 
 ## Validation reference
 
