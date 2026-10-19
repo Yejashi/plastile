@@ -64,7 +64,7 @@ Every Plastile command is one KWin global shortcut. All of them are registered u
 | `plastile.window.toggle-float` | Toggle floating | `Meta+Shift+F` | **Tiled window:** floats it and restores its last floating rectangle, if one is remembered; peers re-solve once. **Floating or natively quick-tiled window:** remembers its current rectangle, releases any native tile and tiles it. This also works for a resizable dialog, utility or transient window. A window that cannot be tiled (fixed size, or on several desktops) stays floating and the reason is reported. Excluded windows (panels, menus, shell surfaces, rule-excluded windows) are not affected. |
 | `plastile.window.adopt-native` | Adopt natively tiled window | *unbound* | A window you quick-tiled with KWin's own actions (`Meta+arrow`, edge drag) is left to KWin. This command releases that native tile and adopts the window back into the layout. No-op for other windows. |
 | `plastile.context.reset` | Reset this layout | *unbound* | Drops the on-screen context's layout choice (also the saved one) and its structure (master ratio and count, BSP tree and ratios, row weights), then re-solves from the configured settings. Global settings are untouched. |
-| `plastile.runtime.toggle-suspend` | Suspend/resume tiling | `Meta+Ctrl+S` | **Suspend:** cancels every outstanding request, restores borders Plastile changed and leaves windows where they are. While suspended, every command except this one, *Reconcile*, *Reload configuration* and the three inspect commands is rejected with `tiling suspended`. **Resume:** re-solves every context. |
+| `plastile.runtime.toggle-suspend` | Suspend/resume tiling | `Meta+Ctrl+S` | Where the Wacom tablet settings are installed, the same key is also their *Toggle stylus mode* ([known conflicts](#known-conflicts-on-real-desktops)). **Suspend:** cancels every outstanding request, restores borders Plastile changed and leaves windows where they are. While suspended, every command except this one, *Reconcile*, *Reload configuration* and the three inspect commands is rejected with `tiling suspended`. **Resume:** re-solves every context. |
 | `plastile.runtime.reconcile` | Reconcile with live windows | *unbound* | Compares the model with KWin's live window list: drops windows that are gone, adds missing ones and re-solves every context. On an unchanged session it writes nothing (measured). It is a manual recovery command, not a background task. |
 | `plastile.runtime.reload-config` | Reload configuration | *unbound* | Asks KWin to re-read `kwinrc` (an asynchronous D-Bus call to KWin's `reconfigure`, as KDE settings pages make on Apply). About 200 ms later KWin reports the re-read settings; if `[Script-plastile]` changed and is valid it is activated, otherwise the errors are logged and the previous configuration is kept. Use it after Apply in the settings dialog. Requests in quick succession become one re-read (measured: 20 requests, one activation, one engine; see [INSTALL](INSTALL.md#applying-settings-changes)). It also re-runs the [conflict report](#conflict-report). |
 | `plastile.inspect.explain-window` | Explain active window (log) | *unbound* | Opens the inspector: a window stating in plain words how Plastile treats the active window and why, with internal values under *Show details*. Running the command again, Escape, or a click elsewhere closes it. Also logs the active window's classification, mode, decision source, rule ids, context, layout, constraints, ledger state, planned slot and exception, as a `notice` line shown at the default level (see [CONFIGURATION](CONFIGURATION.md#seeing-why-a-window-was-classified)). |
@@ -74,6 +74,8 @@ Every Plastile command is one KWin global shortcut. All of them are registered u
 ## Default bindings measured with real key presses
 
 Every default binding is pressed with real key events, injected with libei into a nested KWin 6.7.5 session, by the scenario `shortcuts-defaults-real-input` (`tests/integration/scenarios_shortcuts.py`). The session uses the default keymap (no `kxkbrc`, so US by inference) and only the shortcuts that KWin and the nested session register. All 20 defaults reached Plastile (measured, Ubuntu 26.10 sandbox, KWin 6.7.5). The same run read the session's `kglobalshortcutsrc` (206 entries) and found no other action registered with a Plastile default.
+
+**In a physical session** (the reference desktop, KWin 6.7.5, build `97fec4a`, physical runbook P7, [evidence](../status/evidence/physical-runbook-20261018.json)): 19 of 19 injected default chords reached Plastile through a virtual keyboard on the owner's keymap. *Suspend/resume tiling* is not injected (it would pause the run); pressed by hand, `Meta+Ctrl+S` paused and resumed tiling, although the Wacom tablet settings hold the same key there ([known conflicts](#known-conflicts-on-real-desktops)). The chord-to-keycode step of the injector assumes a US layout.
 
 **Changed defaults.** Earlier versions shipped three defaults that did not work on a stock setup. They were replaced:
 
@@ -87,7 +89,7 @@ Every default binding is pressed with real key events, injected with libei into 
 
 A unit test (`tests/core/package.test.ts`) rejects defaults that combine Shift with punctuation, and the sequences known to be taken by stock software.
 
-Not measured: Spectacle is not installed in the Ubuntu sandbox, so its absence of conflicts with the new defaults comes from its published shortcut list, not from a run. Other keyboard layouts may produce different symbols for `=` and `-` with Ctrl held (untested).
+Not measured: Spectacle is not installed in the Ubuntu sandbox, so its absence of conflicts with the new defaults comes from its published shortcut list, not from a run. On the physical reference desktop, where Spectacle is installed, the conflict report named no Spectacle key for the new defaults; `Meta+Shift+S` itself was not pressed there. Other keyboard layouts may produce different symbols for `=` and `-` with Ctrl held (untested).
 
 Pressed and confirmed to reach Plastile:
 
@@ -146,6 +148,20 @@ Limits:
 - Keys are compared as single key combinations; multi-key sequences are not checked.
 - A KWin script can only call D-Bus methods without arguments of KDE's own types: KWin's `DBusCall` passes arguments as plain values, so methods taking a key sequence (`globalShortcutsByKey`, `isGlobalShortcutAvailable`) cannot be called. The check therefore lists every shortcut (`allComponents` and each component's `allShortcutInfos`) and compares locally; the work is bounded (at most 64 components and 2048 entries each) and happens once per load or reload.
 - If KGlobalAccel cannot be reached, the log says `shortcut check unavailable: ...` and nothing else changes.
+
+### Known conflicts on real desktops
+
+| Key | Plastile command | Also bound by | Seen where | What happened |
+|---|---|---|---|---|
+| `Meta+Ctrl+S` | *Suspend/resume tiling* | *Toggle stylus mode* of the Wacom tablet settings | Physical reference desktop, KWin 6.7.5 (runbook P1 and P7, [evidence](../status/evidence/physical-runbook-20261018.json)) | Plastile's conflict report and the runbook's session check both named it. Plastile still received the key there: pressing it logged `tiling paused`, pressing it again `tiling resumed`. Whether the stylus mode toggled too was not checked. Which of two actions on one key receives it is not guaranteed in general: in the nested `shortcuts-conflict-Q08` the other action got the key and Plastile did not |
+
+To clear a conflict, give one of the two actions another key:
+
+1. Open **System Settings > Keyboard > Shortcuts**.
+2. Search for "Plastile: Suspend" (component **KWin**), select *Plastile: Suspend/resume tiling*, and set a key that nothing else uses, or clear it and run the command from a terminal when you need it:
+   `qdbus6 org.kde.kglobalaccel /component/kwin org.kde.kglobalaccel.Component.invokeShortcut plastile.runtime.toggle-suspend`
+3. Or rebind the tablet's *Toggle stylus mode* instead, if you use it more: search for "stylus" on the same page. (It is a KGlobalAccel registration like Plastile's, which is how the conflict report found it, so the page lists it; this was not clicked through.)
+4. Run *Reload configuration* (or disable and re-enable Plastile) so the conflict report checks the new key. It does not re-run on its own when you rebind.
 
 Plastile does not override `Meta+T` and does not take over KWin's own quick-tile keys. A window you quick-tile with `Meta+Left` is released to KWin (see [README](README.md#floating-windows-and-native-quick-tiling)).
 
