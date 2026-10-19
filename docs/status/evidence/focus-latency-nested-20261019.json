@@ -1,0 +1,2558 @@
+{
+ "schema": 1,
+ "title": "Focus activation latency, stage by stage (P6 focus finding)",
+ "layer": "nested KWin, virtual backend (OpenGL on the reference host's GPU); NOT physical",
+ "date": "2026-10-19",
+ "environment": {
+  "kwin": "6.7.5 (Arch kwin 6.7.5-3)",
+  "aurorae": "6.7.5-1",
+  "qt": "6.12.0",
+  "ksvg": "6.30.0",
+  "host": "reference desktop (AMD Ryzen 5 5600X, Linux 7.2.9), nested sessions only"
+ },
+ "probe": "probes/perf/focus/run.py (stages) and probes/perf/focus/area.py (per window pair)",
+ "input": "libei through the nested KWin's EIS socket (plastile-keytap-ei), the physical kit's chords",
+ "output": {
+  "width": 2560,
+  "height": 1440,
+  "count": 1
+ },
+ "stages": {
+  "tap_entry": "key-down written -> command handler entry in QV4",
+  "assign": "duration of the workspace.activeWindow assignment (Workspace::activateWindow, including every synchronous windowActivated/activeChanged handler)",
+  "dispatch": "Plastile handler entry -> return (dispatchToReturnNs)",
+  "tap_active": "key-down -> Workspace.windowActivated",
+  "active_turn": "windowActivated -> a 0 ms timer started there fires",
+  "turn_config": "that timer -> the fixture receives the activation configure",
+  "tap_config": "key-down -> activation configure received (the physical kit's inputToConfigure)"
+ },
+ "samplesPerCondition": "2 blocks x 300 (5 warm-up taps per block discarded), one fresh nested session per block, randomized block order",
+ "runs": {
+  "aurorae-tiled": {
+   "description": "Aurorae v2 + the reference desktop's SVG theme; frames tiled by Plastile (master/stack, 4 windows)",
+   "plan": [
+    "plastile-kwin-switch",
+    "minimal",
+    "plastile-minimal",
+    "kwin-switch",
+    "plastile-focus",
+    "kwin-switch",
+    "plastile-kwin-switch",
+    "plastile-focus",
+    "plastile-minimal",
+    "minimal"
+   ],
+   "frames": {
+    "plastile-fixture 1": {
+     "x": 8,
+     "y": 8,
+     "width": 1395,
+     "height": 1424
+    },
+    "plastile-fixture 2": {
+     "x": 1411,
+     "y": 8,
+     "width": 1141,
+     "height": 469
+    },
+    "plastile-fixture 3": {
+     "x": 1411,
+     "y": 485,
+     "width": 1141,
+     "height": 470
+    },
+    "plastile-fixture 4": {
+     "x": 1411,
+     "y": 963,
+     "width": 1141,
+     "height": 469
+    }
+   },
+   "stagesMs": {
+    "plastile-kwin-switch": {
+     "tap_entry": null,
+     "tap_active": {
+      "n": 600,
+      "p05": 4.282,
+      "p50": 5.144,
+      "p95": 5.814,
+      "max": 16.858
+     },
+     "active_turn": {
+      "n": 600,
+      "p05": 0.107,
+      "p50": 2.453,
+      "p95": 3.031,
+      "max": 3.949
+     },
+     "turn_config": {
+      "n": 600,
+      "p05": 0.037,
+      "p50": 0.059,
+      "p95": 0.081,
+      "max": 0.566
+     },
+     "tap_config": {
+      "n": 600,
+      "p05": 4.798,
+      "p50": 7.618,
+      "p95": 8.564,
+      "max": 20.026
+     },
+     "assign": null,
+     "dispatch": null
+    },
+    "minimal": {
+     "tap_entry": {
+      "n": 600,
+      "p05": 0.204,
+      "p50": 0.222,
+      "p95": 0.262,
+      "max": 8.569
+     },
+     "tap_active": {
+      "n": 600,
+      "p05": 2.915,
+      "p50": 4.212,
+      "p95": 6.312,
+      "max": 13.033
+     },
+     "active_turn": {
+      "n": 600,
+      "p05": 0.07,
+      "p50": 1.926,
+      "p95": 2.874,
+      "max": 3.337
+     },
+     "turn_config": {
+      "n": 600,
+      "p05": 0.034,
+      "p50": 0.052,
+      "p95": 0.073,
+      "max": 0.212
+     },
+     "tap_config": {
+      "n": 600,
+      "p05": 3.491,
+      "p50": 5.878,
+      "p95": 8.935,
+      "max": 16.305
+     },
+     "assign": {
+      "n": 600,
+      "p05": 2.703,
+      "p50": 3.995,
+      "p95": 6.104,
+      "max": 7.49
+     },
+     "dispatch": null
+    },
+    "plastile-minimal": {
+     "tap_entry": {
+      "n": 600,
+      "p05": 0.207,
+      "p50": 0.227,
+      "p95": 0.267,
+      "max": 29.212
+     },
+     "tap_active": {
+      "n": 600,
+      "p05": 2.594,
+      "p50": 4.6,
+      "p95": 5.728,
+      "max": 31.519
+     },
+     "active_turn": {
+      "n": 600,
+      "p05": 0.1,
+      "p50": 1.864,
+      "p95": 2.918,
+      "max": 3.838
+     },
+     "turn_config": {
+      "n": 600,
+      "p05": 0.034,
+      "p50": 0.049,
+      "p95": 0.072,
+      "max": 0.872
+     },
+     "tap_config": {
+      "n": 600,
+      "p05": 2.873,
+      "p50": 5.606,
+      "p95": 8.494,
+      "max": 33.555
+     },
+     "assign": {
+      "n": 600,
+      "p05": 2.414,
+      "p50": 4.384,
+      "p95": 5.531,
+      "max": 6.099
+     },
+     "dispatch": null
+    },
+    "kwin-switch": {
+     "tap_entry": null,
+     "tap_active": {
+      "n": 600,
+      "p05": 4.583,
+      "p50": 5.344,
+      "p95": 6.23,
+      "max": 13.985
+     },
+     "active_turn": {
+      "n": 600,
+      "p05": 0.072,
+      "p50": 2.524,
+      "p95": 3.336,
+      "max": 8.482
+     },
+     "turn_config": {
+      "n": 600,
+      "p05": 0.036,
+      "p50": 0.06,
+      "p95": 0.088,
+      "max": 3.41
+     },
+     "tap_config": {
+      "n": 600,
+      "p05": 5.157,
+      "p50": 7.876,
+      "p95": 9.483,
+      "max": 23.272
+     },
+     "assign": null,
+     "dispatch": null
+    },
+    "plastile-focus": {
+     "tap_entry": {
+      "n": 600,
+      "p05": 0.223,
+      "p50": 0.245,
+      "p95": 0.286,
+      "max": 33.791
+     },
+     "tap_active": {
+      "n": 600,
+      "p05": 2.807,
+      "p50": 4.48,
+      "p95": 5.713,
+      "max": 37.834
+     },
+     "active_turn": {
+      "n": 600,
+      "p05": 0.133,
+      "p50": 2.07,
+      "p95": 3.061,
+      "max": 4.59
+     },
+     "turn_config": {
+      "n": 600,
+      "p05": 0.035,
+      "p50": 0.05,
+      "p95": 0.074,
+      "max": 0.585
+     },
+     "tap_config": {
+      "n": 600,
+      "p05": 3.367,
+      "p50": 6.183,
+      "p95": 8.665,
+      "max": 39.862
+     },
+     "assign": {
+      "n": 600,
+      "p05": 2.557,
+      "p50": 4.229,
+      "p95": 5.442,
+      "max": 6.928
+     },
+     "dispatch": {
+      "n": 600,
+      "p05": 2.637,
+      "p50": 4.306,
+      "p95": 5.523,
+      "max": 7.069
+     }
+    }
+   },
+   "byWindowPair": {
+    "kwin-switch": {
+     "n": 600,
+     "fit": null,
+     "pairs": {
+      "1<-3": {
+       "n": 298,
+       "mpx": 2.397,
+       "medianMs": 7.671
+      },
+      "1<-?": {
+       "n": 2,
+       "mpx": 1.914,
+       "medianMs": 18.017
+      },
+      "3<-1": {
+       "n": 299,
+       "mpx": 2.397,
+       "medianMs": 8.103
+      },
+      "3<-?": {
+       "n": 1,
+       "mpx": 0.483,
+       "medianMs": 23.272
+      }
+     }
+    },
+    "minimal": {
+     "n": 600,
+     "fit": {
+      "interceptMs": 3.116,
+      "msPerMegapixel": 1.878,
+      "r2": 0.587
+     },
+     "pairs": {
+      "1<-4": {
+       "n": 150,
+       "mpx": 2.396,
+       "medianMs": 7.578
+      },
+      "2<-1": {
+       "n": 150,
+       "mpx": 2.396,
+       "medianMs": 7.738
+      },
+      "3<-2": {
+       "n": 150,
+       "mpx": 0.964,
+       "medianMs": 5.227
+      },
+      "4<-3": {
+       "n": 150,
+       "mpx": 0.964,
+       "medianMs": 4.866
+      }
+     }
+    },
+    "plastile-focus": {
+     "n": 600,
+     "fit": {
+      "interceptMs": 3.868,
+      "msPerMegapixel": 1.505,
+      "r2": 0.204
+     },
+     "pairs": {
+      "1<-4": {
+       "n": 150,
+       "mpx": 2.396,
+       "medianMs": 7.728
+      },
+      "2<-1": {
+       "n": 150,
+       "mpx": 2.396,
+       "medianMs": 7.769
+      },
+      "3<-2": {
+       "n": 150,
+       "mpx": 0.964,
+       "medianMs": 5.204
+      },
+      "4<-3": {
+       "n": 150,
+       "mpx": 0.964,
+       "medianMs": 5.159
+      }
+     }
+    },
+    "plastile-kwin-switch": {
+     "n": 600,
+     "fit": null,
+     "pairs": {
+      "1<-3": {
+       "n": 300,
+       "mpx": 2.397,
+       "medianMs": 7.605
+      },
+      "3<-1": {
+       "n": 300,
+       "mpx": 2.397,
+       "medianMs": 7.626
+      }
+     }
+    },
+    "plastile-minimal": {
+     "n": 600,
+     "fit": {
+      "interceptMs": 2.535,
+      "msPerMegapixel": 2.05,
+      "r2": 0.465
+     },
+     "pairs": {
+      "1<-4": {
+       "n": 150,
+       "mpx": 2.396,
+       "medianMs": 7.883
+      },
+      "2<-1": {
+       "n": 150,
+       "mpx": 2.396,
+       "medianMs": 7.609
+      },
+      "3<-2": {
+       "n": 150,
+       "mpx": 0.964,
+       "medianMs": 4.531
+      },
+      "4<-3": {
+       "n": 150,
+       "mpx": 0.964,
+       "medianMs": 4.538
+      }
+     }
+    }
+   }
+  },
+  "aurorae-small": {
+   "description": "Aurorae v2 + SVG theme; KWin's placement (400x300 clients), as the physical P00-switch baseline",
+   "plan": [
+    "minimal",
+    "kwin-switch",
+    "minimal",
+    "kwin-switch"
+   ],
+   "frames": {
+    "plastile-fixture 1": {
+     "x": 1076,
+     "y": 548,
+     "width": 408,
+     "height": 344
+    },
+    "plastile-fixture 2": {
+     "x": 1129.3333333333333,
+     "y": 578,
+     "width": 408,
+     "height": 344
+    },
+    "plastile-fixture 3": {
+     "x": 1182.6666666666665,
+     "y": 608,
+     "width": 408,
+     "height": 344
+    },
+    "plastile-fixture 4": {
+     "x": 1235.9999999999998,
+     "y": 638,
+     "width": 408,
+     "height": 344
+    }
+   },
+   "stagesMs": {
+    "minimal": {
+     "tap_entry": {
+      "n": 600,
+      "p05": 0.205,
+      "p50": 0.226,
+      "p95": 0.343,
+      "max": 5.195
+     },
+     "tap_active": {
+      "n": 600,
+      "p05": 1.8,
+      "p50": 1.917,
+      "p95": 2.281,
+      "max": 8.006
+     },
+     "active_turn": {
+      "n": 600,
+      "p05": 0.062,
+      "p50": 0.082,
+      "p95": 1.824,
+      "max": 9.41
+     },
+     "turn_config": {
+      "n": 600,
+      "p05": 0.033,
+      "p50": 0.04,
+      "p95": 0.09,
+      "max": 5.75
+     },
+     "tap_config": {
+      "n": 600,
+      "p05": 1.921,
+      "p50": 2.201,
+      "p95": 3.974,
+      "max": 14.031
+     },
+     "assign": {
+      "n": 600,
+      "p05": 1.584,
+      "p50": 1.695,
+      "p95": 2.003,
+      "max": 4.935
+     },
+     "dispatch": null
+    },
+    "kwin-switch": {
+     "tap_entry": null,
+     "tap_active": {
+      "n": 600,
+      "p05": 1.763,
+      "p50": 1.89,
+      "p95": 2.131,
+      "max": 8.758
+     },
+     "active_turn": {
+      "n": 600,
+      "p05": 0.057,
+      "p50": 0.073,
+      "p95": 1.71,
+      "max": 3.299
+     },
+     "turn_config": {
+      "n": 600,
+      "p05": 0.033,
+      "p50": 0.041,
+      "p95": 0.056,
+      "max": 1.407
+     },
+     "tap_config": {
+      "n": 600,
+      "p05": 1.882,
+      "p50": 2.155,
+      "p95": 3.801,
+      "max": 12.145
+     },
+     "assign": null,
+     "dispatch": null
+    }
+   },
+   "byWindowPair": {
+    "kwin-switch": {
+     "n": 600,
+     "fit": null,
+     "pairs": {
+      "1<-4": {
+       "n": 150,
+       "mpx": 0.24,
+       "medianMs": 2.161
+      },
+      "2<-1": {
+       "n": 149,
+       "mpx": 0.24,
+       "medianMs": 2.088
+      },
+      "2<-?": {
+       "n": 1,
+       "mpx": 0.12,
+       "medianMs": 12.145
+      },
+      "3<-2": {
+       "n": 150,
+       "mpx": 0.24,
+       "medianMs": 2.751
+      },
+      "4<-3": {
+       "n": 150,
+       "mpx": 0.24,
+       "medianMs": 2.201
+      }
+     }
+    },
+    "minimal": {
+     "n": 600,
+     "fit": null,
+     "pairs": {
+      "1<-4": {
+       "n": 148,
+       "mpx": 0.24,
+       "medianMs": 2.867
+      },
+      "1<-?": {
+       "n": 2,
+       "mpx": 0.12,
+       "medianMs": 7.321
+      },
+      "2<-1": {
+       "n": 149,
+       "mpx": 0.24,
+       "medianMs": 2.12
+      },
+      "2<-?": {
+       "n": 1,
+       "mpx": 0.12,
+       "medianMs": 14.031
+      },
+      "3<-2": {
+       "n": 149,
+       "mpx": 0.24,
+       "medianMs": 2.22
+      },
+      "3<-?": {
+       "n": 1,
+       "mpx": 0.12,
+       "medianMs": 11.521
+      },
+      "4<-3": {
+       "n": 147,
+       "mpx": 0.24,
+       "medianMs": 2.142
+      },
+      "4<-?": {
+       "n": 3,
+       "mpx": 0.12,
+       "medianMs": 5.889
+      }
+     }
+    }
+   }
+  },
+  "aurorae-populated": {
+   "description": "as aurorae-tiled plus 14 more fixtures spread over 5 other desktops (18 windows, 6 desktops)",
+   "plan": [
+    "plastile-focus",
+    "minimal",
+    "kwin-switch",
+    "minimal",
+    "kwin-switch",
+    "plastile-focus"
+   ],
+   "frames": {
+    "plastile-fixture 1": {
+     "x": 8,
+     "y": 8,
+     "width": 1395,
+     "height": 1424
+    },
+    "plastile-fixture 2": {
+     "x": 1411,
+     "y": 8,
+     "width": 1141,
+     "height": 469
+    },
+    "plastile-fixture 3": {
+     "x": 1411,
+     "y": 485,
+     "width": 1141,
+     "height": 470
+    },
+    "plastile-fixture 4": {
+     "x": 1411,
+     "y": 963,
+     "width": 1141,
+     "height": 469
+    },
+    "plastile-fixture 100": {
+     "x": 1289.333333333333,
+     "y": 668,
+     "width": 408,
+     "height": 344
+    },
+    "plastile-fixture 101": {
+     "x": 1289.333333333333,
+     "y": 668,
+     "width": 408,
+     "height": 344
+    },
+    "plastile-fixture 102": {
+     "x": 1289.333333333333,
+     "y": 668,
+     "width": 408,
+     "height": 344
+    },
+    "plastile-fixture 103": {
+     "x": 1289.333333333333,
+     "y": 668,
+     "width": 408,
+     "height": 344
+    },
+    "plastile-fixture 104": {
+     "x": 1289.333333333333,
+     "y": 668,
+     "width": 408,
+     "height": 344
+    },
+    "plastile-fixture 105": {
+     "x": 1289.333333333333,
+     "y": 668,
+     "width": 408,
+     "height": 344
+    },
+    "plastile-fixture 106": {
+     "x": 1289.333333333333,
+     "y": 668,
+     "width": 408,
+     "height": 344
+    },
+    "plastile-fixture 107": {
+     "x": 1289.333333333333,
+     "y": 668,
+     "width": 408,
+     "height": 344
+    },
+    "plastile-fixture 108": {
+     "x": 1289.333333333333,
+     "y": 668,
+     "width": 408,
+     "height": 344
+    },
+    "plastile-fixture 109": {
+     "x": 1289.333333333333,
+     "y": 668,
+     "width": 408,
+     "height": 344
+    },
+    "plastile-fixture 110": {
+     "x": 1289.333333333333,
+     "y": 668,
+     "width": 408,
+     "height": 344
+    },
+    "plastile-fixture 111": {
+     "x": 1289.333333333333,
+     "y": 668,
+     "width": 408,
+     "height": 344
+    },
+    "plastile-fixture 112": {
+     "x": 1289.333333333333,
+     "y": 668,
+     "width": 408,
+     "height": 344
+    },
+    "plastile-fixture 113": {
+     "x": 1289.333333333333,
+     "y": 668,
+     "width": 408,
+     "height": 344
+    }
+   },
+   "stagesMs": {
+    "plastile-focus": {
+     "tap_entry": {
+      "n": 598,
+      "p05": 0.225,
+      "p50": 0.248,
+      "p95": 0.284,
+      "max": 0.832
+     },
+     "tap_active": {
+      "n": 598,
+      "p05": 2.888,
+      "p50": 4.446,
+      "p95": 5.616,
+      "max": 7.69
+     },
+     "active_turn": {
+      "n": 598,
+      "p05": 0.133,
+      "p50": 2.182,
+      "p95": 3.123,
+      "max": 4.464
+     },
+     "turn_config": {
+      "n": 598,
+      "p05": 0.035,
+      "p50": 0.051,
+      "p95": 0.073,
+      "max": 0.497
+     },
+     "tap_config": {
+      "n": 598,
+      "p05": 3.248,
+      "p50": 6.216,
+      "p95": 8.594,
+      "max": 11.594
+     },
+     "assign": {
+      "n": 598,
+      "p05": 2.649,
+      "p50": 4.21,
+      "p95": 5.373,
+      "max": 7.4
+     },
+     "dispatch": {
+      "n": 598,
+      "p05": 2.721,
+      "p50": 4.287,
+      "p95": 5.454,
+      "max": 7.496
+     }
+    },
+    "minimal": {
+     "tap_entry": {
+      "n": 599,
+      "p05": 0.205,
+      "p50": 0.225,
+      "p95": 0.262,
+      "max": 16.668
+     },
+     "tap_active": {
+      "n": 599,
+      "p05": 3.513,
+      "p50": 4.919,
+      "p95": 6.295,
+      "max": 19.654
+     },
+     "active_turn": {
+      "n": 599,
+      "p05": 0.072,
+      "p50": 2.009,
+      "p95": 3.045,
+      "max": 4.607
+     },
+     "turn_config": {
+      "n": 599,
+      "p05": 0.034,
+      "p50": 0.051,
+      "p95": 0.071,
+      "max": 0.71
+     },
+     "tap_config": {
+      "n": 599,
+      "p05": 3.887,
+      "p50": 6.107,
+      "p95": 9.283,
+      "max": 21.655
+     },
+     "assign": {
+      "n": 599,
+      "p05": 3.248,
+      "p50": 4.627,
+      "p95": 5.989,
+      "max": 7.919
+     },
+     "dispatch": null
+    },
+    "kwin-switch": {
+     "tap_entry": null,
+     "tap_active": {
+      "n": 600,
+      "p05": 4.33,
+      "p50": 4.746,
+      "p95": 5.553,
+      "max": 8.024
+     },
+     "active_turn": {
+      "n": 600,
+      "p05": 0.074,
+      "p50": 2.48,
+      "p95": 3.053,
+      "max": 39.147
+     },
+     "turn_config": {
+      "n": 600,
+      "p05": 0.035,
+      "p50": 0.06,
+      "p95": 0.079,
+      "max": 0.127
+     },
+     "tap_config": {
+      "n": 600,
+      "p05": 4.702,
+      "p50": 7.287,
+      "p95": 8.424,
+      "max": 44.043
+     },
+     "assign": null,
+     "dispatch": null
+    }
+   },
+   "byWindowPair": {
+    "kwin-switch": {
+     "n": 600,
+     "fit": null,
+     "pairs": {
+      "1<-3": {
+       "n": 300,
+       "mpx": 2.397,
+       "medianMs": 7.124
+      },
+      "3<-1": {
+       "n": 300,
+       "mpx": 2.397,
+       "medianMs": 7.525
+      }
+     }
+    },
+    "minimal": {
+     "n": 599,
+     "fit": {
+      "interceptMs": 3.51,
+      "msPerMegapixel": 1.942,
+      "r2": 0.569
+     },
+     "pairs": {
+      "1<-4": {
+       "n": 150,
+       "mpx": 2.396,
+       "medianMs": 8.335
+      },
+      "2<-1": {
+       "n": 150,
+       "mpx": 2.396,
+       "medianMs": 8.538
+      },
+      "3<-2": {
+       "n": 150,
+       "mpx": 0.964,
+       "medianMs": 5.495
+      },
+      "4<-3": {
+       "n": 149,
+       "mpx": 0.964,
+       "medianMs": 5.706
+      }
+     }
+    },
+    "plastile-focus": {
+     "n": 598,
+     "fit": {
+      "interceptMs": 3.522,
+      "msPerMegapixel": 1.655,
+      "r2": 0.525
+     },
+     "pairs": {
+      "1<-4": {
+       "n": 150,
+       "mpx": 2.396,
+       "medianMs": 7.837
+      },
+      "2<-1": {
+       "n": 150,
+       "mpx": 2.396,
+       "medianMs": 7.683
+      },
+      "3<-2": {
+       "n": 149,
+       "mpx": 0.964,
+       "medianMs": 5.219
+      },
+      "4<-3": {
+       "n": 149,
+       "mpx": 0.964,
+       "medianMs": 5.199
+      }
+     }
+    }
+   }
+  },
+  "breeze-tiled": {
+   "description": "Breeze (KWin's default decoration); tiled frames",
+   "plan": [
+    "plastile-kwin-switch",
+    "minimal",
+    "plastile-minimal",
+    "kwin-switch",
+    "plastile-focus",
+    "kwin-switch",
+    "plastile-kwin-switch",
+    "plastile-focus",
+    "plastile-minimal",
+    "minimal"
+   ],
+   "frames": {
+    "plastile-fixture 1": {
+     "x": 8,
+     "y": 8,
+     "width": 1395,
+     "height": 1424
+    },
+    "plastile-fixture 2": {
+     "x": 1411,
+     "y": 8,
+     "width": 1141,
+     "height": 469
+    },
+    "plastile-fixture 3": {
+     "x": 1411,
+     "y": 485,
+     "width": 1141,
+     "height": 470
+    },
+    "plastile-fixture 4": {
+     "x": 1411,
+     "y": 963,
+     "width": 1141,
+     "height": 469
+    }
+   },
+   "stagesMs": {
+    "plastile-kwin-switch": {
+     "tap_entry": null,
+     "tap_active": {
+      "n": 600,
+      "p05": 0.309,
+      "p50": 1.613,
+      "p95": 2.822,
+      "max": 5.024
+     },
+     "active_turn": {
+      "n": 600,
+      "p05": 0.081,
+      "p50": 0.099,
+      "p95": 2.417,
+      "max": 3.221
+     },
+     "turn_config": {
+      "n": 600,
+      "p05": 0.033,
+      "p50": 0.042,
+      "p95": 0.057,
+      "max": 0.443
+     },
+     "tap_config": {
+      "n": 600,
+      "p05": 0.449,
+      "p50": 1.866,
+      "p95": 4.448,
+      "max": 5.281
+     },
+     "assign": null,
+     "dispatch": null
+    },
+    "minimal": {
+     "tap_entry": {
+      "n": 600,
+      "p05": 0.199,
+      "p50": 0.22,
+      "p95": 1.403,
+      "max": 3.002
+     },
+     "tap_active": {
+      "n": 600,
+      "p05": 0.342,
+      "p50": 1.054,
+      "p95": 2.347,
+      "max": 3.882
+     },
+     "active_turn": {
+      "n": 600,
+      "p05": 0.053,
+      "p50": 0.063,
+      "p95": 0.085,
+      "max": 3.205
+     },
+     "turn_config": {
+      "n": 600,
+      "p05": 0.031,
+      "p50": 0.038,
+      "p95": 0.049,
+      "max": 1.503
+     },
+     "tap_config": {
+      "n": 600,
+      "p05": 0.441,
+      "p50": 1.162,
+      "p95": 3.102,
+      "max": 4.384
+     },
+     "assign": {
+      "n": 600,
+      "p05": 0.135,
+      "p50": 0.798,
+      "p95": 1.053,
+      "max": 1.234
+     },
+     "dispatch": null
+    },
+    "plastile-minimal": {
+     "tap_entry": {
+      "n": 600,
+      "p05": 0.204,
+      "p50": 0.225,
+      "p95": 1.443,
+      "max": 2.947
+     },
+     "tap_active": {
+      "n": 600,
+      "p05": 0.345,
+      "p50": 1.103,
+      "p95": 2.201,
+      "max": 3.848
+     },
+     "active_turn": {
+      "n": 600,
+      "p05": 0.086,
+      "p50": 0.101,
+      "p95": 1.473,
+      "max": 4.471
+     },
+     "turn_config": {
+      "n": 600,
+      "p05": 0.032,
+      "p50": 0.039,
+      "p95": 0.054,
+      "max": 0.406
+     },
+     "tap_config": {
+      "n": 600,
+      "p05": 0.479,
+      "p50": 1.251,
+      "p95": 3.432,
+      "max": 6.12
+     },
+     "assign": {
+      "n": 600,
+      "p05": 0.168,
+      "p50": 0.902,
+      "p95": 1.124,
+      "max": 1.546
+     },
+     "dispatch": null
+    },
+    "kwin-switch": {
+     "tap_entry": null,
+     "tap_active": {
+      "n": 600,
+      "p05": 0.309,
+      "p50": 1.61,
+      "p95": 2.843,
+      "max": 4.56
+     },
+     "active_turn": {
+      "n": 600,
+      "p05": 0.049,
+      "p50": 0.059,
+      "p95": 2.642,
+      "max": 3.622
+     },
+     "turn_config": {
+      "n": 600,
+      "p05": 0.032,
+      "p50": 0.04,
+      "p95": 0.054,
+      "max": 1.209
+     },
+     "tap_config": {
+      "n": 600,
+      "p05": 0.406,
+      "p50": 1.827,
+      "p95": 4.617,
+      "max": 6.171
+     },
+     "assign": null,
+     "dispatch": null
+    },
+    "plastile-focus": {
+     "tap_entry": {
+      "n": 600,
+      "p05": 0.217,
+      "p50": 0.243,
+      "p95": 0.778,
+      "max": 1.903
+     },
+     "tap_active": {
+      "n": 600,
+      "p05": 0.394,
+      "p50": 0.767,
+      "p95": 1.37,
+      "max": 2.601
+     },
+     "active_turn": {
+      "n": 600,
+      "p05": 0.095,
+      "p50": 0.116,
+      "p95": 0.517,
+      "max": 2.269
+     },
+     "turn_config": {
+      "n": 600,
+      "p05": 0.033,
+      "p50": 0.04,
+      "p95": 0.051,
+      "max": 0.599
+     },
+     "tap_config": {
+      "n": 600,
+      "p05": 0.538,
+      "p50": 0.919,
+      "p95": 2.218,
+      "max": 3.724
+     },
+     "assign": {
+      "n": 600,
+      "p05": 0.156,
+      "p50": 0.505,
+      "p95": 0.696,
+      "max": 1.197
+     },
+     "dispatch": {
+      "n": 600,
+      "p05": 0.221,
+      "p50": 0.568,
+      "p95": 0.776,
+      "max": 1.356
+     }
+    }
+   },
+   "byWindowPair": {
+    "kwin-switch": {
+     "n": 600,
+     "fit": null,
+     "pairs": {
+      "1<-3": {
+       "n": 300,
+       "mpx": 2.452,
+       "medianMs": 1.858
+      },
+      "3<-1": {
+       "n": 300,
+       "mpx": 2.452,
+       "medianMs": 1.759
+      }
+     }
+    },
+    "minimal": {
+     "n": 600,
+     "fit": {
+      "interceptMs": 0.996,
+      "msPerMegapixel": 0.071,
+      "r2": 0.004
+     },
+     "pairs": {
+      "1<-4": {
+       "n": 150,
+       "mpx": 2.451,
+       "medianMs": 1.186
+      },
+      "2<-1": {
+       "n": 150,
+       "mpx": 2.451,
+       "medianMs": 1.164
+      },
+      "3<-2": {
+       "n": 150,
+       "mpx": 1.008,
+       "medianMs": 1.117
+      },
+      "4<-3": {
+       "n": 150,
+       "mpx": 1.008,
+       "medianMs": 1.117
+      }
+     }
+    },
+    "plastile-focus": {
+     "n": 600,
+     "fit": {
+      "interceptMs": 0.959,
+      "msPerMegapixel": 0.004,
+      "r2": 0.0
+     },
+     "pairs": {
+      "1<-4": {
+       "n": 150,
+       "mpx": 2.451,
+       "medianMs": 0.875
+      },
+      "2<-1": {
+       "n": 150,
+       "mpx": 2.451,
+       "medianMs": 0.953
+      },
+      "3<-2": {
+       "n": 150,
+       "mpx": 1.008,
+       "medianMs": 0.887
+      },
+      "4<-3": {
+       "n": 150,
+       "mpx": 1.008,
+       "medianMs": 0.955
+      }
+     }
+    },
+    "plastile-kwin-switch": {
+     "n": 600,
+     "fit": null,
+     "pairs": {
+      "1<-3": {
+       "n": 300,
+       "mpx": 2.452,
+       "medianMs": 1.953
+      },
+      "3<-1": {
+       "n": 300,
+       "mpx": 2.452,
+       "medianMs": 0.73
+      }
+     }
+    },
+    "plastile-minimal": {
+     "n": 600,
+     "fit": {
+      "interceptMs": 1.307,
+      "msPerMegapixel": -0.022,
+      "r2": 0.0
+     },
+     "pairs": {
+      "1<-4": {
+       "n": 150,
+       "mpx": 2.451,
+       "medianMs": 1.26
+      },
+      "2<-1": {
+       "n": 150,
+       "mpx": 2.451,
+       "medianMs": 1.104
+      },
+      "3<-2": {
+       "n": 150,
+       "mpx": 1.008,
+       "medianMs": 1.274
+      },
+      "4<-3": {
+       "n": 150,
+       "mpx": 1.008,
+       "medianMs": 1.23
+      }
+     }
+    }
+   }
+  },
+  "breeze-small": {
+   "description": "Breeze; KWin's placement (400x300)",
+   "plan": [
+    "minimal",
+    "kwin-switch",
+    "minimal",
+    "kwin-switch"
+   ],
+   "frames": {
+    "plastile-fixture 1": {
+     "x": 1080,
+     "y": 556,
+     "width": 400,
+     "height": 328
+    },
+    "plastile-fixture 2": {
+     "x": 1133.3333333333333,
+     "y": 586,
+     "width": 400,
+     "height": 328
+    },
+    "plastile-fixture 3": {
+     "x": 1186.6666666666665,
+     "y": 616,
+     "width": 400,
+     "height": 328
+    },
+    "plastile-fixture 4": {
+     "x": 1239.9999999999998,
+     "y": 646,
+     "width": 400,
+     "height": 328
+    }
+   },
+   "stagesMs": {
+    "minimal": {
+     "tap_entry": {
+      "n": 600,
+      "p05": 0.2,
+      "p50": 0.22,
+      "p95": 1.405,
+      "max": 2.891
+     },
+     "tap_active": {
+      "n": 600,
+      "p05": 0.35,
+      "p50": 1.096,
+      "p95": 2.339,
+      "max": 3.857
+     },
+     "active_turn": {
+      "n": 600,
+      "p05": 0.054,
+      "p50": 0.064,
+      "p95": 1.199,
+      "max": 3.331
+     },
+     "turn_config": {
+      "n": 600,
+      "p05": 0.032,
+      "p50": 0.039,
+      "p95": 0.053,
+      "max": 0.393
+     },
+     "tap_config": {
+      "n": 600,
+      "p05": 0.45,
+      "p50": 1.206,
+      "p95": 3.369,
+      "max": 4.68
+     },
+     "assign": {
+      "n": 600,
+      "p05": 0.14,
+      "p50": 0.865,
+      "p95": 1.107,
+      "max": 1.498
+     },
+     "dispatch": null
+    },
+    "kwin-switch": {
+     "tap_entry": null,
+     "tap_active": {
+      "n": 600,
+      "p05": 0.312,
+      "p50": 1.052,
+      "p95": 1.951,
+      "max": 3.805
+     },
+     "active_turn": {
+      "n": 600,
+      "p05": 0.049,
+      "p50": 0.058,
+      "p95": 1.652,
+      "max": 3.373
+     },
+     "turn_config": {
+      "n": 600,
+      "p05": 0.033,
+      "p50": 0.04,
+      "p95": 0.052,
+      "max": 1.182
+     },
+     "tap_config": {
+      "n": 600,
+      "p05": 0.408,
+      "p50": 1.149,
+      "p95": 3.191,
+      "max": 4.79
+     },
+     "assign": null,
+     "dispatch": null
+    }
+   },
+   "byWindowPair": {
+    "kwin-switch": {
+     "n": 600,
+     "fit": null,
+     "pairs": {
+      "1<-4": {
+       "n": 150,
+       "mpx": 0.24,
+       "medianMs": 1.141
+      },
+      "2<-1": {
+       "n": 150,
+       "mpx": 0.24,
+       "medianMs": 1.16
+      },
+      "3<-2": {
+       "n": 150,
+       "mpx": 0.24,
+       "medianMs": 1.042
+      },
+      "4<-3": {
+       "n": 150,
+       "mpx": 0.24,
+       "medianMs": 1.167
+      }
+     }
+    },
+    "minimal": {
+     "n": 600,
+     "fit": null,
+     "pairs": {
+      "1<-4": {
+       "n": 150,
+       "mpx": 0.24,
+       "medianMs": 1.237
+      },
+      "2<-1": {
+       "n": 150,
+       "mpx": 0.24,
+       "medianMs": 1.163
+      },
+      "3<-2": {
+       "n": 150,
+       "mpx": 0.24,
+       "medianMs": 1.22
+      },
+      "4<-3": {
+       "n": 150,
+       "mpx": 0.24,
+       "medianMs": 1.205
+      }
+     }
+    }
+   }
+  },
+  "nosvg-tiled": {
+   "description": "Aurorae v2 without a theme (it logs 'Could not find decoration svg' and paints nothing); tiled frames",
+   "plan": [
+    "plastile-focus",
+    "minimal",
+    "kwin-switch",
+    "minimal",
+    "kwin-switch",
+    "plastile-focus"
+   ],
+   "frames": {
+    "plastile-fixture 1": {
+     "x": 8,
+     "y": 8,
+     "width": 1395,
+     "height": 1424
+    },
+    "plastile-fixture 2": {
+     "x": 1411,
+     "y": 8,
+     "width": 1141,
+     "height": 469
+    },
+    "plastile-fixture 3": {
+     "x": 1411,
+     "y": 485,
+     "width": 1141,
+     "height": 470
+    },
+    "plastile-fixture 4": {
+     "x": 1411,
+     "y": 963,
+     "width": 1141,
+     "height": 469
+    }
+   },
+   "stagesMs": {
+    "plastile-focus": {
+     "tap_entry": {
+      "n": 600,
+      "p05": 0.225,
+      "p50": 0.248,
+      "p95": 0.294,
+      "max": 1.03
+     },
+     "tap_active": {
+      "n": 600,
+      "p05": 0.37,
+      "p50": 0.404,
+      "p95": 0.467,
+      "max": 1.201
+     },
+     "active_turn": {
+      "n": 600,
+      "p05": 0.099,
+      "p50": 0.122,
+      "p95": 0.467,
+      "max": 0.988
+     },
+     "turn_config": {
+      "n": 600,
+      "p05": 0.033,
+      "p50": 0.039,
+      "p95": 0.049,
+      "max": 0.362
+     },
+     "tap_config": {
+      "n": 600,
+      "p05": 0.514,
+      "p50": 0.582,
+      "p95": 0.959,
+      "max": 1.789
+     },
+     "assign": {
+      "n": 600,
+      "p05": 0.127,
+      "p50": 0.143,
+      "p95": 0.171,
+      "max": 0.574
+     },
+     "dispatch": {
+      "n": 600,
+      "p05": 0.191,
+      "p50": 0.216,
+      "p95": 0.259,
+      "max": 0.647
+     }
+    },
+    "minimal": {
+     "tap_entry": {
+      "n": 600,
+      "p05": 0.203,
+      "p50": 0.222,
+      "p95": 0.261,
+      "max": 0.665
+     },
+     "tap_active": {
+      "n": 600,
+      "p05": 0.308,
+      "p50": 0.337,
+      "p95": 0.392,
+      "max": 0.821
+     },
+     "active_turn": {
+      "n": 600,
+      "p05": 0.054,
+      "p50": 0.067,
+      "p95": 0.408,
+      "max": 0.668
+     },
+     "turn_config": {
+      "n": 600,
+      "p05": 0.031,
+      "p50": 0.038,
+      "p95": 0.049,
+      "max": 0.209
+     },
+     "tap_config": {
+      "n": 600,
+      "p05": 0.404,
+      "p50": 0.455,
+      "p95": 0.806,
+      "max": 1.367
+     },
+     "assign": {
+      "n": 600,
+      "p05": 0.103,
+      "p50": 0.116,
+      "p95": 0.136,
+      "max": 0.214
+     },
+     "dispatch": null
+    },
+    "kwin-switch": {
+     "tap_entry": null,
+     "tap_active": {
+      "n": 600,
+      "p05": 0.272,
+      "p50": 0.3,
+      "p95": 0.346,
+      "max": 0.601
+     },
+     "active_turn": {
+      "n": 600,
+      "p05": 0.048,
+      "p50": 0.063,
+      "p95": 0.387,
+      "max": 0.697
+     },
+     "turn_config": {
+      "n": 600,
+      "p05": 0.032,
+      "p50": 0.038,
+      "p95": 0.049,
+      "max": 0.684
+     },
+     "tap_config": {
+      "n": 600,
+      "p05": 0.36,
+      "p50": 0.413,
+      "p95": 0.756,
+      "max": 1.346
+     },
+     "assign": null,
+     "dispatch": null
+    }
+   },
+   "byWindowPair": {
+    "kwin-switch": {
+     "n": 600,
+     "fit": null,
+     "pairs": {
+      "1<-3": {
+       "n": 300,
+       "mpx": 2.523,
+       "medianMs": 0.412
+      },
+      "3<-1": {
+       "n": 300,
+       "mpx": 2.523,
+       "medianMs": 0.416
+      }
+     }
+    },
+    "minimal": {
+     "n": 600,
+     "fit": {
+      "interceptMs": 0.566,
+      "msPerMegapixel": -0.009,
+      "r2": 0.002
+     },
+     "pairs": {
+      "1<-4": {
+       "n": 150,
+       "mpx": 2.522,
+       "medianMs": 0.448
+      },
+      "2<-1": {
+       "n": 150,
+       "mpx": 2.522,
+       "medianMs": 0.447
+      },
+      "3<-2": {
+       "n": 150,
+       "mpx": 1.071,
+       "medianMs": 0.461
+      },
+      "4<-3": {
+       "n": 150,
+       "mpx": 1.071,
+       "medianMs": 0.464
+      }
+     }
+    },
+    "plastile-focus": {
+     "n": 600,
+     "fit": {
+      "interceptMs": 0.696,
+      "msPerMegapixel": -0.014,
+      "r2": 0.003
+     },
+     "pairs": {
+      "1<-4": {
+       "n": 150,
+       "mpx": 2.522,
+       "medianMs": 0.577
+      },
+      "2<-1": {
+       "n": 150,
+       "mpx": 2.522,
+       "medianMs": 0.578
+      },
+      "3<-2": {
+       "n": 150,
+       "mpx": 1.071,
+       "medianMs": 0.572
+      },
+      "4<-3": {
+       "n": 150,
+       "mpx": 1.071,
+       "medianMs": 0.599
+      }
+     }
+    }
+   }
+  },
+  "bisect-4afc10e": {
+   "description": "Aurorae + SVG theme, tiled; Plastile built from 4afc10e (the windowed-GPU run's build), diagnostics=info",
+   "plan": [
+    "plastile-focus",
+    "kwin-switch",
+    "plastile-focus",
+    "kwin-switch"
+   ],
+   "frames": {
+    "plastile-fixture 1": {
+     "x": 8,
+     "y": 8,
+     "width": 1395,
+     "height": 1424
+    },
+    "plastile-fixture 2": {
+     "x": 1411,
+     "y": 8,
+     "width": 1141,
+     "height": 469
+    },
+    "plastile-fixture 3": {
+     "x": 1411,
+     "y": 485,
+     "width": 1141,
+     "height": 470
+    },
+    "plastile-fixture 4": {
+     "x": 1411,
+     "y": 963,
+     "width": 1141,
+     "height": 469
+    }
+   },
+   "stagesMs": {
+    "plastile-focus": {
+     "tap_entry": {
+      "n": 600,
+      "p05": 0.223,
+      "p50": 0.243,
+      "p95": 0.273,
+      "max": 12.186
+     },
+     "tap_active": {
+      "n": 600,
+      "p05": 3.27,
+      "p50": 4.678,
+      "p95": 6.234,
+      "max": 15.188
+     },
+     "active_turn": {
+      "n": 600,
+      "p05": 0.125,
+      "p50": 2.017,
+      "p95": 2.99,
+      "max": 4.632
+     },
+     "turn_config": {
+      "n": 600,
+      "p05": 0.035,
+      "p50": 0.05,
+      "p95": 0.068,
+      "max": 0.387
+     },
+     "tap_config": {
+      "n": 600,
+      "p05": 3.854,
+      "p50": 6.373,
+      "p95": 9.073,
+      "max": 16.883
+     },
+     "assign": {
+      "n": 600,
+      "p05": 3.028,
+      "p50": 4.425,
+      "p95": 5.988,
+      "max": 6.929
+     },
+     "dispatch": {
+      "n": 600,
+      "p05": 3.094,
+      "p50": 4.513,
+      "p95": 6.063,
+      "max": 7.028
+     }
+    },
+    "kwin-switch": {
+     "tap_entry": null,
+     "tap_active": {
+      "n": 600,
+      "p05": 4.232,
+      "p50": 4.726,
+      "p95": 5.552,
+      "max": 42.504
+     },
+     "active_turn": {
+      "n": 600,
+      "p05": 0.068,
+      "p50": 2.441,
+      "p95": 2.951,
+      "max": 4.01
+     },
+     "turn_config": {
+      "n": 600,
+      "p05": 0.035,
+      "p50": 0.06,
+      "p95": 0.082,
+      "max": 0.164
+     },
+     "tap_config": {
+      "n": 600,
+      "p05": 4.56,
+      "p50": 7.206,
+      "p95": 8.292,
+      "max": 45.263
+     },
+     "assign": null,
+     "dispatch": null
+    }
+   },
+   "byWindowPair": {
+    "kwin-switch": {
+     "n": 600,
+     "fit": null,
+     "pairs": {
+      "1<-3": {
+       "n": 300,
+       "mpx": 2.397,
+       "medianMs": 7.269
+      },
+      "3<-1": {
+       "n": 300,
+       "mpx": 2.397,
+       "medianMs": 7.153
+      }
+     }
+    },
+    "plastile-focus": {
+     "n": 600,
+     "fit": {
+      "interceptMs": 3.889,
+      "msPerMegapixel": 1.588,
+      "r2": 0.478
+     },
+     "pairs": {
+      "1<-4": {
+       "n": 150,
+       "mpx": 2.396,
+       "medianMs": 8.404
+      },
+      "2<-1": {
+       "n": 150,
+       "mpx": 2.396,
+       "medianMs": 7.681
+      },
+      "3<-2": {
+       "n": 150,
+       "mpx": 0.964,
+       "medianMs": 5.691
+      },
+      "4<-3": {
+       "n": 150,
+       "mpx": 0.964,
+       "medianMs": 5.395
+      }
+     }
+    }
+   }
+  },
+  "bisect-97fec4a": {
+   "description": "Aurorae + SVG theme, tiled; Plastile built from 97fec4a (the physical P6 run's installed build)",
+   "plan": [
+    "plastile-focus",
+    "kwin-switch",
+    "plastile-focus",
+    "kwin-switch"
+   ],
+   "frames": {
+    "plastile-fixture 1": {
+     "x": 8,
+     "y": 8,
+     "width": 1395,
+     "height": 1424
+    },
+    "plastile-fixture 2": {
+     "x": 1411,
+     "y": 8,
+     "width": 1141,
+     "height": 469
+    },
+    "plastile-fixture 3": {
+     "x": 1411,
+     "y": 485,
+     "width": 1141,
+     "height": 470
+    },
+    "plastile-fixture 4": {
+     "x": 1411,
+     "y": 963,
+     "width": 1141,
+     "height": 469
+    }
+   },
+   "stagesMs": {
+    "plastile-focus": {
+     "tap_entry": {
+      "n": 600,
+      "p05": 0.224,
+      "p50": 0.249,
+      "p95": 0.297,
+      "max": 37.37
+     },
+     "tap_active": {
+      "n": 600,
+      "p05": 3.016,
+      "p50": 4.833,
+      "p95": 6.273,
+      "max": 41.175
+     },
+     "active_turn": {
+      "n": 600,
+      "p05": 0.145,
+      "p50": 2.245,
+      "p95": 3.287,
+      "max": 4.378
+     },
+     "turn_config": {
+      "n": 600,
+      "p05": 0.037,
+      "p50": 0.052,
+      "p95": 0.073,
+      "max": 0.622
+     },
+     "tap_config": {
+      "n": 600,
+      "p05": 3.891,
+      "p50": 6.775,
+      "p95": 9.366,
+      "max": 42.957
+     },
+     "assign": {
+      "n": 600,
+      "p05": 2.785,
+      "p50": 4.586,
+      "p95": 5.999,
+      "max": 9.653
+     },
+     "dispatch": {
+      "n": 600,
+      "p05": 2.864,
+      "p50": 4.658,
+      "p95": 6.091,
+      "max": 9.734
+     }
+    },
+    "kwin-switch": {
+     "tap_entry": null,
+     "tap_active": {
+      "n": 600,
+      "p05": 4.475,
+      "p50": 5.007,
+      "p95": 5.753,
+      "max": 9.742
+     },
+     "active_turn": {
+      "n": 600,
+      "p05": 0.072,
+      "p50": 2.55,
+      "p95": 3.123,
+      "max": 4.955
+     },
+     "turn_config": {
+      "n": 600,
+      "p05": 0.037,
+      "p50": 0.061,
+      "p95": 0.08,
+      "max": 0.821
+     },
+     "tap_config": {
+      "n": 600,
+      "p05": 4.973,
+      "p50": 7.606,
+      "p95": 8.658,
+      "max": 13.187
+     },
+     "assign": null,
+     "dispatch": null
+    }
+   },
+   "byWindowPair": {
+    "kwin-switch": {
+     "n": 600,
+     "fit": null,
+     "pairs": {
+      "1<-3": {
+       "n": 300,
+       "mpx": 2.397,
+       "medianMs": 7.687
+      },
+      "3<-1": {
+       "n": 300,
+       "mpx": 2.397,
+       "medianMs": 7.541
+      }
+     }
+    },
+    "plastile-focus": {
+     "n": 600,
+     "fit": {
+      "interceptMs": 4.069,
+      "msPerMegapixel": 1.772,
+      "r2": 0.314
+     },
+     "pairs": {
+      "1<-4": {
+       "n": 150,
+       "mpx": 2.396,
+       "medianMs": 8.731
+      },
+      "2<-1": {
+       "n": 150,
+       "mpx": 2.396,
+       "medianMs": 8.258
+      },
+      "3<-2": {
+       "n": 150,
+       "mpx": 0.964,
+       "medianMs": 5.838
+      },
+      "4<-3": {
+       "n": 150,
+       "mpx": 0.964,
+       "medianMs": 5.54
+      }
+     }
+    }
+   }
+  },
+  "bisect-current-info": {
+   "description": "Aurorae + SVG theme, tiled; this branch's Plastile, diagnostics=info (pairs with bisect-4afc10e)",
+   "plan": [
+    "plastile-focus",
+    "kwin-switch",
+    "plastile-focus",
+    "kwin-switch"
+   ],
+   "frames": {
+    "plastile-fixture 1": {
+     "x": 8,
+     "y": 8,
+     "width": 1395,
+     "height": 1424
+    },
+    "plastile-fixture 2": {
+     "x": 1411,
+     "y": 8,
+     "width": 1141,
+     "height": 469
+    },
+    "plastile-fixture 3": {
+     "x": 1411,
+     "y": 485,
+     "width": 1141,
+     "height": 470
+    },
+    "plastile-fixture 4": {
+     "x": 1411,
+     "y": 963,
+     "width": 1141,
+     "height": 469
+    }
+   },
+   "stagesMs": {
+    "plastile-focus": {
+     "tap_entry": {
+      "n": 600,
+      "p05": 0.226,
+      "p50": 0.246,
+      "p95": 0.281,
+      "max": 0.926
+     },
+     "tap_active": {
+      "n": 600,
+      "p05": 3.633,
+      "p50": 4.678,
+      "p95": 6.167,
+      "max": 7.102
+     },
+     "active_turn": {
+      "n": 600,
+      "p05": 0.133,
+      "p50": 2.08,
+      "p95": 2.98,
+      "max": 3.876
+     },
+     "turn_config": {
+      "n": 600,
+      "p05": 0.035,
+      "p50": 0.049,
+      "p95": 0.072,
+      "max": 0.472
+     },
+     "tap_config": {
+      "n": 600,
+      "p05": 4.113,
+      "p50": 6.445,
+      "p95": 9.077,
+      "max": 10.133
+     },
+     "assign": {
+      "n": 600,
+      "p05": 3.377,
+      "p50": 4.429,
+      "p95": 5.915,
+      "max": 6.858
+     },
+     "dispatch": {
+      "n": 600,
+      "p05": 3.455,
+      "p50": 4.503,
+      "p95": 6.027,
+      "max": 6.945
+     }
+    },
+    "kwin-switch": {
+     "tap_entry": null,
+     "tap_active": {
+      "n": 600,
+      "p05": 5.081,
+      "p50": 5.55,
+      "p95": 6.051,
+      "max": 8.433
+     },
+     "active_turn": {
+      "n": 600,
+      "p05": 0.07,
+      "p50": 2.404,
+      "p95": 3.06,
+      "max": 4.803
+     },
+     "turn_config": {
+      "n": 600,
+      "p05": 0.036,
+      "p50": 0.059,
+      "p95": 0.08,
+      "max": 0.404
+     },
+     "tap_config": {
+      "n": 600,
+      "p05": 5.472,
+      "p50": 8.01,
+      "p95": 9.023,
+      "max": 12.598
+     },
+     "assign": null,
+     "dispatch": null
+    }
+   },
+   "byWindowPair": {
+    "kwin-switch": {
+     "n": 600,
+     "fit": null,
+     "pairs": {
+      "1<-3": {
+       "n": 300,
+       "mpx": 2.397,
+       "medianMs": 7.961
+      },
+      "3<-1": {
+       "n": 300,
+       "mpx": 2.397,
+       "medianMs": 8.072
+      }
+     }
+    },
+    "plastile-focus": {
+     "n": 600,
+     "fit": {
+      "interceptMs": 4.223,
+      "msPerMegapixel": 1.482,
+      "r2": 0.507
+     },
+     "pairs": {
+      "1<-4": {
+       "n": 150,
+       "mpx": 2.396,
+       "medianMs": 8.06
+      },
+      "2<-1": {
+       "n": 150,
+       "mpx": 2.396,
+       "medianMs": 7.928
+      },
+      "3<-2": {
+       "n": 150,
+       "mpx": 0.964,
+       "medianMs": 6.23
+      },
+      "4<-3": {
+       "n": 150,
+       "mpx": 0.964,
+       "medianMs": 5.658
+      }
+     }
+    }
+   }
+  }
+ },
+ "physicalReanalysis": {
+  "source": "physical P6 run 2026-10-18 (evidence/physical-runbook-20261018.json), raw fixture logs re-read by probes/perf/focus/area.py",
+  "layer": "physical",
+  "note": "P00-switch ran on KWin-placed 400x300 clients (no tiler); P03-focus on Plastile's tiles (144 Hz: 2560x1440 output, 60 Hz: 1920x1080) except at 100 Hz, where the context's layout was floating and the fixtures kept 400x300",
+  "byRefresh": {
+   "144Hz": {
+    "P00-switch-n4": {
+     "n": 5000,
+     "fit": null,
+     "pairs": {
+      "1<-2": {
+       "n": 240,
+       "mpx": 0.24,
+       "medianMs": 3.481
+      },
+      "1<-4": {
+       "n": 972,
+       "mpx": 0.24,
+       "medianMs": 3.307
+      },
+      "1<-?": {
+       "n": 38,
+       "mpx": 0.12,
+       "medianMs": 3.348
+      },
+      "2<-1": {
+       "n": 979,
+       "mpx": 0.24,
+       "medianMs": 3.328
+      },
+      "2<-4": {
+       "n": 247,
+       "mpx": 0.24,
+       "medianMs": 3.368
+      },
+      "2<-?": {
+       "n": 24,
+       "mpx": 0.12,
+       "medianMs": 3.381
+      },
+      "3<-1": {
+       "n": 245,
+       "mpx": 0.24,
+       "medianMs": 3.46
+      },
+      "3<-2": {
+       "n": 979,
+       "mpx": 0.24,
+       "medianMs": 3.281
+      },
+      "3<-?": {
+       "n": 26,
+       "mpx": 0.12,
+       "medianMs": 3.47
+      },
+      "4<-3": {
+       "n": 1222,
+       "mpx": 0.24,
+       "medianMs": 3.282
+      },
+      "4<-?": {
+       "n": 28,
+       "mpx": 0.12,
+       "medianMs": 3.286
+      }
+     }
+    },
+    "P03-focus-n4": {
+     "n": 5000,
+     "fit": {
+      "interceptMs": 5.541,
+      "msPerMegapixel": 1.928,
+      "r2": 0.757
+     },
+     "pairs": {
+      "1<-2": {
+       "n": 249,
+       "mpx": 2.329,
+       "medianMs": 9.83
+      },
+      "1<-?": {
+       "n": 1,
+       "mpx": 0.468,
+       "medianMs": 8.637
+      },
+      "2<-3": {
+       "n": 1248,
+       "mpx": 2.592,
+       "medianMs": 10.613
+      },
+      "2<-4": {
+       "n": 332,
+       "mpx": 2.592,
+       "medianMs": 11.067
+      },
+      "2<-?": {
+       "n": 2,
+       "mpx": 1.861,
+       "medianMs": 10.519
+      },
+      "3<-2": {
+       "n": 330,
+       "mpx": 2.592,
+       "medianMs": 9.959
+      },
+      "3<-4": {
+       "n": 1250,
+       "mpx": 1.462,
+       "medianMs": 8.11
+      },
+      "3<-?": {
+       "n": 5,
+       "mpx": 0.731,
+       "medianMs": 9.028
+      },
+      "4<-1": {
+       "n": 250,
+       "mpx": 0.935,
+       "medianMs": 7.469
+      },
+      "4<-2": {
+       "n": 996,
+       "mpx": 2.592,
+       "medianMs": 10.456
+      },
+      "4<-3": {
+       "n": 334,
+       "mpx": 1.462,
+       "medianMs": 7.921
+      },
+      "4<-?": {
+       "n": 3,
+       "mpx": 0.731,
+       "medianMs": 9.406
+      }
+     }
+    }
+   },
+   "60Hz": {
+    "P00-switch-n4": {
+     "n": 5000,
+     "fit": null,
+     "pairs": {
+      "1<-4": {
+       "n": 1236,
+       "mpx": 0.24,
+       "medianMs": 3.108
+      },
+      "1<-?": {
+       "n": 14,
+       "mpx": 0.12,
+       "medianMs": 2.276
+      },
+      "2<-1": {
+       "n": 1241,
+       "mpx": 0.24,
+       "medianMs": 3.166
+      },
+      "2<-?": {
+       "n": 9,
+       "mpx": 0.12,
+       "medianMs": 3.466
+      },
+      "3<-2": {
+       "n": 1238,
+       "mpx": 0.24,
+       "medianMs": 3.025
+      },
+      "3<-?": {
+       "n": 12,
+       "mpx": 0.12,
+       "medianMs": 3.353
+      },
+      "4<-3": {
+       "n": 1240,
+       "mpx": 0.24,
+       "medianMs": 3.118
+      },
+      "4<-?": {
+       "n": 10,
+       "mpx": 0.12,
+       "medianMs": 3.338
+      }
+     }
+    },
+    "P03-focus-n4": {
+     "n": 5000,
+     "fit": {
+      "interceptMs": 4.582,
+      "msPerMegapixel": 1.551,
+      "r2": 0.316
+     },
+     "pairs": {
+      "1<-3": {
+       "n": 248,
+       "mpx": 1.313,
+       "medianMs": 6.588
+      },
+      "1<-?": {
+       "n": 2,
+       "mpx": 1.056,
+       "medianMs": 6.665
+      },
+      "2<-1": {
+       "n": 250,
+       "mpx": 1.313,
+       "medianMs": 6.627
+      },
+      "2<-4": {
+       "n": 1321,
+       "mpx": 1.465,
+       "medianMs": 7.141
+      },
+      "2<-?": {
+       "n": 11,
+       "mpx": 1.056,
+       "medianMs": 6.557
+      },
+      "3<-2": {
+       "n": 1319,
+       "mpx": 1.465,
+       "medianMs": 6.898
+      },
+      "3<-4": {
+       "n": 250,
+       "mpx": 0.516,
+       "medianMs": 5.438
+      },
+      "3<-?": {
+       "n": 13,
+       "mpx": 0.409,
+       "medianMs": 6.416
+      },
+      "4<-2": {
+       "n": 250,
+       "mpx": 0.516,
+       "medianMs": 5.483
+      },
+      "4<-3": {
+       "n": 1335,
+       "mpx": 0.818,
+       "medianMs": 5.957
+      },
+      "4<-?": {
+       "n": 1,
+       "mpx": 0.409,
+       "medianMs": 5.997
+      }
+     }
+    }
+   },
+   "100Hz": {
+    "P00-switch-n4": {
+     "n": 1000,
+     "fit": null,
+     "pairs": {
+      "1<-3": {
+       "n": 246,
+       "mpx": 0.24,
+       "medianMs": 3.969
+      },
+      "1<-?": {
+       "n": 4,
+       "mpx": 0.12,
+       "medianMs": 3.732
+      },
+      "2<-1": {
+       "n": 245,
+       "mpx": 0.24,
+       "medianMs": 4.133
+      },
+      "2<-?": {
+       "n": 5,
+       "mpx": 0.12,
+       "medianMs": 2.318
+      },
+      "3<-4": {
+       "n": 246,
+       "mpx": 0.24,
+       "medianMs": 4.138
+      },
+      "3<-?": {
+       "n": 4,
+       "mpx": 0.12,
+       "medianMs": 3.928
+      },
+      "4<-2": {
+       "n": 247,
+       "mpx": 0.24,
+       "medianMs": 4.026
+      },
+      "4<-?": {
+       "n": 3,
+       "mpx": 0.12,
+       "medianMs": 2.271
+      }
+     }
+    },
+    "P03-focus-n4": {
+     "n": 1000,
+     "fit": null,
+     "pairs": {
+      "2<-3": {
+       "n": 333,
+       "mpx": 0.24,
+       "medianMs": 5.182
+      },
+      "3<-4": {
+       "n": 334,
+       "mpx": 0.24,
+       "medianMs": 5.161
+      },
+      "4<-2": {
+       "n": 333,
+       "mpx": 0.24,
+       "medianMs": 5.221
+      }
+     }
+    }
+   }
+  }
+ }
+}

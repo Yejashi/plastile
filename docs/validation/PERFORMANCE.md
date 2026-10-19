@@ -91,6 +91,45 @@ At 60/120/144/240 Hz, one nominal refresh interval is about 16.67/8.33/6.94/4.17
 
 Define the same initial window order, geometries, targets, constraints, and activation for every comparable implementation. A master/stack swap is not equivalent to placing one active window in a zone; report those controls separately.
 
+### 5.1 Focus activation cost depends on the decoration and window size
+
+Finding from the physical P6 run (2026-10-18, KWin 6.7.5, installed build `97fec4a`), investigated in nested KWin on 2026-10-19 ([evidence](../status/evidence/focus-latency-nested-20261019.json), probe [`probes/perf/focus/run.py`](../../probes/perf/focus/run.py)).
+
+**The physical result.** Input to the activation configure took 9.9 ms median (p95 11.3) for P03-focus at 144 Hz and 6.4 ms (p95 7.9) at 60 Hz, against 3.05 ms and 2.85 ms for P00-switch (KWin's *Switch to Window to the Right*, no tiler). Swap and ratio, through the same kglobalaccel → `ShortcutHandler` path, reached their configure in 0.6 ms, and the focus blocks issued 0 solves and 0 writes.
+
+**Cause: not Plastile's code.** The reference desktop decorates windows with Aurorae v2 and an SVG theme. On every change of a window's active state, Aurorae v2 re-renders that window's whole decorated frame synchronously, into a new `QImage` the size of the frame (observed source: aurorae v6.7.5 `v2/decoration.cpp`; `onWindowActiveChanged` → `updateDecoration` → `setCurrentDecoration` → `updateShadow` paints the theme's `FrameSvg` into the image). KWin forwards `Window::activeChanged` to the decoration synchronously, and the xdg configure goes out later, from a 0 ms timer that the activation starts (observed source: kwin v6.7.5 `src/window.cpp` `Window::setActive`, `src/decorations/decoratedwindow.cpp`, `src/xdgshellwindow.cpp` `scheduleConfigure`). The client is flushed when KWin's event loop next goes idle (`src/wayland/display.cpp`, `aboutToBlock`). Every activation pays for two frames, the window that loses focus and the one that gains it, before the configure leaves KWin. The cost grows with their area.
+
+The two physical workloads did not use the same geometry. P00-switch ran on KWin-placed 400×300 clients (0.24 Mpx for the pair). P03-focus ran on Plastile's tiles: 0.9–2.6 Mpx per pair on the 2560×1440 output, and 0.5–1.5 Mpx on 1920×1080. That breaks this section's rule of the same geometries for comparable workloads. The difference that scales with the refresh rate is a difference in tile area: the 144 Hz output is the 2560×1440 one. It is not a frame-aligned step. The activation configure's phase relative to vblank is uniform, and the delay does not depend on the tap's phase.
+
+**Measured in nested KWin 6.7.5, labelled nested, not physical.** 2560×1440 output, 4 fixtures, real key input through libei, 600 samples per condition in randomized blocks with one fresh session each. Median ms from the key-down to the activation configure:
+
+| Decoration | Frames | KWin's switch, no tiler | KWin's switch, Plastile loaded | Plastile focus.next | Minimal script (`activeWindow =` only) |
+|---|---|---|---|---|---|
+| Aurorae v2 + the desktop's SVG theme | tiled | 7.88 | 7.62 | 6.18 | 5.88 |
+| same | KWin's 400×300 | 2.16 | — | — | 2.20 |
+| Breeze (default) | tiled | 1.83 | 1.87 | 0.92 | 1.16 |
+| Breeze | 400×300 | 1.15 | — | — | 1.21 |
+| Aurorae v2, no theme (paints nothing) | tiled | 0.41 | — | 0.58 | 0.46 |
+
+- **Same window pair, same cost.** Activating the master from a stack tile, or the reverse (2.40 Mpx), took 7.7–8.1 ms with KWin's switch (7.6 ms with Plastile loaded), 7.7–7.8 ms with Plastile and 7.6–7.7 ms with the minimal script. Pairs of stack tiles (0.96 Mpx) took 4.9–5.2 ms with Plastile or the minimal script. KWin's switch among master/stack tiles always involves the master, which is why its overall median is the highest.
+- **Area model.** Over the tiled and 400×300 Aurorae runs (4189 samples), latency ≈ 2.4 ms + 2.2 ms per Mpx, r² 0.67. Over the five tiled Aurorae runs (three builds, 8394 samples, only two pair areas), it is 3.7 ms + 1.6 ms per Mpx, r² 0.31. The physical P03-focus samples at 144 Hz fit 5.5 ms + 1.9 ms per Mpx, r² 0.76: the same slope as nested. With Breeze, latency is flat (r² 0.02).
+- **Where the time goes** (Aurorae, tiled, Plastile focus.next; median ms):
+
+  | Stage | ms |
+  |---|---|
+  | Key-down → Plastile's handler | 0.25 |
+  | Inside the `workspace.activeWindow` assignment (KWin's activation, the decoration's re-render, every synchronous handler) | 4.23 |
+  | Rest of Plastile's dispatch | 0.08 |
+  | `windowActivated` → the next event-loop turn (work queued by the activation; with Breeze or no theme 0.06–0.12 ms) | 2.07 |
+  | That turn → the configure received | 0.05 |
+
+  The assignment takes 0.12 ms without a theme, 0.5–0.9 ms with Breeze and 1.7 ms with Aurorae at 400×300. Plastile's own work around the assignment is 0.06–0.09 ms in every build and decoration. Its `windowActivated` handler is within the assignment's 0.03 ms difference to the minimal script.
+- **Script-side activation is not slower than KWin's own.** At 400×300 the minimal script and KWin's switch land within 0.06 ms of each other, with either decoration. For the same tiled window pair they land within 0.5 ms. In KWin 6.7.5 the script setter is `Workspace::activateWindow(window)`, the same call `Workspace::switchWindow` makes (observed source: `src/scripting/workspace_wrapper.cpp` `setActiveWindow`, `src/useractions.cpp`). No script-visible way to activate avoids the decoration's re-render, because the re-render belongs to the activation itself.
+- **No build regression.** At the same pair (2.40 Mpx) Plastile focus.next took 7.7–8.4 ms at `4afc10e` (the windowed-GPU run's build), 8.3–8.7 ms at `97fec4a` (the physical run's build) and 7.9–8.1 ms at this branch. KWin's switch took 7.2–8.1 ms in the same sessions. The run-to-run spread is about ±0.5 ms. The windowed-GPU run matched KWin's switch because its private configuration used Breeze.
+- **18 windows on 6 desktops** (14 extra fixtures on other desktops): Plastile 6.22 ms, minimal 6.11 ms, KWin's switch 7.29 ms. The populated session added nothing to Plastile's cost.
+
+**What remains open.** At 100 Hz the physical P03-focus context had a floating layout, so its fixtures kept KWin's 400×300 placement, the same area as P00-switch. There, P03-focus took 5.2 ms against 4.0 ms. That residual of 1.2 ms is one run of 1000 samples (the 100 Hz run is incomplete), and the nested runs at 400×300 do not reproduce it (2.16 against 2.20 ms). The physical re-run needs a P00-switch baseline at Plastile's geometry. One option is KWin's switch with Plastile loaded, which tracks KWin's switch without Plastile within 0.3 ms in nested, though its window pairs differ from focus.next's. Until then, the P03-focus verdict against P00-switch measures window size as much as Plastile. A focus-heavy user on an Aurorae SVG theme pays for this cost on every activation, whoever asks for the activation.
+
 ## 6. Experimental protocol
 
 1. Pin implementation/upstream commits and actual package versions. Disable other tiling managers. Use a disposable profile and preserve window rules/effects between runs.

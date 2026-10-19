@@ -165,6 +165,13 @@ Beyond [AGENTS.md](../../AGENTS.md):
   `wait_active()`; this flaked on 6.8 before the wait was added.
 - KWin 6.8 has no QPainter compositing. Its virtual backend needs a render node or `/dev/udmabuf`, and the Nix
   wrapper's shim covers kernels without either.
+- Activation latency depends on the decoration and window area: Aurorae v2 SVG themes re-render both windows' frames
+  synchronously before the activation configure is sent. Compare focus timings only at equal geometry and decoration
+  ([PERFORMANCE §5.1](../validation/PERFORMANCE.md#51-focus-activation-cost-depends-on-the-decoration-and-window-size);
+  probe `probes/perf/focus/run.py`). A nested session uses Breeze unless told otherwise.
+- In `probes/perf/focus/run.py`, loading the measurement root again after unloading it, with other declarative
+  scripts loaded and a static screen, sometimes never started (the script reported loaded, nothing logged, no error
+  for 60 s). The probe uses one session per block instead. The cause was not investigated.
 - Every push to `main` cancels the CI run in progress (a concurrency group). Wait for a run to finish before
   pushing again if you need its result.
 - Commit message trailers and the "no model identifiers in the repository" rule come from the session
