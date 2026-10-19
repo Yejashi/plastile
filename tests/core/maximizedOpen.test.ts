@@ -184,6 +184,24 @@ test("ADR-021: full screen on open, dialogs, rule floats and excluded windows ke
   assert.equal(h.windows.get("fs")!.states.fullscreen, true);
 });
 
+test("ADR-021: full screen or minimized on open is decided at once: leaving it later (the user) keeps the maximize", () => {
+  const h = new MockHost();
+  h.start();
+  h.open("fs", { states: { ...MAXED, fullscreen: true }, frame: FULL });
+  h.open("mn", { states: { ...MAXED, minimized: true }, frame: FULL });
+  h.drain(); h.advance(100);
+  h.setStates("fs", { fullscreen: false });            // the user leaves full screen: maximized, as it was
+  h.setStates("mn", { minimized: false });             // the user restores it from the task manager
+  h.drain(); h.advance(100);
+  h.showDesktop("O1", "D2"); h.drain(); h.showDesktop("O1", "D1"); h.drain();
+  h.engine.topologyChanged(); h.drain(); h.advance(1000);
+  assert.deepEqual(h.unmaximizes, [], "never un-maximized after the user's own restore");
+  assert.equal(h.windows.get("fs")!.states.maximized, true);
+  assert.equal(h.windows.get("mn")!.states.maximized, true);
+  assert.equal(h.engine.explain("fs")!.onOpen, undefined);
+  assert.equal(h.engine.explain("mn")!.onOpen, undefined);
+});
+
 test("ADR-021: the floating layout and an unassigned zones member place nothing, so they stay maximized", () => {
   const h = new MockHost();
   h.start({ settingsFor: () => ({ ...DEFAULT_SETTINGS, layout: "floating" }) });
@@ -207,6 +225,62 @@ test("ADR-021: KWin refuses (not maximizable: a forcing window rule): it stays m
   const x = h.engine.explain("r")!;
   assert.match(String(x.onOpen), /KWin does not allow un-maximizing it/);
   assert.match(String(x.suspended), /while it is maximized/);
+});
+
+test("ADR-021: a refusal is known before anything is written: the peer is not made room for and then restored", () => {
+  const h = new MockHost();
+  h.start();
+  h.open("a");
+  h.drain(); h.advance(10);
+  const a0 = h.writesTo("a");
+  openMaximized(h, "r", { maximizable: false });
+  h.drain(); h.advance(2000);
+  assert.equal(h.writesTo("a"), a0, "a keeps its tile: the context was solved again without r before any write");
+  assert.ok(rectNear(h.windows.get("a")!.frame, ALONE));
+  assert.equal(h.writesTo("r"), 0);
+});
+
+test("ADR-021: no room in the layout (it would overflow): it stays maximized, not un-maximized into a float", () => {
+  const h = new MockHost();
+  h.start();
+  const big = { minFrame: { width: 700, height: 0 }, maxFrame: { width: Infinity, height: Infinity }, fixed: false };
+  h.open("a", { constraints: big });
+  h.drain(); h.advance(10);
+  const a0 = h.writesTo("a");
+  const w = openMaximized(h, "b", { constraints: big, delay: 10 });
+  h.drain(); h.advance(1000);
+  assert.deepEqual(h.unmaximizes, [], "never un-maximized: it would float at KWin's restore geometry");
+  assert.equal(w.states.maximized, true);
+  assert.ok(rectNear(w.frame, FULL));
+  assert.equal(h.writesTo("b"), 0);
+  assert.equal(h.writesTo("a"), a0, "the peer keeps its tile");
+  const x = h.engine.explain("b")!;
+  assert.equal(x.mode, "tiled", "a maximized member, as for any maximize (T17), not an overflow float");
+  assert.equal(x.exception, null);
+  assert.match(String(x.onOpen), /no room for it/);
+  assert.match(String(x.suspended), /while it is maximized/);
+  // Restored by the user later: the overflow policy applies then, as before ADR-021.
+  h.advance(10);
+  h.setStates("b", { maximized: false });
+  h.drain(); h.advance(100);
+  assert.match(String(h.engine.explain("b")!.exception), /^overflow/);
+  assert.deepEqual(h.unmaximizes, []);
+});
+
+test("ADR-021: a joining window whose context is not solved (invalid work area) stays maximized, decided once the area is valid", () => {
+  const h = new MockHost();
+  h.start();
+  h.areas.set("O1/D1", null);
+  const w = openMaximized(h, "v", { delay: 10 });
+  h.drain(); h.advance(100);
+  assert.deepEqual(h.unmaximizes, []);
+  assert.equal(w.states.maximized, true);
+  assert.match(String(h.engine.explain("v")!.suspended), /while it is maximized/, "suspended again, not left half-joined");
+  h.areas.delete("O1/D1");
+  h.engine.topologyChanged();
+  h.drain(); h.advance(100);
+  assert.deepEqual(h.unmaximizes, ["v"]);
+  assert.ok(rectNear(onlyTile(h, "v"), ALONE));
 });
 
 // ------------------------------------------------------------------ bounded edge cases
@@ -309,17 +383,79 @@ test("ADR-021: removal while the un-maximize is on its way leaves nothing behind
   assert.deepEqual(h.engine.check(), []);
 });
 
-test("ADR-021: a window opened maximized on a desktop not shown is un-maximized and tiled when shown", () => {
+const ON_D2 = { membership: { output: "O1", desktops: ["D2"], onAllDesktops: false, activities: [] } };
+
+test("ADR-021: a window opened maximized on a desktop not shown is left maximized until shown, then un-maximized and tiled once", () => {
   const h = new MockHost();
   h.start();
-  openMaximized(h, "h2", { membership: { output: "O1", desktops: ["D2"], onAllDesktops: false, activities: [] } });
-  h.drain(); h.advance(100);
-  assert.deepEqual(h.unmaximizes, ["h2"]);
+  const w = openMaximized(h, "h2", { delay: 10, ...ON_D2 });
+  h.drain(); h.advance(2000);
+  assert.deepEqual(h.unmaximizes, [], "nothing is done to a window whose context is hidden");
+  assert.equal(h.configuresSent.get("h2") ?? 0, 0, "the client gets no configure while hidden");
   assert.equal(h.writesTo("h2"), 0, "never written while hidden");
+  assert.equal(w.states.maximized, true);
+  assert.match(String(h.engine.explain("h2")!.onOpen), /not shown; Plastile un-maximizes and tiles it when that is shown/);
+  assert.match(String(h.engine.explain("h2")!.suspended), /while it is maximized/);
   h.showDesktop("O1", "D2");
-  h.drain(); h.advance(100);
+  h.drain();
+  assert.deepEqual(h.unmaximizes, ["h2"], "decided when shown");
   assert.equal(h.writesTo("h2"), 1);
+  assert.equal(h.configuresSent.get("h2"), 1, "one configure: the un-maximize and the tile together");
+  h.advance(100);
   assert.ok(rectNear(onlyTile(h, "h2"), ALONE));
+  assert.match(String(h.engine.explain("h2")!.onOpen), /^unmaximized on open/);
+  assert.equal(h.engine.counters.corrections, 0);
+  h.showDesktop("O1", "D1"); h.drain(); h.showDesktop("O1", "D2"); h.drain(); h.advance(100);
+  assert.deepEqual(h.unmaximizes, ["h2"], "once");
+  assert.deepEqual(h.engine.check(), []);
+});
+
+test("ADR-021: arrived maximized on a hidden desktop, then moved to the shown one: decided at once", () => {
+  const h = new MockHost();
+  h.start();
+  const w = openMaximized(h, "mv", ON_D2);
+  h.drain(); h.advance(100);
+  assert.deepEqual(h.unmaximizes, []);
+  w.membership = { output: "O1", desktops: ["D1"], onAllDesktops: false, activities: [] };
+  h.engine.membershipChanged("mv", w.gen, w.membership);
+  h.drain(); h.advance(100);
+  assert.deepEqual(h.unmaximizes, ["mv"]);
+  assert.ok(rectNear(onlyTile(h, "mv"), ALONE));
+});
+
+test("ADR-021: un-maximized while its desktop is hidden (the user, from the task manager): not the arrival state any more", () => {
+  const h = new MockHost();
+  h.start();
+  openMaximized(h, "u", ON_D2);
+  h.drain(); h.advance(100);
+  h.setStates("u", { maximized: false });
+  h.drain();
+  assert.equal(h.engine.explain("u")!.onOpen, undefined, "nothing was done on open");
+  h.setStates("u", { maximized: true });               // and maximized again, still hidden: the user's
+  h.drain();
+  h.showDesktop("O1", "D2");
+  h.drain(); h.advance(1000);
+  assert.deepEqual(h.unmaximizes, [], "honoured");
+  assert.equal(h.windows.get("u")!.states.maximized, true);
+});
+
+test("ADR-021: suspended while a hidden window waits for its decision: adopted at resume as it is", () => {
+  const h = new MockHost();
+  h.start();
+  const w = openMaximized(h, "s", ON_D2);
+  h.drain();
+  h.engine.execute("plastile.runtime.toggle-suspend");
+  h.drain();
+  h.engine.execute("plastile.runtime.toggle-suspend");
+  h.drain();
+  h.showDesktop("O1", "D2");
+  h.drain(); h.advance(1000);
+  w.membership = { output: "O1", desktops: ["D1"], onAllDesktops: false, activities: [] };
+  h.engine.membershipChanged("s", w.gen, w.membership);   // a reclassification later decides nothing either
+  h.showDesktop("O1", "D1");
+  h.drain(); h.advance(1000);
+  assert.deepEqual(h.unmaximizes, []);
+  assert.equal(h.writesTo("s"), 0);
 });
 
 test("ADR-021: a state signal while the acknowledgement is on its way does not suspend it again (KWin still says maximized)", () => {

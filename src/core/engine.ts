@@ -16,7 +16,7 @@ import { newCounters, Trace, type Counters } from "./diagnostics.ts";
 import { adjacentOutput, neighbour, wrapNeighbour, type Direction } from "./navigation.ts";
 import type { HostPort, RuntimeServices, WindowSnapshot } from "./ports.ts";
 import * as L from "./reconcile/ledger.ts";
-import type { Layout, LayoutCommand, SolveInput } from "./layouts/layout.ts";
+import type { Layout, LayoutCommand, SolveInput, SolveResult } from "./layouts/layout.ts";
 import { masterStack, type MasterStackState } from "./layouts/masterStack.ts";
 import { bsp, reinsert as bspReinsert } from "./layouts/bsp.ts";
 import { monocle, floating } from "./layouts/monocle.ts";
@@ -216,10 +216,13 @@ interface Rec {
    * flush after it is classified; "watch": it was not maximized then, and a maximize before its first
    * tile request settles (or `openUntil`) still counts as arriving maximized (a client that sets
    * it after its first commit); "requested": Plastile asked KWin to un-maximize it and waits for KWin
-   * to report it (Wayland: the client's acknowledgement), until `openUntil`; null: decided. At most
-   * one un-maximize per window: after it, a maximize is honoured as before.
+   * to report it (Wayland: the client's acknowledgement), until `openUntil`; "hidden": it arrived
+   * maximized in a context not shown, decided when that context is shown (nothing is written to a
+   * window whose context is hidden); "joining": it takes part in this flush's solve, and is
+   * un-maximized only if that solve gives it a slot (it stays maximized when there is no room);
+   * null: decided. At most one un-maximize per window: after it, a maximize is honoured as before.
    */
-  open: "wait" | "watch" | "requested" | null;
+  open: "wait" | "watch" | "requested" | "hidden" | "joining" | null;
   openUntil: number;
   /** What happened to the window's maximize state on open, for explain (null: nothing to say). */
   openNote: string | null;
@@ -301,6 +304,10 @@ export class Engine {
   private restoreChecks = new Set<WindowId>();
   /** Windows opened after start() whose arrival maximize state is decided in the next flush (ADR-021). */
   private openChecks = new Set<WindowId>();
+  /** Windows that arrived maximized in a context not shown: decided when it is shown (ADR-021). */
+  private openHidden = new Set<WindowId>();
+  /** Windows that arrived maximized and join this flush's solve (ADR-021): un-maximized if given a slot. */
+  private openJoining = new Set<WindowId>();
   /**
    * Called (cheaply, possibly from a command) when something persistence saves changed: a
    * context preference or a user float decision. The listener only marks state dirty.
@@ -416,6 +423,8 @@ export class Engine {
     this.pendingFloats.clear();
     this.restoreChecks.clear();
     this.openChecks.clear();
+    this.openHidden.clear();
+    this.openJoining.clear();
     this.onPersistChange = null;
     this.onLayoutChange = null;
     this.onSuspendChange = null;
@@ -535,6 +544,8 @@ export class Engine {
     this.parked.delete(r.id);
     this.zoneNotes.delete(r.id);
     this.openChecks.delete(r.id);
+    this.openHidden.delete(r.id);
+    this.openJoining.delete(r.id);
     this.recs.delete(r.id);
     if (r.userMode === "floating") this.releaseFloat(r);
   }
@@ -587,6 +598,7 @@ export class Engine {
     const wasMaximized = r.states.maximized;
     r.states = st;
     if (st.maximized && !wasMaximized) this.maximizedLater(r);
+    else if (!st.maximized && r.open === "hidden") this.openShownLater(r, null); // un-maximized while hidden: nothing to decide
     const prevSet = r.suspensions;
     const next = this.suspensionsFor(r, st);
     const changed = !sameSet(next, prevSet);
@@ -749,6 +761,7 @@ export class Engine {
     this.trace.record(this.svc.now(), "visibility");
     this.syncActivities();
     this.markVisibleDirty(true);
+    this.recheckHiddenOpens();
     this.ensureFlush();
   }
 
@@ -761,6 +774,7 @@ export class Engine {
     this.syncActivities();
     this.retryOverflow("*"); // work areas may have grown
     for (const c of this.contexts.values()) { c.settings = null; this.markDirty(c.key); }
+    this.recheckHiddenOpens();
     this.ensureFlush();
   }
 
@@ -992,6 +1006,7 @@ export class Engine {
       r.restoreChecked = true;
       this.restoreChecks.add(r.id);
     }
+    if (r.open === "hidden") this.openShownLater(r, "wait"); // another context: decided again
     if (r.open === "wait" && r.mode !== "pending") this.openChecks.add(r.id); // ready: decided in the next flush
     if (!this.suspended) this.applyBorderPolicy(r); // suspended: no owned property writes
   }
@@ -1242,6 +1257,7 @@ export class Engine {
         if (!this.isVisible(c.key)) { if (c.members.length) c.revision++; continue; }
         this.solveContained(c);
       }
+      if (this.openJoining.size) this.deferUnsolvedJoins();
       if (this.liveResize.size) {
         // After the full solves: a context solved above from the committed state gets the
         // live boundary back in the same flush.
@@ -1420,7 +1436,14 @@ export class Engine {
       state = this.revealState(c, state, input.focused, input);
     } else if (kind === "zones") state = this.zonePrune(c, state as ZoneState, input);
     if (kind !== "zones" && c.states.zones !== undefined) this.releaseZones(c); // another layout owns the context now
-    const res = lay.solve(state, input);
+    let res = lay.solve(state, input);
+    if (this.openJoining.size) {
+      // ADR-021: a window that arrived maximized is un-maximized only now that the solve gives it a
+      // slot, before any write; KWin refused: solved again without it, still before any write.
+      const j = this.joinFromMaximize(res);
+      if (j.again) { this.solveAndApply(c); return; }
+      if (j.kept) { const kept = j.kept; res = { ...res, overflow: res.overflow.filter((id) => !kept.has(id)) }; }
+    }
     const t1 = clock ? clock() : 0;
     const writes0 = this.counters.writes;
     this.counters.solves++;
@@ -1661,15 +1684,19 @@ export class Engine {
   /**
    * Decide, once, whether a window opened while Plastile runs arrived maximized (the application
    * or KWin chose it, not the user). With maximizedOnOpen "tile", one that would otherwise tile
-   * has its maximize cleared before it joins the layout, in this flush: KWin coalesces the
-   * un-maximize and the tile write into one configure, so it is placed once. Full screen on open,
-   * floating windows (rules, dialogs, the user's floats), a context that places nothing and
-   * "keep" leave the maximize to KWin, as T17 does for any later maximize.
+   * joins this flush's solve, which clears its maximize only if it gets a slot, before any write
+   * (joinFromMaximize): KWin coalesces the un-maximize and the tile write into one configure, so
+   * it is placed once. In a context not shown it is decided when shown. Full screen or minimized
+   * on open, floating windows (rules, dialogs, the user's floats), a context that places nothing,
+   * no room (overflow) and "keep" leave the maximize to KWin, as T17 does for any later maximize.
    */
   private openCheck(r: Rec): void {
     r.open = null;
     const c = r.mode === "tiled" && r.ctx ? this.contexts.get(contextId(r.ctx)) : undefined;
-    const tiles = !!c && !this.placesNothing(c, r.id) && !r.states.fullscreen && r.states.interactive === "none";
+    // Full screen or minimized on open (the application's choice too): left as it is, decided now,
+    // never later (a deferred decision could un-maximize it after the user restored it).
+    const tiles = !!c && !this.placesNothing(c, r.id) && !r.states.fullscreen && !r.states.minimized &&
+      r.states.interactive === "none";
     if (!r.states.maximized) {
       if (tiles) { r.open = "watch"; r.openUntil = this.svc.now() + this.opts.deadlineMs; }
       return;
@@ -1681,9 +1708,63 @@ export class Engine {
       this.trace.record(now, "open-maximized", r.id, { action: "kept", why: "keep" });
       return;
     }
+    if (!this.shown(r)) {
+      // Never written while its context is hidden: un-maximizing it now would leave it at KWin's
+      // restore geometry (or the client's own size) until shown, a second placement. Decided when shown.
+      r.open = "hidden";
+      this.openHidden.add(r.id);
+      r.openNote = "it opened maximized on a desktop or activity not shown; Plastile un-maximizes and tiles it when that is " +
+        "shown (maximizedOnOpen: tile)";
+      this.trace.record(now, "open-maximized", r.id, { action: "deferred", why: "hidden" });
+      return;
+    }
+    // It takes part in this flush's solve; the solve un-maximizes it if it gets a slot (joinFromMaximize).
+    r.open = "joining";
+    r.suspensions.delete("maximized");
+    this.openJoining.add(r.id);
+    this.markDirty(c.key);
+  }
+
+  /**
+   * A solve's result for the windows joining it from a maximize: those given a slot are
+   * un-maximized now, before the solve's writes (one configure: the un-maximize and the tile);
+   * one that overflows stays maximized as it arrived (floating it would leave it at KWin's restore
+   * geometry, not tiled). `again`: KWin refused one, which then stays maximized; the context is
+   * solved again without it before anything is written.
+   */
+  private joinFromMaximize(res: SolveResult): { again: boolean; kept: Set<WindowId> | null } {
+    let again = false;
+    let kept: Set<WindowId> | null = null;
+    for (const id of res.overflow) {
+      const r = this.recs.get(id);
+      if (!r || r.open !== "joining") continue;
+      this.keepOnOpen(r, "it opened maximized and stays maximized: the layout has no room for it (it would overflow)",
+        "no room");
+      (kept ??= new Set()).add(id);
+    }
+    for (const id of res.slots.keys()) {
+      const r = this.recs.get(id);
+      if (r && r.open === "joining" && !this.unmaximizeOnOpen(r)) again = true;
+    }
+    return { again, kept };
+  }
+
+  /** The window stays maximized as it arrived: suspended as for any maximize (T17), and said why. */
+  private keepOnOpen(r: Rec, note: string, why: string): void {
+    this.openJoining.delete(r.id);
+    r.open = null;
+    if (r.states.maximized) r.suspensions.add("maximized");
+    r.openNote = note;
+    this.trace.record(this.svc.now(), "open-maximized", r.id, { action: "kept", why });
+  }
+
+  /** Clear the maximize of a joining window given a slot; false when KWin refused (it stays maximized). */
+  private unmaximizeOnOpen(r: Rec): boolean {
+    this.openJoining.delete(r.id);
+    const now = this.svc.now();
+    if (!r.states.maximized) { r.open = null; return true; } // already un-maximized meanwhile: tiled as it is
     r.open = "requested";
     r.openUntil = now + this.opts.deadlineMs;
-    r.suspensions.delete("maximized");
     let ok = false;
     try {
       ok = this.host.unmaximize(r.id, r.gen);
@@ -1692,12 +1773,9 @@ export class Engine {
       this.svc.log("warn", "unmaximize failed", { id: r.id, error: String(e) });
     }
     if (!ok) {
-      if (r.open === "requested") r.open = null;
-      if (r.states.maximized) r.suspensions.add("maximized");
-      r.openNote = "it opened maximized and stays maximized: KWin does not allow un-maximizing it (fixed size, or a KWin " +
-        "window rule forces it maximized)";
-      this.trace.record(now, "open-maximized", r.id, { action: "kept", why: "not maximizable" });
-      return;
+      this.keepOnOpen(r, "it opened maximized and stays maximized: KWin does not allow un-maximizing it (fixed size, or a " +
+        "KWin window rule forces it maximized)", "not maximizable");
+      return false;
     }
     // X11 cleared it inside the call (maximizedChanged arrived already, ending the wait).
     if (r.open === "requested" && !r.states.maximized) r.open = null;
@@ -1710,8 +1788,43 @@ export class Engine {
     r.ledger = L.newEntry(r.frame, r.ledger.tol);
     r.placeOnce = true;
     this.corrections.delete(r.id);
-    this.markDirty(c.key);
     if (r.open === "requested") this.armDeadline(r.openUntil);
+    return true;
+  }
+
+  /**
+   * Joining windows whose context was not solved in this flush (an invalid work area, a failed
+   * solve): left maximized, and decided again when visibility or outputs change.
+   */
+  private deferUnsolvedJoins(): void {
+    for (const id of [...this.openJoining]) {
+      const r = this.recs.get(id);
+      this.openJoining.delete(id);
+      if (!r || r.open !== "joining") continue;
+      r.open = "hidden";
+      this.openHidden.add(r.id);
+      if (r.states.maximized) r.suspensions.add("maximized");
+      this.trace.record(this.svc.now(), "open-maximized", r.id, { action: "deferred", why: "not solved" });
+    }
+  }
+
+  /** Leave the "hidden" state: to be decided again ("wait"), or decided (null: left as it is). */
+  private openShownLater(r: Rec, next: "wait" | null): void {
+    this.openHidden.delete(r.id);
+    r.open = next;
+    r.openNote = null;
+  }
+
+  /** Visibility or outputs changed: a window that arrived maximized in a context now shown is decided. */
+  private recheckHiddenOpens(): void {
+    if (this.openHidden.size === 0) return;
+    for (const id of [...this.openHidden]) {
+      const r = this.recs.get(id);
+      if (!r) { this.openHidden.delete(id); continue; }
+      if (!this.shown(r)) continue;
+      this.openShownLater(r, "wait");
+      this.openChecks.add(r.id);
+    }
   }
 
   /**
@@ -1936,8 +2049,9 @@ export class Engine {
         if (!this.suspended) {
           this.suspended = true;
           // A window still waiting for its open decision is adopted at resume, left as it is (ADR-021).
-          for (const w of this.recs.values()) if (w.open === "wait" || w.open === "watch") w.open = null;
+          for (const w of this.recs.values()) if (w.open === "wait" || w.open === "watch" || w.open === "hidden") w.open = null;
           this.openChecks.clear();
+          this.openHidden.clear();
           this.releaseOwnership();
           this.notify(() => this.onSuspendChange && this.onSuspendChange(true));
           return ok();
