@@ -282,6 +282,7 @@ export class ReplayRecorder {
       frame: (id, gen) => this.query(() => `frame|${this.w(id)}|${gen}`, () => h.frame(id, gen), (r) => (r ? rect(r) : null)),
       activate: (id, gen) => this.call("activate", [this.w(id), gen], () => h.activate(id, gen), same),
       raise: (id, gen) => this.call("raise", [this.w(id), gen], () => h.raise(id, gen), same),
+      unmaximize: (id, gen) => this.call("unmaximize", [this.w(id), gen], () => h.unmaximize(id, gen), same),
       releaseNativeTile: (id, gen) => this.call("releaseNativeTile", [this.w(id), gen], () => h.releaseNativeTile(id, gen), same),
       setNoBorder: (id, gen, v) => this.call("setNoBorder", [this.w(id), gen, v], () => h.setNoBorder(id, gen, v), same),
       noBorder: (id, gen) => this.query(() => `noBorder|${this.w(id)}|${gen}`, () => h.noBorder(id, gen), same),

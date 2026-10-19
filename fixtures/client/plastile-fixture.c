@@ -207,6 +207,7 @@ struct window {
 	int cfg_tfd;
 	bool cfg_armed;
 	uint64_t cfg_count;
+	bool seen_maximized; /* some configure carried the maximized state */
 
 	struct tracked *tracked;
 };
@@ -232,6 +233,10 @@ static struct {
 	int32_t late_min_w, late_min_h;
 	int64_t late_min_delay_ms;
 	enum deco_req deco_req;
+	bool start_maximized; /* xdg_toplevel.set_maximized before the initial commit */
+	bool remaximize_once; /* set_maximized again on the first un-maximized configure after a maximized one */
+	bool maximize_after_map; /* set_maximized right after the mapping commit (a client that does it late) */
+	bool remaximized;
 	enum panel_edge panel_edge; /* PANEL_NONE: ordinary xdg_toplevel client */
 	int32_t panel_size;
 	const char *panel_output; /* wl_output name to anchor the panel to, or NULL */
@@ -798,6 +803,22 @@ static void xdg_surface_configure(void *data, struct xdg_surface *xs, uint32_t s
 	}
 	luint("n", w->cfg_count);
 	lend();
+	bool maximized = false;
+	for (size_t i = 0; i < w->tl_nstates; i++)
+		if (w->tl_states[i] == XDG_TOPLEVEL_STATE_MAXIMIZED)
+			maximized = true;
+	if (!w->is_child && g.remaximize_once && !g.remaximized && w->seen_maximized && !maximized) {
+		/* An application that insists on being maximized: it asks again before it acknowledges
+		 * the configure that un-maximized it (the request reaches the compositor first). */
+		g.remaximized = true;
+		xdg_toplevel_set_maximized(w->toplevel);
+		wl_display_flush(g.display);
+		lstart("remaximize");
+		lstr("win", w->name);
+		luint("serial", serial);
+		lend();
+	}
+	w->seen_maximized = w->seen_maximized || maximized;
 	enqueue_cfg(w, serial, w->tl_w, w->tl_h, t);
 }
 
@@ -1022,6 +1043,8 @@ static bool window_create(struct window *w, const char *name, bool is_child, con
 			xdg_toplevel_set_min_size(w->toplevel, g.min_w, g.min_h);
 		if (g.have_max)
 			xdg_toplevel_set_max_size(w->toplevel, g.max_w, g.max_h);
+		if (g.start_maximized)
+			xdg_toplevel_set_maximized(w->toplevel); /* before the initial commit: mapped maximized */
 	}
 	if (g.deco_req != DECO_NONE) {
 		if (g.deco_mgr) {
@@ -1235,6 +1258,15 @@ static void on_mapped(struct window *w)
 	}
 	if (g.exit_after_map_ms >= 0)
 		arm_timer_abs(g.exit_tfd, now_ns() + (uint64_t)g.exit_after_map_ms * 1000000ull);
+	if (g.maximize_after_map) {
+		/* Some clients ask to be maximized only after their first commit. */
+		xdg_toplevel_set_maximized(w->toplevel);
+		wl_display_flush(g.display);
+		lstart("maximize_requested");
+		lstr("win", w->name);
+		lstr("reason", "after-map");
+		lend();
+	}
 	if (g.parent_after_ms >= 0)
 		arm_timer_abs(g.parent_tfd, now_ns() + (uint64_t)g.parent_after_ms * 1000000ull);
 	if (g.have_late_min)
@@ -1454,6 +1486,13 @@ static void handle_command(char *line)
 		lprintf(",\"min\":[%d,%d],\"max\":[%d,%d]", g.have_min ? g.min_w : 0,
 			g.have_min ? g.min_h : 0, g.have_max ? g.max_w : 0, g.have_max ? g.max_h : 0);
 		lend();
+	} else if (!strcmp(cmd, "maximize") || !strcmp(cmd, "unmaximize")) {
+		/* The application's own request (xdg_toplevel.set_maximized / unset_maximized). */
+		if (cmd[0] == 'm')
+			xdg_toplevel_set_maximized(g.main_win.toplevel);
+		else
+			xdg_toplevel_unset_maximized(g.main_win.toplevel);
+		wl_display_flush(g.display);
 	} else if (!strcmp(cmd, "child")) {
 		spawn_child();
 	} else if (!strcmp(cmd, "close-child")) {
@@ -1549,12 +1588,16 @@ static void usage(FILE *f)
 		"                           flushed first; 0 = destroy right after it)\n"
 		"  --late-min-size W,H,MS   MS ms after mapping, set xdg min size WxH (bufferless commit)\n"
 		"  --ssd | --csd            negotiate xdg-decoration mode\n"
+		"  --start-maximized        xdg_toplevel.set_maximized before the initial commit (maps maximized)\n"
+		"  --remaximize-once        set_maximized again, before acking, on the first configure that\n"
+		"                           un-maximizes the window after a maximized one\n"
+		"  --maximize-after-map     set_maximized right after the mapping commit\n"
 		"  --panel EDGE:SIZE        be a wlr-layer-shell panel instead of an xdg_toplevel:\n"
 		"                           layer top, scope dock, anchored to EDGE (top|bottom|left|right)\n"
 		"                           plus both perpendicular edges, exclusive_zone SIZE\n"
 		"  --output NAME            panel mode: wl_output name to anchor to (default: compositor's choice)\n"
-		"stdin commands: resize W H | min W H | max W H | child | close-child | close-main |\n"
-		"                title STR | quit\n"
+		"stdin commands: resize W H | min W H | max W H | maximize | unmaximize | child |\n"
+		"                close-child | close-main | title STR | quit\n"
 		"                (panel mode accepts only quit)\n");
 }
 
@@ -1621,7 +1664,7 @@ static int parse_args(int argc, char **argv)
 	enum {
 		O_APPID = 256, O_TITLE, O_ID, O_SIZE, O_MIN, O_MAX, O_DELAY, O_DMODE, O_IGNORE,
 		O_FIXED, O_PARENT, O_EXIT, O_SSD, O_CSD, O_CLAMP, O_PANEL, O_OUTPUT, O_HELP, O_EXITMAP,
-		O_LATEMIN, O_EXITAFTERMAP
+		O_LATEMIN, O_EXITAFTERMAP, O_STARTMAX, O_REMAX, O_MAXAFTERMAP
 	};
 	static const struct option opts[] = {
 		{"app-id", required_argument, NULL, O_APPID},
@@ -1640,6 +1683,9 @@ static int parse_args(int argc, char **argv)
 		{"exit-on-map", no_argument, NULL, O_EXITMAP},
 		{"exit-after-map-ms", required_argument, NULL, O_EXITAFTERMAP},
 		{"late-min-size", required_argument, NULL, O_LATEMIN},
+		{"start-maximized", no_argument, NULL, O_STARTMAX},
+		{"remaximize-once", no_argument, NULL, O_REMAX},
+		{"maximize-after-map", no_argument, NULL, O_MAXAFTERMAP},
 		{"ssd", no_argument, NULL, O_SSD},
 		{"csd", no_argument, NULL, O_CSD},
 		{"panel", required_argument, NULL, O_PANEL},
@@ -1698,6 +1744,9 @@ static int parse_args(int argc, char **argv)
 		case O_LATEMIN:
 			if (!parse_late_min(optarg)) goto bad;
 			break;
+		case O_STARTMAX: g.start_maximized = true; break;
+		case O_REMAX: g.remaximize_once = true; break;
+		case O_MAXAFTERMAP: g.maximize_after_map = true; break;
 		case O_SSD: g.deco_req = DECO_SSD; break;
 		case O_CSD: g.deco_req = DECO_CSD; break;
 		case O_PANEL:
@@ -1713,7 +1762,8 @@ static int parse_args(int argc, char **argv)
 		goto bad;
 	if (g.panel_output && g.panel_edge == PANEL_NONE)
 		goto bad; /* --output only means something for a panel */
-	if (g.panel_edge != PANEL_NONE && (g.exit_on_map || g.have_late_min || g.exit_after_map_ms >= 0))
+	if (g.panel_edge != PANEL_NONE && (g.exit_on_map || g.have_late_min || g.exit_after_map_ms >= 0 ||
+					   g.start_maximized || g.remaximize_once || g.maximize_after_map))
 		goto bad; /* toplevel-only options */
 	if ((g.exit_on_map ? 1 : 0) + (g.exit_after_map_ms >= 0 ? 1 : 0) + (g.exit_after_ms >= 0 ? 1 : 0) > 1)
 		goto bad; /* one exit point at a time (the timed ones share a timer) */
@@ -1761,6 +1811,12 @@ static void log_start(int argc, char **argv)
 		lint("exit_after_map_ms", g.exit_after_map_ms);
 	if (g.have_late_min)
 		lprintf(",\"late_min_size\":[%d,%d,%lld]", g.late_min_w, g.late_min_h, (long long)g.late_min_delay_ms);
+	if (g.start_maximized)
+		lbool("start_maximized", true);
+	if (g.remaximize_once)
+		lbool("remaximize_once", true);
+	if (g.maximize_after_map)
+		lbool("maximize_after_map", true);
 	lstr("decoration_request", g.deco_req == DECO_SSD ? "server_side"
 				   : g.deco_req == DECO_CSD ? "client_side"
 							    : NULL);

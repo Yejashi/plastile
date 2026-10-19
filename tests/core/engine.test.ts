@@ -15,6 +15,9 @@ function setup(ids: string[] = ["a", "b", "c"], patch: Record<string, object> = 
   const e = h.start();
   for (const id of ids) h.open(id, patch[id] ?? {});
   h.drain();
+  // Past the windows' open phase (ADR-021: a maximize within 1 ms of the first tile counts as
+  // arriving maximized); the mock clock does not move on its own.
+  h.advance(5);
   return { h, e };
 }
 

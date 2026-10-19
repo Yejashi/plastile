@@ -30,4 +30,5 @@ export const DEFAULT_SETTINGS: ContextSettings = {
   followOnSend: false,
   focusWrap: false,
   liveResize: false,
+  maximizedOnOpen: "tile",
 };

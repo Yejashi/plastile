@@ -103,7 +103,26 @@
         </property>
        </widget>
       </item>
+      <item row="5" column="0">
+       <widget class="QLabel" name="maximizedOnOpenLabel">
+        <property name="text">
+         <string>Windows that open maximized:</string>
+        </property>
+        <property name="buddy">
+         <cstring>kcfg_maximizedOnOpen</cstring>
+        </property>
+       </widget>
+      </item>
       <item row="5" column="1">
+       <widget class="QComboBox" name="kcfg_maximizedOnOpen">
+        <property name="toolTip">
+         <string>For a window the application or KWin opens maximized. A window you maximize yourself always stays maximized.</string>
+        </property>
+        <item><property name="text"><string>Un-maximize and tile them</string></property></item>
+        <item><property name="text"><string>Leave them maximized</string></property></item>
+       </widget>
+      </item>
+      <item row="6" column="1">
        <widget class="QCheckBox" name="kcfg_osd">
         <property name="toolTip">
          <string>Plasma's on-screen display, as for volume or brightness. The log has the same news either way.</string>

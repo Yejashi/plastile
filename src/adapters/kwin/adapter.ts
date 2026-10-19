@@ -653,6 +653,13 @@ export class KwinAdapter implements HostPort {
     return true;
   }
 
+  unmaximize(id: string, gen: number): boolean {
+    const w = this.get(id, gen);
+    if (!w || w.maximizeMode === 0 || !w.maximizable) return false;
+    w.setMaximize(false, false);
+    return true;
+  }
+
   releaseNativeTile(id: string, gen: number): boolean {
     const w = this.get(id, gen);
     if (!w || w.tile === null) return false;

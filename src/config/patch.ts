@@ -28,6 +28,7 @@ export function applyPatch(base: ContextSettings, p: SettingsPatch): ContextSett
     followOnSend: p.followOnSend !== undefined ? p.followOnSend : base.followOnSend,
     focusWrap: p.focusWrap !== undefined ? p.focusWrap : base.focusWrap,
     liveResize: p.liveResize !== undefined ? p.liveResize : base.liveResize,
+    maximizedOnOpen: p.maximizedOnOpen !== undefined ? p.maximizedOnOpen : base.maximizedOnOpen,
   };
 }
 

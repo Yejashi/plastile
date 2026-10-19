@@ -55,6 +55,9 @@ sessions that are running the old binary keep working during a rebuild.
 | `--exit-after-map-ms N` | Exit cleanly N ms after the main window mapped (its first buffer commit, which is flushed first). `0` destroys the window right after that flush; the compositor may handle the two in separate dispatches. |
 | `--exit-on-map` | Commit the first buffer without flushing it, then destroy the window and exit, so the mapping commit and the destruction reach the compositor in one flush. The `commit` record carries `"flush_deferred": true`. Measured in nested KWin 6.7.5: KWin never reports such a window (no `windowAdded`/`windowRemoved`). |
 | `--late-min-size W,H,MS` | MS ms after the main window mapped, set `xdg_toplevel.set_min_size(W, H)` with a bufferless commit (a client that knows its real minimum only once its content exists). Logged as `size_hints` with `reason:"late-min-size"`. Combine with `--clamp` to make the client refuse configures below the new minimum, as toolkits do. |
+| `--start-maximized` | Call `xdg_toplevel.set_maximized` before the initial bufferless commit (main window only), so the compositor's first configure carries the `maximized` state and the window maps maximized. Logged as `start_maximized` in the `start` record. |
+| `--remaximize-once` | An application that insists on being maximized: on the first configure without the `maximized` state that follows one with it, call `set_maximized` again before that configure is acknowledged (the request reaches the compositor before the ack). Once per run; logged as a `remaximize` record. |
+| `--maximize-after-map` | Call `xdg_toplevel.set_maximized` right after the main window's mapping commit is flushed (a client that asks to be maximized only after its first commit). Logged as `maximize_requested` with `reason:"after-map"`. |
 | `--ssd` / `--csd` | Request server-/client-side decoration through xdg-decoration. By default, no decoration mode is negotiated and the manager is not bound. |
 | `--panel EDGE:SIZE` | Instead of an xdg_toplevel, create a `zwlr_layer_surface_v1` (layer `top`, namespace `dock`) anchored to EDGE (`top`, `bottom`, `left`, `right`) plus both perpendicular edges, `exclusive_zone` SIZE, keyboard interactivity none, requested size SIZE on the anchored axis and 0 (compositor fills) on the other. The window is logged as `win:"panel"`. Every configure is acked and answered with a buffer of exactly the configured size. `zwlr_layer_shell_v1` and `wl_output` (v4, for names) are bound only in this mode. Size flags, decoration, delay and child options do not apply. |
 | `--output NAME` | Panel mode only: anchor the panel to the `wl_output` whose `name` event is NAME (for example `Virtual-1`). Without it the compositor chooses the output. An unknown name logs an `error` and exits with code 1. |
@@ -62,11 +65,12 @@ sessions that are running the old binary keep working during a rebuild.
 The delay, ignore-size, and decoration settings also apply to the child. A
 configure size of 0 on an axis uses the current size on that axis. At most one of
 `--exit-after-ms`, `--exit-after-map-ms` and `--exit-on-map` may be given, and the
-exit and late-minimum options are refused in panel mode.
+exit, late-minimum and maximize options are refused in panel mode.
 
 ## Control commands (stdin, one per line)
 
 `resize W H` (an app-initiated resize: commit a W×H buffer with no configure) ·
+`maximize` / `unmaximize` (`xdg_toplevel.set_maximized` / `unset_maximized`, the application's own request) ·
 `min W H` / `max W H` (set the hint and make a bufferless commit; 0 = unset) ·
 `child` · `close-child` · `close-main` (destroy the main toplevel and keep the child
 open, an orphaned dialog; logs `main_destroyed`, and later commands other than
@@ -119,6 +123,8 @@ the record is written, and `ev`. Window-scoped records carry `win`
 | `presented` | `seq`, `present_ns` (= `tv_sec`·1e9 + `tv_nsec`, presentation clock), `tv_sec`, `tv_nsec`, `refresh_ns`, `seq_hi`, `seq_lo`, `flags_raw`, `flags` |
 | `discarded` | `seq` |
 | `size_hints` | `min`, `max` (0 = unset); with `--late-min-size` also `reason:"late-min-size"`, `current_width`, `current_height` |
+| `maximize_requested` | `reason:"after-map"` (`--maximize-after-map`) |
+| `remaximize` | `serial` of the configure that un-maximized the window (`--remaximize-once`) |
 | `title_set`, `command`, `stdin_eof`, `signal`, `global_removed` | as named |
 | `main_destroyed` | `close-main` destroyed the main toplevel; `child_exists` |
 | `close_requested` | `xdg_toplevel.close` (or, in panel mode, `zwlr_layer_surface_v1.closed`, with `shell:"layer"`) received. The main window exits cleanly. The child is destroyed (`child_destroyed`). |

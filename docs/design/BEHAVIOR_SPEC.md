@@ -32,6 +32,7 @@ Initial policy for windows on all desktops or multiple desktops/activities is fl
 | Trigger | Model action | Geometry/focus result |
 |---|---|---|
 | Eligible window opens | Insert once in its context | One context solve; preserve intended activation policy |
+| Eligible window opens maximized (the application or KWin chose it) | With `maximizedOnOpen: tile` (default), clear the maximize once, before it joins; with `keep`, suspend as for Maximize | One placement: the un-maximize and its tile reach the client as one configure; never a second un-maximize (ADR-021) |
 | Window closes | Tombstone and remove leaf/order entry | One affected-context solve; focus nearest valid successor only when KWin focus policy requires help |
 | Toggle float from tiled | Remove/suspend its tile according to layout policy; retain insertion hint | Restore last user floating rectangle or a bounded centered default; do not jump outputs |
 | Toggle tile from floating | Save current float rectangle; insert at remembered valid hint or current insertion rule | One solve; preserve application focus unless command implies activation |
@@ -39,7 +40,7 @@ Initial policy for windows on all desktops or multiple desktops/activities is fl
 | Unminimize | Reinsert using restore hint | One solve; respect requested activation |
 | Enter fullscreen | Suspend ordinary placement; retain layout slot policy | KWin owns fullscreen geometry; no ordinary tile request |
 | Leave fullscreen | Clear suspension; restore tiled/float intent | One solve if tiled; no stale pre-fullscreen callback |
-| Maximize | Suspend according to configured native maximize policy | Native maximize is respected; no force-back loop |
+| Maximize (after the window opened) | Suspend according to configured native maximize policy | Native maximize is respected; no force-back loop |
 | Restore maximize | Resume prior tiled/float intent | One solve/restore; preserve border ownership |
 | User begins move | Give interaction temporary geometry authority | Do not snap back during drag |
 | User ends move | Commit swap/reinsert/float policy based on explicit drop intent | One final solve; no repeating hover-induced reflow by default |
@@ -50,6 +51,10 @@ Initial policy for windows on all desktops or multiple desktops/activities is fl
 | Script unloads | Invalidate callbacks, disconnect, release owned state | Restore owned properties without overwriting subsequent user changes |
 
 Suspensions can overlap. For example, a minimized fullscreen window must not receive a tile request just because one of the two suspensions cleared. Tests must exercise combinations, not just each row independently.
+
+**A window that arrives maximized** ([ADR-021](DECISIONS.md#adr-021-a-window-that-arrives-maximized-is-un-maximized-and-tiled)). The decision is made once per window, at its first readiness: in the first flush after it is classified, so after the bounded late-metadata wait of §1, and only for a window opened while Plastile runs (not one adopted at start, at a re-enable or reload, at a resume, or by `reconcile`). It applies when the window would otherwise tile in a context that places it: not a rule float or exclusion, a dialog or transient, a user float, a native-tile yield, a multi-context window, the floating layout or an unassigned zones member. A window that opens full screen or minimized keeps its maximize (decided then, not when the user later restores it). With `maximizedOnOpen: tile` the window takes part in the flush's solve; only when that solve gives it a slot does Plastile clear both maximize directions through the script API, before the solve's writes, and the solve then writes its tile. One the layout has no room for (it would overflow) stays maximized: un-maximized, it would float at KWin's restore geometry. A window whose context is not shown (another desktop or activity) is decided when that context is shown, since nothing is written to a window whose context is hidden; with `keep`, or when KWin does not allow it (not `maximizable`: fixed size, or a KWin rule forcing maximize), it stays maximized and suspended as in the Maximize row (a refusal is known before the solve writes anything: the context is solved again without the window). A maximize that KWin reports before the window's first tile settled (a client that asks for it after its first commit, also in the same commit as that tile) still counts as arriving maximized; the open phase ends 1 ms after the first tile settles and at most `deadlineMs` after the decision. After the one un-maximize, any maximize, the user's or the application's, is honoured as in the Maximize row; if KWin still reports the window maximized when the convergence deadline expires (the client maximized itself again before acknowledging), that is honoured too and nothing is corrected. Explain's `onOpen` and the trace (`open-maximized`, `unmaximized`, `remaximized`) say what happened.
+
+*Observed behavior (nested KWin 6.7.5, `maximized-open-*-T17`):* a Wayland client that maps maximized receives one configure without the maximized state, at its tile size, and KWin's frame goes from the maximize area to the tile with no size in between. KWin reports the un-maximize only when the client acknowledges, and a commit's geometry before its states. An X11 window mapped with `_NET_WM_STATE` maximized is un-maximized synchronously: KWin configures its restore geometry inside the call, then Plastile's one write configures the tile, in the same turn (the client sees both `ConfigureNotify` events).
 
 ## 4. Master/stack behavior
 

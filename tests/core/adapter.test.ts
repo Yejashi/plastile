@@ -526,6 +526,7 @@ function assertRefused(a: KwinAdapter, id: string, gen: number, why: string): vo
   assert.equal(a.activate(id, gen), false, `activate ${why}`);
   assert.equal(a.raise(id, gen), false, `raise ${why}`);
   assert.equal(a.releaseNativeTile(id, gen), false, `releaseNativeTile ${why}`);
+  assert.equal(a.unmaximize(id, gen), false, `unmaximize ${why}`);
   assert.equal(a.setNoBorder(id, gen, true), false, `setNoBorder ${why}`);
   assert.equal(a.noBorder(id, gen), null, `noBorder ${why}`);
   assert.equal(a.sendToOutput(id, gen, "O1"), false, `sendToOutput ${why}`);
@@ -683,5 +684,45 @@ test("T16: excluded surfaces (shell app id, passive kinds) incur no solve or wri
   // window; while excluded it owns no geometry, so its events queue no solve or write.
   assert.deepEqual(conns, { krunner: 17, tooltip: 0, osd: 0 });
   assert.deepEqual(wins.map((w) => w.frameGeometry), tiles, "the tiles were not touched");
+  rt.shutdown();
+});
+
+// ------------------------------------------------------------------ ADR-021 arriving maximized
+
+test("ADR-021: a window added maximized is un-maximized through setMaximize(false, false) once and tiled; keep leaves it", () => {
+  for (const policy of ["tile", "keep"] as const) {
+    const { ws, qt, wins, rt } = setup(1, 1, { maximizedOnOpen: policy });
+    const w = ws.window({ caption: "maxed", resourceClass: "maxed", maximizeMode: 3, frameGeometry: { x: 0, y: 0, width: 1280, height: 800 } });
+    ws.add(w);
+    qt.drain();
+    if (policy === "tile") {
+      assert.deepEqual(ws.maximizeCalls, [{ caption: "maxed", v: false, h: false }], "the script API, both directions, once");
+      assert.equal(w.maximizeMode, 0);
+      assert.equal(ws.writes.filter((x) => x.caption === "maxed").length, 1, "one tile write");
+      assertTiles([wins[0], w], { x: 0, y: 0, width: 1280, height: 800 });
+    } else {
+      assert.deepEqual(ws.maximizeCalls, [], "keep: no call");
+      assert.equal(w.maximizeMode, 3);
+      assert.equal(ws.writes.filter((x) => x.caption === "maxed").length, 0);
+    }
+    rt.shutdown();
+  }
+});
+
+test("ADR-021: windows maximized when the script starts are left maximized; a not-maximizable window is never asked", () => {
+  const ws = new FakeWorkspace([output("O1", { x: 0, y: 0, width: 1280, height: 800 })], [desktop("D1")]);
+  const qt = new FakeQt();
+  const old = ws.window({ caption: "old", resourceClass: "old", maximizeMode: 3, frameGeometry: { x: 0, y: 0, width: 1280, height: 800 } });
+  ws.windows.push(old);
+  const rt = createRuntime(fakeEnv(ws, qt).env);
+  qt.drain();
+  const forced = ws.window({ caption: "forced", resourceClass: "forced", maximizeMode: 3, maximizable: false,
+                             frameGeometry: { x: 0, y: 0, width: 1280, height: 800 } });
+  ws.add(forced);
+  qt.drain();
+  assert.deepEqual(ws.maximizeCalls, []);
+  assert.equal(old.maximizeMode, 3);
+  assert.equal(forced.maximizeMode, 3);
+  assert.equal(ws.writes.filter((x) => x.caption === "old" || x.caption === "forced").length, 0);
   rt.shutdown();
 });

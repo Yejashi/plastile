@@ -4,7 +4,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { compileConfig, DEFAULT_DIAGNOSTICS, DEFAULT_OSD, FLAT_KEYS } from "../../src/config/index.ts";
-import { DIAGNOSTICS } from "../../src/config/schema.ts";
+import { DIAGNOSTICS, MAXIMIZED_ON_OPEN } from "../../src/config/schema.ts";
 import { DEFAULT_SETTINGS } from "../../src/core/defaults.ts";
 import { COMMANDS } from "../../src/core/commands.ts";
 
@@ -32,6 +32,7 @@ test("schema defaults equal the runtime defaults", () => {
   assert.equal(Number(d.ratioStep), DEFAULT_SETTINGS.masterStack.ratioStep);
   assert.equal(d.diagnostics, DEFAULT_DIAGNOSTICS);
   assert.equal(d.osd === "true", DEFAULT_OSD);
+  assert.equal(d.maximizedOnOpen, DEFAULT_SETTINGS.maximizedOnOpen);
   const empty = compileConfig({}, 1);
   assert.ok(empty.ok && empty.snapshot.osd === DEFAULT_OSD && empty.snapshot.diagnostics === DEFAULT_DIAGNOSTICS);
 });
@@ -54,6 +55,17 @@ test("the settings dialog (config.ui) has one widget per schema entry, and every
     if (e.type === "Enum") assert.equal(w.items, e.choices.length, `${e.name}: one combo item per choice, in the same order`);
     if (e.type === "Bool") assert.equal(w.cls, "QCheckBox", `${e.name}: a check box`);
   }
+});
+
+test("ADR-021: the maximizedOnOpen choices are the runtime's, default first; the flat key and the JSON patch both set it", () => {
+  assert.deepEqual(entries.find((e) => e.name === "maximizedOnOpen")!.choices, [...MAXIMIZED_ON_OPEN]);
+  assert.equal(MAXIMIZED_ON_OPEN[0], DEFAULT_SETTINGS.maximizedOnOpen);
+  const keep = compileConfig({ maximizedOnOpen: "keep" }, 1);
+  assert.ok(keep.ok && keep.snapshot.defaults.maximizedOnOpen === "keep");
+  const json = compileConfig({ configJson: JSON.stringify({ schemaVersion: 1, defaults: { maximizedOnOpen: "keep" } }) }, 1);
+  assert.ok(json.ok && json.snapshot.defaults.maximizedOnOpen === "keep");
+  const bad = compileConfig({ maximizedOnOpen: "float" }, 1);
+  assert.ok(!bad.ok && bad.errors.some((e) => e.path === "maximizedOnOpen"), "validated before activation");
 });
 
 test("every schema value (defaults and enum choices) is accepted by the runtime", () => {
