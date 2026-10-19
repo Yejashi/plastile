@@ -607,3 +607,89 @@ millisecond resolution; from `plastile info start-up hold released` lines):
 
 **Revisit if** a physical session shows helper activation regularly above 250 ms, or the hold is visible as a
 start-up delay.
+
+## ADR-021: A window that arrives maximized is un-maximized and tiled
+
+**Status:** accepted (2026-10-19), the owner's decision; task T17. Changes T17's "honour native maximize" for
+the case of a window that opens maximized; every later maximize is honoured as before.
+
+**Context.** In the physical runbook (the owner's desktop, KWin 6.7.5) the owner's kitty opened every new window
+already maximized, with no KWin rule and no kitty option found. Plastile honoured the maximize (T17: suspension
+`maximized`), so new terminals were never tiled and Plastile looked dead; explain said "tiling of this window is
+suspended while it is maximized". The maximize was the application's choice, not the user's. KWin's script API can
+clear it: `Window.setMaximize(bool vertically, bool horizontally)` is `Q_INVOKABLE` in `window.h` (6.7.5 and 6.8.0;
+`maximizeMode` itself is read-only), and `maximizable` is false for a fixed-size window and for one a KWin rule
+forces maximized (`XdgToplevelWindow`/`X11Window::isMaximizable`, observed source). The only other approach,
+writing a frame to a window that stays maximized, would leave a maximized window at a tile size and fight the
+client.
+
+**Decision.**
+
+- A setting, `maximizedOnOpen` (`tile`, the default, or `keep`): a flat key with a choice in the settings dialog,
+  and a context setting in the JSON document (the context the window opens in decides). Validated before
+  activation like every key.
+- **Which windows.** Only windows opened while Plastile runs (`windowAdded`, not suspended). Windows adopted at
+  start, at a re-enable or reload, at a resume or by `reconcile` are left as they are. Only windows that would
+  otherwise tile, in a context that places them: rule floats and exclusions, dialogs and transients, user floats,
+  native-tile yields, multi-context windows, the floating layout and unassigned zones members keep their maximize.
+  A window that opens full screen keeps it (full screen on open stays honoured).
+- **When.** Once per window, at its first readiness: in the first flush after it is classified, which is after the
+  bounded late-metadata wait (BEHAVIOR §1). A maximize reported before its first tile settled still counts (a
+  client that sets it after its first commit; KWin reports a commit's geometry before its acknowledged states, so
+  that maximize can arrive just after the tile, in the same commit): the open phase ends 1 ms after the first tile
+  settles (`Date.now()` resolution; no timer) and at most `deadlineMs` (750 ms) after the decision.
+- **How.** The adapter calls `setMaximize(false, false)` when `maximizable` is true, and the solve of the same
+  flush writes the window's tile. The tile is a plan write on a fresh ledger entry, written even when the maximized
+  frame already equals it (no gaps, one window), because KWin's un-maximize moved its requested geometry to the
+  restore rectangle. On Wayland KWin's configure timer sends both as one configure; until the client acknowledges
+  it, KWin still reports `maximizeMode` 3, which is then not a suspension.
+- **Bounded.** At most one un-maximize per window. After it, any maximize is honoured as T17 specifies. If KWin
+  still reports the window maximized when the wait ends (`deadlineMs`; the client asked to be maximized again
+  before acknowledging), it is honoured: the tile request is cancelled and nothing is corrected. Not maximizable:
+  it stays maximized, explained.
+- **Said.** Explain's `onOpen` (the inspector's *On open* row) and the trace (`open-maximized` with
+  `action: unmaximized | kept`, `unmaximized` when KWin reports it, `remaximized`) record what happened. No new
+  counter: the committed replay fixtures pin the counter set.
+
+**Evidence.** Unit (mock compositor modelling KWin 6.7.5's `setMaximize`: X11 synchronous, xdg-toplevel reported on
+the client's commit, one configure per turn; `tests/core/maximizedOpen.test.ts`, 19 tests; adapter and runtime with
+the fake KWin, `tests/core/adapter.test.ts`); 13 mutations of the engine (no un-maximize, no ack mask, decided while
+suspended or at start, no deadline give-up, no late watch, unbounded re-un-maximize, no forced first write, `keep`
+ignored, full screen not honoured, floating layout un-maximized, no fresh ledger, watch ended at once) each fail a
+test. Nested KWin 6.7.5 (virtual backend, reference host), each scenario passed at least twice, six engine
+mutations each fail a scenario:
+
+- `maximized-open-tile-T17`: a fixture that maps maximized (`--start-maximized`) receives exactly one configure
+  without the maximized state, at its tile size, and none asking for its own size; KWin's frames for it (a passive
+  listener script) go from the maximize area to the tile; no correction. A later maximize through KWin's maximize
+  action and through a real double click on the title bar (libei input) stays maximized; restoring returns it to
+  its tile.
+- `maximized-open-keep-T17`: with `keep` it stays maximized, receives no un-maximized configure and no write.
+- `maximized-open-startup-T17`: windows maximized when Plastile starts, after a reload, and opened while tiling was
+  suspended stay maximized.
+- `maximized-open-remaximize-T17`: a client that asks to be maximized again before acknowledging the un-maximize
+  (`--remaximize-once`) ends maximized, with one un-maximized configure in its log and no write or correction for
+  2 s afterwards.
+- `maximized-open-xwayland-T17`: an X11 window mapped with `_NET_WM_STATE` maximized is un-maximized and tiled with
+  one write. KWin's `X11Window::maximize` configures the restore geometry synchronously inside `setMaximize`, so
+  the client sees two `ConfigureNotify` (restore size, then tile) in one turn.
+- `maximized-open-late-T17`: a client that calls `set_maximized` right after its mapping commit
+  (`--maximize-after-map`), also a 40 ms client whose maximize KWin reports in the same commit as the tile, ends
+  tiled and not maximized.
+
+**Consequences.**
+
+- Applications that open maximized are tiled. A user who wants them maximized sets `keep`, or maximizes them
+  (kept). An application that maximizes itself again after the un-maximize keeps its maximize; Plastile does not
+  insist.
+- Plastile now changes one window state besides geometry, activation and the border: it clears the maximize of a
+  window that opened maximized, once.
+- On X11 the client sees KWin's restore geometry for an instant before its tile (both in one KWin turn; one
+  Plastile write). Passing the tile as `setMaximize`'s restore rectangle would avoid it, but the third argument's
+  conversion from a script value is not verified, so it is not used.
+- Not verified: a KWin rule that forces maximize (unit and fake-KWin only: `maximizable` false); KWin 6.8.0 (same
+  source semantics, not run); the physical case that prompted it (the owner's kitty), which is the runbook's to
+  confirm.
+
+**Revisit if** a common application maximizes itself repeatedly after mapping, users report windows they wanted
+maximized being tiled, or KWin exposes whether a maximize came from the user.

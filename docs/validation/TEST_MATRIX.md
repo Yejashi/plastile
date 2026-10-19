@@ -67,6 +67,7 @@ Use independent oracles. For layout, verify coverage/minima/edge conservation ra
 | L09 | Minimize/unminimize under delayed commits | Suspended requests and correct reinsertion |
 | L10 | Fullscreen/restore | Native fullscreen respected; prior intent restored |
 | L11 | Maximize/restore, including rule-enforced maximize | No geometry fight; respect KWin rules |
+| L11a | Window that opens maximized (application or KWin chose it; Wayland and X11), `maximizedOnOpen` tile/keep, later user maximize, a client that re-maximizes, windows maximized at start/reload/resume (ADR-021) | Un-maximized once and tiled with one configure, or kept with `keep`; later maximizes honoured; no fight (`maximized-open-*-T17`) |
 | L12 | Overlapping minimize/fullscreen states | Clearing one suspension does not clear another |
 | L13 | Native quick-tile | Ownership yields or chosen native-mode semantics apply |
 | L14 | Native editor edit during automatic mode | Explicit adopt/manual/suspend policy; no competing writers |

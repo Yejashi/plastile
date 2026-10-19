@@ -80,7 +80,7 @@ A healthy idle session shows no change between two dumps taken a few seconds apa
 
 ### Explain active window
 
-**Explain active window** opens the inspector for the focused window: how Plastile treats it and why, in plain words, with internal values under *Show details*. Escape, a click elsewhere, activating another window, or the command again closes it. It also prints the classification and placement record to the log as a `notice` line, shown at the default level. For a maximized or full-screen tiled window, both say first that its tiling is suspended until it is restored. Both are described in [CONFIGURATION](CONFIGURATION.md#seeing-why-a-window-was-classified).
+**Explain active window** opens the inspector for the focused window: how Plastile treats it and why, in plain words, with internal values under *Show details*. Escape, a click elsewhere, activating another window, or the command again closes it. It also prints the classification and placement record to the log as a `notice` line, shown at the default level. For a maximized or full-screen tiled window, both say first that its tiling is suspended until it is restored. For a window that opened maximized, an *On open* line (`onOpen` in the log) says whether Plastile un-maximized it or why it stayed maximized. Both are described in [CONFIGURATION](CONFIGURATION.md#seeing-why-a-window-was-classified).
 
 ### Log trace
 
