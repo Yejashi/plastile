@@ -2,7 +2,9 @@
 // They normalize into patches and uncompiled-order lists; errors carry exact paths.
 
 import type { Edges } from "../core/geometry.ts";
-import type { BspSettings, LayoutKind, MasterStackSettings, ScrollingSettings, WindowKind, ZoneLayout, ZoneRect } from "../core/types.ts";
+import type {
+  BspSettings, LayoutKind, MasterStackSettings, MaximizedOnOpen, ScrollingSettings, WindowKind, ZoneLayout, ZoneRect,
+} from "../core/types.ts";
 import { canonical, MAX_ZONE_LAYOUTS, MAX_ZONES, MIN_ZONE_FRACTION } from "../core/layouts/zones.ts";
 import { compileStringMatcher } from "./matchers.ts";
 import type { CompiledOverride, CompiledRule, DiagnosticsLevel, RuleActions, SettingsPatch, StringMatcher } from "./types.ts";
@@ -21,6 +23,8 @@ export const MS_INSERT: readonly MasterStackSettings["insert"][] = ["after-focus
 export const BSP_INSERT: readonly BspSettings["insert"][] = ["focused", "last"];
 export const BSP_AXIS: readonly BspSettings["axis"][] = ["alternate", "longest", "horizontal", "vertical"];
 export const DIAGNOSTICS: readonly DiagnosticsLevel[] = ["off", "error", "warn", "info", "debug"];
+/** A window that arrives maximized: un-maximized and tiled, or left maximized (ADR-021). */
+export const MAXIMIZED_ON_OPEN: readonly MaximizedOnOpen[] = ["tile", "keep"];
 export const WINDOW_KINDS: readonly WindowKind[] = [
   "normal", "dialog", "utility", "toolbar", "menu", "splash", "dock", "desktop",
   "notification", "tooltip", "popup", "osd", "applet-popup", "dnd-icon", "other",
@@ -57,7 +61,7 @@ export interface DiagnosticsPatch {
 
 export const FLAT_KEYS: readonly string[] = [
   "layout", "gapInner", "gapOuter", "masterRatio", "masterCount", "masterInsert", "bspInsert", "bspAxis",
-  "singleWindowGaps", "ratioStep", "traceCapacity", "diagnostics", "osd", "configJson",
+  "singleWindowGaps", "ratioStep", "maximizedOnOpen", "traceCapacity", "diagnostics", "osd", "configJson",
 ];
 
 export interface FlatInput {
@@ -140,6 +144,10 @@ export function readFlat(s: Sink, flat: Readonly<Record<string, unknown>>): Flat
     patch.masterStack = { ...patch.masterStack, ratioStep: n };
     patch.bsp = { ...patch.bsp, ratioStep: n };
   }
+  if ((v = get("maximizedOnOpen")) !== undefined) {
+    const x = oneOf(s, v, "maximizedOnOpen", MAXIMIZED_ON_OPEN);
+    if (x !== null) patch.maximizedOnOpen = x;
+  }
   if ((v = get("traceCapacity")) !== undefined &&
       (n = intIn(s, flatNumber(s, v, "traceCapacity"), "traceCapacity", MIN_TRACE, MAX_TRACE)) !== null) {
     diagnostics.traceCapacity = n;
@@ -161,7 +169,7 @@ export function readFlat(s: Sink, flat: Readonly<Record<string, unknown>>): Flat
 
 const SETTINGS_KEYS = [
   "enabled", "layout", "gaps", "masterStack", "bsp", "scrolling", "zones", "overflow", "singleWindowGaps",
-  "followOnSend", "focusWrap", "liveResize", "multiContextWindows", "animation",
+  "followOnSend", "focusWrap", "liveResize", "maximizedOnOpen", "multiContextWindows", "animation",
 ];
 
 function unsupported(s: Sink, v: unknown, path: string, only: unknown): void {
@@ -263,6 +271,10 @@ export function readPatch(s: Sink, v: unknown, path: string): SettingsPatch {
   if (has(o, "followOnSend")) { const x = bool(s, o.followOnSend, at(path, "followOnSend")); if (x !== null) p.followOnSend = x; }
   if (has(o, "focusWrap")) { const x = bool(s, o.focusWrap, at(path, "focusWrap")); if (x !== null) p.focusWrap = x; }
   if (has(o, "liveResize")) { const x = bool(s, o.liveResize, at(path, "liveResize")); if (x !== null) p.liveResize = x; }
+  if (has(o, "maximizedOnOpen")) {
+    const x = oneOf(s, o.maximizedOnOpen, at(path, "maximizedOnOpen"), MAXIMIZED_ON_OPEN);
+    if (x !== null) p.maximizedOnOpen = x;
+  }
   // Accepted for forward compatibility with the documented example, only at their inert values.
   if (has(o, "multiContextWindows")) unsupported(s, o.multiContextWindows, at(path, "multiContextWindows"), "float");
   if (has(o, "animation")) {

@@ -79,6 +79,14 @@
       <min>0.01</min>
       <max>0.5</max>
     </entry>
+    <entry name="maximizedOnOpen" type="Enum">
+      <label>Windows that open maximized</label>
+      <choices>
+        <choice name="tile"/>
+        <choice name="keep"/>
+      </choices>
+      <default>tile</default>
+    </entry>
     <entry name="diagnostics" type="Enum">
       <label>Log level</label>
       <choices>

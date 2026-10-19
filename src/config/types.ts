@@ -2,7 +2,9 @@
 // A snapshot is immutable validated data; nothing here is parsed or compiled at resolve time.
 
 import type { Edges } from "../core/geometry.ts";
-import type { BspSettings, ContextSettings, LayoutKind, MasterStackSettings, ScrollingSettings, WindowKind } from "../core/types.ts";
+import type {
+  BspSettings, ContextSettings, LayoutKind, MasterStackSettings, MaximizedOnOpen, ScrollingSettings, WindowKind,
+} from "../core/types.ts";
 
 export interface ValidationError {
   readonly path: string;     // flat key ("gapInner"), "configJson", or JSON path ("rules[2].actions.colour")
@@ -78,6 +80,7 @@ export interface SettingsPatch {
   followOnSend?: boolean;
   focusWrap?: boolean;
   liveResize?: boolean;
+  maximizedOnOpen?: MaximizedOnOpen;
 }
 
 export type StringMatcher =

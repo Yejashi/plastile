@@ -154,7 +154,14 @@ export interface ContextSettings {
   readonly focusWrap: boolean;
   /** Peers follow an interactive resize live, at most one solve per flush (BEHAVIOR §8); off: on release only. */
   readonly liveResize: boolean;
+  /**
+   * A window that arrives maximized (the application or KWin chose it, not the user): "tile"
+   * un-maximizes it once, before it joins the layout; "keep" honours the maximize (ADR-021).
+   */
+  readonly maximizedOnOpen: MaximizedOnOpen;
 }
+
+export type MaximizedOnOpen = "tile" | "keep";
 
 export interface Result<T = undefined> {
   readonly ok: boolean;
