@@ -50,6 +50,43 @@ test("rejected: for...of over a Map, a Set, their iterators and anything typed a
   ]);
 });
 
+test("rejected: the same walk written without for...of (next() loops, yield*, Array.from by another name)", () => {
+  // Each of these skips an entry in QV4 when the code between the steps deletes one (probes/perf/qv4iter).
+  const code = [
+    "const m = new Map<string, number>();",                                          // 1
+    "const s = new Set<string>();",                                                  // 2
+    "const it = m.values();",                                                        // 3
+    "for (let r = it.next(); !r.done; r = it.next()) void r.value;",                 // 4 two next() calls
+    "class W { i = s.values(); step() { return this.i.next(); } }",                  // 5 an iterator in a property
+    "function* g() { yield* s; }",                                                   // 6
+    "const A = Array;",                                                              // 7
+    "const a = A.from(s, (x) => x);",                                                // 8 an alias of Array
+    "const b = Array['from'](m, ([k]) => k);",                                       // 9 element access
+    "const { from } = Array;",                                                       // 10
+    "const c = from(s, (x) => x);",                                                  // 11 a destructured from
+    "const d = Array.from.call(null, s, (x: string) => x);",                         // 12 not a direct call
+    "const f = Array.from;",                                                         // 13 a value
+    "const t = Int16Array.from(s, (x) => x.length);",                                // 14 a typed array's from
+    "export { W, g, a, b, c, d, f, t };",
+  ].join("\n");
+  assert.deepEqual(found(code), [
+    "4:iterator-next", "4:iterator-next", "5:iterator-next", "6:yield-star", "8:array-from-callback",
+    "9:array-from-callback", "11:array-from-callback", "12:array-from-indirect", "13:array-from-indirect",
+    "14:array-from-callback",
+  ]);
+});
+
+test("allowed: one step from a fresh iterator, yield* and Array.from over arrays", () => {
+  const code = [
+    "const m = new Map<string, number>();",
+    "const first = m.keys().next().value, second = (m.values()).next();",
+    "function* g(xs: number[]) { yield* xs; yield* 'ab'; }",
+    "const ys = Array.from([1, 2], (x) => x + 1), zs = Array.from(m.keys()), ws = Int16Array.from([1, 2], (x) => x);",
+    "export { first, second, g, ys, zs, ws };",
+  ].join("\n");
+  assert.deepEqual(found(code), []);
+});
+
 test("allowed: arrays, tuples, strings, snapshots without a callback, and forEach", () => {
   const code = [
     "const m = new Map<string, number>();",

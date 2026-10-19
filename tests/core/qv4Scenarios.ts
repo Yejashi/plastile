@@ -199,10 +199,13 @@ function savedPreferences(): unknown {
   r.qt.drain();
   topology(r);
   r.twinAppears();
-  const saved = r.engine.contextPreferences().map((p) => `${p.key.output}␟${p.key.desktop}=${p.prefs.masterStack?.ratio}`);
+  // The keys are checked on this call's own result: it is the call during which the re-key happens
+  // (a second call re-keys nothing, so it would show current keys even if this one saved a stale one).
+  const prefs = r.engine.contextPreferences();
+  const saved = prefs.map((p) => `${p.key.output}␟${p.key.desktop}=${p.prefs.masterStack?.ratio}`);
   const live = ids(r);
-  const keys = r.engine.contextPreferences().map((p) => `${p.key.output}␟${p.key.desktop}`);
-  const ok = saved.length === 4 && keys.every((k) => live.some((id) => id.startsWith(k + "␟")))
+  const keys = prefs.map((p) => `${p.key.output}␟${p.key.desktop}`);
+  const ok = saved.length === 4 && new Set(keys).size === 4 && keys.every((k) => live.some((id) => id.startsWith(k + "␟")))
     && Object.keys(ratios).every((k) => saved.some((s) => s.endsWith("=" + ratios[k])));
   return { ok, saved, contexts: live };
 }

@@ -40,7 +40,7 @@ test("QV4 iteration under mutation: forEach and arrays follow ECMAScript (what t
     for (const kind of Object.keys(v8[c])) assert.equal(qv4[c][kind], v8[c][kind], `${c} / ${kind}`);
   }
   // The deviation itself is reported, not required: a later Qt may fix it; the rule stays valid.
-  t.diagnostic(`${tool!.version}: Map/Set for...of differs from ECMAScript in ${differs.length} cases`
+  t.diagnostic(`${tool!.version}: Map/Set iterator walks (for...of, next(), yield*, Array.from) differ from ECMAScript in ${differs.length} cases`
     + (differs.length ? ` (e.g. ${differs[0]})` : " (none: this Qt may have fixed it)"));
 });
 

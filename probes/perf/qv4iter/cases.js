@@ -24,6 +24,14 @@ function visit(kind, mutate) {
   else if (kind === "map-values-for-of") { for (var v of m.values()) onMap(v.k); }
   else if (kind === "map-entries-for-of") { for (var en of m.entries()) onMap(en[0]); }
   else if (kind === "set-values-for-of") { for (var y of s.values()) onSet(y); }
+  // The same walk without for...of (tools/itercheck.ts rejects these too).
+  else if (kind === "set-next") { var it = s.values(); for (var r = it.next(); !r.done; r = it.next()) onSet(r.value); }
+  else if (kind === "map-keys-next") { var mk = m.keys(); for (var q = mk.next(); !q.done; q = mk.next()) onMap(q.value); }
+  else if (kind === "set-yield-star") {
+    var gen = (function* () { yield* s; })();
+    for (var g = gen.next(); !g.done; g = gen.next()) onSet(g.value);
+  }
+  else if (kind === "set-from-callback") Array.from(s, function (x) { onSet(x); return x; });
   else if (kind === "array-for-of") { for (var z of arr) onArr(z); }
   else if (kind === "array-forEach") arr.forEach(function (z) { onArr(z); });
   return seen.join("");
@@ -59,7 +67,8 @@ var CASES = {
   "delete-last-at-last": function (c, k) { if (k === "e") del(c, "e"); },
 };
 var KINDS = ["map-for-of", "map-keys-for-of", "map-values-for-of", "map-entries-for-of", "map-forEach",
-             "set-for-of", "set-values-for-of", "set-forEach", "array-for-of", "array-forEach"];
+             "set-for-of", "set-values-for-of", "set-forEach", "set-next", "map-keys-next", "set-yield-star",
+             "set-from-callback", "array-for-of", "array-forEach"];
 
 function results() {
   var out = {};
