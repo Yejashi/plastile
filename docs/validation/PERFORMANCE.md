@@ -175,17 +175,18 @@ Finding from the G2 follow-up (2026-10-19, nested KWin 6.7.5 / Qt 6.12.0, [G2 re
 **What was measured at 32 windows** (G2 protocol, 5 × 1000 per command, `eca2df5` → `212d86b`):
 
 - The pure-solve slow mode was collections. In a diagnostic unit, 151 of 153 solves above 0.5 ms had a collection start in their command's interval. Without one, a solve was slow 0.04 % of the time.
-- A `Set` walked with `for…of` in `participates()`, once per window per solve and per write, cost 0.042 ms per command on its own. That was most of the median slowdown since `b60e618`.
+- A `Set` walked with `for…of` in `participates()`, once per window per solve and per write, cost 0.04–0.06 ms per command on its own (two bisect campaigns). That was the largest single part of the 0.09–0.12 ms median slowdown since `b60e618`; the rest is spread over later commits and not attributed to lines.
 - Rewriting the master/stack solve, `allocate()`, the solve input and the apply loop changed three things:
   - pure-solve p99 from 1.055–1.092 ms to **0.166–0.170 ms**;
   - p50 from 0.17–0.18 ms to 0.09–0.10 ms;
   - garbage per command, across the whole engine, down by about 46 %.
 
-  The rewrite used index loops, `Map.forEach`, and flat cut arrays instead of `[begin, end]` tuples. The solver output is bit-for-bit unchanged (`tests/core/solveAlloc.test.ts`).
+  The rewrite used index loops, `Map.forEach`, and flat cut arrays instead of `[begin, end]` tuples. The solver output is bit-for-bit unchanged (`tests/core/solveAlloc.test.ts`). The apply loop's iteration order is not, in one case (below).
 
 **Rule for code on the command path** (solve, apply, adapter writes, observation handlers):
 
 - Iterate arrays with index loops and Maps with `forEach`.
+- Know that the two are not interchangeable in QV4 when the loop deletes entries. QV4's `for…of` over a `Map`, `Map.keys()` or a `Set` skips the entry after one deleted at or before its position; `forEach` follows ECMAScript, as V8 does (measured, Qt 6.12.0: [qv4iter](../../probes/perf/qv4iter/run.py), [evidence](../status/evidence/qv4-iteration.json)). A Node test cannot see the difference. Do not delete from a collection inside a `for…of` over it; iterate a copy, or use `forEach`.
 - Do not spread into calls.
 - Do not `map`/`slice` per window when an index range will do.
 - Return flat arrays rather than one small array per item.

@@ -24,15 +24,19 @@ explained, and teardown is clean. The open items:
 
 [STATUS](STATUS.md) is unchanged by this report.
 
-**Update, 2026-10-19 (§16, nested only).** Both open performance items are explained and fixed in `src/`:
+**Update, 2026-10-19 (§16, nested only).** Both open performance items are fixed in `src/`. The slow mode is explained;
+the slowdown only in part (review, §16.9):
 
-- **Slowdown since `b60e618`.** Most of it was a `Set` iterator added to `participates()` in `8a4bea5`.
+- **Slowdown since `b60e618` (0.09–0.12 ms).** Its largest single part, 0.04–0.06 ms, was a `Set` iterator added to
+  `participates()` in `8a4bea5`. The other 0.03–0.065 ms is spread over later commits and attributed to commit ranges
+  only.
 - **Solve slow mode.** It was QV4 garbage collection triggered inside the solve span: 151 of 153 slow solves in a
   diagnostic unit had a collection start in their command.
 - **Fix.** The solve path and the apply loop now iterate without iterator objects or per-item arrays.
 - **Result at `212d86b`:**
-  - pure-solve p99 at 32 windows: **0.166–0.170 ms (met)**, against 1.055–1.092 ms before;
-  - command-path median: 0.10 ms faster than `b60e618`.
+  - pure-solve p99 at 32 windows: **0.166–0.170 ms (met)**, against 1.055–1.092 ms before; reproduced with a new
+    seed in review (§16.9);
+  - command-path median: 0.10–0.11 ms faster than `b60e618`. The rest of the slowdown is outweighed, not removed.
 
 The sections below are the G2 measurement at `320cf72` and are left as measured.
 
@@ -573,11 +577,11 @@ KWin on the virtual backend: no number is physical, and none is an input-to-phot
 computes both from the local unit directories. Statistics: nearest-rank quantiles, p99 only from ≥ 5000 samples, and
 95 % intervals from a bootstrap over whole units. A difference resamples the units of both variants.
 
-**Result.** Both items are explained and both are fixed in `src/`:
+**Result.** Both items are fixed in `src/`; the first is explained only in part (corrected in review, §16.9):
 
-- **The slowdown since `b60e618`** came mostly from one change in `8a4bea5` (T29). `participates()` started to walk
-  a window's suspension `Set` with `for…of`. It runs for every member in every solve input and again for every slot
-  written.
+- **The slowdown since `b60e618`** has its largest single step, about half of it, at one change in `8a4bea5` (T29).
+  `participates()` started to walk a window's suspension `Set` with `for…of`. It runs for every member in every solve
+  input and again for every slot written. The rest is spread over later commits (§16.2).
 - **The p99 miss** was QV4's garbage collector. In a diagnostic unit, 151 of 153 slow solves had a collection start
   in their command's interval (§16.4).
 - **Three commits** remove the iterators and per-item arrays from the solve path and the apply loop:
@@ -616,6 +620,10 @@ sweep, or when the unmanaged heap passes its limit (observed source: `src/qml/me
 `MemoryManager::allocate`, `qv4mm.cpp` `shouldRunGC`). The incremental time limit defaults to 5 ms (`QV4_GC_TIMELIMIT`,
 `qv4mm.cpp` `GCStateMachine`). A cycle of about 0.8 ms therefore runs to the end inside whichever span made the
 triggering allocation. How often a cycle lands in the solve depends on the solve's share of the allocation.
+
+**Iteration order differs too (review, §16.9).** QV4's `for…of` over a `Map` or `Set` is not the ECMAScript one when
+the loop deletes entries: it skips the entry after one deleted at or before its position. `forEach` follows
+ECMAScript. Moving the apply loop to `forEach` therefore changed KWin-side behaviour in that case; it did not keep it.
 
 ### 16.2 Item 1: where the 0.09 ms came from
 
@@ -833,3 +841,110 @@ frame writes into KWin. This layer is QV4 only, not the §4 P03 measurement. The
   Evidence: [integration-host-8e57abd.json](evidence/integration-host-8e57abd.json).
 - **Not run:** the CI jobs (Ubuntu sandbox and KWin 6.8 Nix) on this branch.
 
+
+### 16.9 Adversarial review of §16 (branch `wf/g2-perf-review`, nested-virtual, KWin 6.7.5, 2026-10-19)
+
+Same host and day as §16, one nested session at a time, in shuffled order. Nothing here is physical. Evidence:
+[g2-perf-review.json](evidence/g2-perf-review.json), written by [g2_perf_review.py](../../probes/perf/g2_perf_review.py),
+a second implementation (its own reader, nearest-rank quantile and unit bootstrap), and
+[qv4-iteration.json](evidence/qv4-iteration.json) from [qv4iter](../../probes/perf/qv4iter/run.py). Every review unit
+passed and recorded `implementationDirty: false`. The host carried the same background load as §16 (`polkitd` near
+80 % of a core, `tailscaled`, `gdm`); it is recorded per unit.
+
+**The workloads and metrics did not change.** `qualify.py` gained only the `gcstats` mode and the `--qml` root
+option; the commands, pauses, blocks, warm-up, sample filter and the solve span's clock points are as at G2.
+`ab_bundles.py` runs `b60e618`'s workload with a fixed pause seed for every variant.
+
+**Item 2 re-measured with a new seed** (`ab_qualify.py`, seed 20261119 instead of G2's, 5 instrumented runs per
+variant, so a different command sequence):
+
+| n = 32, instrumented, 5 × 1000 | before (`eca2df5`) | after (`212d86b`) | §16.3 after |
+|---|---|---|---|
+| ratio solve p99 [CI] | 1.004 [0.340, 1.060] | **0.166 [0.164, 0.167]** | 0.166 |
+| swap solve p99 [CI] | 1.101 [1.030, 1.137] | **0.170 [0.169, 0.171]** | 0.170 |
+| master solve p99 [CI] | 1.074 [1.054, 1.086] | **0.170 [0.167, 0.173]** | 0.170 |
+| solves > 0.5 ms (ratio / swap / master), of 5000 | 79 / 96 / 109 | 11 / 6 / 7 | 11 / 4 / 3 |
+| solve max (ratio / swap / master) | 1.28 / 1.42 / 1.30 | 1.15 / 1.16 / 1.09 | 1.16 / 1.06 / 0.95 |
+| ratio outer p50 / p95 / p99 | 0.919 / 1.611 / 1.999 | 0.710 / 0.950 / 1.613 | 0.713 / 0.934 / 1.613 |
+
+- The "after" column reproduces §16.3 to within 0.001 ms at p99. **The p99 budget holds at a second seed (nested).**
+- This run's "before" ratio p99 sits at the budget's edge (1.004, interval reaching down to 0.34), with 1.6–2.2 % in
+  the slow mode against §16.3's 2.0–2.6 %. The before/after contrast does not depend on it.
+- Every measured focus command (5000 per variant) made 0 solves and 0 writes. Corrections: 0–2 per unit, all `stale`.
+
+Uninstrumented, 3 runs each (3000 samples per cell, no p99), dispatch → last request p50 / p95:
+
+| ms | before | after | Δ p50 [CI] |
+|---|---|---|---|
+| ratio | 0.883 / 1.582 | 0.670 / 0.882 | −0.213 [−0.220, −0.206] |
+| swap | 0.679 / 1.024 | 0.517 / 0.688 | −0.162 [−0.167, −0.159] |
+| master | 0.839 / 1.476 | 0.673 / 0.918 | −0.167 [−0.178, −0.157] |
+| focus | 0.759 / 1.093 | 0.843 / 1.070 | +0.084 [−0.073, 0.150], not distinguishable |
+
+The pooled no-op median moves +0.146 ms, but that is the bimodal mixture (§16.3): per command, `context.reset` goes
+0.575 → 0.429 ms and `layout.master-stack` 0.054 → 0.055 ms.
+
+**Item 1 re-measured** (`ab_bundles.py`, 6 variants × 4 rounds, new order seed; it adds `8a4bea5`'s parent `18ddcfd`).
+Ratio command, inner span p50, ms, difference to `b60e618` in the same campaign:
+
+| Variant | ratio p50 | Δ [CI], review | Δ [CI], §16.2 fine |
+|---|---|---|---|
+| `b60e618` | 0.782 | — | — |
+| `18ddcfd` (`8a4bea5`'s parent) | 0.770 | −0.013 [−0.021, −0.003] | not measured |
+| `8a4bea5` | 0.826 | +0.044 [0.028, 0.064] | +0.059 [0.052, 0.068] |
+| `8a4bea5` + `224beea` | 0.764 | −0.019 [−0.029, −0.007] | +0.017 [0.008, 0.026] |
+| `eca2df5` | 0.882 | +0.099 [0.087, 0.111] | +0.124 [0.112, 0.136] |
+| `212d86b` | 0.668 | −0.114 [−0.122, −0.105] | −0.098 [−0.107, −0.089] |
+
+- The step is in `8a4bea5` itself: its parent is level with `b60e618`.
+- Here the `Set` fix removes all of that step (0.062 ms; `8a4bea5` + `224beea` is level with the parent). §16.2's
+  +0.017 ms residual in the rest of `8a4bea5` is not reproduced. The iterator's share is 0.04–0.06 ms across the two
+  campaigns.
+- `eca2df5` − `8a4bea5` is 0.055 ms here: the spread residual is real and still attributed to commit ranges only.
+- **The GC attribution reproduces exactly.** Recounted from §16.4's raw logs with a separate parser: 92 of 93,
+  6 of 6, 4 of 4 and 59 of 60 slow solves had a cycle start in their command's interval (151 of 153).
+
+**Behaviour.** The `src/` diff was read line by line. `participates()`, `participantIndex()`, `solveInput`,
+`allocateFlat()` and the master/stack rewrite compute what the code they replace computed (Node and QV4 alike; the
+`Math.max` floors, the `m === 0 || m === n` branch and the cut indices were checked against the old forms). A mutation
+check ran 21 plausible broken versions of the rewritten lines against the unit tests:
+
+- 16 were caught. One is equivalent: dropping the `pinned[]` initialisation leaves `undefined`, which is falsy.
+- **Four, in three places, were not caught by any of the 490 tests:**
+  - `participates()` admitting a window that is interactive and also maximized or fullscreen;
+  - `participantIndex()` counting non-participants, or returning the member index;
+  - the apply loop without its `writable()` check (a dragged window written mid-drag).
+
+  This review adds [participation.test.ts](../../tests/core/participation.test.ts): 3 tests, each failing on its
+  mutants and passing on both `eca2df5` and `212d86b`.
+
+**One claim is wrong: QV4's `forEach` does not iterate as its `for…of` does.** `d6f5647` says "QV4 keeps forEach safe
+across deletions, as it does iterators". `qv4iter` runs the same cases in QV4 (the `qml` tool, Qt 6.12.0, the
+library KWin loads; offscreen, no compositor) and in V8:
+
+- QV4's `for…of` over a `Map`, `Map.keys()` or a `Set` **skips the entry after one deleted at or before the current
+  position**. Deleting the current entry visits `abde` instead of `abcde`; deleting an earlier one visits `abce`.
+  12 of 40 cases differ from ECMAScript, all of them `for…of`.
+- QV4's `forEach` matches ECMAScript in all 40 cases.
+- Adding keys and setting an existing key's value behave the same in all forms. So `fitMaxima()` is unchanged.
+
+So the apply loop's switch to `forEach` changed KWin-side behaviour in one case: an entry of the plan deleted
+synchronously during a frame write (a window removed, or moved to another context, inside `applyFrame`). Before, QV4
+skipped the next window's write; it was then left out of place until a later solve. Node never skipped it. Now QV4
+writes it, as the Node tests always assumed. This is a fix, not a regression, but it is not "unchanged". Whether KWin
+ever delivers such an event inside a frame write was not tested.
+
+A text search found no other `for…of` in `src/` that deletes from the collection it walks within its own body; the
+loops that delete iterate a copy (`[...this.parked]`) or another collection. Deletions through called functions were not
+audited.
+
+**Corrections made to §16 and the documents that cite it:**
+
+| Was | Data says | Where |
+|---|---|---|
+| "Both … are explained"; "most of it was a `Set` iterator" | The iterator is the largest single part, 0.04–0.06 of 0.09–0.12 ms. The rest, 0.03–0.065 ms, is attributed to commit ranges only. The median is below `b60e618` because the rewrite removed other costs, not because the rest was found | verdict update, §16 Result, G3 checklist FB-2, PERFORMANCE §7.1 |
+| "QV4 keeps forEach safe across deletions, as it does iterators" (`d6f5647`) | QV4's `for…of` skips an entry after a deletion; its `forEach` does not (`qv4iter`) | §16.1, PERFORMANCE §7.1, HANDOFF §8 |
+| Not mentioned: what covers the rewritten engine lines (the equivalence tests cover only the solver and `allocate()`) | 4 mutants of the rewritten engine lines passed all 490 tests; 3 tests added | §16.8 |
+
+**Tests at the review head:** 493 of 493 unit tests (490 plus `participation.test.ts`); `check_docs.py` PASS. The
+full nested suite result is below.
