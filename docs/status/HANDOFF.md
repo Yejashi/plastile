@@ -174,15 +174,22 @@ Beyond [AGENTS.md](../../AGENTS.md):
   for 60 s). The probe uses one session per block instead. The cause was not investigated.
 - **QV4's `for…of` over a `Map` or `Set` skips an entry when something deletes the current or an earlier one**
   (Qt 6.12.0). `forEach`, arrays and V8 follow ECMAScript, so Node tests cannot catch it.
-  - The deletion can be several calls away. A HostPort read or `settingsFor` resolves an output key in
-    `KwinAdapter.keyOf`, which can call `engine.outputsRekeyed`, which deletes and re-adds contexts.
-  - Five engine loops were exposed that way (ADR-022).
+  - The deletion can be several calls away. A HostPort read or `settingsFor` resolved an output key in
+    `KwinAdapter.keyOf`, which could call `engine.outputsRekeyed`, which deletes and re-adds contexts.
+  - Five engine loops were exposed that way (ADR-022). Since `wf/rekey` the adapter's queries are read-only:
+    they stage new output keys, and the re-key is committed on the adapter's deferred turn or at `screensChanged`,
+    outside every engine call, with the same renames in the same order as before (ADR-022 follow-up). Keep it that
+    way: no HostPort read may call into the engine.
+  - The engine keeps `forEach` at those loops anyway. The `reentrant/…` scenarios force the old synchronous
+    re-key to keep the rule tested.
   - `npm run build` now rejects any `for…of` over a Map, Set or iterator in `src/` (`tools/itercheck.ts`, type-aware).
     It also rejects a hand-written `next()` loop, `yield*`, and `Array.from` with a callback over one, which QV4
     walks the same way. Use `forEach`, or an array snapshot when each original entry should be visited once.
   - Nested sessions cannot reach the re-key path: the virtual backend reports no EDID.
-  - `tests/core/qv4iteration.test.ts` checks the engine in QV4 through the `qml` tool. It is skipped without one,
-    e.g. in the CI core job.
+  - `tests/core/qv4iteration.test.ts` checks the engine in QV4 through the Qt 6 `qml` tool. It is skipped without
+    one, e.g. in the CI core job. `PLASTILE_REQUIRE_QV4=1` makes a missing tool a failure. CI's `native-tools` job
+    sets it and installs `qml-qt6`; that is unverified until a hosted run shows the job green. Qt 5's `qml`
+    (often `/usr/bin/qml`) is rejected.
   - See [PERFORMANCE §7.1](../validation/PERFORMANCE.md#71-qv4-iteration-allocates-measured), and the probes
     `probes/perf/qv4iter/run.py` and `probes/perf/qv4iter/engine.ts --rev REV`.
 - Every push to `main` cancels the CI run in progress (a concurrency group). Wait for a run to finish before

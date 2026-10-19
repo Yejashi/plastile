@@ -196,11 +196,19 @@ jobs:
     # Ubuntu 24.04 (ubuntu-latest) has Qt 6.4.2 and no KF6 packages, so this job uses
     # the ubuntu-26.04 image (label listed in actions/runner-images; Qt 6.10, KF 6.24).
     # Seen green on the runner (run 39087511435, 2026-10-18), so the job is required.
+    # It also runs the QV4 tests (tests/core/qv4iteration.test.ts), which need the Qt 6 qml tool
+    # (package qml-qt6: /usr/bin/qml6 and /usr/lib/qt6/bin/qml; QtQml module qml6-module-qtqml)
+    # and are skipped in the core job, which has no Qt.
     name: Native test tools (Qt6/KF6)
     runs-on: ubuntu-26.04
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_MAJOR }}
+          cache: npm
 
       - name: Install Qt6 / KF6 development packages
         run: |
@@ -208,7 +216,21 @@ jobs:
           sudo apt-get install -y --no-install-recommends \
             build-essential cmake ninja-build pkg-config \
             qt6-base-dev qt6-declarative-dev qt6-declarative-dev-tools qt6-tools-dev \
+            qml-qt6 qml6-module-qtqml \
             libkf6config-dev libkf6configwidgets-dev
+
+      - name: QV4 tests in the qml tool (required here, never skipped)
+        # PLASTILE_REQUIRE_QV4=1 turns a missing qml tool into a test failure (tests/core/qv4.ts).
+        # The skipped-count check is a second guard. Layer: QV4 in the qml tool (offscreen); not KWin.
+        env:
+          PLASTILE_REQUIRE_QV4: "1"
+          QT_QPA_PLATFORM: offscreen # the runner has no display; the tests set it too
+        run: |
+          node --version
+          npm ci
+          qml6 --version
+          node --test --test-reporter=spec tests/core/qv4iteration.test.ts tests/core/rekey.test.ts | tee qv4-tests.txt
+          grep -qE '^ℹ skipped 0$' qv4-tests.txt || { echo "::error::QV4 tests were skipped" >&2; exit 1; }
 
       - name: Build tools/measure (Plastile.Measure QML module)
         run: |
@@ -236,7 +258,8 @@ jobs:
             echo "## Plastile CI: native test tools"
             echo
             echo "Status: ${{ job.status }}. The settings-check binary is only built, not run"
-            echo "(it needs a display)."
+            echo "(it needs a display). The QV4 tests (tests/core/qv4iteration.test.ts) ran in the"
+            echo "qml tool here with PLASTILE_REQUIRE_QV4=1; they are skipped in the core job."
           } >> "$GITHUB_STEP_SUMMARY"
 
   integration-nested:

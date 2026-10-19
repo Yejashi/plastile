@@ -727,7 +727,8 @@ maximized being tiled, or KWin exposes whether a maximize came from the user.
 ## ADR-022: No for...of over a Map or Set in src/; a type-aware build guard enforces it
 
 **Status:** accepted (2026-10-19), branch `wf/qv4-iteration`, reviewed on `wf/qv4-iteration-review`. Constrains the coding style of `src/`; nothing in
-behaviour changes except the five sites below, which now do what the unit tests always assumed.
+behaviour changes except the five sites below, which now do what the unit tests always assumed. The adapter's re-entrant
+re-key that exposed them was removed afterwards on `wf/rekey` (follow-up below).
 
 **Context.** QV4 (Qt 6.12.0) walks a `Map`, a `Set`, or one of their `keys()`/`values()`/`entries()` iterators with
 `for...of` as if it held an index into a compacted list. Deleting the current entry, or one before it, therefore
@@ -746,7 +747,7 @@ callbacks and persistence. Five sites could delete from the collection they walk
   through `KwinAdapter.keyOf`.
 - So does the configuration's `settingsFor`/`rulesFor`, through `ContextNames.outputNameOf`.
 - If KWin lists an output the adapter has not keyed yet (an identical monitor, before `screensChanged` reaches the
-  script), `keyOf` rebuilds the keys and calls `engine.outputsRekeyed` synchronously.
+  script), `keyOf` rebuilt the keys and called `engine.outputsRekeyed` synchronously (until the follow-up below).
 - `outputsRekeyed` deletes and re-adds the renamed contexts and their `emptied`, `dirty` and `retained` entries.
 
 The five sites and what QV4 did there:
@@ -786,7 +787,8 @@ removed by `d6f5647`.
   sites and a pointer to [PERFORMANCE §7.1](../validation/PERFORMANCE.md#71-qv4-iteration-allocates-measured). The
   check is on `src/`, not the bundle, because the bundle has lost the types.
 - **QV4-level proof:** [tests/core/qv4iteration.test.ts](../../tests/core/qv4iteration.test.ts) runs in
-  `npm test` when a `qml` tool is installed (`$PLASTILE_QML`, `qml6` or `qml`). Without one it skips and says so.
+  `npm test` when a Qt 6 `qml` tool is installed ([qv4.ts](../../tests/core/qv4.ts) lists where it looks). Without
+  one it skips and says so, unless `PLASTILE_REQUIRE_QV4=1`, which makes it fail.
   - It requires `forEach` and array iteration in QV4 to match ECMAScript.
   - It runs [qv4Scenarios.ts](../../tests/core/qv4Scenarios.ts) bundled in QV4 and in V8 and requires equal results.
     Each scenario drives one of the paths above: the real adapter over the fake KWin surface, or the engine with the
@@ -842,26 +844,86 @@ reached (see `replug-identity-O05`).
   (PERFORMANCE §7.1).
 - Early exits need a flag, and the loop visits every entry. The five such sites walk all windows
   (`disarmIfIdle`), the outputs, one context's plan, a window's suspensions, or at most 64 float preferences.
-- The CI core job has no Qt, so it skips the QV4 tests. The build guard runs everywhere.
-- The adapter's re-entrant edge itself is kept. It re-keys the engine before a window event uses a stale key, and
-  removing it is a separate change. The edge has two more effects, the same in QV4 and V8, which this change leaves
-  alone (found in review, not fixed):
-  - The lookup that triggers the re-key answers for the old key. `outputByKey` re-keys at the first unkeyed
-    screen, then compares the caller's old key with the rebuilt keys and finds nothing. So `visibleDesktop`/`workArea`
-    return null for that call, and `outputNameOf` returns the raw key, not the connector name. In
-    `markVisibleDirty` and `configure`, the `forEach` visit under the new key repairs this.
-  - The flush walks a snapshot of `dirty`. A dirty context renamed by an earlier solve in the same flush is
-    looked up by its old id, not found and not solved; its `dirty` entry was already cleared, so the re-key does not
-    carry it.
-
-  `screensChanged` drops the cached settings and re-solves every visible context, which repairs both.
-- Not tested: whether KWin ever delivers events in an order that makes the first key lookup after a twin appears
-  fall inside one of these loops. The scenarios choose that order. In the order KWin is known to use, a window
-  signal or `screensChanged` reaches `keyOf` first, outside any loop. A nested session cannot test it, because the
-  virtual backend reports no EDID; it needs a physical session with two identical monitors. Most symptoms would be
-  repaired by the re-solve that `screensChanged` triggers. A preference missing from a save is not repaired by a
-  re-solve; it stays missing until the next save.
+- The CI core job has no Qt, so it skips the QV4 tests. Since the follow-up, the `native-tools` job installs the
+  `qml` tool and runs them with `PLASTILE_REQUIRE_QV4=1`; that workflow change is unverified until a hosted run
+  shows it. The build guard runs everywhere.
+- ~~The adapter's re-entrant edge itself is kept.~~ Removed by the follow-up below, with the two further effects the
+  review found (the triggering lookup answered for the old key; a dirty context renamed during a flush was not
+  solved in it). The engine keeps `forEach` at the five sites: they do not rely on the adapter.
 - Nothing here is physical.
+
+**Follow-up: the re-entrant edge removed (branch `wf/rekey`, 2026-10-19).**
+
+- **Queries are read-only.** `KwinAdapter.outputKey`/`keyOf` (reached from `outputs`, `activeOutput`, `workArea`,
+  `visibleDesktop`, `sendToOutput`, `showDesktop`, `outputNameOf` and `membershipOf`) never call the engine.
+- **What a query returns.**
+  - An output in the committed keys answers with its committed key, the key the engine's contexts use. This holds
+    even when the screen list has already changed that key: when a twin appears, DP-1 keeps answering
+    `edid:LG/27UL/` until the commit.
+  - An output not committed yet (the twin) answers with its key in the oldest staged key set that has it
+    (`edid:LG/27UL/@DP-2`), the key under which it enters the engine.
+  - An output KWin does not list answers with its connector name once the committed keys lack it, as before.
+    One that KWin stopped listing but the committed keys still have (a monitor unplugged, `screensChanged` not
+    delivered yet) keeps its committed key until the next commit. The old `keyOf` did the same until its next
+    miss; now the miss no longer commits, so that answer can last until the deferred turn. A monitor moved to
+    another connector in that window answers with the same EDID key on both connectors, the key it keeps after
+    the commit.
+  - Every query therefore agrees with the engine's state at that moment. The triggering lookup no longer answers
+    null.
+- **Staging.** A lookup that meets an output no key set has stages `outputKeys(screens)`, if that differs from the
+  last staged set, and queues the adapter's existing coalesced deferred turn (`Qt.callLater`).
+- **Commit.** At the deferred turn, or at `screensChanged` if that comes first, the stages are committed oldest
+  first, then (at `screensChanged`) the current screen list. Each commit calls `outputsRekeyed` with the renames
+  from the previous committed set, as the old `keyOf` did at each miss.
+  - So the engine receives the same `outputsRekeyed` calls with the same arguments in the same order as before.
+    Only the timing changes, to a safe point outside every engine call.
+  - The deferral has zero delay and is not a settle timer. It runs only after a topology change was seen, never on
+    the command path, and it is the adapter's existing turn, whose callback checks `alive`. `detach` drops the
+    stages.
+- **Key semantics are unchanged.** `outputKeys` itself did not change: EDID triple keys, connector-qualified keys for
+  identical monitors, connector names without EDID. The existing key tests pass unchanged (`outputs.test.ts`:
+  E16, O05, twin re-key, overrides by connector name).
+- **Convergence: the same final state as before** (unit layer and QV4 in the `qml` tool; not KWin, not nested):
+  - [rekey.test.ts](../../tests/core/rekey.test.ts) runs nine event orders with the new adapter and with the old
+    `keyOf` put back on one instance. The orders: a window opening on the twin; a window moving to it; a desktop
+    switch; a command; a configuration change; a persistence save; `screensChanged` first; the twin leaving; the
+    twin coming and going before `screensChanged`.
+  - It requires, in every order, no `outputsRekeyed` while another engine call runs, and equal final contexts
+    (id, layout, members), frames, saved preferences and `check()`.
+  - The contexts are compared as a sorted list. A context renamed after the twin's context was created is
+    re-inserted after it, so the engine's insertion order can differ; nothing else does.
+  - The test also checks the staged order for the come-and-go case. There the renames are DP-1 → `@DP-1`, then
+    `@DP-2` → plain, as before.
+  - Two tests added in review (`wf/rekey-review`) stage two key sets before a commit, the second renaming an
+    output the first added (DP-2 appears, then DP-1 goes and another monitor comes). They require both renames in
+    order, DP-2 answering with its first staged key until the commit, and the same final state as the old
+    adapter. In the engine test the first commit's `outputsRekeyed` reads `outputs()` and meets the monitor only
+    the second set has: it re-stages the same keys, and that later commit renames nothing (two re-keys in total).
+  - Against the old adapter (`cd59372`), 9 of its 15 tests fail. The 6 that pass are the `screensChanged`/`detach`
+    test and five orders in which the old adapter also re-keyed outside engine calls.
+  - Mutation check (review, unit): committing only the last staged set, answering from the newest stage, not
+    committing on the deferred turn, dropping the stages at `screensChanged`, and answering a committed output with
+    its staged key each fail at least one test. Skipping the de-duplication of equal stages fails none; it only
+    saves an empty commit.
+- **The QV4 scenarios still guard the forEach rule.** [qv4Scenarios.ts](../../tests/core/qv4Scenarios.ts) runs each
+  adapter scenario in two modes:
+  - `adapter/…` is the adapter as it is. It requires no `outputsRekeyed` inside an engine call and exactly one
+    afterwards.
+  - `reentrant/…` commits the keys synchronously at the first key-resolving read, before that read answers, as the
+    old `keyOf` did. The deletion therefore still happens inside the engine's real loops.
+  - Both modes report the state after settling (`final`), and `rekey.test.ts` requires the two to be equal.
+  - [Evidence](../status/evidence/output-rekey-convergence.json): `probes/perf/qv4iter/engine.ts`, the same scenario
+    file over `src/` at `cd59372` and at this change, in QV4 (Qt 6.12.0) and V8.
+    - All 10 scenarios pass in both engines at this change.
+    - At `cd59372` the four `adapter/…` scenarios fail on their re-key count: the re-key happened inside an engine
+      call.
+    - `final` is identical between the two commits in every scenario and both engines.
+  - Mutation check, each fix reverted on its own, QV4: `markVisibleDirty`, `configure` and `releaseAllZones` as
+    `for...of` fail their `reentrant/…` scenario. `collectEmpty` as `for...of` fails `engine/collect-emptied`.
+    `contextPreferences` as live `for...of` fails `reentrant/saved-preferences` in QV4 and V8.
+- **Remaining.** Whether KWin delivers events in the orders tested is still untested. A nested session cannot test
+  it, because the virtual backend reports no EDID. It needs a physical session with two identical monitors. The
+  orders matter less now: a lookup inside a loop no longer changes the engine.
 
 **Revisit if** a Qt release iterates Maps and Sets as ECMAScript does (the QV4 semantics test reports the count of
 deviations), or if TypeScript's checker API changes `isArrayType`/`isTupleType`.

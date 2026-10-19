@@ -4,8 +4,12 @@
 // loads, so iteration, sorting and the collector are QV4's. Nothing is nested and no compositor
 // runs; this is not KWin. Used by tests/core/qv4iteration.test.ts and probes/perf/qv4iter/engine.ts.
 //
-// The qml tool is found as $PLASTILE_QML, else qml6, else qml on PATH. Without one, qmlTool()
-// returns null and callers skip (the CI core job has no Qt).
+// The qml tool is $PLASTILE_QML when set. Otherwise the first Qt 6 one of: qml6 on PATH (Debian
+// and Ubuntu: package qml-qt6, which also installs /usr/lib/qt6/bin/qml), /usr/lib/qt6/bin/qml,
+// /usr/lib64/qt6/bin/qml, the qml in `qtpaths6 --query QT_INSTALL_BINS`, then qml on PATH (on some
+// systems that is Qt 5's, which is rejected: its version must be 6 or later). Without one, qmlTool()
+// returns null and callers skip, unless PLASTILE_REQUIRE_QV4=1 (requireQv4()), which CI's native-tools
+// job sets so that the QV4 tests cannot be skipped silently there. The CI core job has no Qt.
 
 import { build } from "esbuild";
 import { spawnSync } from "node:child_process";
@@ -17,15 +21,31 @@ export interface QmlTool { readonly path: string; readonly version: string }
 
 let found: QmlTool | null | undefined;
 
-/** The qml tool and its version line, or null when none runs here. */
+/** True when the QV4 tests must run here: a missing qml tool is then a failure, not a skip. */
+export function requireQv4(): boolean { return process.env.PLASTILE_REQUIRE_QV4 === "1"; }
+
+/** Where qmlTool() looks, in order (for messages). */
+export function qmlCandidates(): string[] {
+  if (process.env.PLASTILE_QML) return [process.env.PLASTILE_QML];
+  const out = ["qml6", "/usr/lib/qt6/bin/qml", "/usr/lib64/qt6/bin/qml"];
+  const q = spawnSync("qtpaths6", ["--query", "QT_INSTALL_BINS"], { encoding: "utf8", timeout: 10000 });
+  const bins = q.status === 0 ? (q.stdout ?? "").trim() : "";
+  if (bins) out.push(join(bins, "qml"));
+  out.push("qml");
+  return out;
+}
+
+/** The qml tool (Qt 6 or later) and its version line, or null when none runs here. */
 export function qmlTool(): QmlTool | null {
   if (found !== undefined) return found;
   found = null;
-  const candidates = process.env.PLASTILE_QML ? [process.env.PLASTILE_QML] : ["qml6", "qml"];
-  for (const c of candidates) {
-    const p = spawnSync(c, ["--version"], { encoding: "utf8", timeout: 10000 });
-    if (p.status === 0 && /\d+\.\d+/.test(p.stdout + p.stderr)) {
-      found = { path: c, version: (p.stdout || p.stderr).trim() };
+  for (const c of qmlCandidates()) {
+    // The same platform as the runs (runQml): the version probe must not need a display either.
+    const p = spawnSync(c, ["--version"], { encoding: "utf8", timeout: 10000, env: { ...process.env, QT_QPA_PLATFORM: "offscreen" } });
+    const text = ((p.stdout ?? "") + (p.stderr ?? "")).trim();
+    const m = text.match(/(\d+)\.\d+/);
+    if (p.status === 0 && m && Number(m[1]) >= 6) {
+      found = { path: c, version: text.split("\n")[0] };
       break;
     }
   }
