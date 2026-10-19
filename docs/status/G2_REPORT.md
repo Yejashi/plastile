@@ -946,5 +946,10 @@ audited.
 | "QV4 keeps forEach safe across deletions, as it does iterators" (`d6f5647`) | QV4's `for…of` skips an entry after a deletion; its `forEach` does not (`qv4iter`) | §16.1, PERFORMANCE §7.1, HANDOFF §8 |
 | Not mentioned: what covers the rewritten engine lines (the equivalence tests cover only the solver and `allocate()`) | 4 mutants of the rewritten engine lines passed all 490 tests; 3 tests added | §16.8 |
 
-**Tests at the review head:** 493 of 493 unit tests (490 plus `participation.test.ts`); `check_docs.py` PASS. The
-full nested suite result is below.
+**Tests at the review head:**
+
+- Unit/replay: 493 of 493 (490 plus `participation.test.ts`); `check_docs.py` PASS.
+- Full nested suite re-run by the review at `97361a7` (a clean tree; `src/` identical to `212d86b`), KWin 6.7.5 on the
+  reference host: 1897 of 1897 checks, 141 of 141 run scenarios, 1 expected SKIP (`output-negative-origin-G02`).
+  This confirms §16.8 independently. Evidence: [integration-host-97361a7.json](evidence/integration-host-97361a7.json).
+- Still not run: the CI jobs (Ubuntu sandbox, KWin 6.8 Nix) and anything physical (runbook P6).
