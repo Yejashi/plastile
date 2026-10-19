@@ -351,3 +351,27 @@ test("ADR-021: no gaps, one window: the maximized frame equals the tile, and the
   assert.equal(h.engine.counters.corrections, 0);
   assert.equal(h.configuresSent.get("z"), 1);
 });
+
+test("ADR-021: a maximize acknowledged in the same commit as the first tile (KWin: geometry, then states) still counts", () => {
+  const h = new MockHost();
+  h.start();
+  // The client asked for set_maximized right after mapping; KWin's configure carried the tile size and
+  // the maximized state, and the commit reports the tile frame first, then the maximize.
+  const w = h.open("same", { delay: 10, ackMaximize: true });
+  h.drain();
+  assert.equal(h.writesTo("same"), 1);
+  h.advance(10);
+  assert.deepEqual(h.unmaximizes, ["same"], "decided as arriving maximized");
+  h.advance(50);
+  assert.equal(w.states.maximized, false);
+  assert.ok(rectNear(w.frame, ALONE));
+  assert.equal(h.engine.counters.corrections, 0);
+  // On a later turn the open phase is over: a maximize is honoured.
+  const v = h.open("later", { delay: 10 });
+  h.drain(); h.advance(10);
+  assert.ok(v.frame.width < 700 && v.frame.x > 600, `tiled beside it: ${JSON.stringify(v.frame)}`);
+  h.setStates("later", { maximized: true });          // a later turn: the user's maximize
+  h.drain(); h.advance(1000);
+  assert.deepEqual(h.unmaximizes, ["same"]);
+  assert.equal(v.states.maximized, true);
+});

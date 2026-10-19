@@ -349,6 +349,15 @@ export class Engine {
   /** Stable identity so Qt.callLater coalesces repeated scheduling. */
   private readonly flushFn = (): void => this.flush();
   private readonly deadlineFn = (): void => this.onDeadline();
+  /** Windows whose first tile settled: their open phase ends on the next event-loop turn (ADR-021). */
+  private watchEnds = new Set<WindowId>();
+  private readonly watchEndFn = (): void => {
+    for (const id of this.watchEnds) {
+      const r = this.recs.get(id);
+      if (r && r.open === "watch") r.open = null;
+    }
+    this.watchEnds.clear();
+  };
 
   constructor(host: HostPort, svc: RuntimeServices, opts: EngineOptions = {}) {
     this.host = host;
@@ -416,6 +425,7 @@ export class Engine {
     this.pendingFloats.clear();
     this.restoreChecks.clear();
     this.openChecks.clear();
+    this.watchEnds.clear();
     this.onPersistChange = null;
     this.onLayoutChange = null;
     this.onSuspendChange = null;
@@ -673,7 +683,7 @@ export class Engine {
       return;
     }
     const o = L.observe(r.ledger, f);
-    if (o === "settled" && r.open === "watch") r.open = null; // its first tile arrived: the open phase is over
+    if (o === "settled") this.endWatch(r); // its first tile arrived: the open phase is over
     switch (o) {
       case "settled":
         this.counters.settled++;
@@ -1494,7 +1504,7 @@ export class Engine {
       case "skip-noop":
         this.counters.skipNoop++;
         L.acceptNoop(r.ledger, target, this.svc.now());
-        if (r.open === "watch") r.open = null; // already at its first tile
+        this.endWatch(r); // already at its first tile
         return;
       case "skip-diverged": this.counters.skipDiverged++; return;
       default: this.write(r, target, r.ledger.request && rectNear(r.ledger.request.rect, target, r.ledger.tol) ? "correction" : "plan");
@@ -1530,7 +1540,7 @@ export class Engine {
     this.trace.record(now, "write", r.id, { reason, seq, settled });
     if (settled && wasOutstanding) this.counters.settled++;
     else if (!settled) this.armDeadline(now + this.opts.deadlineMs);
-    if (settled && r.open === "watch") r.open = null; // X11: the first tile applied inside the write
+    if (settled) this.endWatch(r); // X11: the first tile applied inside the write
   }
 
   // ----------------------------------------------------------------- deadlines
@@ -1636,6 +1646,17 @@ export class Engine {
         "only once, when it opens";
       this.trace.record(this.svc.now(), "remaximized", r.id);
     }
+  }
+
+  /**
+   * The window's first tile settled: its open phase ends on the next event-loop turn, not now.
+   * KWin applies a commit's geometry before its acknowledged states, so a client that asked to be
+   * maximized right after mapping reports the maximize just after the tile, in the same commit.
+   */
+  private endWatch(r: Rec): void {
+    if (r.open !== "watch") return;
+    this.watchEnds.add(r.id);
+    this.svc.callLater(this.watchEndFn);
   }
 
   private runOpenChecks(): void {

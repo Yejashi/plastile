@@ -68,6 +68,12 @@ export interface MockWindow {
   remaximize: boolean;
   /** The maximize area a re-maximizing client commits. */
   maxArea: Rect;
+  /**
+   * The client asked for set_maximized after mapping, before Plastile's tile configure went out:
+   * that configure carries the tile size and the maximized state, and its commit reports the tile
+   * frame, then the maximize (KWin's order).
+   */
+  ackMaximize: boolean;
 }
 
 export function meta(appId = "app", patch: Partial<WindowMeta> = {}): WindowMeta {
@@ -194,6 +200,10 @@ export class MockHost implements HostPort, RuntimeServices {
     if (ack) {
       w.states = { ...w.states, maximized: false };
       this.engine.statesChanged(w.id, w.gen, w.states);
+    } else if (w.ackMaximize && !w.states.maximized) {
+      w.ackMaximize = false;
+      w.states = { ...w.states, maximized: true };
+      this.engine.statesChanged(w.id, w.gen, w.states);
     }
   }
 
@@ -318,6 +328,7 @@ export class MockHost implements HostPort, RuntimeServices {
       states: NO_STATES, constraints: FREE, frame: rect(100, 100, 400, 300), configures: [], delay: 0, delayMode: "latest",
       x11: false, clampToMin: false, ignore: false, commitOffset: { width: 0, height: 0 }, nativeTile: false, noBorder: false,
       alive: true, maximizable: true, restore: rect(100, 100, 400, 300), remaximize: false, maxArea: rect(0, 0, 1280, 800),
+      ackMaximize: false,
       ...patch,
     };
     this.windows.set(id, w);
