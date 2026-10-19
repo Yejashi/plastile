@@ -12,8 +12,8 @@ agent; this file is the short status.
 
 | Layer | Environment | Last result |
 |---|---|---|
-| Unit/replay | Node 26 (`node --test tests/core/*.test.ts`), mock host and fake KWin, replay fixtures recorded from nested KWin (`tests/fixtures/replay/`) | 493/493 (`main`) |
-| Nested, virtual backend | Reference host: Arch Linux, KWin 6.7.5, Qt 6.12.0, KF 6.30.0 ([ENVIRONMENT](ENVIRONMENT.md)) | `5773b61`: 1897/1897 checks, 141/141 scenarios, 1 expected SKIP ([evidence](evidence/integration-host-5773b61.json)) |
+| Unit/replay | Node 26 (`node --test tests/core/*.test.ts`), mock host and fake KWin, replay fixtures recorded from nested KWin (`tests/fixtures/replay/`) | 502/502 (`main`), including QV4-vs-V8 iteration scenarios run in the `qml` tool (Qt 6.12.0) where installed; CI's core job has no Qt and skips them |
+| Nested, virtual backend | Reference host: Arch Linux, KWin 6.7.5, Qt 6.12.0, KF 6.30.0 ([ENVIRONMENT](ENVIRONMENT.md)) | `eb23093`: 1897/1897 checks, 141/141 scenarios, 1 expected SKIP ([evidence](evidence/integration-host-eb23093.json)) |
 | Nested, virtual backend (CI) | Ubuntu 26.10 sandbox: KWin 6.7.5, Qt 6.11.2, KF 6.29.0, QPainter compositing | `5229536`: 1664/1664 checks, 128/128 scenarios, 4 expected SKIPs (run 39232013184). Red from `97fec4a` to `eca2df5`: the fake OSD needed PyGObject, missing from the image, and one maximized-open race check did not reproduce there; both fixed in `459bae8` |
 | Nested, virtual backend (CI, provisional) | Nix: KWin 6.8.0, Qt 6.11.2, KF 6.30.0, llvmpipe | `5229536`: 1619/1619 checks, 125/125 scenarios, 5 expected SKIPs (run 39232013184). At `459bae8` the two `Q09` RSS bounds failed (run 39219911863); they fail in some runs only. `workarea-hidden-desktop-O07` expects 6.8 to leave hidden windows in place (6.8 removed `checkWorkspacePosition`'s strut confinement). Stays provisional: its RSS checks fail in some runs on KWin 6.8's own heap growth (below) |
 | Nested, windowed on the real GPU | Reference host: nested KWin 6.7.5's outputs are windows on the live compositor (`PLASTILE_NESTED_HOST_DISPLAY`), OpenGL on the real GPU, 144 Hz host output; private bus, config and XDG dirs | Latency kit at full protocol (30,000 taps): every Plastile workload `pass` against its matched baseline; 19/19 chords delivered; real apps, real `plasmashell` panels, GL tile editor pass ([runbook §1](../validation/PHYSICAL_RUNBOOK.md#1-what-was-validated-where)). Labelled `nested-windowed-gpu`, never physical |
@@ -99,7 +99,7 @@ Nested only; none is a physical input-to-photon measurement.
 ## Next tasks
 
 1. Physical: after the owner's re-login, re-check the hidden-desktop panel case (P3) and windows that open maximized; re-run P6 at 100 Hz with P00-switch-tiled; a soak during normal use (P8a).
-2. Audit loops where a called function deletes from the Map or Set being walked: QV4's `for...of` then skips an entry, unlike V8 and the Node tests ([PERFORMANCE §7.1](../validation/PERFORMANCE.md), `probes/perf/qv4iter`). Optional: the adapter's per-write allocations (outer p99 1.1–1.6 ms).
+2. Done: QV4 `for...of` deletion audit (ADR-022). Five loops could skip an entry when a host read re-keyed an output mid-walk (identical second monitor); fixed, each fix proven to fail when reverted in QV4 (`qml` tool, not KWin), and `tools/itercheck.ts` now fails the build on `for...of`/`next()`/`yield*`/`Array.from(…, fn)` over a non-array in `src/`. Command-path A/B: no change beyond noop outer p50 0.346→0.359 ms (nested; [evidence](evidence/qv4-iteration-perf.json)). Open: whether KWin ever delivers that first key lookup inside a loop needs two identical monitors (physical). Optional: the adapter's per-write allocations (outer p99 1.1–1.6 ms), and removing the adapter's re-entrant re-key from read-only queries.
 3. The open rows of the [G3 checklist](G3_CHECKLIST.md); owner decisions: licence (ADR-012), scrolling/zones (ADR-014), P2d/P2e.
 
 ## Conventions
