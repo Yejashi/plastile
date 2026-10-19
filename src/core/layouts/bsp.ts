@@ -287,7 +287,7 @@ function layOut(root: BspNode | null, ids: readonly WindowId[], input: SolveInpu
   }
 
   let participants = 0;
-  for (const m of minima.keys()) if (m.kind === "leaf") ++participants;
+  minima.forEach((_size, m) => { if (m.kind === "leaf") ++participants; });
   const g = input.settings.gaps;
   const area = participants === 1 && !input.settings.singleWindowGaps ? input.area : inset(input.area, g.outer);
   const need = minima.get(root)!;

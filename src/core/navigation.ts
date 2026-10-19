@@ -44,13 +44,13 @@ export function neighbour(from: WindowId, dir: Direction, rects: ReadonlyMap<Win
   const strict: Scored[] = [];
   const loose: Scored[] = [];
   let order = 0;
-  for (const [id, r] of rects) {
+  rects.forEach((r, id) => {
     const o = order++;
-    if (id === from) continue;
+    if (id === from) return;
     const s = score(dir, cur, r);
     if (s.beyond) strict.push({ id, overlap: s.overlap, distance: s.distance, order: o });
     else if (s.partly) loose.push({ id, overlap: s.overlap, distance: s.distance, order: o });
-  }
+  });
   const pool = strict.length ? strict : loose;
   if (!pool.length) return null;
   pool.sort((a, b) => (b.overlap > 0 ? 1 : 0) - (a.overlap > 0 ? 1 : 0) || a.distance - b.distance
@@ -73,9 +73,9 @@ export function wrapNeighbour(from: WindowId, dir: Direction, rects: ReadonlyMap
   const cur = rects.get(from);
   if (!cur || rects.size < 2) return null;
   let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
-  for (const r of rects.values()) {
+  rects.forEach((r) => {
     x0 = Math.min(x0, r.x); y0 = Math.min(y0, r.y); x1 = Math.max(x1, right(r)); y1 = Math.max(y1, bottom(r));
-  }
+  });
   const ghost: Rect =
     dir === "right" ? { ...cur, x: x0 - cur.width }
     : dir === "left" ? { ...cur, x: x1 }

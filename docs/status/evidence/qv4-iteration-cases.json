@@ -1,0 +1,1560 @@
+{
+ "probe": "probes/perf/qv4iter",
+ "layer": "QV4 in the qml tool (offscreen), V8 in Node; not KWin, not nested",
+ "qml": "Qml Runtime 6.12.0",
+ "node": "v26.11.1",
+ "rows": [
+  {
+   "case": "delete-current",
+   "kind": "map-for-of",
+   "qv4": "abde",
+   "v8": "abcde",
+   "same": false
+  },
+  {
+   "case": "delete-current",
+   "kind": "map-keys-for-of",
+   "qv4": "abde",
+   "v8": "abcde",
+   "same": false
+  },
+  {
+   "case": "delete-current",
+   "kind": "map-values-for-of",
+   "qv4": "abde",
+   "v8": "abcde",
+   "same": false
+  },
+  {
+   "case": "delete-current",
+   "kind": "map-entries-for-of",
+   "qv4": "abde",
+   "v8": "abcde",
+   "same": false
+  },
+  {
+   "case": "delete-current",
+   "kind": "map-forEach",
+   "qv4": "abcde",
+   "v8": "abcde",
+   "same": true
+  },
+  {
+   "case": "delete-current",
+   "kind": "set-for-of",
+   "qv4": "abde",
+   "v8": "abcde",
+   "same": false
+  },
+  {
+   "case": "delete-current",
+   "kind": "set-values-for-of",
+   "qv4": "abde",
+   "v8": "abcde",
+   "same": false
+  },
+  {
+   "case": "delete-current",
+   "kind": "set-forEach",
+   "qv4": "abcde",
+   "v8": "abcde",
+   "same": true
+  },
+  {
+   "case": "delete-current",
+   "kind": "set-next",
+   "qv4": "abde",
+   "v8": "abcde",
+   "same": false
+  },
+  {
+   "case": "delete-current",
+   "kind": "map-keys-next",
+   "qv4": "abde",
+   "v8": "abcde",
+   "same": false
+  },
+  {
+   "case": "delete-current",
+   "kind": "set-yield-star",
+   "qv4": "abde",
+   "v8": "abcde",
+   "same": false
+  },
+  {
+   "case": "delete-current",
+   "kind": "set-from-callback",
+   "qv4": "abde",
+   "v8": "abcde",
+   "same": false
+  },
+  {
+   "case": "delete-current",
+   "kind": "array-for-of",
+   "qv4": "abde",
+   "v8": "abde",
+   "same": true
+  },
+  {
+   "case": "delete-current",
+   "kind": "array-forEach",
+   "qv4": "abde",
+   "v8": "abde",
+   "same": true
+  },
+  {
+   "case": "delete-next",
+   "kind": "map-for-of",
+   "qv4": "abde",
+   "v8": "abde",
+   "same": true
+  },
+  {
+   "case": "delete-next",
+   "kind": "map-keys-for-of",
+   "qv4": "abde",
+   "v8": "abde",
+   "same": true
+  },
+  {
+   "case": "delete-next",
+   "kind": "map-values-for-of",
+   "qv4": "abde",
+   "v8": "abde",
+   "same": true
+  },
+  {
+   "case": "delete-next",
+   "kind": "map-entries-for-of",
+   "qv4": "abde",
+   "v8": "abde",
+   "same": true
+  },
+  {
+   "case": "delete-next",
+   "kind": "map-forEach",
+   "qv4": "abde",
+   "v8": "abde",
+   "same": true
+  },
+  {
+   "case": "delete-next",
+   "kind": "set-for-of",
+   "qv4": "abde",
+   "v8": "abde",
+   "same": true
+  },
+  {
+   "case": "delete-next",
+   "kind": "set-values-for-of",
+   "qv4": "abde",
+   "v8": "abde",
+   "same": true
+  },
+  {
+   "case": "delete-next",
+   "kind": "set-forEach",
+   "qv4": "abde",
+   "v8": "abde",
+   "same": true
+  },
+  {
+   "case": "delete-next",
+   "kind": "set-next",
+   "qv4": "abde",
+   "v8": "abde",
+   "same": true
+  },
+  {
+   "case": "delete-next",
+   "kind": "map-keys-next",
+   "qv4": "abde",
+   "v8": "abde",
+   "same": true
+  },
+  {
+   "case": "delete-next",
+   "kind": "set-yield-star",
+   "qv4": "abde",
+   "v8": "abde",
+   "same": true
+  },
+  {
+   "case": "delete-next",
+   "kind": "set-from-callback",
+   "qv4": "abde",
+   "v8": "abde",
+   "same": true
+  },
+  {
+   "case": "delete-next",
+   "kind": "array-for-of",
+   "qv4": "abde",
+   "v8": "abde",
+   "same": true
+  },
+  {
+   "case": "delete-next",
+   "kind": "array-forEach",
+   "qv4": "abde",
+   "v8": "abde",
+   "same": true
+  },
+  {
+   "case": "delete-earlier",
+   "kind": "map-for-of",
+   "qv4": "abce",
+   "v8": "abcde",
+   "same": false
+  },
+  {
+   "case": "delete-earlier",
+   "kind": "map-keys-for-of",
+   "qv4": "abce",
+   "v8": "abcde",
+   "same": false
+  },
+  {
+   "case": "delete-earlier",
+   "kind": "map-values-for-of",
+   "qv4": "abce",
+   "v8": "abcde",
+   "same": false
+  },
+  {
+   "case": "delete-earlier",
+   "kind": "map-entries-for-of",
+   "qv4": "abce",
+   "v8": "abcde",
+   "same": false
+  },
+  {
+   "case": "delete-earlier",
+   "kind": "map-forEach",
+   "qv4": "abcde",
+   "v8": "abcde",
+   "same": true
+  },
+  {
+   "case": "delete-earlier",
+   "kind": "set-for-of",
+   "qv4": "abce",
+   "v8": "abcde",
+   "same": false
+  },
+  {
+   "case": "delete-earlier",
+   "kind": "set-values-for-of",
+   "qv4": "abce",
+   "v8": "abcde",
+   "same": false
+  },
+  {
+   "case": "delete-earlier",
+   "kind": "set-forEach",
+   "qv4": "abcde",
+   "v8": "abcde",
+   "same": true
+  },
+  {
+   "case": "delete-earlier",
+   "kind": "set-next",
+   "qv4": "abce",
+   "v8": "abcde",
+   "same": false
+  },
+  {
+   "case": "delete-earlier",
+   "kind": "map-keys-next",
+   "qv4": "abce",
+   "v8": "abcde",
+   "same": false
+  },
+  {
+   "case": "delete-earlier",
+   "kind": "set-yield-star",
+   "qv4": "abce",
+   "v8": "abcde",
+   "same": false
+  },
+  {
+   "case": "delete-earlier",
+   "kind": "set-from-callback",
+   "qv4": "abce",
+   "v8": "abcde",
+   "same": false
+  },
+  {
+   "case": "delete-earlier",
+   "kind": "array-for-of",
+   "qv4": "abce",
+   "v8": "abce",
+   "same": true
+  },
+  {
+   "case": "delete-earlier",
+   "kind": "array-forEach",
+   "qv4": "abce",
+   "v8": "abce",
+   "same": true
+  },
+  {
+   "case": "delete-current-and-next",
+   "kind": "map-for-of",
+   "qv4": "abe",
+   "v8": "abde",
+   "same": false
+  },
+  {
+   "case": "delete-current-and-next",
+   "kind": "map-keys-for-of",
+   "qv4": "abe",
+   "v8": "abde",
+   "same": false
+  },
+  {
+   "case": "delete-current-and-next",
+   "kind": "map-values-for-of",
+   "qv4": "abe",
+   "v8": "abde",
+   "same": false
+  },
+  {
+   "case": "delete-current-and-next",
+   "kind": "map-entries-for-of",
+   "qv4": "abe",
+   "v8": "abde",
+   "same": false
+  },
+  {
+   "case": "delete-current-and-next",
+   "kind": "map-forEach",
+   "qv4": "abde",
+   "v8": "abde",
+   "same": true
+  },
+  {
+   "case": "delete-current-and-next",
+   "kind": "set-for-of",
+   "qv4": "abe",
+   "v8": "abde",
+   "same": false
+  },
+  {
+   "case": "delete-current-and-next",
+   "kind": "set-values-for-of",
+   "qv4": "abe",
+   "v8": "abde",
+   "same": false
+  },
+  {
+   "case": "delete-current-and-next",
+   "kind": "set-forEach",
+   "qv4": "abde",
+   "v8": "abde",
+   "same": true
+  },
+  {
+   "case": "delete-current-and-next",
+   "kind": "set-next",
+   "qv4": "abe",
+   "v8": "abde",
+   "same": false
+  },
+  {
+   "case": "delete-current-and-next",
+   "kind": "map-keys-next",
+   "qv4": "abe",
+   "v8": "abde",
+   "same": false
+  },
+  {
+   "case": "delete-current-and-next",
+   "kind": "set-yield-star",
+   "qv4": "abe",
+   "v8": "abde",
+   "same": false
+  },
+  {
+   "case": "delete-current-and-next",
+   "kind": "set-from-callback",
+   "qv4": "abe",
+   "v8": "abde",
+   "same": false
+  },
+  {
+   "case": "delete-current-and-next",
+   "kind": "array-for-of",
+   "qv4": "abe",
+   "v8": "abe",
+   "same": true
+  },
+  {
+   "case": "delete-current-and-next",
+   "kind": "array-forEach",
+   "qv4": "abe",
+   "v8": "abe",
+   "same": true
+  },
+  {
+   "case": "set-existing",
+   "kind": "map-for-of",
+   "qv4": "abcde",
+   "v8": "abcde",
+   "same": true
+  },
+  {
+   "case": "set-existing",
+   "kind": "map-keys-for-of",
+   "qv4": "abcde",
+   "v8": "abcde",
+   "same": true
+  },
+  {
+   "case": "set-existing",
+   "kind": "map-values-for-of",
+   "qv4": "abcde",
+   "v8": "abcde",
+   "same": true
+  },
+  {
+   "case": "set-existing",
+   "kind": "map-entries-for-of",
+   "qv4": "abcde",
+   "v8": "abcde",
+   "same": true
+  },
+  {
+   "case": "set-existing",
+   "kind": "map-forEach",
+   "qv4": "abcde",
+   "v8": "abcde",
+   "same": true
+  },
+  {
+   "case": "set-existing",
+   "kind": "set-for-of",
+   "qv4": "abcde",
+   "v8": "abcde",
+   "same": true
+  },
+  {
+   "case": "set-existing",
+   "kind": "set-values-for-of",
+   "qv4": "abcde",
+   "v8": "abcde",
+   "same": true
+  },
+  {
+   "case": "set-existing",
+   "kind": "set-forEach",
+   "qv4": "abcde",
+   "v8": "abcde",
+   "same": true
+  },
+  {
+   "case": "set-existing",
+   "kind": "set-next",
+   "qv4": "abcde",
+   "v8": "abcde",
+   "same": true
+  },
+  {
+   "case": "set-existing",
+   "kind": "map-keys-next",
+   "qv4": "abcde",
+   "v8": "abcde",
+   "same": true
+  },
+  {
+   "case": "set-existing",
+   "kind": "set-yield-star",
+   "qv4": "abcde",
+   "v8": "abcde",
+   "same": true
+  },
+  {
+   "case": "set-existing",
+   "kind": "set-from-callback",
+   "qv4": "abcde",
+   "v8": "abcde",
+   "same": true
+  },
+  {
+   "case": "set-existing",
+   "kind": "array-for-of",
+   "qv4": "abcde",
+   "v8": "abcde",
+   "same": true
+  },
+  {
+   "case": "set-existing",
+   "kind": "array-forEach",
+   "qv4": "abcde",
+   "v8": "abcde",
+   "same": true
+  },
+  {
+   "case": "add-new",
+   "kind": "map-for-of",
+   "qv4": "abcdez",
+   "v8": "abcdez",
+   "same": true
+  },
+  {
+   "case": "add-new",
+   "kind": "map-keys-for-of",
+   "qv4": "abcdez",
+   "v8": "abcdez",
+   "same": true
+  },
+  {
+   "case": "add-new",
+   "kind": "map-values-for-of",
+   "qv4": "abcdez",
+   "v8": "abcdez",
+   "same": true
+  },
+  {
+   "case": "add-new",
+   "kind": "map-entries-for-of",
+   "qv4": "abcdez",
+   "v8": "abcdez",
+   "same": true
+  },
+  {
+   "case": "add-new",
+   "kind": "map-forEach",
+   "qv4": "abcdez",
+   "v8": "abcdez",
+   "same": true
+  },
+  {
+   "case": "add-new",
+   "kind": "set-for-of",
+   "qv4": "abcdez",
+   "v8": "abcdez",
+   "same": true
+  },
+  {
+   "case": "add-new",
+   "kind": "set-values-for-of",
+   "qv4": "abcdez",
+   "v8": "abcdez",
+   "same": true
+  },
+  {
+   "case": "add-new",
+   "kind": "set-forEach",
+   "qv4": "abcdez",
+   "v8": "abcdez",
+   "same": true
+  },
+  {
+   "case": "add-new",
+   "kind": "set-next",
+   "qv4": "abcdez",
+   "v8": "abcdez",
+   "same": true
+  },
+  {
+   "case": "add-new",
+   "kind": "map-keys-next",
+   "qv4": "abcdez",
+   "v8": "abcdez",
+   "same": true
+  },
+  {
+   "case": "add-new",
+   "kind": "set-yield-star",
+   "qv4": "abcdez",
+   "v8": "abcdez",
+   "same": true
+  },
+  {
+   "case": "add-new",
+   "kind": "set-from-callback",
+   "qv4": "abcdez",
+   "v8": "abcdez",
+   "same": true
+  },
+  {
+   "case": "add-new",
+   "kind": "array-for-of",
+   "qv4": "abcdez",
+   "v8": "abcdez",
+   "same": true
+  },
+  {
+   "case": "add-new",
+   "kind": "array-forEach",
+   "qv4": "abcde",
+   "v8": "abcde",
+   "same": true
+  },
+  {
+   "case": "delete-and-readd-current-once",
+   "kind": "map-for-of",
+   "qv4": "abdeb",
+   "v8": "abcdeb",
+   "same": false
+  },
+  {
+   "case": "delete-and-readd-current-once",
+   "kind": "map-keys-for-of",
+   "qv4": "abdeb",
+   "v8": "abcdeb",
+   "same": false
+  },
+  {
+   "case": "delete-and-readd-current-once",
+   "kind": "map-values-for-of",
+   "qv4": "abdeb",
+   "v8": "abcdeb",
+   "same": false
+  },
+  {
+   "case": "delete-and-readd-current-once",
+   "kind": "map-entries-for-of",
+   "qv4": "abdeb",
+   "v8": "abcdeb",
+   "same": false
+  },
+  {
+   "case": "delete-and-readd-current-once",
+   "kind": "map-forEach",
+   "qv4": "abcdeb",
+   "v8": "abcdeb",
+   "same": true
+  },
+  {
+   "case": "delete-and-readd-current-once",
+   "kind": "set-for-of",
+   "qv4": "abdeb",
+   "v8": "abcdeb",
+   "same": false
+  },
+  {
+   "case": "delete-and-readd-current-once",
+   "kind": "set-values-for-of",
+   "qv4": "abdeb",
+   "v8": "abcdeb",
+   "same": false
+  },
+  {
+   "case": "delete-and-readd-current-once",
+   "kind": "set-forEach",
+   "qv4": "abcdeb",
+   "v8": "abcdeb",
+   "same": true
+  },
+  {
+   "case": "delete-and-readd-current-once",
+   "kind": "set-next",
+   "qv4": "abdeb",
+   "v8": "abcdeb",
+   "same": false
+  },
+  {
+   "case": "delete-and-readd-current-once",
+   "kind": "map-keys-next",
+   "qv4": "abdeb",
+   "v8": "abcdeb",
+   "same": false
+  },
+  {
+   "case": "delete-and-readd-current-once",
+   "kind": "set-yield-star",
+   "qv4": "abdeb",
+   "v8": "abcdeb",
+   "same": false
+  },
+  {
+   "case": "delete-and-readd-current-once",
+   "kind": "set-from-callback",
+   "qv4": "abdeb",
+   "v8": "abcdeb",
+   "same": false
+  },
+  {
+   "case": "delete-and-readd-current-once",
+   "kind": "array-for-of",
+   "qv4": "abdeb",
+   "v8": "abdeb",
+   "same": true
+  },
+  {
+   "case": "delete-and-readd-current-once",
+   "kind": "array-forEach",
+   "qv4": "abdeb",
+   "v8": "abdeb",
+   "same": true
+  },
+  {
+   "case": "clear",
+   "kind": "map-for-of",
+   "qv4": "ab",
+   "v8": "ab",
+   "same": true
+  },
+  {
+   "case": "clear",
+   "kind": "map-keys-for-of",
+   "qv4": "ab",
+   "v8": "ab",
+   "same": true
+  },
+  {
+   "case": "clear",
+   "kind": "map-values-for-of",
+   "qv4": "ab",
+   "v8": "ab",
+   "same": true
+  },
+  {
+   "case": "clear",
+   "kind": "map-entries-for-of",
+   "qv4": "ab",
+   "v8": "ab",
+   "same": true
+  },
+  {
+   "case": "clear",
+   "kind": "map-forEach",
+   "qv4": "ab",
+   "v8": "ab",
+   "same": true
+  },
+  {
+   "case": "clear",
+   "kind": "set-for-of",
+   "qv4": "ab",
+   "v8": "ab",
+   "same": true
+  },
+  {
+   "case": "clear",
+   "kind": "set-values-for-of",
+   "qv4": "ab",
+   "v8": "ab",
+   "same": true
+  },
+  {
+   "case": "clear",
+   "kind": "set-forEach",
+   "qv4": "ab",
+   "v8": "ab",
+   "same": true
+  },
+  {
+   "case": "clear",
+   "kind": "set-next",
+   "qv4": "ab",
+   "v8": "ab",
+   "same": true
+  },
+  {
+   "case": "clear",
+   "kind": "map-keys-next",
+   "qv4": "ab",
+   "v8": "ab",
+   "same": true
+  },
+  {
+   "case": "clear",
+   "kind": "set-yield-star",
+   "qv4": "ab",
+   "v8": "ab",
+   "same": true
+  },
+  {
+   "case": "clear",
+   "kind": "set-from-callback",
+   "qv4": "ab",
+   "v8": "ab",
+   "same": true
+  },
+  {
+   "case": "clear",
+   "kind": "array-for-of",
+   "qv4": "ab",
+   "v8": "ab",
+   "same": true
+  },
+  {
+   "case": "clear",
+   "kind": "array-forEach",
+   "qv4": "ab",
+   "v8": "ab",
+   "same": true
+  },
+  {
+   "case": "add-two",
+   "kind": "map-for-of",
+   "qv4": "abcdezy",
+   "v8": "abcdezy",
+   "same": true
+  },
+  {
+   "case": "add-two",
+   "kind": "map-keys-for-of",
+   "qv4": "abcdezy",
+   "v8": "abcdezy",
+   "same": true
+  },
+  {
+   "case": "add-two",
+   "kind": "map-values-for-of",
+   "qv4": "abcdezy",
+   "v8": "abcdezy",
+   "same": true
+  },
+  {
+   "case": "add-two",
+   "kind": "map-entries-for-of",
+   "qv4": "abcdezy",
+   "v8": "abcdezy",
+   "same": true
+  },
+  {
+   "case": "add-two",
+   "kind": "map-forEach",
+   "qv4": "abcdezy",
+   "v8": "abcdezy",
+   "same": true
+  },
+  {
+   "case": "add-two",
+   "kind": "set-for-of",
+   "qv4": "abcdezy",
+   "v8": "abcdezy",
+   "same": true
+  },
+  {
+   "case": "add-two",
+   "kind": "set-values-for-of",
+   "qv4": "abcdezy",
+   "v8": "abcdezy",
+   "same": true
+  },
+  {
+   "case": "add-two",
+   "kind": "set-forEach",
+   "qv4": "abcdezy",
+   "v8": "abcdezy",
+   "same": true
+  },
+  {
+   "case": "add-two",
+   "kind": "set-next",
+   "qv4": "abcdezy",
+   "v8": "abcdezy",
+   "same": true
+  },
+  {
+   "case": "add-two",
+   "kind": "map-keys-next",
+   "qv4": "abcdezy",
+   "v8": "abcdezy",
+   "same": true
+  },
+  {
+   "case": "add-two",
+   "kind": "set-yield-star",
+   "qv4": "abcdezy",
+   "v8": "abcdezy",
+   "same": true
+  },
+  {
+   "case": "add-two",
+   "kind": "set-from-callback",
+   "qv4": "abcdezy",
+   "v8": "abcdezy",
+   "same": true
+  },
+  {
+   "case": "add-two",
+   "kind": "array-for-of",
+   "qv4": "abcdezy",
+   "v8": "abcdezy",
+   "same": true
+  },
+  {
+   "case": "add-two",
+   "kind": "array-forEach",
+   "qv4": "abcde",
+   "v8": "abcde",
+   "same": true
+  },
+  {
+   "case": "add-at-last",
+   "kind": "map-for-of",
+   "qv4": "abcdez",
+   "v8": "abcdez",
+   "same": true
+  },
+  {
+   "case": "add-at-last",
+   "kind": "map-keys-for-of",
+   "qv4": "abcdez",
+   "v8": "abcdez",
+   "same": true
+  },
+  {
+   "case": "add-at-last",
+   "kind": "map-values-for-of",
+   "qv4": "abcdez",
+   "v8": "abcdez",
+   "same": true
+  },
+  {
+   "case": "add-at-last",
+   "kind": "map-entries-for-of",
+   "qv4": "abcdez",
+   "v8": "abcdez",
+   "same": true
+  },
+  {
+   "case": "add-at-last",
+   "kind": "map-forEach",
+   "qv4": "abcdez",
+   "v8": "abcdez",
+   "same": true
+  },
+  {
+   "case": "add-at-last",
+   "kind": "set-for-of",
+   "qv4": "abcdez",
+   "v8": "abcdez",
+   "same": true
+  },
+  {
+   "case": "add-at-last",
+   "kind": "set-values-for-of",
+   "qv4": "abcdez",
+   "v8": "abcdez",
+   "same": true
+  },
+  {
+   "case": "add-at-last",
+   "kind": "set-forEach",
+   "qv4": "abcdez",
+   "v8": "abcdez",
+   "same": true
+  },
+  {
+   "case": "add-at-last",
+   "kind": "set-next",
+   "qv4": "abcdez",
+   "v8": "abcdez",
+   "same": true
+  },
+  {
+   "case": "add-at-last",
+   "kind": "map-keys-next",
+   "qv4": "abcdez",
+   "v8": "abcdez",
+   "same": true
+  },
+  {
+   "case": "add-at-last",
+   "kind": "set-yield-star",
+   "qv4": "abcdez",
+   "v8": "abcdez",
+   "same": true
+  },
+  {
+   "case": "add-at-last",
+   "kind": "set-from-callback",
+   "qv4": "abcdez",
+   "v8": "abcdez",
+   "same": true
+  },
+  {
+   "case": "add-at-last",
+   "kind": "array-for-of",
+   "qv4": "abcdez",
+   "v8": "abcdez",
+   "same": true
+  },
+  {
+   "case": "add-at-last",
+   "kind": "array-forEach",
+   "qv4": "abcde",
+   "v8": "abcde",
+   "same": true
+  },
+  {
+   "case": "rekey-earlier",
+   "kind": "map-for-of",
+   "qv4": "abcez",
+   "v8": "abcdez",
+   "same": false
+  },
+  {
+   "case": "rekey-earlier",
+   "kind": "map-keys-for-of",
+   "qv4": "abcez",
+   "v8": "abcdez",
+   "same": false
+  },
+  {
+   "case": "rekey-earlier",
+   "kind": "map-values-for-of",
+   "qv4": "abcez",
+   "v8": "abcdez",
+   "same": false
+  },
+  {
+   "case": "rekey-earlier",
+   "kind": "map-entries-for-of",
+   "qv4": "abcez",
+   "v8": "abcdez",
+   "same": false
+  },
+  {
+   "case": "rekey-earlier",
+   "kind": "map-forEach",
+   "qv4": "abcdez",
+   "v8": "abcdez",
+   "same": true
+  },
+  {
+   "case": "rekey-earlier",
+   "kind": "set-for-of",
+   "qv4": "abcez",
+   "v8": "abcdez",
+   "same": false
+  },
+  {
+   "case": "rekey-earlier",
+   "kind": "set-values-for-of",
+   "qv4": "abcez",
+   "v8": "abcdez",
+   "same": false
+  },
+  {
+   "case": "rekey-earlier",
+   "kind": "set-forEach",
+   "qv4": "abcdez",
+   "v8": "abcdez",
+   "same": true
+  },
+  {
+   "case": "rekey-earlier",
+   "kind": "set-next",
+   "qv4": "abcez",
+   "v8": "abcdez",
+   "same": false
+  },
+  {
+   "case": "rekey-earlier",
+   "kind": "map-keys-next",
+   "qv4": "abcez",
+   "v8": "abcdez",
+   "same": false
+  },
+  {
+   "case": "rekey-earlier",
+   "kind": "set-yield-star",
+   "qv4": "abcez",
+   "v8": "abcdez",
+   "same": false
+  },
+  {
+   "case": "rekey-earlier",
+   "kind": "set-from-callback",
+   "qv4": "abcez",
+   "v8": "abcdez",
+   "same": false
+  },
+  {
+   "case": "rekey-earlier",
+   "kind": "array-for-of",
+   "qv4": "abcez",
+   "v8": "abcez",
+   "same": true
+  },
+  {
+   "case": "rekey-earlier",
+   "kind": "array-forEach",
+   "qv4": "abcez",
+   "v8": "abcez",
+   "same": true
+  },
+  {
+   "case": "rekey-current",
+   "kind": "map-for-of",
+   "qv4": "abdez",
+   "v8": "abcdez",
+   "same": false
+  },
+  {
+   "case": "rekey-current",
+   "kind": "map-keys-for-of",
+   "qv4": "abdez",
+   "v8": "abcdez",
+   "same": false
+  },
+  {
+   "case": "rekey-current",
+   "kind": "map-values-for-of",
+   "qv4": "abdez",
+   "v8": "abcdez",
+   "same": false
+  },
+  {
+   "case": "rekey-current",
+   "kind": "map-entries-for-of",
+   "qv4": "abdez",
+   "v8": "abcdez",
+   "same": false
+  },
+  {
+   "case": "rekey-current",
+   "kind": "map-forEach",
+   "qv4": "abcdez",
+   "v8": "abcdez",
+   "same": true
+  },
+  {
+   "case": "rekey-current",
+   "kind": "set-for-of",
+   "qv4": "abdez",
+   "v8": "abcdez",
+   "same": false
+  },
+  {
+   "case": "rekey-current",
+   "kind": "set-values-for-of",
+   "qv4": "abdez",
+   "v8": "abcdez",
+   "same": false
+  },
+  {
+   "case": "rekey-current",
+   "kind": "set-forEach",
+   "qv4": "abcdez",
+   "v8": "abcdez",
+   "same": true
+  },
+  {
+   "case": "rekey-current",
+   "kind": "set-next",
+   "qv4": "abdez",
+   "v8": "abcdez",
+   "same": false
+  },
+  {
+   "case": "rekey-current",
+   "kind": "map-keys-next",
+   "qv4": "abdez",
+   "v8": "abcdez",
+   "same": false
+  },
+  {
+   "case": "rekey-current",
+   "kind": "set-yield-star",
+   "qv4": "abdez",
+   "v8": "abcdez",
+   "same": false
+  },
+  {
+   "case": "rekey-current",
+   "kind": "set-from-callback",
+   "qv4": "abdez",
+   "v8": "abcdez",
+   "same": false
+  },
+  {
+   "case": "rekey-current",
+   "kind": "array-for-of",
+   "qv4": "abdez",
+   "v8": "abdez",
+   "same": true
+  },
+  {
+   "case": "rekey-current",
+   "kind": "array-forEach",
+   "qv4": "abdez",
+   "v8": "abdez",
+   "same": true
+  },
+  {
+   "case": "rekey-current-and-later",
+   "kind": "map-for-of",
+   "qv4": "abezy",
+   "v8": "abcezy",
+   "same": false
+  },
+  {
+   "case": "rekey-current-and-later",
+   "kind": "map-keys-for-of",
+   "qv4": "abezy",
+   "v8": "abcezy",
+   "same": false
+  },
+  {
+   "case": "rekey-current-and-later",
+   "kind": "map-values-for-of",
+   "qv4": "abezy",
+   "v8": "abcezy",
+   "same": false
+  },
+  {
+   "case": "rekey-current-and-later",
+   "kind": "map-entries-for-of",
+   "qv4": "abezy",
+   "v8": "abcezy",
+   "same": false
+  },
+  {
+   "case": "rekey-current-and-later",
+   "kind": "map-forEach",
+   "qv4": "abcezy",
+   "v8": "abcezy",
+   "same": true
+  },
+  {
+   "case": "rekey-current-and-later",
+   "kind": "set-for-of",
+   "qv4": "abezy",
+   "v8": "abcezy",
+   "same": false
+  },
+  {
+   "case": "rekey-current-and-later",
+   "kind": "set-values-for-of",
+   "qv4": "abezy",
+   "v8": "abcezy",
+   "same": false
+  },
+  {
+   "case": "rekey-current-and-later",
+   "kind": "set-forEach",
+   "qv4": "abcezy",
+   "v8": "abcezy",
+   "same": true
+  },
+  {
+   "case": "rekey-current-and-later",
+   "kind": "set-next",
+   "qv4": "abezy",
+   "v8": "abcezy",
+   "same": false
+  },
+  {
+   "case": "rekey-current-and-later",
+   "kind": "map-keys-next",
+   "qv4": "abezy",
+   "v8": "abcezy",
+   "same": false
+  },
+  {
+   "case": "rekey-current-and-later",
+   "kind": "set-yield-star",
+   "qv4": "abezy",
+   "v8": "abcezy",
+   "same": false
+  },
+  {
+   "case": "rekey-current-and-later",
+   "kind": "set-from-callback",
+   "qv4": "abezy",
+   "v8": "abcezy",
+   "same": false
+  },
+  {
+   "case": "rekey-current-and-later",
+   "kind": "array-for-of",
+   "qv4": "abezy",
+   "v8": "abezy",
+   "same": true
+  },
+  {
+   "case": "rekey-current-and-later",
+   "kind": "array-forEach",
+   "qv4": "abezy",
+   "v8": "abezy",
+   "same": true
+  },
+  {
+   "case": "delete-all-earlier",
+   "kind": "map-for-of",
+   "qv4": "abc",
+   "v8": "abcde",
+   "same": false
+  },
+  {
+   "case": "delete-all-earlier",
+   "kind": "map-keys-for-of",
+   "qv4": "abc",
+   "v8": "abcde",
+   "same": false
+  },
+  {
+   "case": "delete-all-earlier",
+   "kind": "map-values-for-of",
+   "qv4": "abc",
+   "v8": "abcde",
+   "same": false
+  },
+  {
+   "case": "delete-all-earlier",
+   "kind": "map-entries-for-of",
+   "qv4": "abc",
+   "v8": "abcde",
+   "same": false
+  },
+  {
+   "case": "delete-all-earlier",
+   "kind": "map-forEach",
+   "qv4": "abcde",
+   "v8": "abcde",
+   "same": true
+  },
+  {
+   "case": "delete-all-earlier",
+   "kind": "set-for-of",
+   "qv4": "abc",
+   "v8": "abcde",
+   "same": false
+  },
+  {
+   "case": "delete-all-earlier",
+   "kind": "set-values-for-of",
+   "qv4": "abc",
+   "v8": "abcde",
+   "same": false
+  },
+  {
+   "case": "delete-all-earlier",
+   "kind": "set-forEach",
+   "qv4": "abcde",
+   "v8": "abcde",
+   "same": true
+  },
+  {
+   "case": "delete-all-earlier",
+   "kind": "set-next",
+   "qv4": "abc",
+   "v8": "abcde",
+   "same": false
+  },
+  {
+   "case": "delete-all-earlier",
+   "kind": "map-keys-next",
+   "qv4": "abc",
+   "v8": "abcde",
+   "same": false
+  },
+  {
+   "case": "delete-all-earlier",
+   "kind": "set-yield-star",
+   "qv4": "abc",
+   "v8": "abcde",
+   "same": false
+  },
+  {
+   "case": "delete-all-earlier",
+   "kind": "set-from-callback",
+   "qv4": "abc",
+   "v8": "abcde",
+   "same": false
+  },
+  {
+   "case": "delete-all-earlier",
+   "kind": "array-for-of",
+   "qv4": "abc",
+   "v8": "abc",
+   "same": true
+  },
+  {
+   "case": "delete-all-earlier",
+   "kind": "array-forEach",
+   "qv4": "abc",
+   "v8": "abc",
+   "same": true
+  },
+  {
+   "case": "delete-last-at-last",
+   "kind": "map-for-of",
+   "qv4": "abcde",
+   "v8": "abcde",
+   "same": true
+  },
+  {
+   "case": "delete-last-at-last",
+   "kind": "map-keys-for-of",
+   "qv4": "abcde",
+   "v8": "abcde",
+   "same": true
+  },
+  {
+   "case": "delete-last-at-last",
+   "kind": "map-values-for-of",
+   "qv4": "abcde",
+   "v8": "abcde",
+   "same": true
+  },
+  {
+   "case": "delete-last-at-last",
+   "kind": "map-entries-for-of",
+   "qv4": "abcde",
+   "v8": "abcde",
+   "same": true
+  },
+  {
+   "case": "delete-last-at-last",
+   "kind": "map-forEach",
+   "qv4": "abcde",
+   "v8": "abcde",
+   "same": true
+  },
+  {
+   "case": "delete-last-at-last",
+   "kind": "set-for-of",
+   "qv4": "abcde",
+   "v8": "abcde",
+   "same": true
+  },
+  {
+   "case": "delete-last-at-last",
+   "kind": "set-values-for-of",
+   "qv4": "abcde",
+   "v8": "abcde",
+   "same": true
+  },
+  {
+   "case": "delete-last-at-last",
+   "kind": "set-forEach",
+   "qv4": "abcde",
+   "v8": "abcde",
+   "same": true
+  },
+  {
+   "case": "delete-last-at-last",
+   "kind": "set-next",
+   "qv4": "abcde",
+   "v8": "abcde",
+   "same": true
+  },
+  {
+   "case": "delete-last-at-last",
+   "kind": "map-keys-next",
+   "qv4": "abcde",
+   "v8": "abcde",
+   "same": true
+  },
+  {
+   "case": "delete-last-at-last",
+   "kind": "set-yield-star",
+   "qv4": "abcde",
+   "v8": "abcde",
+   "same": true
+  },
+  {
+   "case": "delete-last-at-last",
+   "kind": "set-from-callback",
+   "qv4": "abcde",
+   "v8": "abcde",
+   "same": true
+  },
+  {
+   "case": "delete-last-at-last",
+   "kind": "array-for-of",
+   "qv4": "abcde",
+   "v8": "abcde",
+   "same": true
+  },
+  {
+   "case": "delete-last-at-last",
+   "kind": "array-forEach",
+   "qv4": "abcde",
+   "v8": "abcde",
+   "same": true
+  }
+ ],
+ "deviations": [
+  "delete-current / map-for-of: QV4 abde, ECMAScript (V8) abcde",
+  "delete-current / map-keys-for-of: QV4 abde, ECMAScript (V8) abcde",
+  "delete-current / map-values-for-of: QV4 abde, ECMAScript (V8) abcde",
+  "delete-current / map-entries-for-of: QV4 abde, ECMAScript (V8) abcde",
+  "delete-current / set-for-of: QV4 abde, ECMAScript (V8) abcde",
+  "delete-current / set-values-for-of: QV4 abde, ECMAScript (V8) abcde",
+  "delete-current / set-next: QV4 abde, ECMAScript (V8) abcde",
+  "delete-current / map-keys-next: QV4 abde, ECMAScript (V8) abcde",
+  "delete-current / set-yield-star: QV4 abde, ECMAScript (V8) abcde",
+  "delete-current / set-from-callback: QV4 abde, ECMAScript (V8) abcde",
+  "delete-earlier / map-for-of: QV4 abce, ECMAScript (V8) abcde",
+  "delete-earlier / map-keys-for-of: QV4 abce, ECMAScript (V8) abcde",
+  "delete-earlier / map-values-for-of: QV4 abce, ECMAScript (V8) abcde",
+  "delete-earlier / map-entries-for-of: QV4 abce, ECMAScript (V8) abcde",
+  "delete-earlier / set-for-of: QV4 abce, ECMAScript (V8) abcde",
+  "delete-earlier / set-values-for-of: QV4 abce, ECMAScript (V8) abcde",
+  "delete-earlier / set-next: QV4 abce, ECMAScript (V8) abcde",
+  "delete-earlier / map-keys-next: QV4 abce, ECMAScript (V8) abcde",
+  "delete-earlier / set-yield-star: QV4 abce, ECMAScript (V8) abcde",
+  "delete-earlier / set-from-callback: QV4 abce, ECMAScript (V8) abcde",
+  "delete-current-and-next / map-for-of: QV4 abe, ECMAScript (V8) abde",
+  "delete-current-and-next / map-keys-for-of: QV4 abe, ECMAScript (V8) abde",
+  "delete-current-and-next / map-values-for-of: QV4 abe, ECMAScript (V8) abde",
+  "delete-current-and-next / map-entries-for-of: QV4 abe, ECMAScript (V8) abde",
+  "delete-current-and-next / set-for-of: QV4 abe, ECMAScript (V8) abde",
+  "delete-current-and-next / set-values-for-of: QV4 abe, ECMAScript (V8) abde",
+  "delete-current-and-next / set-next: QV4 abe, ECMAScript (V8) abde",
+  "delete-current-and-next / map-keys-next: QV4 abe, ECMAScript (V8) abde",
+  "delete-current-and-next / set-yield-star: QV4 abe, ECMAScript (V8) abde",
+  "delete-current-and-next / set-from-callback: QV4 abe, ECMAScript (V8) abde",
+  "delete-and-readd-current-once / map-for-of: QV4 abdeb, ECMAScript (V8) abcdeb",
+  "delete-and-readd-current-once / map-keys-for-of: QV4 abdeb, ECMAScript (V8) abcdeb",
+  "delete-and-readd-current-once / map-values-for-of: QV4 abdeb, ECMAScript (V8) abcdeb",
+  "delete-and-readd-current-once / map-entries-for-of: QV4 abdeb, ECMAScript (V8) abcdeb",
+  "delete-and-readd-current-once / set-for-of: QV4 abdeb, ECMAScript (V8) abcdeb",
+  "delete-and-readd-current-once / set-values-for-of: QV4 abdeb, ECMAScript (V8) abcdeb",
+  "delete-and-readd-current-once / set-next: QV4 abdeb, ECMAScript (V8) abcdeb",
+  "delete-and-readd-current-once / map-keys-next: QV4 abdeb, ECMAScript (V8) abcdeb",
+  "delete-and-readd-current-once / set-yield-star: QV4 abdeb, ECMAScript (V8) abcdeb",
+  "delete-and-readd-current-once / set-from-callback: QV4 abdeb, ECMAScript (V8) abcdeb",
+  "rekey-earlier / map-for-of: QV4 abcez, ECMAScript (V8) abcdez",
+  "rekey-earlier / map-keys-for-of: QV4 abcez, ECMAScript (V8) abcdez",
+  "rekey-earlier / map-values-for-of: QV4 abcez, ECMAScript (V8) abcdez",
+  "rekey-earlier / map-entries-for-of: QV4 abcez, ECMAScript (V8) abcdez",
+  "rekey-earlier / set-for-of: QV4 abcez, ECMAScript (V8) abcdez",
+  "rekey-earlier / set-values-for-of: QV4 abcez, ECMAScript (V8) abcdez",
+  "rekey-earlier / set-next: QV4 abcez, ECMAScript (V8) abcdez",
+  "rekey-earlier / map-keys-next: QV4 abcez, ECMAScript (V8) abcdez",
+  "rekey-earlier / set-yield-star: QV4 abcez, ECMAScript (V8) abcdez",
+  "rekey-earlier / set-from-callback: QV4 abcez, ECMAScript (V8) abcdez",
+  "rekey-current / map-for-of: QV4 abdez, ECMAScript (V8) abcdez",
+  "rekey-current / map-keys-for-of: QV4 abdez, ECMAScript (V8) abcdez",
+  "rekey-current / map-values-for-of: QV4 abdez, ECMAScript (V8) abcdez",
+  "rekey-current / map-entries-for-of: QV4 abdez, ECMAScript (V8) abcdez",
+  "rekey-current / set-for-of: QV4 abdez, ECMAScript (V8) abcdez",
+  "rekey-current / set-values-for-of: QV4 abdez, ECMAScript (V8) abcdez",
+  "rekey-current / set-next: QV4 abdez, ECMAScript (V8) abcdez",
+  "rekey-current / map-keys-next: QV4 abdez, ECMAScript (V8) abcdez",
+  "rekey-current / set-yield-star: QV4 abdez, ECMAScript (V8) abcdez",
+  "rekey-current / set-from-callback: QV4 abdez, ECMAScript (V8) abcdez",
+  "rekey-current-and-later / map-for-of: QV4 abezy, ECMAScript (V8) abcezy",
+  "rekey-current-and-later / map-keys-for-of: QV4 abezy, ECMAScript (V8) abcezy",
+  "rekey-current-and-later / map-values-for-of: QV4 abezy, ECMAScript (V8) abcezy",
+  "rekey-current-and-later / map-entries-for-of: QV4 abezy, ECMAScript (V8) abcezy",
+  "rekey-current-and-later / set-for-of: QV4 abezy, ECMAScript (V8) abcezy",
+  "rekey-current-and-later / set-values-for-of: QV4 abezy, ECMAScript (V8) abcezy",
+  "rekey-current-and-later / set-next: QV4 abezy, ECMAScript (V8) abcezy",
+  "rekey-current-and-later / map-keys-next: QV4 abezy, ECMAScript (V8) abcezy",
+  "rekey-current-and-later / set-yield-star: QV4 abezy, ECMAScript (V8) abcezy",
+  "rekey-current-and-later / set-from-callback: QV4 abezy, ECMAScript (V8) abcezy",
+  "delete-all-earlier / map-for-of: QV4 abc, ECMAScript (V8) abcde",
+  "delete-all-earlier / map-keys-for-of: QV4 abc, ECMAScript (V8) abcde",
+  "delete-all-earlier / map-values-for-of: QV4 abc, ECMAScript (V8) abcde",
+  "delete-all-earlier / map-entries-for-of: QV4 abc, ECMAScript (V8) abcde",
+  "delete-all-earlier / set-for-of: QV4 abc, ECMAScript (V8) abcde",
+  "delete-all-earlier / set-values-for-of: QV4 abc, ECMAScript (V8) abcde",
+  "delete-all-earlier / set-next: QV4 abc, ECMAScript (V8) abcde",
+  "delete-all-earlier / map-keys-next: QV4 abc, ECMAScript (V8) abcde",
+  "delete-all-earlier / set-yield-star: QV4 abc, ECMAScript (V8) abcde",
+  "delete-all-earlier / set-from-callback: QV4 abc, ECMAScript (V8) abcde"
+ ]
+}

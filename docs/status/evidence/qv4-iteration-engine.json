@@ -1,0 +1,868 @@
+{
+ "probe": "probes/perf/qv4iter/engine.ts --rev REV",
+ "layer": "QV4 in the qml tool (offscreen) and V8 in Node; not KWin, not nested",
+ "qml": "Qml Runtime 6.12.0",
+ "node": "v26.11.1",
+ "scenarios": "tests/core/qv4Scenarios.ts at 1d6edc7 for every run (review: saved-preferences checks the keys of the re-keying call)",
+ "runs": [
+  {
+   "label": "before d6f5647 (apply loop still for...of)",
+   "srcCommit": "eca2df580b9cc2ea76cc2bb1997444463605d4b8",
+   "srcDirty": false,
+   "rows": [
+    {
+     "scenario": "adapter/visibility-switch",
+     "qv4Ok": false,
+     "v8Ok": true,
+     "same": false,
+     "qv4": {
+      "ok": false,
+      "frames": {
+       "a1": "8,8 691x784",
+       "a2": "707,8 565x784",
+       "c1": "1320,40 300x200",
+       "c2": "1320,40 300x200",
+       "b1": "8,8 1264x784",
+       "c3": "1320,40 300x200"
+      },
+      "contexts": [
+       "edid:Dell/U2720Q/ABC\u241fdesk-D2\u241fdefault",
+       "edid:LG/27UL/@DP-1\u241fdesk-D1\u241fdefault",
+       "edid:LG/27UL/@DP-1\u241fdesk-D2\u241fdefault"
+      ],
+      "check": []
+     },
+     "v8": {
+      "ok": true,
+      "frames": {
+       "a1": "8,8 691x784",
+       "a2": "707,8 565x784",
+       "c1": "1288,8 691x784",
+       "c2": "1987,8 565x388",
+       "b1": "8,8 1264x784",
+       "c3": "1987,404 565x388"
+      },
+      "contexts": [
+       "edid:Dell/U2720Q/ABC\u241fdesk-D2\u241fdefault",
+       "edid:LG/27UL/@DP-1\u241fdesk-D1\u241fdefault",
+       "edid:LG/27UL/@DP-1\u241fdesk-D2\u241fdefault"
+      ],
+      "check": []
+     }
+    },
+    {
+     "scenario": "adapter/configure-gaps",
+     "qv4Ok": false,
+     "v8Ok": true,
+     "same": false,
+     "qv4": {
+      "ok": false,
+      "gapA": 20,
+      "gapD": 8,
+      "frames": {
+       "a1": "8,8 684x784",
+       "a2": "712,8 560x784",
+       "c1": "1320,40 300x200",
+       "d1": "1288,8 691x784",
+       "d2": "1987,8 565x784",
+       "b1": "40,40 300x200"
+      },
+      "contexts": [
+       "edid:Dell/U2720Q/ABC\u241fdesk-D2\u241fdefault",
+       "edid:Dell/U2720Q/ABC\u241fdesk-D1\u241fdefault",
+       "edid:LG/27UL/@DP-1\u241fdesk-D1\u241fdefault",
+       "edid:LG/27UL/@DP-1\u241fdesk-D2\u241fdefault"
+      ],
+      "check": []
+     },
+     "v8": {
+      "ok": true,
+      "gapA": 20,
+      "gapD": 20,
+      "frames": {
+       "a1": "8,8 684x784",
+       "a2": "712,8 560x784",
+       "c1": "1320,40 300x200",
+       "d1": "1288,8 684x784",
+       "d2": "1992,8 560x784",
+       "b1": "40,40 300x200"
+      },
+      "contexts": [
+       "edid:Dell/U2720Q/ABC\u241fdesk-D2\u241fdefault",
+       "edid:Dell/U2720Q/ABC\u241fdesk-D1\u241fdefault",
+       "edid:LG/27UL/@DP-1\u241fdesk-D1\u241fdefault",
+       "edid:LG/27UL/@DP-1\u241fdesk-D2\u241fdefault"
+      ],
+      "check": []
+     }
+    },
+    {
+     "scenario": "adapter/saved-preferences",
+     "qv4Ok": false,
+     "v8Ok": false,
+     "same": false,
+     "qv4": {
+      "ok": false,
+      "saved": [
+       "edid:LG/27UL/\u241fdesk-D1=0.45",
+       "edid:Dell/U2720Q/ABC\u241fdesk-D2=0.6",
+       "edid:LG/27UL/@DP-1\u241fdesk-D1=0.45",
+       "edid:LG/27UL/@DP-1\u241fdesk-D2=0.65"
+      ],
+      "contexts": [
+       "edid:Dell/U2720Q/ABC\u241fdesk-D2\u241fdefault",
+       "edid:Dell/U2720Q/ABC\u241fdesk-D1\u241fdefault",
+       "edid:LG/27UL/@DP-1\u241fdesk-D1\u241fdefault",
+       "edid:LG/27UL/@DP-1\u241fdesk-D2\u241fdefault"
+      ]
+     },
+     "v8": {
+      "ok": false,
+      "saved": [
+       "edid:LG/27UL/\u241fdesk-D1=0.45",
+       "edid:Dell/U2720Q/ABC\u241fdesk-D2=0.6",
+       "edid:Dell/U2720Q/ABC\u241fdesk-D1=0.7",
+       "edid:LG/27UL/@DP-1\u241fdesk-D1=0.45",
+       "edid:LG/27UL/@DP-1\u241fdesk-D2=0.65"
+      ],
+      "contexts": [
+       "edid:Dell/U2720Q/ABC\u241fdesk-D2\u241fdefault",
+       "edid:Dell/U2720Q/ABC\u241fdesk-D1\u241fdefault",
+       "edid:LG/27UL/@DP-1\u241fdesk-D1\u241fdefault",
+       "edid:LG/27UL/@DP-1\u241fdesk-D2\u241fdefault"
+      ]
+     }
+    },
+    {
+     "scenario": "adapter/suspend-zones",
+     "qv4Ok": false,
+     "v8Ok": true,
+     "same": false,
+     "qv4": {
+      "ok": false,
+      "zoned": "1288,8 628x784",
+      "frames": {
+       "a1": "8,8 628x784",
+       "c1": "1288,8 628x784"
+      },
+      "contexts": [
+       "edid:Dell/U2720Q/ABC\u241fdesk-D1\u241fdefault",
+       "edid:LG/27UL/@DP-1\u241fdesk-D1\u241fdefault"
+      ]
+     },
+     "v8": {
+      "ok": true,
+      "zoned": "1288,8 628x784",
+      "frames": {
+       "a1": "8,8 628x784",
+       "c1": "1500,300 420x260"
+      },
+      "contexts": [
+       "edid:Dell/U2720Q/ABC\u241fdesk-D1\u241fdefault",
+       "edid:LG/27UL/@DP-1\u241fdesk-D1\u241fdefault"
+      ]
+     }
+    },
+    {
+     "scenario": "engine/apply-leaves",
+     "qv4Ok": false,
+     "v8Ok": true,
+     "same": false,
+     "qv4": {
+      "ok": false,
+      "solve": [
+       "b",
+       "d",
+       "e"
+      ],
+      "writes": [
+       "b@2",
+       "d@2",
+       "e@2",
+       "c@3",
+       "d@3",
+       "e@3",
+       "b@4"
+      ],
+      "frames": {
+       "a": {
+        "x": 8,
+        "y": 8,
+        "width": 691,
+        "height": 784
+       },
+       "b": {
+        "x": 1288,
+        "y": 8,
+        "width": 1264,
+        "height": 784
+       },
+       "c": {
+        "x": 707,
+        "y": 8,
+        "width": 565,
+        "height": 256
+       },
+       "d": {
+        "x": 707,
+        "y": 272,
+        "width": 565,
+        "height": 256
+       },
+       "e": {
+        "x": 707,
+        "y": 536,
+        "width": 565,
+        "height": 256
+       }
+      },
+      "check": []
+     },
+     "v8": {
+      "ok": true,
+      "solve": [
+       "b",
+       "c",
+       "d",
+       "e"
+      ],
+      "writes": [
+       "b@2",
+       "c@2",
+       "d@2",
+       "e@2",
+       "c@3",
+       "d@3",
+       "e@3",
+       "b@4"
+      ],
+      "frames": {
+       "a": {
+        "x": 8,
+        "y": 8,
+        "width": 691,
+        "height": 784
+       },
+       "b": {
+        "x": 1288,
+        "y": 8,
+        "width": 1264,
+        "height": 784
+       },
+       "c": {
+        "x": 707,
+        "y": 8,
+        "width": 565,
+        "height": 256
+       },
+       "d": {
+        "x": 707,
+        "y": 272,
+        "width": 565,
+        "height": 256
+       },
+       "e": {
+        "x": 707,
+        "y": 536,
+        "width": 565,
+        "height": 256
+       }
+      },
+      "check": []
+     }
+    },
+    {
+     "scenario": "engine/collect-emptied",
+     "qv4Ok": false,
+     "v8Ok": true,
+     "same": false,
+     "qv4": {
+      "ok": false,
+      "left": [
+       "O2\u241fD1\u241fdefault:0"
+      ],
+      "check": []
+     },
+     "v8": {
+      "ok": true,
+      "left": [],
+      "check": []
+     }
+    }
+   ]
+  },
+  {
+   "label": "audit base",
+   "srcCommit": "522953615c9bd4a8d3b81e579f5dee174b86632e",
+   "srcDirty": false,
+   "rows": [
+    {
+     "scenario": "adapter/visibility-switch",
+     "qv4Ok": false,
+     "v8Ok": true,
+     "same": false,
+     "qv4": {
+      "ok": false,
+      "frames": {
+       "a1": "8,8 691x784",
+       "a2": "707,8 565x784",
+       "c1": "1320,40 300x200",
+       "c2": "1320,40 300x200",
+       "b1": "8,8 1264x784",
+       "c3": "1320,40 300x200"
+      },
+      "contexts": [
+       "edid:Dell/U2720Q/ABC\u241fdesk-D2\u241fdefault",
+       "edid:LG/27UL/@DP-1\u241fdesk-D1\u241fdefault",
+       "edid:LG/27UL/@DP-1\u241fdesk-D2\u241fdefault"
+      ],
+      "check": []
+     },
+     "v8": {
+      "ok": true,
+      "frames": {
+       "a1": "8,8 691x784",
+       "a2": "707,8 565x784",
+       "c1": "1288,8 691x784",
+       "c2": "1987,8 565x388",
+       "b1": "8,8 1264x784",
+       "c3": "1987,404 565x388"
+      },
+      "contexts": [
+       "edid:Dell/U2720Q/ABC\u241fdesk-D2\u241fdefault",
+       "edid:LG/27UL/@DP-1\u241fdesk-D1\u241fdefault",
+       "edid:LG/27UL/@DP-1\u241fdesk-D2\u241fdefault"
+      ],
+      "check": []
+     }
+    },
+    {
+     "scenario": "adapter/configure-gaps",
+     "qv4Ok": false,
+     "v8Ok": true,
+     "same": false,
+     "qv4": {
+      "ok": false,
+      "gapA": 20,
+      "gapD": 8,
+      "frames": {
+       "a1": "8,8 684x784",
+       "a2": "712,8 560x784",
+       "c1": "1320,40 300x200",
+       "d1": "1288,8 691x784",
+       "d2": "1987,8 565x784",
+       "b1": "40,40 300x200"
+      },
+      "contexts": [
+       "edid:Dell/U2720Q/ABC\u241fdesk-D2\u241fdefault",
+       "edid:Dell/U2720Q/ABC\u241fdesk-D1\u241fdefault",
+       "edid:LG/27UL/@DP-1\u241fdesk-D1\u241fdefault",
+       "edid:LG/27UL/@DP-1\u241fdesk-D2\u241fdefault"
+      ],
+      "check": []
+     },
+     "v8": {
+      "ok": true,
+      "gapA": 20,
+      "gapD": 20,
+      "frames": {
+       "a1": "8,8 684x784",
+       "a2": "712,8 560x784",
+       "c1": "1320,40 300x200",
+       "d1": "1288,8 684x784",
+       "d2": "1992,8 560x784",
+       "b1": "40,40 300x200"
+      },
+      "contexts": [
+       "edid:Dell/U2720Q/ABC\u241fdesk-D2\u241fdefault",
+       "edid:Dell/U2720Q/ABC\u241fdesk-D1\u241fdefault",
+       "edid:LG/27UL/@DP-1\u241fdesk-D1\u241fdefault",
+       "edid:LG/27UL/@DP-1\u241fdesk-D2\u241fdefault"
+      ],
+      "check": []
+     }
+    },
+    {
+     "scenario": "adapter/saved-preferences",
+     "qv4Ok": false,
+     "v8Ok": false,
+     "same": false,
+     "qv4": {
+      "ok": false,
+      "saved": [
+       "edid:LG/27UL/\u241fdesk-D1=0.45",
+       "edid:Dell/U2720Q/ABC\u241fdesk-D2=0.6",
+       "edid:LG/27UL/@DP-1\u241fdesk-D1=0.45",
+       "edid:LG/27UL/@DP-1\u241fdesk-D2=0.65"
+      ],
+      "contexts": [
+       "edid:Dell/U2720Q/ABC\u241fdesk-D2\u241fdefault",
+       "edid:Dell/U2720Q/ABC\u241fdesk-D1\u241fdefault",
+       "edid:LG/27UL/@DP-1\u241fdesk-D1\u241fdefault",
+       "edid:LG/27UL/@DP-1\u241fdesk-D2\u241fdefault"
+      ]
+     },
+     "v8": {
+      "ok": false,
+      "saved": [
+       "edid:LG/27UL/\u241fdesk-D1=0.45",
+       "edid:Dell/U2720Q/ABC\u241fdesk-D2=0.6",
+       "edid:Dell/U2720Q/ABC\u241fdesk-D1=0.7",
+       "edid:LG/27UL/@DP-1\u241fdesk-D1=0.45",
+       "edid:LG/27UL/@DP-1\u241fdesk-D2=0.65"
+      ],
+      "contexts": [
+       "edid:Dell/U2720Q/ABC\u241fdesk-D2\u241fdefault",
+       "edid:Dell/U2720Q/ABC\u241fdesk-D1\u241fdefault",
+       "edid:LG/27UL/@DP-1\u241fdesk-D1\u241fdefault",
+       "edid:LG/27UL/@DP-1\u241fdesk-D2\u241fdefault"
+      ]
+     }
+    },
+    {
+     "scenario": "adapter/suspend-zones",
+     "qv4Ok": false,
+     "v8Ok": true,
+     "same": false,
+     "qv4": {
+      "ok": false,
+      "zoned": "1288,8 628x784",
+      "frames": {
+       "a1": "8,8 628x784",
+       "c1": "1288,8 628x784"
+      },
+      "contexts": [
+       "edid:Dell/U2720Q/ABC\u241fdesk-D1\u241fdefault",
+       "edid:LG/27UL/@DP-1\u241fdesk-D1\u241fdefault"
+      ]
+     },
+     "v8": {
+      "ok": true,
+      "zoned": "1288,8 628x784",
+      "frames": {
+       "a1": "8,8 628x784",
+       "c1": "1500,300 420x260"
+      },
+      "contexts": [
+       "edid:Dell/U2720Q/ABC\u241fdesk-D1\u241fdefault",
+       "edid:LG/27UL/@DP-1\u241fdesk-D1\u241fdefault"
+      ]
+     }
+    },
+    {
+     "scenario": "engine/apply-leaves",
+     "qv4Ok": true,
+     "v8Ok": true,
+     "same": true,
+     "qv4": {
+      "ok": true,
+      "solve": [
+       "b",
+       "c",
+       "d",
+       "e"
+      ],
+      "writes": [
+       "b@2",
+       "c@2",
+       "d@2",
+       "e@2",
+       "c@3",
+       "d@3",
+       "e@3",
+       "b@4"
+      ],
+      "frames": {
+       "a": {
+        "x": 8,
+        "y": 8,
+        "width": 691,
+        "height": 784
+       },
+       "b": {
+        "x": 1288,
+        "y": 8,
+        "width": 1264,
+        "height": 784
+       },
+       "c": {
+        "x": 707,
+        "y": 8,
+        "width": 565,
+        "height": 256
+       },
+       "d": {
+        "x": 707,
+        "y": 272,
+        "width": 565,
+        "height": 256
+       },
+       "e": {
+        "x": 707,
+        "y": 536,
+        "width": 565,
+        "height": 256
+       }
+      },
+      "check": []
+     },
+     "v8": {
+      "ok": true,
+      "solve": [
+       "b",
+       "c",
+       "d",
+       "e"
+      ],
+      "writes": [
+       "b@2",
+       "c@2",
+       "d@2",
+       "e@2",
+       "c@3",
+       "d@3",
+       "e@3",
+       "b@4"
+      ],
+      "frames": {
+       "a": {
+        "x": 8,
+        "y": 8,
+        "width": 691,
+        "height": 784
+       },
+       "b": {
+        "x": 1288,
+        "y": 8,
+        "width": 1264,
+        "height": 784
+       },
+       "c": {
+        "x": 707,
+        "y": 8,
+        "width": 565,
+        "height": 256
+       },
+       "d": {
+        "x": 707,
+        "y": 272,
+        "width": 565,
+        "height": 256
+       },
+       "e": {
+        "x": 707,
+        "y": 536,
+        "width": 565,
+        "height": 256
+       }
+      },
+      "check": []
+     }
+    },
+    {
+     "scenario": "engine/collect-emptied",
+     "qv4Ok": false,
+     "v8Ok": true,
+     "same": false,
+     "qv4": {
+      "ok": false,
+      "left": [
+       "O2\u241fD1\u241fdefault:0"
+      ],
+      "check": []
+     },
+     "v8": {
+      "ok": true,
+      "left": [],
+      "check": []
+     }
+    }
+   ]
+  },
+  {
+   "label": "this fix",
+   "srcCommit": "4648e244733607308500f82fcc6381c56bc0ec5c",
+   "srcDirty": false,
+   "rows": [
+    {
+     "scenario": "adapter/visibility-switch",
+     "qv4Ok": true,
+     "v8Ok": true,
+     "same": true,
+     "qv4": {
+      "ok": true,
+      "frames": {
+       "a1": "8,8 691x784",
+       "a2": "707,8 565x784",
+       "c1": "1288,8 691x784",
+       "c2": "1987,8 565x388",
+       "b1": "8,8 1264x784",
+       "c3": "1987,404 565x388"
+      },
+      "contexts": [
+       "edid:Dell/U2720Q/ABC\u241fdesk-D2\u241fdefault",
+       "edid:LG/27UL/@DP-1\u241fdesk-D1\u241fdefault",
+       "edid:LG/27UL/@DP-1\u241fdesk-D2\u241fdefault"
+      ],
+      "check": []
+     },
+     "v8": {
+      "ok": true,
+      "frames": {
+       "a1": "8,8 691x784",
+       "a2": "707,8 565x784",
+       "c1": "1288,8 691x784",
+       "c2": "1987,8 565x388",
+       "b1": "8,8 1264x784",
+       "c3": "1987,404 565x388"
+      },
+      "contexts": [
+       "edid:Dell/U2720Q/ABC\u241fdesk-D2\u241fdefault",
+       "edid:LG/27UL/@DP-1\u241fdesk-D1\u241fdefault",
+       "edid:LG/27UL/@DP-1\u241fdesk-D2\u241fdefault"
+      ],
+      "check": []
+     }
+    },
+    {
+     "scenario": "adapter/configure-gaps",
+     "qv4Ok": true,
+     "v8Ok": true,
+     "same": true,
+     "qv4": {
+      "ok": true,
+      "gapA": 20,
+      "gapD": 20,
+      "frames": {
+       "a1": "8,8 684x784",
+       "a2": "712,8 560x784",
+       "c1": "1320,40 300x200",
+       "d1": "1288,8 684x784",
+       "d2": "1992,8 560x784",
+       "b1": "40,40 300x200"
+      },
+      "contexts": [
+       "edid:Dell/U2720Q/ABC\u241fdesk-D2\u241fdefault",
+       "edid:Dell/U2720Q/ABC\u241fdesk-D1\u241fdefault",
+       "edid:LG/27UL/@DP-1\u241fdesk-D1\u241fdefault",
+       "edid:LG/27UL/@DP-1\u241fdesk-D2\u241fdefault"
+      ],
+      "check": []
+     },
+     "v8": {
+      "ok": true,
+      "gapA": 20,
+      "gapD": 20,
+      "frames": {
+       "a1": "8,8 684x784",
+       "a2": "712,8 560x784",
+       "c1": "1320,40 300x200",
+       "d1": "1288,8 684x784",
+       "d2": "1992,8 560x784",
+       "b1": "40,40 300x200"
+      },
+      "contexts": [
+       "edid:Dell/U2720Q/ABC\u241fdesk-D2\u241fdefault",
+       "edid:Dell/U2720Q/ABC\u241fdesk-D1\u241fdefault",
+       "edid:LG/27UL/@DP-1\u241fdesk-D1\u241fdefault",
+       "edid:LG/27UL/@DP-1\u241fdesk-D2\u241fdefault"
+      ],
+      "check": []
+     }
+    },
+    {
+     "scenario": "adapter/saved-preferences",
+     "qv4Ok": true,
+     "v8Ok": true,
+     "same": true,
+     "qv4": {
+      "ok": true,
+      "saved": [
+       "edid:LG/27UL/@DP-1\u241fdesk-D1=0.45",
+       "edid:Dell/U2720Q/ABC\u241fdesk-D2=0.6",
+       "edid:Dell/U2720Q/ABC\u241fdesk-D1=0.7",
+       "edid:LG/27UL/@DP-1\u241fdesk-D2=0.65"
+      ],
+      "contexts": [
+       "edid:Dell/U2720Q/ABC\u241fdesk-D2\u241fdefault",
+       "edid:Dell/U2720Q/ABC\u241fdesk-D1\u241fdefault",
+       "edid:LG/27UL/@DP-1\u241fdesk-D1\u241fdefault",
+       "edid:LG/27UL/@DP-1\u241fdesk-D2\u241fdefault"
+      ]
+     },
+     "v8": {
+      "ok": true,
+      "saved": [
+       "edid:LG/27UL/@DP-1\u241fdesk-D1=0.45",
+       "edid:Dell/U2720Q/ABC\u241fdesk-D2=0.6",
+       "edid:Dell/U2720Q/ABC\u241fdesk-D1=0.7",
+       "edid:LG/27UL/@DP-1\u241fdesk-D2=0.65"
+      ],
+      "contexts": [
+       "edid:Dell/U2720Q/ABC\u241fdesk-D2\u241fdefault",
+       "edid:Dell/U2720Q/ABC\u241fdesk-D1\u241fdefault",
+       "edid:LG/27UL/@DP-1\u241fdesk-D1\u241fdefault",
+       "edid:LG/27UL/@DP-1\u241fdesk-D2\u241fdefault"
+      ]
+     }
+    },
+    {
+     "scenario": "adapter/suspend-zones",
+     "qv4Ok": true,
+     "v8Ok": true,
+     "same": true,
+     "qv4": {
+      "ok": true,
+      "zoned": "1288,8 628x784",
+      "frames": {
+       "a1": "8,8 628x784",
+       "c1": "1500,300 420x260"
+      },
+      "contexts": [
+       "edid:Dell/U2720Q/ABC\u241fdesk-D1\u241fdefault",
+       "edid:LG/27UL/@DP-1\u241fdesk-D1\u241fdefault"
+      ]
+     },
+     "v8": {
+      "ok": true,
+      "zoned": "1288,8 628x784",
+      "frames": {
+       "a1": "8,8 628x784",
+       "c1": "1500,300 420x260"
+      },
+      "contexts": [
+       "edid:Dell/U2720Q/ABC\u241fdesk-D1\u241fdefault",
+       "edid:LG/27UL/@DP-1\u241fdesk-D1\u241fdefault"
+      ]
+     }
+    },
+    {
+     "scenario": "engine/apply-leaves",
+     "qv4Ok": true,
+     "v8Ok": true,
+     "same": true,
+     "qv4": {
+      "ok": true,
+      "solve": [
+       "b",
+       "c",
+       "d",
+       "e"
+      ],
+      "writes": [
+       "b@2",
+       "c@2",
+       "d@2",
+       "e@2",
+       "c@3",
+       "d@3",
+       "e@3",
+       "b@4"
+      ],
+      "frames": {
+       "a": {
+        "x": 8,
+        "y": 8,
+        "width": 691,
+        "height": 784
+       },
+       "b": {
+        "x": 1288,
+        "y": 8,
+        "width": 1264,
+        "height": 784
+       },
+       "c": {
+        "x": 707,
+        "y": 8,
+        "width": 565,
+        "height": 256
+       },
+       "d": {
+        "x": 707,
+        "y": 272,
+        "width": 565,
+        "height": 256
+       },
+       "e": {
+        "x": 707,
+        "y": 536,
+        "width": 565,
+        "height": 256
+       }
+      },
+      "check": []
+     },
+     "v8": {
+      "ok": true,
+      "solve": [
+       "b",
+       "c",
+       "d",
+       "e"
+      ],
+      "writes": [
+       "b@2",
+       "c@2",
+       "d@2",
+       "e@2",
+       "c@3",
+       "d@3",
+       "e@3",
+       "b@4"
+      ],
+      "frames": {
+       "a": {
+        "x": 8,
+        "y": 8,
+        "width": 691,
+        "height": 784
+       },
+       "b": {
+        "x": 1288,
+        "y": 8,
+        "width": 1264,
+        "height": 784
+       },
+       "c": {
+        "x": 707,
+        "y": 8,
+        "width": 565,
+        "height": 256
+       },
+       "d": {
+        "x": 707,
+        "y": 272,
+        "width": 565,
+        "height": 256
+       },
+       "e": {
+        "x": 707,
+        "y": 536,
+        "width": 565,
+        "height": 256
+       }
+      },
+      "check": []
+     }
+    },
+    {
+     "scenario": "engine/collect-emptied",
+     "qv4Ok": true,
+     "v8Ok": true,
+     "same": true,
+     "qv4": {
+      "ok": true,
+      "left": [],
+      "check": []
+     },
+     "v8": {
+      "ok": true,
+      "left": [],
+      "check": []
+     }
+    }
+   ]
+  }
+ ]
+}
