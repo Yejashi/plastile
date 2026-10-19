@@ -71,6 +71,10 @@ def load_workloads(path: Path = WORKLOAD_FILE) -> dict[str, dict]:
             raise ValueError(f"{name}: expect must be 'resize' or 'activate'")
         if not w.get("cycle"):
             raise ValueError(f"{name}: empty cycle")
+        baselines = ([w["matchedBaseline"]] if w.get("matchedBaseline") else []) + list(w.get("controlBaselines", []))
+        for c in baselines:
+            if c not in wl or c == name:
+                raise ValueError(f"{name}: unknown baseline {c}")
     return wl
 
 
@@ -627,7 +631,8 @@ def finish(outdir: Path, ctx: dict, wl_defs: dict[str, dict], bootstrap: int = 2
     common.write_jsonl(outdir / "samples.jsonl", samples)
     common.write_jsonl(outdir / "warmup.jsonl", warmups)
     matched = {n: w["matchedBaseline"] for n, w in wl_defs.items() if w.get("matchedBaseline")}
-    s = summarize.summarize(samples, warmup=warmups, matched=matched, b=bootstrap, seed=seed)
+    controls = {n: list(w["controlBaselines"]) for n, w in wl_defs.items() if w.get("controlBaselines")}
+    s = summarize.summarize(samples, warmup=warmups, matched=matched, controls=controls, b=bootstrap, seed=seed)
     s["context"] = {k: ctx.get(k) for k in ("layer", "inputSource", "environmentId", "outputName", "refreshHzDeclared",
                                              "implementationCommit", "implementationDirty", "clockResolutionNs")}
     s["schemaProblems"] = problems

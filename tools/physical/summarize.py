@@ -192,7 +192,7 @@ def compare(cand: list[dict], base: list[dict], cand_sum: dict, base_sum: dict, 
 
 
 def summarize(records: list[dict], *, warmup: list[dict] | None = None, matched: dict[str, str] | None = None,
-              b: int = 2000, seed: int = 1) -> dict:
+              controls: dict[str, list[str]] | None = None, b: int = 2000, seed: int = 1) -> dict:
     rng = random.Random(seed)
     measured = [r for r in records if not r.get("warmup")]
     stray_warmup = [r for r in records if r.get("warmup")]
@@ -215,12 +215,15 @@ def summarize(records: list[dict], *, warmup: list[dict] | None = None, matched:
                               "inputToFirstPresentNs": stats([r["inputToFirstPresentNs"] for r in ok
                                                               if r.get("inputToFirstPresentNs") is not None])})
     matched = matched or {}
+    controls = controls or {}
     for key in groups:
         layer, workload, condition, output, hz, n = key
         if condition == "none":
             continue
         for bkey in groups:
-            if bkey[2] != "none" or bkey[0] != layer or bkey[3] != output or bkey[4] != hz or bkey[5] != n:
+            if bkey == key or (bkey[2] != "none" and bkey[1] not in controls.get(workload, ())):
+                continue
+            if bkey[0] != layer or bkey[3] != output or bkey[4] != hz or bkey[5] != n:
                 continue
             is_matched = matched.get(workload) == bkey[1]
             c = compare(groups[key], groups[bkey], sums[key], sums[bkey], b=b, rng=rng, matched=is_matched)
@@ -289,12 +292,14 @@ def main(argv: list[str] | None = None) -> int:
     args = ap.parse_args(argv)
     records = [r for p in args.samples for r in read_jsonl(p)]
     warm = [r for p in args.warmup for r in read_jsonl(p)]
-    matched = {}
+    matched, controls = {}, {}
     if args.workloads and args.workloads.exists():
         for name, w in json.loads(args.workloads.read_text()).get("workloads", {}).items():
             if w.get("matchedBaseline"):
                 matched[name] = w["matchedBaseline"]
-    s = summarize(records, warmup=warm, matched=matched, b=args.bootstrap, seed=args.seed)
+            if w.get("controlBaselines"):
+                controls[name] = list(w["controlBaselines"])
+    s = summarize(records, warmup=warm, matched=matched, controls=controls, b=args.bootstrap, seed=args.seed)
     print(render(s))
     if args.json:
         args.json.write_text(json.dumps(s, indent=1) + "\n")

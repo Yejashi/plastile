@@ -154,6 +154,17 @@ class VerdictTests(unittest.TestCase):
         [c] = s["comparisons"]
         self.assertFalse(c["matchedBaseline"])
 
+    def test_named_controls_of_either_condition(self):
+        recs = runs("P03-focus", "plastile", 2, 20, 10, 1, 1) + runs("P00-switch", "none", 2, 20, 5, 1, 2)
+        recs += runs("P00-switch-tiled", "plastile", 2, 20, 10, 1, 3) + runs("P03-ratio", "plastile", 2, 20, 10, 1, 4)
+        s = summarize.summarize(recs, matched={"P03-focus": "P00-switch"},
+                                controls={"P03-focus": ["P00-switch-tiled"]}, b=20)
+        pairs = {(c["candidate"], c["baseline"]): c["matchedBaseline"] for c in s["comparisons"]}
+        self.assertTrue(pairs[("P03-focus", "P00-switch")])
+        self.assertFalse(pairs[("P03-focus", "P00-switch-tiled")])
+        self.assertNotIn(("P03-focus", "P03-ratio"), pairs)  # a Plastile workload is a baseline only when named
+        self.assertNotIn(("P00-switch-tiled", "P03-focus"), pairs)
+
     def test_no_successes_is_inconclusive(self):
         recs = [record("a", 0, success=False)] + runs("P02-quicktile", "none", 2, 20, 10, 1, 2)
         s = summarize.summarize(recs, matched={"P03-ratio": "P02-quicktile"}, b=20)

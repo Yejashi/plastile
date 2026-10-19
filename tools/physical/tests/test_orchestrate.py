@@ -107,6 +107,8 @@ class PlanTests(unittest.TestCase):
             if w.get("matchedBaseline"):
                 self.assertEqual(wl[w["matchedBaseline"]]["condition"], "none", name)
                 self.assertEqual(wl[w["matchedBaseline"]]["expect"], w["expect"], name)
+            for c in w.get("controlBaselines", []):
+                self.assertEqual(wl[c]["expect"], w["expect"], name)
 
 
 class BindingTests(unittest.TestCase):

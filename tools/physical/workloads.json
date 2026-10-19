@@ -5,7 +5,8 @@
     "condition 'none': Plastile is not loaded (no tiling script). condition 'plastile': Plastile is loaded.",
     "expect 'resize': each sample must change the size of at least one fixture window. expect 'activate': each sample must change which fixture is activated.",
     "P02-quicktile alternates Quick Tile Top and Bottom on a window first tiled Left: Left -> TopLeft -> Left (observed source: kwin v6.7.5 src/window.cpp combineQuickTileMode, handleQuickTileShortcut). It never repeats a mode, so it never moves the window to another output.",
-    "matchedBaseline names the 'none' workload used for the PERFORMANCE section 4 verdict; every other baseline at the same output and window count is reported as a control comparison only."
+    "matchedBaseline names the 'none' workload used for the PERFORMANCE section 4 verdict; every other baseline at the same output and window count is reported as a control comparison only.",
+    "controlBaselines names further workloads (of either condition) compared as controls only; they never change the verdict. P00-switch-tiled is KWin's own switch on Plastile's tiles: the activation configure waits for the decoration's re-render, which grows with window area (PERFORMANCE section 5.1), and P00-switch runs on KWin's smaller placement."
   ],
   "workloads": {
     "P00-maximize": {
@@ -58,6 +59,16 @@
       "cycle": ["plastile.focus.next"],
       "expect": "activate",
       "matchedBaseline": "P00-switch",
+      "controlBaselines": ["P00-switch-tiled"],
+      "minWindows": 2
+    },
+    "P00-switch-tiled": {
+      "condition": "plastile",
+      "optional": true,
+      "description": "KWin's Switch to Window to the Right with Plastile loaded: KWin's own activation on Plastile's tile geometry (control for P03-focus at tile-sized windows; KWin's switch wraps around, kwin v6.7.5 src/useractions.cpp switchWindow, so it alternates the master and a stack tile while focus.next cycles every tile)",
+      "setup": [],
+      "cycle": ["Switch Window Right"],
+      "expect": "activate",
       "minWindows": 2
     }
   }
