@@ -277,7 +277,7 @@ export class KwinAdapter implements HostPort {
   /** Disconnect everything owned; called after the engine stopped (invalidate first). */
   detach(): void {
     this.alive = false;
-    for (const e of this.entries.values()) this.release(e);
+    this.entries.forEach((e) => this.release(e));
     this.entries.clear();
     this.disconnectAll(this.globals);
     this.disconnectAll(this.outputConns);
@@ -290,14 +290,14 @@ export class KwinAdapter implements HostPort {
 
   connectionCount(): number {
     let n = this.globals.length + this.outputConns.length + this.desktopConns.length;
-    for (const e of this.entries.values()) n += e.conns.length;
+    this.entries.forEach((e) => { n += e.conns.length; });
     return n;
   }
 
   /** Armed one-shot watchers included in connectionCount(): at most one per window. */
   transientConnectionCount(): number {
     let n = 0;
-    for (const e of this.entries.values()) if (e.margin) n++;
+    this.entries.forEach((e) => { if (e.margin) n++; });
     return n;
   }
 
@@ -340,10 +340,10 @@ export class KwinAdapter implements HostPort {
     const prev = this.keys;
     this.keys = outputKeys(this.ws.screens);
     const renames = new Map<string, string>();
-    for (const [name, k] of this.keys) {
+    this.keys.forEach((k, name) => {
       const p = prev.get(name);
       if (p && p.key !== k.key) renames.set(p.key, k.key);
-    }
+    });
     if (renames.size > 0 && this.alive && this.engine) this.engine.outputsRekeyed(renames);
   }
 
@@ -549,11 +549,11 @@ export class KwinAdapter implements HostPort {
   setWatchTitles(on: boolean): void {
     if (on === this.watchTitles) return;
     this.watchTitles = on;
-    for (const e of this.entries.values()) {
-      if (!e.hooked) continue;
+    this.entries.forEach((e) => {
+      if (!e.hooked) return;
       this.watchCaption(e, on);
       if (on) this.onCaption(e);
-    }
+    });
   }
 
   private release(e: Entry): void { this.disconnectAll(e.conns); }

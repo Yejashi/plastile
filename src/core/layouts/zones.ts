@@ -178,15 +178,15 @@ export const zones: Layout<ZoneState> = {
     fitMaxima(slots, input, notes);
     // Windows sharing a zone stack; the top one (most recently assigned or activated) is raised.
     const raise: WindowId[] = [];
-    for (const list of members.values()) {
-      if (list.length < 2) continue;
+    members.forEach((list) => {
+      if (list.length < 2) return;
       let top = list[0], at = -1;
       for (const id of list) {
         const k = state.order.indexOf(id);
         if (k > at) { at = k; top = id; }
       }
       raise.push(top);
-    }
+    });
     return { slots, overflow: [], notes, raise };
   },
   command(state: ZoneState, cmd: LayoutCommand): CommandOutcome<ZoneState> {

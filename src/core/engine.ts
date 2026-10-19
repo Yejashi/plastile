@@ -448,7 +448,7 @@ export class Engine {
       if (!ids.has(r.id)) { this.tombstones.set(r.id, r.gen); this.drop(r); this.counters.removed++; }
     }
     for (const s of live) this.add(s, false);
-    for (const c of this.contexts.values()) { c.revision++; this.markDirty(c.key); }
+    this.contexts.forEach((c) => { c.revision++; this.markDirty(c.key); });
     this.trace.record(this.svc.now(), "reconcile", undefined, { windows: live.length });
     this.ensureFlush();
   }
@@ -461,10 +461,10 @@ export class Engine {
     this.deadlineAt = Infinity;
     this.sweepParked(true); // every parked window back inside its output's work area (SCROLLING §5)
     this.releaseAllZones(); // zoned windows keep their frames (ZONES §2)
-    for (const r of this.recs.values()) {
+    this.recs.forEach((r) => {
       L.cancel(r.ledger);
       this.restoreBorder(r);
-    }
+    });
   }
 
   // ------------------------------------------------------------------- events
@@ -773,7 +773,7 @@ export class Engine {
     this.refreshScales();
     this.syncActivities();
     this.retryOverflow("*"); // work areas may have grown
-    for (const c of this.contexts.values()) { c.settings = null; this.markDirty(c.key); }
+    this.contexts.forEach((c) => { c.settings = null; this.markDirty(c.key); });
     this.recheckHiddenOpens();
     this.ensureFlush();
   }
@@ -836,11 +836,11 @@ export class Engine {
     if (!this.alive) return;
     this.trace.record(this.svc.now(), "topology", undefined, { workArea: outputs });
     this.areaCache.clear();
-    for (const c of this.contexts.values()) {
-      if (outputs.indexOf(c.key.output) < 0) continue;
+    this.contexts.forEach((c) => {
+      if (outputs.indexOf(c.key.output) < 0) return;
       this.markDirty(c.key);
       this.retryOverflow(c.id); // the area may have grown (BEHAVIOR §11)
-    }
+    });
     this.ensureFlush();
   }
 
@@ -858,7 +858,9 @@ export class Engine {
     this.trace.record(this.svc.now(), "configure", undefined, { rules, settings });
     const prevSettingsFor = this.opts.settingsFor;
     const before = new Map<Ctx, ContextSettings>();
-    if (settings) for (const c of this.contexts.values()) before.set(c, this.ctxSettings(c));
+    // forEach (PERFORMANCE §7.1): resolving a context's settings can re-key outputs (outputsRekeyed
+    // deletes and re-adds contexts); QV4's for...of would leave a context out of the comparison.
+    if (settings) this.contexts.forEach((c) => { before.set(c, this.ctxSettings(c)); });
     this.opts = { ...this.opts, ...next, deadlineMs: next.deadlineMs ?? this.opts.deadlineMs,
                   readinessMs: next.readinessMs ?? this.opts.readinessMs };
     if (next.traceCapacity !== undefined && next.traceCapacity !== this.trace.capacity) this.trace.resize(next.traceCapacity);
@@ -866,26 +868,26 @@ export class Engine {
     // Whether tiling was enabled or disabled per context id, filled as contexts are compared.
     const toggled = new Map<ContextId, boolean>();
     if (settings) {
-      for (const [c, old] of before) {
+      before.forEach((old, c) => {
         c.settings = null;
         const now = this.ctxSettings(c);
         toggled.set(c.id, old.enabled !== now.enabled);
-        if (sameValue(old, now)) continue;
+        if (sameValue(old, now)) return;
         if (c.states["master-stack"] !== undefined) this.rebaseMasterStack(c, old);
         this.markDirty(c.key);
         this.retryOverflow(c.id); // layout parameters changed (BEHAVIOR §11)
-      }
+      });
     }
     if (rules) {
-      for (const r of this.recs.values()) this.reclassify(r, "config");
+      this.recs.forEach((r) => this.reclassify(r, "config"));
       this.retryOverflow("*");
     } else if (settings) {
       // Windows floating where tiling was disabled have no context object to compare.
       const prev = (k: ContextKey): ContextSettings => (prevSettingsFor ? prevSettingsFor(k) : DEFAULT_SETTINGS);
-      for (const r of this.recs.values()) {
-        if (r.mode === "pending" || r.mode === "excluded") continue;
+      this.recs.forEach((r) => {
+        if (r.mode === "pending" || r.mode === "excluded") return;
         const key = this.singleContextKey(r.membership);
-        if (key === null) continue;
+        if (key === null) return;
         const id = contextId(key);
         let flipped = toggled.get(id);
         if (flipped === undefined) {
@@ -893,7 +895,7 @@ export class Engine {
           toggled.set(id, flipped);
         }
         if (flipped) this.reclassify(r, "config");
-      }
+      });
     }
     this.ensureFlush();
   }
@@ -952,13 +954,13 @@ export class Engine {
     // Members in context order first: windows moving together keep their relative order.
     const order: Rec[] = [];
     const seen = new Set<WindowId>();
-    for (const c of this.contexts.values()) {
+    this.contexts.forEach((c) => {
       for (const id of c.members) {
         const r = this.recs.get(id);
         if (r && !seen.has(id)) { seen.add(id); order.push(r); }
       }
-    }
-    for (const r of this.recs.values()) if (!seen.has(r.id)) order.push(r);
+    });
+    this.recs.forEach((r) => { if (!seen.has(r.id)) order.push(r); });
     for (const r of order) if (r.mode !== "pending") this.reclassify(r, "activities");
   }
 
@@ -1089,14 +1091,17 @@ export class Engine {
   private collectEmpty(): void {
     if (this.emptied.size === 0) return;
     const later = new Set<ContextId>();
-    for (const id of this.emptied) {
+    // forEach, not for...of or a copy (PERFORMANCE §7.1): prefsOf can re-key outputs, and
+    // outputsRekeyed moves an entry of `emptied` to the context's new id. forEach visits the moved
+    // entry, which a copy would not; QV4's for...of would skip the entry after it.
+    this.emptied.forEach((id) => {
       const c = this.contexts.get(id);
-      if (!c || c.members.length > 0) continue;
-      if (this.dirty.has(id)) { later.add(id); continue; }
+      if (!c || c.members.length > 0) return;
+      if (this.dirty.has(id)) { later.add(id); return; }
       const prefs = this.prefsOf(c);
       this.contexts.delete(id);
       if (prefs) this.retain(c.key, prefs);
-    }
+    });
     this.emptied = later;
   }
 
@@ -1205,9 +1210,11 @@ export class Engine {
   }
 
   private markVisibleDirty(onlyStale = false): void {
-    for (const c of this.contexts.values()) {
+    // forEach (PERFORMANCE §7.1): isVisible reads an output, which can re-key outputs (the adapter's
+    // keyOf calls outputsRekeyed), deleting and re-adding contexts; QV4's for...of would skip one.
+    this.contexts.forEach((c) => {
       if (this.isVisible(c.key) && (!onlyStale || c.applied !== c.revision || this.dirty.has(c.id))) this.dirty.add(c.id);
-    }
+    });
   }
 
   private ensureFlush(): void {
@@ -1301,9 +1308,9 @@ export class Engine {
     this.retryContexts = new Set();
     this.retryWindows = new Set();
     const list: Rec[] = [];
-    for (const r of this.recs.values()) {
+    this.recs.forEach((r) => {
       if (isOverflow(r) && (all || ids.has(r.id) || (r.ctx !== null && ctxs.has(contextId(r.ctx))))) list.push(r);
-    }
+    });
     list.sort((a, b) => a.insertedAt - b.insertedAt);
     for (const r of list) {
       r.exception = null;
@@ -1327,10 +1334,10 @@ export class Engine {
 
   /** Activation or topology events may legitimately pull parked windows back (KWin 6.8): fresh allowance. */
   private resetReparks(): void {
-    for (const id of this.parked.keys()) {
+    this.parked.forEach((_p, id) => {
       const r = this.recs.get(id);
       if (r) r.reparks = 0;
-    }
+    });
   }
 
   private runCorrections(): void {
@@ -1590,9 +1597,11 @@ export class Engine {
   /** Cancel the deadline once no request or readiness wait is outstanding (no idle timer). */
   private disarmIfIdle(): void {
     if (!this.cancelDeadline) return;
-    for (const r of this.recs.values()) {
-      if (r.ledger.outstanding || r.readyBy !== null || r.open === "requested") return;
-    }
+    let waiting = false;
+    this.recs.forEach((r) => {
+      if (!waiting && (r.ledger.outstanding || r.readyBy !== null || r.open === "requested")) waiting = true;
+    });
+    if (waiting) return;
     this.cancelDeadline();
     this.cancelDeadline = null;
     this.deadlineAt = Infinity;
@@ -1764,10 +1773,10 @@ export class Engine {
         "no room");
       (kept ??= new Set()).add(id);
     }
-    for (const id of res.slots.keys()) {
+    res.slots.forEach((_slot, id) => {
       const r = this.recs.get(id);
       if (r && r.open === "joining" && !this.unmaximizeOnOpen(r)) again = true;
-    }
+    });
     return { again, kept };
   }
 
@@ -1928,13 +1937,13 @@ export class Engine {
     const tol = frameTolerance(this.scales.get(c.key.output) ?? 1);
     this.applying++;
     try {
-      for (const [id, target] of res.slots) {
-        if (id === r.id) continue;
+      res.slots.forEach((target, id) => {
+        if (id === r.id) return;
         const p = this.recs.get(id);
-        if (!p || !this.writable(p)) continue;
+        if (!p || !this.writable(p)) return;
         p.ledger.tol = tol;
         this.applyTarget(p, target);
-      }
+      });
     } finally {
       this.applying--;
     }
@@ -1960,12 +1969,14 @@ export class Engine {
     if (kind === "move") {
       // Drop onto another tile swaps positions; anywhere else snaps back (one solve).
       const cx = f.x + f.width / 2, cy = f.y + f.height / 2;
-      for (const [other, rect] of c.plan) {
-        if (other !== r.id && cx >= rect.x && cx < rect.x + rect.width && cy >= rect.y && cy < rect.y + rect.height) {
-          this.swapIn(c, r.id, other);
-          break;
+      // The first other slot under the drop point, found before the swap changes the plan.
+      let onto = null as WindowId | null;
+      c.plan.forEach((rect, other) => {
+        if (onto === null && other !== r.id && cx >= rect.x && cx < rect.x + rect.width && cy >= rect.y && cy < rect.y + rect.height) {
+          onto = other;
         }
-      }
+      });
+      if (onto !== null) this.swapIn(c, r.id, onto);
     } else if (!this.interactionSlotKept(r, c)) {
       // A command moved the window to another slot during the resize: its edges describe the
       // old slot. The window takes its new slot; the layout's ratios stay as they are.
@@ -2071,7 +2082,7 @@ export class Engine {
         if (!this.suspended) {
           this.suspended = true;
           // A window still waiting for its open decision is adopted at resume, left as it is (ADR-021).
-          for (const w of this.recs.values()) if (w.open === "wait" || w.open === "watch" || w.open === "hidden") w.open = null;
+          this.recs.forEach((w) => { if (w.open === "wait" || w.open === "watch" || w.open === "hidden") w.open = null; });
           this.openChecks.clear();
           this.openHidden.clear();
           this.releaseOwnership();
@@ -2081,11 +2092,11 @@ export class Engine {
         this.suspended = false;
         // Adopt the live state again: owned borders, the readiness waits the suspension
         // cancelled, and one solve per visible context.
-        for (const w of this.recs.values()) {
+        this.recs.forEach((w) => {
           this.applyBorderPolicy(w);
           if (w.readyBy !== null) this.armDeadline(w.readyBy);
-        }
-        for (const c of this.contexts.values()) { c.revision++; this.markDirty(c.key); }
+        });
+        this.contexts.forEach((c) => { c.revision++; this.markDirty(c.key); });
         this.ensureFlush();
         this.notify(() => this.onSuspendChange && this.onSuspendChange(false));
         return ok();
@@ -2276,7 +2287,9 @@ export class Engine {
     const under = (g: Rect | undefined): boolean => !!g && cx >= g.x && cx < g.x + g.width && cy >= g.y && cy < g.y + g.height;
     let out = r.membership.output;
     if (out === null || !under(this.outputGeom.get(out))) {
-      for (const [id, g] of this.outputGeom) if (under(g)) { out = id; break; }
+      let first = null as OutputId | null;
+      this.outputGeom.forEach((g, id) => { if (first === null && under(g)) first = id; });
+      if (first !== null) out = first;
     }
     if (out === null) return null;
     const area = this.areaOf(out, r);
@@ -2340,7 +2353,7 @@ export class Engine {
       let live = 0;
       const p = key === null ? undefined : this.pendingFloats.get(key);
       if (p !== undefined && !(p.window !== "" && this.recs.has(p.window))) {
-        for (const x of this.recs.values()) if (x.mode !== "excluded" && identityKey(x.meta) === key) live++;
+        this.recs.forEach((x) => { if (x.mode !== "excluded" && identityKey(x.meta) === key) live++; });
       }
       const m = matchFloat(this.pendingFloats, key, live);
       if (m.kind === "ambiguous") {
@@ -2364,8 +2377,9 @@ export class Engine {
 
   /** The pending preference whose window hint is `id`, with its key (at most 64 entries are scanned). */
   private hintedFloat(id: WindowId): { key: string; pref: FloatPreference } | null {
-    for (const [key, pref] of this.pendingFloats) if (pref.window === id) return { key, pref };
-    return null;
+    let hit = null as { key: string; pref: FloatPreference } | null;
+    this.pendingFloats.forEach((pref, key) => { if (hit === null && pref.window === id) hit = { key, pref }; });
+    return hit;
   }
 
   /**
@@ -2498,14 +2512,14 @@ export class Engine {
     if (dest === null) return { status: "noop", reason: "no other output", targets: [] };
     const desk = this.host.visibleDesktop(dest.id);
     const act = this.host.currentActivity();
-    let best: Rec | null = null;
-    for (const w of this.recs.values()) {
-      if (w.mode !== "tiled" && w.mode !== "floating") continue;
-      if (w.membership.output !== dest.id || w.states.minimized || w.states.hidden) continue;
-      if (!w.membership.onAllDesktops && (desk === null || !w.membership.desktops.includes(desk))) continue;
-      if (w.membership.activities.length > 0 && !w.membership.activities.includes(act)) continue;
+    let best = null as Rec | null; // assigned in the callback: no narrowing to null
+    this.recs.forEach((w) => {
+      if (w.mode !== "tiled" && w.mode !== "floating") return;
+      if (w.membership.output !== dest.id || w.states.minimized || w.states.hidden) return;
+      if (!w.membership.onAllDesktops && (desk === null || !w.membership.desktops.includes(desk))) return;
+      if (w.membership.activities.length > 0 && !w.membership.activities.includes(act)) return;
       if (w.focusSeq > 0 && (!best || w.focusSeq > best.focusSeq)) best = w;
-    }
+    });
     if (!best && desk !== null) {
       const c = this.contexts.get(contextId({ output: dest.id, desktop: desk, activity: act }));
       const first = c ? this.solveInput(c, null).ids[0] : undefined;
@@ -2686,10 +2700,10 @@ export class Engine {
     virtual: ReadonlyMap<WindowId, Rect> | undefined): void {
     if (parked === undefined && this.parked.size === 0) return;
     const set = new Set(parked ?? []);
-    for (const [id, target] of slots) {
+    slots.forEach((target, id) => {
       if (set.has(id)) this.parked.set(id, { ctx: c.key, rect: target, virtual: virtual?.get(id) ?? target });
       else this.parked.delete(id);
-    }
+    });
   }
 
   /**
@@ -2833,7 +2847,10 @@ export class Engine {
   }
 
   private releaseAllZones(): void {
-    for (const c of this.contexts.values()) this.releaseZones(c);
+    // forEach (PERFORMANCE §7.1): a released window's float rectangle reads the work area, which can
+    // re-key outputs (contexts deleted and re-added); QV4's for...of would skip a context. A context
+    // visited again under its new id is already released (releaseZones is a no-op then).
+    this.contexts.forEach((c) => this.releaseZones(c));
   }
 
   /** Assignments to zones the active zone layout does not have (after a configuration change) are released. */
@@ -3018,7 +3035,7 @@ export class Engine {
   check(): string[] {
     const errs: string[] = [];
     const seen = new Map<WindowId, ContextId>();
-    for (const c of this.contexts.values()) {
+    this.contexts.forEach((c) => {
       for (const id of c.members) {
         const r = this.recs.get(id);
         if (!r) errs.push(`${c.id}: ghost member ${id}`);
@@ -3028,10 +3045,10 @@ export class Engine {
         seen.set(id, c.id);
       }
       if (new Set(c.members).size !== c.members.length) errs.push(`${c.id}: duplicate members`);
-    }
-    for (const r of this.recs.values()) {
+    });
+    this.recs.forEach((r) => {
       if (r.mode === "tiled" && !seen.has(r.id)) errs.push(`${r.id}: tiled but in no context`);
-    }
+    });
     return errs;
   }
 
@@ -3080,12 +3097,17 @@ export class Engine {
    */
   contextPreferences(): Array<{ key: ContextKey; prefs: ContextPrefs }> {
     const out: Array<{ key: ContextKey; prefs: ContextPrefs }> = [];
-    for (const c of this.contexts.values()) {
-      const p = this.prefsOf(c);
-      if (p) out.push({ key: c.key, prefs: p });
+    // Two passes over a copy (PERFORMANCE §7.1): prefsOf can re-key outputs, which deletes and re-adds
+    // contexts under new keys. Live iteration loses one in QV4 and visits one twice in ECMAScript;
+    // a copy visits each context once, and reading the keys after every prefsOf gives the current ones.
+    const live = Array.from(this.contexts.values());
+    const prefs = live.map((c) => this.prefsOf(c));
+    for (let i = 0; i < live.length; ++i) {
+      const p = prefs[i];
+      if (p) out.push({ key: live[i].key, prefs: p });
     }
     const kept: Array<{ key: ContextKey; prefs: ContextPrefs }> = [];
-    for (const k of this.retained.values()) kept.push({ key: k.key, prefs: k.prefs });
+    this.retained.forEach((k) => { kept.push({ key: k.key, prefs: k.prefs }); });
     for (let i = kept.length - 1; i >= 0; --i) out.push(kept[i]);
     return out;
   }
@@ -3107,8 +3129,8 @@ export class Engine {
   /** User float decisions per application, newest first: the accessor for persistence (T27). */
   floatPreferences(): FloatPreference[] {
     const out: FloatPreference[] = [];
-    for (const p of this.floatPrefs.values()) out.push(p);
-    for (const [k, p] of this.pendingFloats) if (!this.floatPrefs.has(k)) out.push(p);
+    this.floatPrefs.forEach((p) => { out.push(p); });
+    this.pendingFloats.forEach((p, k) => { if (!this.floatPrefs.has(k)) out.push(p); });
     return out.reverse();
   }
 
@@ -3125,15 +3147,15 @@ export class Engine {
       this.pendingFloats.set(key, p);
       if (this.pendingFloats.size > FLOATS_MAX) this.pendingFloats.delete(this.pendingFloats.keys().next().value as string);
     }
-    for (const r of this.recs.values()) {
+    this.recs.forEach((r) => {
       if (!r.restoreChecked && r.mode !== "pending") { r.restoreChecked = true; this.restoreChecks.add(r.id); }
-    }
+    });
     if (this.restoreChecks.size > 0) this.ensureFlush();
   }
 
   outstandingCount(): number {
     let n = 0;
-    for (const r of this.recs.values()) if (r.ledger.outstanding) n++;
+    this.recs.forEach((r) => { if (r.ledger.outstanding) n++; });
     return n;
   }
 }
@@ -3183,8 +3205,9 @@ function suspensionsOf(s: WindowStates): Set<Suspension> {
 
 function sameSet<T>(a: Set<T>, b: Set<T>): boolean {
   if (a.size !== b.size) return false;
-  for (const v of a) if (!b.has(v)) return false;
-  return true;
+  let same = true;
+  a.forEach((v) => { if (same && !b.has(v)) same = false; });
+  return same;
 }
 
 /** Structural equality of plain data (settings): primitives, arrays and plain objects. */

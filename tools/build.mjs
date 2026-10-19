@@ -1,10 +1,21 @@
 // Bundle the TypeScript runtime into the KWin package (options: tools/bundle-options.ts).
-// The bundle must load without QV4 warnings: a variable referenced above its declaration
-// fails the build (tools/qv4check.ts; KWin logs qt.qml.usedbeforedeclared for it).
+// Two checks fail the build:
+//  - src/ walks a Map, a Set or one of their iterators with for...of (tools/itercheck.ts, type-aware):
+//    QV4 skips an entry when the loop body deletes one (docs/validation/PERFORMANCE.md §7.1);
+//  - the bundle references a variable above its declaration (tools/qv4check.ts; KWin logs
+//    qt.qml.usedbeforedeclared for it).
 import { build } from "esbuild";
 import { readFileSync, writeFileSync } from "node:fs";
 import { BUNDLE_OPTIONS, BUNDLE_OUT } from "./bundle-options.ts";
+import { checkProject, formatHazard, RULE } from "./itercheck.ts";
 import { usedBeforeDeclaration } from "./qv4check.ts";
+
+const hazards = checkProject(process.cwd());
+if (hazards.length > 0) {
+  for (const h of hazards) console.error(formatHazard(h));
+  console.error(RULE);
+  process.exit(1);
+}
 
 const out = BUNDLE_OUT;
 const result = await build({ ...BUNDLE_OPTIONS, outfile: out, metafile: true });
