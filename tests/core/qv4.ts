@@ -40,7 +40,8 @@ export function qmlTool(): QmlTool | null {
   if (found !== undefined) return found;
   found = null;
   for (const c of qmlCandidates()) {
-    const p = spawnSync(c, ["--version"], { encoding: "utf8", timeout: 10000 });
+    // The same platform as the runs (runQml): the version probe must not need a display either.
+    const p = spawnSync(c, ["--version"], { encoding: "utf8", timeout: 10000, env: { ...process.env, QT_QPA_PLATFORM: "offscreen" } });
     const text = ((p.stdout ?? "") + (p.stderr ?? "")).trim();
     const m = text.match(/(\d+)\.\d+/);
     if (p.status === 0 && m && Number(m[1]) >= 6) {

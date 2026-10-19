@@ -290,6 +290,74 @@ for (const [name, o] of Object.entries(ORDERS)) {
   });
 }
 
+// Two stages before a commit, the second changing a key the first gave: the twin DP-2 appears
+// (stage 1: DP-1 -> @DP-1, DP-2 @DP-2), then DP-1 goes and another monitor DP-3 comes (stage 2: DP-2
+// plain). Each stage must be committed in order, and DP-2 must answer with its stage-1 key until then
+// (the key its context enters the engine under); committing only the last stage, or answering from the
+// newest stage, leaves DP-2's context under a stale key or blocks DP-1's rename.
+const BENQ: R = { x: 0, y: 0, width: 1280, height: 800 };
+
+test("ADR-022: two staged key sets, the second renaming an output the first added, commit in order like the old adapter", () => {
+  const run = (old: boolean): { rekeys: Array<Array<[string, string]>>; dp2: string[] } => {
+    const lg1 = edid("DP-1", LG1, "LG", "27UL", "");
+    const dell = edid("HDMI-A-1", DELL, "Dell", "U2720Q", "ABC");
+    const lg2 = edid("DP-2", LG2, "LG", "27UL", "");
+    const benq = edid("DP-3", BENQ, "BenQ", "PD27", "7");
+    const ws = new FakeWorkspace([lg1, dell], [desktop("D1")]);
+    const qt = new FakeQt();
+    const a = new KwinAdapter(ws as never, qt as never);
+    if (old) legacy(a);
+    const { calls, sink } = recorder();
+    a.attach(sink as never, false);
+    const dp2: string[] = [];
+    ws.screens = [lg1, dell, lg2];
+    ws.activeScreen = lg2;
+    dp2.push(a.activeOutput()!);
+    ws.screens = [lg2, dell, benq];
+    ws.activeScreen = benq;
+    assert.equal(a.activeOutput(), "edid:BenQ/PD27/7");
+    ws.activeScreen = lg2;
+    dp2.push(a.activeOutput()!);
+    if (!old) assert.deepEqual(rekeys(calls), [], "staged, not committed");
+    qt.drain();
+    ws.activeScreen = lg2;
+    dp2.push(a.activeOutput()!);
+    ws.screensChanged.emit();
+    qt.drain();
+    a.detach();
+    return { rekeys: rekeys(calls), dp2 };
+  };
+  const now = run(false);
+  assert.deepEqual(now.rekeys, run(true).rekeys);
+  assert.deepEqual(now.rekeys, [[[PLAIN, "edid:LG/27UL/@DP-1"]], [["edid:LG/27UL/@DP-2", PLAIN]]]);
+  // Before the commit DP-2 answers with the key it entered under (stage 1), afterwards with the committed one.
+  assert.deepEqual(now.dp2, ["edid:LG/27UL/@DP-2", "edid:LG/27UL/@DP-2", PLAIN]);
+});
+
+test("ADR-022: two staged key sets with windows on both new monitors: no re-key inside an engine call, same final state as before", () => {
+  const act = (r: Rig): void => {
+    twin(r);
+    r.ws.add(r.ws.window({ caption: "n1", resourceClass: "n1", desktopFileName: "n1", output: r.lg2, desktops: [r.d[0]] }));
+    const benq = edid("DP-3", BENQ, "BenQ", "PD27", "7");
+    r.ws.current.set("DP-3", r.ws.current.get("DP-1")!);
+    r.ws.screens = [r.lg2, r.dell, benq];
+    r.ws.add(r.ws.window({ caption: "n2", resourceClass: "n2", desktopFileName: "n2", output: benq, desktops: [r.d[0]] }));
+    r.ws.add(r.ws.window({ caption: "n3", resourceClass: "n3", desktopFileName: "n3", output: r.lg2, desktops: [r.d[0]] }));
+    move(r, r.wins.a1, r.lg2);
+  };
+  const now = rig(false, false);
+  act(now);
+  const nowFinal = settle(now) as { contexts: string[]; check: string[] };
+  const old = rig(true, false);
+  act(old);
+  const oldFinal = settle(old);
+  assert.equal(now.count.inside, 0, "outputsRekeyed was called inside another engine call");
+  assert.equal(now.count.total, 2, "both staged renames reached the engine");
+  assert.deepEqual(nowFinal, oldFinal);
+  assert.deepEqual(nowFinal.check, []);
+  assert.ok(!nowFinal.contexts.some((id) => id.startsWith("edid:LG/27UL/@DP-2␟")), `no context left under DP-2's stage-1 key: ${nowFinal.contexts.join(", ")}`);
+});
+
 test("ADR-022: the QV4 scenarios converge to the same final state with the deferred commit and with the re-entrant one", () => {
   const all = runAll() as Record<string, { ok: boolean; final?: unknown; rekeys?: { total: number; inside: number } }>;
   for (const name of Object.keys(all).filter((n) => n.startsWith("adapter/"))) {

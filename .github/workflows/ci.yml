@@ -224,6 +224,7 @@ jobs:
         # The skipped-count check is a second guard. Layer: QV4 in the qml tool (offscreen); not KWin.
         env:
           PLASTILE_REQUIRE_QV4: "1"
+          QT_QPA_PLATFORM: offscreen # the runner has no display; the tests set it too
         run: |
           node --version
           npm ci

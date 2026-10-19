@@ -862,7 +862,12 @@ reached (see `replug-identity-O05`).
     `edid:LG/27UL/` until the commit.
   - An output not committed yet (the twin) answers with its key in the oldest staged key set that has it
     (`edid:LG/27UL/@DP-2`), the key under which it enters the engine.
-  - An output KWin does not list answers with its connector name, as before.
+  - An output KWin does not list answers with its connector name once the committed keys lack it, as before.
+    One that KWin stopped listing but the committed keys still have (a monitor unplugged, `screensChanged` not
+    delivered yet) keeps its committed key until the next commit. The old `keyOf` did the same until its next
+    miss; now the miss no longer commits, so that answer can last until the deferred turn. A monitor moved to
+    another connector in that window answers with the same EDID key on both connectors, the key it keeps after
+    the commit.
   - Every query therefore agrees with the engine's state at that moment. The triggering lookup no longer answers
     null.
 - **Staging.** A lookup that meets an output no key set has stages `outputKeys(screens)`, if that differs from the
@@ -889,8 +894,17 @@ reached (see `replug-identity-O05`).
     re-inserted after it, so the engine's insertion order can differ; nothing else does.
   - The test also checks the staged order for the come-and-go case. There the renames are DP-1 → `@DP-1`, then
     `@DP-2` → plain, as before.
-  - Against the old adapter (`cd59372`), 8 of its 13 tests fail. The 5 that pass are the `screensChanged`/`detach`
-    test and four orders in which the old adapter also re-keyed outside engine calls.
+  - Two tests added in review (`wf/rekey-review`) stage two key sets before a commit, the second renaming an
+    output the first added (DP-2 appears, then DP-1 goes and another monitor comes). They require both renames in
+    order, DP-2 answering with its first staged key until the commit, and the same final state as the old
+    adapter. In the engine test the first commit's `outputsRekeyed` reads `outputs()` and meets the monitor only
+    the second set has: it re-stages the same keys, and that later commit renames nothing (two re-keys in total).
+  - Against the old adapter (`cd59372`), 9 of its 15 tests fail. The 6 that pass are the `screensChanged`/`detach`
+    test and five orders in which the old adapter also re-keyed outside engine calls.
+  - Mutation check (review, unit): committing only the last staged set, answering from the newest stage, not
+    committing on the deferred turn, dropping the stages at `screensChanged`, and answering a committed output with
+    its staged key each fail at least one test. Skipping the de-duplication of equal stages fails none; it only
+    saves an empty commit.
 - **The QV4 scenarios still guard the forEach rule.** [qv4Scenarios.ts](../../tests/core/qv4Scenarios.ts) runs each
   adapter scenario in two modes:
   - `adapter/…` is the adapter as it is. It requires no `outputsRekeyed` inside an engine call and exactly one
