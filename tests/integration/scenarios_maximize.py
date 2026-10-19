@@ -341,3 +341,115 @@ def open_late(out: Path, c: Checks):
         c("slow client: it ends tiled and not maximized (KWin)", f[fx(3)]["maximizeMode"] == 0 and not tiling_errors(frames, area, GAP),
           {"frames": [x["frame"] for x in frames], "maximizeMode": f[fx(3)]["maximizeMode"],
            "commits": [(e["width"], e["height"]) for e in acks]})
+
+
+# ----------------------------------------------------------------------------- no room for it
+@scenario("maximized-open-overflow-T17")
+def open_overflow(out: Path, c: Checks):
+    """A window that arrives maximized where the layout has no room for it (its minimum size and the
+    peer's do not fit side by side: it would overflow and float). Un-maximizing it would leave it
+    floating at KWin's restore geometry (the client's own size), not tiled, so it stays maximized,
+    as for any maximize (T17); the peer keeps its tile. The un-maximize happens only in a solve that
+    gives the window a slot."""
+    with Session(out) as s:
+        s.spawn(1, "--min", "700x100")
+        s.load(); s.settle()
+        area = s.area()
+        full = {"x": area["x"], "y": area["y"], "width": area["width"], "height": area["height"]}
+        f1 = s.frames()[fx(1)]["frame"]
+        a = s.counters()
+        f2 = s.spawn(2, "--start-maximized", "--min", "700x100")
+        time.sleep(1.0); s.settle()
+        f = s.frames()
+        b = s.counters()
+        cfg = fixture_events(f2.log, "configure")
+        c("precondition: it mapped maximized (client log)", len(cfg) >= 1 and maximized(cfg[0]), cfg[:1])
+        c("it stays maximized at the maximize area (KWin)", f[fx(2)]["maximizeMode"] == 3 and near(f[fx(2)]["frame"], full, 1.0),
+          f[fx(2)])
+        c("no configure un-maximizes it: not floated at its own size (client log)", all(maximized(e) for e in cfg),
+          [{"states": e["states"], "w": e["width"], "h": e["height"]} for e in cfg])
+        c("the peer keeps its tile, unwritten (oracle frame, work amounts)", near(f[fx(1)]["frame"], f1, 1.0)
+          and delta(a, b).get("writes", 0) == 0, {"frame": f[fx(1)]["frame"], "before": f1, "delta": delta(a, b)})
+        x = explain(s, fx(2))
+        c("explain: a maximized member with no room, not an overflow float", x.get("mode") == "tiled" and not x.get("exception")
+          and "no room" in str(x.get("onOpen", "")) and "maximized" in str(x.get("suspended")),
+          {k: x.get(k) for k in ("mode", "exception", "onOpen", "suspended")})
+
+
+# ----------------------------------------------------------------------------- opened on a desktop not shown
+@scenario("maximized-open-hidden-T17")
+def open_hidden(out: Path, c: Checks):
+    """A window that arrives maximized on a desktop that is not shown (a KWin rule or a launcher can
+    put it there). Nothing is written to a window whose context is hidden (O07), so its maximize is
+    left alone until that desktop is shown; then it is un-maximized and tiled with one configure.
+    A placer script (loaded before Plastile, so its windowAdded handler runs first, as a KWin rule is
+    applied before the window is added) puts the window on desktop 2 while desktop 1 is shown."""
+    with Session(out) as s:
+        s.js("workspace.createDesktop(1, 'Two'); emit(1)")
+        placer = s.kw.root / "plt-placer.js"
+        placer.write_text(
+            "workspace.windowAdded.connect(function (w) {\n"
+            f"  if (w && String(w.caption) === {json.dumps(fx(2))}) {{ w.desktops = [workspace.desktops[1]];\n"
+            "    print('PLT-P placed ' + String(w.caption)); }\n"
+            "});\n"
+            "print('PLT-P ready');\n")
+        off = s.kw.mark()
+        s.kw.load_script(placer, "plt-placer")
+        s.kw.wait_log(r"PLT-P ready", 5, off)
+        try:
+            s.spawn(1)
+            s.load(); s.settle()
+            area = s.area()
+            full = {"x": area["x"], "y": area["y"], "width": area["width"], "height": area["height"]}
+            d2 = json.loads(s.js("emit(workspace.desktops[1].id)")[0])
+            a = s.counters()
+            f2 = s.spawn(2, "--start-maximized")
+            time.sleep(1.0); s.settle()
+            f = s.frames()
+            c("precondition: it is on desktop 2 while desktop 1 is shown, mapped maximized (KWin)",
+              f[fx(2)]["desktops"] == [d2] and f[fx(2)]["maximizeMode"] == 3
+              and json.loads(s.js("emit(workspace.currentDesktop.x11DesktopNumber)")[0]) == 1,
+              {"desktops": f[fx(2)]["desktops"], "maximizeMode": f[fx(2)]["maximizeMode"]})
+            cfg = fixture_events(f2.log, "configure")
+            c("hidden: it stays maximized, and the client gets no un-maximized configure (client log)",
+              len(cfg) >= 1 and all(maximized(e) for e in cfg) and near(f[fx(2)]["frame"], full, 1.0),
+              [{"states": e["states"], "w": e["width"], "h": e["height"]} for e in cfg])
+            # Not explain here: it activates the window, and KWin then shows its desktop.
+            wid = f[fx(2)]["id"]
+            rec = open_records(s, wid)
+            c("hidden: the trace records the decision deferred, and nothing un-maximized",
+              [((r.get("data") or {}).get("action"), r["kind"]) for r in rec] == [("deferred", "open-maximized")], rec)
+            n = len(cfg)
+            s.js("workspace.currentDesktop = workspace.desktops[1]; emit(1)")
+            s.settle()
+            wait_state(s, fx(2), 0)
+            time.sleep(0.5); s.settle()
+            f = s.frames()
+            b = s.counters()
+            c("shown: no longer maximized (KWin's maximizeMode)", f[fx(2)]["maximizeMode"] == 0, f[fx(2)]["maximizeMode"])
+            c("shown: it tiles desktop 2 alone (oracle frames)", not tiling_errors([f[fx(2)]], area, GAP)
+              and f[fx(2)]["frame"]["width"] > area["width"] - 2 * GAP - 1, f[fx(2)]["frame"])
+            later = fixture_events(f2.log, "configure")[n:]
+            m = margin(s, fx(2))
+            unmax = [i for i, e in enumerate(later) if not maximized(e)]
+            # KWin may activate it when its desktop is shown: a configure that only adds "activated".
+            c("shown: one configure un-maximizes it, at the tile size; before it only KWin's activation, none after (client log)",
+              len(unmax) == 1 and unmax[0] == len(later) - 1
+              and abs(later[-1]["width"] - f[fx(2)]["frame"]["width"]) <= 1
+              and abs(later[-1]["height"] + m - f[fx(2)]["frame"]["height"]) <= 1
+              and all(near({"x": 0, "y": 0, "width": e["width"], "height": e["height"] + m}, full | {"x": 0, "y": 0}, 1.0)
+                      for e in later[:-1]),
+              [{"states": e["states"], "w": e["width"], "h": e["height"]} for e in later])
+            d = delta(a, b)
+            c("no correction (work amounts)", d.get("corrections", 0) == 0, d)
+            x = explain(s, fx(2))
+            c("shown: explain says why", str(x.get("onOpen", "")).startswith("unmaximized on open:"), x.get("onOpen"))
+            rec = open_records(s, x["id"])
+            c("trace: deferred while hidden, then un-maximized",
+              [(r.get("data") or {}).get("action") for r in rec if r["kind"] == "open-maximized"] == ["deferred", "unmaximized"],
+              rec)
+        finally:
+            try:
+                s.kw.unload("plt-placer")
+            except Exception:
+                pass
