@@ -15,18 +15,18 @@ Labels used in this guide: **measured** (observed in a test run), **observed sou
 
 ## Status: read this first
 
-Plastile is a **candidate tested in nested compositors**, not a release.
+Plastile 0.1.0 is a **release candidate**, not a qualified release. The gates still open are listed in the [G3 checklist](../status/G3_CHECKLIST.md). It has no licence yet ([ADR-012](../design/DECISIONS.md#adr-012-license-and-upstream-reuse-are-deliberate)).
 
 | What | Where it stands |
 |---|---|
-| Tested compositor | KWin **6.7.5** (Qt 6.12.0, KF 6.30.0, Arch Linux), see the [environment profile](../status/ENVIRONMENT.md). `metadata.json` declares a minimum Plasma API of 6.7. KWin 6.7.5 is also tested in an Ubuntu 26.10 sandbox; KWin **6.8.0** runs in a provisional CI job that still has open failures (memory growth across repeated script reloads, see [status](../status/STATUS.md)). Other versions are untested. |
-| How it was tested | In **disposable nested `kwin_wayland --virtual` sessions** with a controlled Wayland test client and real input injection (libei). Every geometry check reads window frames from KWin itself, never from Plastile's own bookkeeping. |
-| Physical session | **Not validated.** Plastile has never run in a live Plasma desktop with plasmashell panels, real monitors and everyday applications. Treat everything in this guide as unverified in that setting. |
-| Performance | Engine timings exist only from nested sessions and measurement builds ([status](../status/STATUS.md), [M0 probe report](../status/M0_PROBE_REPORT.md)). None of them is an input-to-photon latency claim. |
+| Tested compositor | KWin **6.7.5** (Qt 6.12.0, KF 6.30.0, Arch Linux), see the [environment profile](../status/ENVIRONMENT.md). `metadata.json` declares a minimum Plasma API of 6.7. KWin 6.7.5 is also tested in an Ubuntu 26.10 sandbox; KWin **6.8.0** runs in a provisional CI job that still has open failures (memory growth across repeated script reloads, attributed to KWin 6.8 itself, see [status](../status/STATUS.md)). Other versions are untested. |
+| How it was tested | Unit and replay tests, and **disposable nested `kwin_wayland --virtual` sessions** with a controlled Wayland test client and real input injection (libei). Every geometry check reads window frames from KWin itself, never from Plastile's own bookkeeping. |
+| Physical session | **Partly validated.** The physical runbook ran on one desktop (KWin 6.7.5, three outputs at 60, 100 and 144 Hz, scale 1, plasmashell panels, the owner's applications) with build `97fec4a`. Install, outputs and fractional scale, panels, activities, real applications, shortcuts and idle passed. Latency failed at 144 Hz for two workloads and is incomplete at 100 Hz; cable unplug and system suspend were skipped; the soak is still running ([evidence](../status/evidence/physical-runbook-20261018.json)). Changes after `97fec4a` (the hidden-desktop work-area fix, windows that open maximized) have not run physically. |
+| Performance | See [Performance: what was measured](#performance-what-was-measured). Every number there names its layer: nested or physical. |
 
 ### What works (measured in nested KWin 6.7.5)
 
-The 23 core integration scenarios in `tests/integration/scenarios.py` passed: 102 of 102 checks, run on 2026-10-17 against commit `819a91c` with an uncommitted working tree. Each item below is covered by one or more of them.
+The last full nested suite on the reference host passed: 133 scenarios, 1795 of 1795 checks, one expected SKIP (`output-negative-origin-G02`: KWin normalizes output origins), at commit `0f55edf` ([evidence](../status/evidence/integration-host-0f55edf.json)). Each item below is covered by one or more of its scenarios, except where it says otherwise.
 
 - Adopting existing windows at load, tiling new windows and reflowing on close, with bounded work for a burst of nine windows.
 - Master/stack, BSP and monocle layouts, and switching between them with window order preserved. BSP rotate, mirror, reinsert and equalize. The floating layout does not fight user geometry.
@@ -39,21 +39,32 @@ The 23 core integration scenarios in `tests/integration/scenarios.py` passed: 10
 - Transient dialogs float; main windows tile.
 - Two outputs: send a window to the other output, output scale changes from 1.25 to 2, portrait rotation, unplugging an output with requests in flight, and replugging it. A layout chosen for a screen comes back when the screen is replugged. Screens are identified by the monitor's manufacturer, model and serial number when KWin reports them, so that also holds on another connector (unit-tested only: the nested virtual outputs report none and are identified by connector name). Two identical monitors are told apart by connector.
 - Sending a window to another desktop without following it; that desktop is tiled when it is first shown. With `followOnSend`, the desktop is shown on the window's screen and the window activated (two screens, per-screen desktops).
-- 20 unload/reload cycles with pending work: stable connection and window counts, one shortcut per command, no errors.
+- 100 unload/reload cycles with pending work (`reload-Q09`): stable connection and window counts, one shortcut per command, no errors. On KWin 6.7.5 KWin's RSS grew 0.5 MiB over the 100 cycles.
 - Configuration: invalid values are rejected with a message and the previous configuration is kept. Values are re-read live when KWin reconfigures (see [applying settings](INSTALL.md#applying-settings-changes) for which paths do that).
 - Idle: no timers, polling or writes while nothing happens (3 s window). Suspend and resume.
 - Pointer drags. Dropping a tile onto another tile swaps them on release, with no re-tiling during the drag. Dropping it into a gap snaps it back. Meta+right-drag resizing moves the shared divider. Closing the window or unloading the script mid-drag leaves no errors.
 - Real keyboard input: all 20 default bindings reach Plastile when pressed through libei in a nested session (US keymap). Three earlier defaults that did not were replaced; see [SHORTCUTS](SHORTCUTS.md#default-bindings-measured-with-real-key-presses).
+- Activities (the Activities service started late, a second activity added, windows on two activities float), plasmashell panels and work-area changes, per-screen virtual desktops, XWayland applications, and real applications (Dolphin, System Settings, GNOME Calculator, Alacritty, Firefox, Chromium, xmessage, zenity).
+- Windows that open maximized are un-maximized once and tiled (`maximizedOnOpen`, [ADR-021](../design/DECISIONS.md#adr-021-a-window-that-arrives-maximized-is-un-maximized-and-tiled)). This and the hidden-desktop work-area fix came after `0f55edf`. Their own scenarios (`maximized-open-*-T17`, `workarea-hidden-desktop-O07`) and the unit tests pass, but a full suite has not yet run on that code.
 
 ### What is not covered
 
-- **Activities:** only the single default activity was exercised.
-- **Panels:** plasmashell panels and other work-area reservations.
-- **Outputs:** three or more.
-- **Physical sessions:** anything run in one.
-- **In progress:** XWayland applications, panel work areas and a few real applications in nested sessions are covered by scenario files being written alongside this guide. They are not counted above; some panel scenarios were failing at the time of writing.
+- **Physical latency:** grow/shrink and focus fail their latency comparison at 144 Hz, and the 100 Hz run is incomplete ([below](#performance-what-was-measured)).
+- **Physical topology:** unplugging a monitor and suspending the machine were not checked in a physical session (the owner skipped them). VRR was not covered (the reference monitors report it as not capable).
+- **In-app actions in a physical session:** clicking titlebar buttons and tabs of tiled windows, and turning a window's border off and on (G14, G15). The injector sends only Meta chords.
+- **Long sessions:** the multi-hour physical soak is still running.
+- **KWin 6.8:** only a provisional CI job.
+- **Scrolling and zones:** experimental, nested only.
+- **Uninstall in a physical session.**
 
 The engine is designed for these cases, but designed is not tested.
+
+### Physical checks (reference desktop)
+
+Run with the owner's consent, following the [physical runbook](../validation/PHYSICAL_RUNBOOK.md), on KWin 6.7.5, Qt 6.12.0, OpenGL, outputs HDMI-A-1 2560×1440 @ 144 Hz, DP-2 1920×1080 @ 100 Hz and DP-1 1920×1080 @ 60 Hz, all scale 1, build `97fec4a` ([evidence](../status/evidence/physical-runbook-20261018.json)).
+
+- **Passed:** session check; install and smoke test (started at the default log level, 68 shortcuts, errors 0, the persistence helper activated by the session bus); windows on three outputs at mixed refresh rates and sending a window between them; scales 1.25, 1.5 and 1.75 and back; output priority changes; a test panel added, resized, auto-hidden, made floating, moved and removed; activities created, switched and deleted; Dolphin (Wayland and XWayland), Chromium, GNOME Calculator, System Settings, xmessage and a zenity dialog; 19 of 19 injected default shortcuts and *Suspend/resume* by hand; no Plastile work while idle.
+- **Found and fixed after that build:** a tiled window on a desktop not shown was moved by KWin when a panel appeared, and Plastile corrected it toward its old tile; now nothing is written to a window whose desktop is not shown (`a5642dd`). The owner's terminal opens every window maximized, so it was never tiled; now such windows are un-maximized once and tiled (ADR-021). Neither fix has run physically yet.
 
 ## Is it working?
 
@@ -182,7 +193,7 @@ Plastile does not fight you or the application indefinitely:
 
 - **Toggle floating** (`Meta+Shift+F`, measured to work as a real key press) takes a window out of the layout and gives it back its last floating rectangle. A rectangle from another screen, including one that has since been unplugged, is placed at the same relative position on the window's current screen, inside its usable area. A window that never floated gets a centred rectangle of 60% of the screen's usable area, within the window's own size limits. Plastile then leaves it to you until you tile it again. Floating windows are ordinary KDE windows: move, resize and maximize them as usual.
 - **Native quick tiling** (`Meta+Left/Right/Up/Down`, or dragging to a screen edge) is respected. The window is released to KWin's tile, the remaining windows re-solve without it, and nothing snaps back. *Adopt natively tiled window* or *Toggle floating* puts it back in the layout. KWin's tile editor (`Meta+T`) is untouched.
-- **Maximize and fullscreen** suspend Plastile's placement for that window. Leaving the state returns the window to its slot. A window that *opens* maximized because the application or a KWin rule chose it (some terminals do) is un-maximized once and tiled instead, unless `maximizedOnOpen` is `keep` ([CONFIGURATION](CONFIGURATION.md#flat-keys)); a maximize you make afterwards is kept. A window that opened already fullscreen joins the layout when it leaves fullscreen, like any other window of its kind (KWin reports every window as not resizable while fullscreen is requested, so Plastile reads that again when the state ends).
+- **Maximize and fullscreen** suspend Plastile's placement for that window. Leaving the state returns the window to its slot. A window that *opens* maximized because the application chose it (some terminals do) or a KWin rule *Maximized: Apply initially* did is un-maximized once and tiled instead, unless `maximizedOnOpen` is `keep` ([CONFIGURATION](CONFIGURATION.md#flat-keys)). A maximize you make afterwards is kept, and so is a maximize the application asks for again. Windows that would not tile anyway (dialogs, floating windows, a KWin rule that *forces* maximize, windows the layout has no room for) and windows open before Plastile started stay maximized. A window that opens maximized on a desktop not shown is decided when you switch to it. *Explain active window* says which happened. A window that opened already fullscreen joins the layout when it leaves fullscreen, like any other window of its kind (KWin reports every window as not resizable while fullscreen is requested, so Plastile reads that again when the state ends).
 - **Interactive move:** dragging a tile re-tiles nothing while you drag. Dropping it on another tile swaps the two; dropping it anywhere else snaps it back. Meta+right-drag resizing moves the shared divider.
 - **Applications that resize themselves** or refuse the requested size are corrected at most twice per target. Plastile then leaves them alone and records why (see *Explain active window*). A client that settles at a larger size than requested has that size learned as its minimum, and the layout is re-solved around it. A client that settles up to 32 px smaller (a terminal sizing itself in character cells) is accepted as it is.
 
@@ -201,11 +212,45 @@ Window order, BSP split structure, quick-tile and maximize states, and per-windo
 
 **Where:** `~/.local/state/plastile/state-0.json` and `state-1.json` (or under `$XDG_STATE_HOME`), readable only by you. The two files hold alternate saves, and each save replaces its file atomically, so an interrupted save leaves the previous one usable. A damaged file or a file from a newer Plastile is ignored with one `plastile warn saved state rejected` line in the log. A newer Plastile's file is left untouched.
 
-**When saved:** about 2 seconds after your last change, and when the script stops cleanly, also when KWin itself exits (measured in nested sessions; not yet at a physical logout); never while a command runs. Unchanged state is not rewritten. In nested sessions handing a save to the helper took about 0.2 ms of KWin's time for a typical state and about 1.2 ms for the largest one (64 screen/desktop entries and 64 floated applications), and a stopped or slow helper did not slow KWin or its commands.
+**When saved:** about 2 seconds after your last change, and when the script stops cleanly, also when KWin itself exits (measured in nested sessions; at a physical logout it is not measured: on the laptop's physical session a chosen layout survived a re-login, but that does not show which save carried it); never while a command runs. Unchanged state is not rewritten. In nested sessions handing a save to the helper took about 0.2 ms of KWin's time for a typical state and about 1.2 ms for the largest one (64 screen/desktop entries and 64 floated applications), and a stopped or slow helper did not slow KWin or its commands.
 
 **When restored:** when Plastile starts, it waits for the helper's answer before laying out any window, for at most 250 ms; in nested sessions the answer came within a few milliseconds. The first layout then already has the saved preferences, and a restored float is not tiled first. If the helper is slow, Plastile starts with its defaults after 250 ms and applies the saved preferences when they arrive, so the layout can change once. Your shortcuts work during the wait: their effect is part of the first layout. A change you make before the answer arrives wins over the saved one.
 
 **Reset:** disable Plastile, delete `~/.local/state/plastile/`, and enable it again. Deleting the files while Plastile runs is not enough: the next change saves the in-memory state again.
+
+## Performance: what was measured
+
+Every number below names its layer. **Nested** numbers come from disposable `kwin_wayland --virtual` sessions on the reference host and say nothing about what reaches a real screen. **Physical** numbers come from the owner's desktop. The budgets they are compared with are [proposed targets](../validation/PERFORMANCE.md#4-proposed-budgets), not guarantees.
+
+**Methods.** Nested: 32 tiled test windows plus three inactive desktops, commands sent through KGlobalAccel's D-Bus `invokeShortcut` in seeded random order, 5 runs × 1000 samples per cell, `CLOCK_MONOTONIC` inside KWin's script engine, every sample kept, p99 only from at least 5000 samples, 95 % intervals from a bootstrap over whole runs ([G2 report](../status/G2_REPORT.md) §1–§2). Physical: a virtual keyboard (uinput) presses the real shortcut; the test windows log the configures they receive and KWin's presentation feedback (`wp_presentation`) on the same clock; 4 windows, 5 runs × 1000 samples per workload, compared with KWin's own action on the same output ([runbook P6](../validation/PHYSICAL_RUNBOOK.md#p6-input-to-visible-latency-p00-p03)). Presentation times are what KWin reports to the client, not photon times.
+
+**Nested (KWin 6.7.5, reference host).**
+
+| Measure | Result | Proposed budget |
+|---|---|---|
+| Command dispatch → last geometry request, 32 windows, grow/shrink | p95 1.59 ms, p99 1.90 ms | p95 ≤ 2, p99 ≤ 4 ms: met |
+| Layout solve, 32 windows | p95 0.27–0.28 ms, p99 1.06–1.07 ms (2–3 % of solves fall in a 0.8–1.5 ms mode, attributed to the script engine's garbage collection by duration) | p95 ≤ 0.5, p99 ≤ 1 ms: **p99 not met** |
+| Focus commands | 0 layout solves and 0 geometry writes in 50,000 commands | 0: met |
+| Idle | no Plastile work, KWin wakeup or log line in 60 s windows after 20 min of churn | none: met |
+| Swap, 3 windows, send → first configure, against Polonium 1.2.2 | Plastile p50 0.83 ms, Polonium 11.3 ms | comparison only |
+
+Source: [G2 report §3–§8](../status/G2_REPORT.md#3-4-budgets). The Polonium comparison is one nested workload; it is not a ranking of KDE tilers.
+
+**Physical (reference desktop, build `97fec4a`): key press → first presented frame, median.** The proposed budget is a median difference below one refresh interval and a p95 difference of at most one interval against the matched KWin baseline.
+
+| Output | Plastile workload | Plastile | KWin baseline | Verdict |
+|---|---|---|---|---|
+| DP-1, 60 Hz | Grow/shrink | 30.7 ms | quick tile 33.2 ms | pass |
+| DP-1, 60 Hz | Swap with master | 25.8 ms | quick tile 33.2 ms | pass |
+| DP-1, 60 Hz | Focus next | 20.8 ms | window switch 16.7 ms | pass |
+| HDMI-A-1, 144 Hz | Grow/shrink | 50.2 ms | quick tile 38.7 ms | **fail** (+11.5 ms; p95 +30.3 ms) |
+| HDMI-A-1, 144 Hz | Swap with master | 15.4 ms | quick tile 38.7 ms | pass |
+| HDMI-A-1, 144 Hz | Focus next | 25.0 ms | window switch 14.7 ms | **fail** (+10.3 ms) |
+| DP-2, 100 Hz | — | — | — | incomplete: the run stopped early, only one run of three workloads finished; re-run pending |
+
+Where the time goes, at 144 Hz: from the key press to the application receiving its new size took 0.6 ms for Plastile's grow/shrink and 0.28 ms for KWin's quick tile. The difference is between the application's commit and KWin presenting it (grow 84.5 ms, shrink 43.2 ms, quick tile 36–53 ms median). That is KWin's presentation of resized windows, consistent with its animation effects (inference, not yet isolated). For focus, the activation reached the application after 9.9 ms against 3.05 ms for KWin's switch. Most of that is the desktop's Aurorae decoration re-rendering both windows' frames, which grows with window area: Plastile's tiles are much larger than KWin's default 400×300 placement ([PERFORMANCE §5.1](../validation/PERFORMANCE.md#51-focus-activation-cost-depends-on-the-decoration-and-window-size)). A 1.2 ms difference at equal window size is still unexplained. In every physical block Plastile did one layout solve per grow/shrink or swap and no corrections, and 0 solves and 0 writes for 10,500 focus commands.
+
+Idle, physical: three 300 s periods each with Plastile loaded and not loaded; Plastile did no work while idle, and KWin's CPU use was 1.54 % in both (median). That is not a claim of 0 % CPU.
 
 ## Where this project is going
 
