@@ -154,6 +154,13 @@ export function outputKeys(outs: ArrayLike<OutputFacts>): Map<string, OutputKey>
   return out;
 }
 
+function sameKeys(a: ReadonlyMap<string, OutputKey>, b: ReadonlyMap<string, OutputKey>): boolean {
+  if (a.size !== b.size) return false;
+  let same = true;
+  a.forEach((k, name) => { const o = b.get(name); if (!o || o.key !== k.key) same = false; });
+  return same;
+}
+
 export function statesOf(w: KWindow): WindowStates {
   return {
     minimized: !!w.minimized,
@@ -198,8 +205,21 @@ export class KwinAdapter implements HostPort {
   private alive = true;
   /** Last usable area (MaximizeArea) per output key; KWin keeps one per output, not per desktop. */
   private areas = new Map<string, Rect>();
-  /** Output identity per connector name for the current screen list (rebuilt when it changes). */
+  /**
+   * Output identity per connector name, as committed to the engine: the engine's contexts use these
+   * keys. Replaced only by a commit (commitKeys), never by a query.
+   */
   private keys = new Map<string, OutputKey>();
+  /**
+   * Key sets staged by queries, oldest first, not yet committed. A query that meets an output no key
+   * set has (KWin lists it before screensChanged reached the script: an identical monitor, a replug)
+   * stages the keys of the current screen list; before ADR-022's follow-up change it committed them
+   * on the spot, inside whatever engine call made the query. The commit applies the stages in order,
+   * so the engine receives the same renames in the same order as it did then, at a safe point.
+   */
+  private stages: Array<Map<string, OutputKey>> = [];
+  /** A stage waits for the deferred turn (screensChanged may commit it first). */
+  private rekeyQueued = false;
   private readonly keyFn = (o: KOutput): string => this.keyOf(o);
   private topologyPending = false;
   /** Deferred work-area checks still allowed for the current panel event (0: none pending). */
@@ -214,6 +234,8 @@ export class KwinAdapter implements HostPort {
   private readonly deferredFlush = (): void => {
     this.deferredQueued = false;
     if (!this.alive || !this.engine) return;
+    // Commit the output keys queries staged; a safe point, outside every engine call (ADR-022).
+    if (this.rekeyQueued) this.commitStages();
     if (this.pendingRefresh.length > 0) {
       const list = this.pendingRefresh;
       this.pendingRefresh = [];
@@ -283,6 +305,8 @@ export class KwinAdapter implements HostPort {
     this.disconnectAll(this.outputConns);
     this.disconnectAll(this.desktopConns);
     this.areas.clear();
+    this.stages = [];
+    this.rekeyQueued = false;
     this.pendingRefresh = [];
     this.engine = null;
     this.onDesktopNamesChanged = null;
@@ -332,28 +356,70 @@ export class KwinAdapter implements HostPort {
   }
 
   /**
-   * Rebuild the output keys from the current screen list. A connected output whose key changed
-   * (an identical monitor came or went, so the connector now tells them apart or no longer
-   * needs to) is re-keyed in the engine at once, before any window event uses the new key.
+   * screensChanged: commit the staged key sets, then the keys of the current screen list. Called
+   * from signal handlers (and attach), never from a query.
    */
   private updateKeys(): void {
+    this.commitStages();
+    this.commitKeys(outputKeys(this.ws.screens));
+    this.stages = []; // staged during the commit from this same list: nothing left to rename
+    this.rekeyQueued = false;
+  }
+
+  private commitStages(): void {
+    const list = this.stages;
+    this.stages = [];
+    this.rekeyQueued = false;
+    for (const next of list) this.commitKeys(next);
+  }
+
+  /**
+   * Make `next` the committed keys. A connected output whose key changed (an identical monitor came
+   * or went, so the connector now tells them apart or no longer needs to) is re-keyed in the engine.
+   * Only signal handlers and the deferred turn commit, outside every engine call (ADR-022): a query
+   * can be made inside an engine loop, and outputsRekeyed deletes and re-adds contexts.
+   */
+  private commitKeys(next: Map<string, OutputKey>): void {
     const prev = this.keys;
-    this.keys = outputKeys(this.ws.screens);
+    this.keys = next;
     const renames = new Map<string, string>();
-    this.keys.forEach((k, name) => {
+    next.forEach((k, name) => {
       const p = prev.get(name);
       if (p && p.key !== k.key) renames.set(p.key, k.key);
     });
     if (renames.size > 0 && this.alive && this.engine) this.engine.outputsRekeyed(renames);
   }
 
-  /** Identity key of a live output (its connector name until the screen list includes it). */
-  private keyOf(o: KOutput): string {
-    let k = this.keys.get(o.name);
-    if (!k) {
-      this.updateKeys(); // a window reported an output before screensChanged did
-      k = this.keys.get(o.name);
+  /**
+   * Identity of a live output. Read-only: it never calls the engine. An output in the committed keys
+   * answers with its committed key, the key the engine's contexts use, even when the screen list has
+   * already changed it (a twin appeared): the rename reaches the engine at the commit. Any other
+   * output answers with its key in the oldest stage that has it, the key under which it enters the
+   * engine; a later stage that changes it renames it at the commit. An output no key set has stages
+   * the keys of the current screen list and queues the commit for the next deferred turn. An output
+   * KWin does not list has no identity (null).
+   */
+  private outputKey(o: KOutput): OutputKey | null {
+    const k = this.keys.get(o.name);
+    if (k) return k;
+    for (const st of this.stages) {
+      const sk = st.get(o.name);
+      if (sk) return sk;
     }
+    const next = outputKeys(this.ws.screens);
+    if (!sameKeys(next, this.stages.length > 0 ? this.stages[this.stages.length - 1] : this.keys)) {
+      this.stages.push(next);
+      if (!this.rekeyQueued && this.alive) {
+        this.rekeyQueued = true;
+        this.queueDeferred();
+      }
+    }
+    return next.get(o.name) ?? null;
+  }
+
+  /** Identity key of a live output (its connector name while KWin does not list it). Read-only. */
+  private keyOf(o: KOutput): string {
+    const k = this.outputKey(o);
     return k ? k.key : o.name;
   }
 
@@ -716,9 +782,9 @@ export class KwinAdapter implements HostPort {
     const out: OutputInfo[] = [];
     const s = this.ws.screens;
     for (let i = 0; i < s.length; ++i) {
-      const id = this.keyOf(s[i]);
-      out.push({ id, name: s[i].name, geometry: rectOf(s[i].geometry), scale: s[i].devicePixelRatio,
-                 identity: this.keys.get(s[i].name)?.identity ?? "connector" });
+      const k = this.outputKey(s[i]);
+      out.push({ id: k ? k.key : s[i].name, name: s[i].name, geometry: rectOf(s[i].geometry), scale: s[i].devicePixelRatio,
+                 identity: k ? k.identity : "connector" });
     }
     // Deterministic topology order: left-to-right, then top-to-bottom (not enumeration index).
     out.sort((a, b) => a.geometry.x - b.geometry.x || a.geometry.y - b.geometry.y || (a.id < b.id ? -1 : 1));

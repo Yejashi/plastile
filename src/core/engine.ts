@@ -858,8 +858,9 @@ export class Engine {
     this.trace.record(this.svc.now(), "configure", undefined, { rules, settings });
     const prevSettingsFor = this.opts.settingsFor;
     const before = new Map<Ctx, ContextSettings>();
-    // forEach (PERFORMANCE §7.1): resolving a context's settings can re-key outputs (outputsRekeyed
-    // deletes and re-adds contexts); QV4's for...of would leave a context out of the comparison.
+    // forEach (PERFORMANCE §7.1): resolving a context's settings calls the host. If a host call ever
+    // re-keyed outputs synchronously (outputsRekeyed deletes and re-adds contexts; KwinAdapter stopped
+    // doing that from reads, ADR-022), QV4's for...of would leave a context out of the comparison.
     if (settings) this.contexts.forEach((c) => { before.set(c, this.ctxSettings(c)); });
     this.opts = { ...this.opts, ...next, deadlineMs: next.deadlineMs ?? this.opts.deadlineMs,
                   readinessMs: next.readinessMs ?? this.opts.readinessMs };
@@ -1091,9 +1092,10 @@ export class Engine {
   private collectEmpty(): void {
     if (this.emptied.size === 0) return;
     const later = new Set<ContextId>();
-    // forEach, not for...of or a copy (PERFORMANCE §7.1): prefsOf can re-key outputs, and
-    // outputsRekeyed moves an entry of `emptied` to the context's new id. forEach visits the moved
-    // entry, which a copy would not; QV4's for...of would skip the entry after it.
+    // forEach, not for...of or a copy (PERFORMANCE §7.1): prefsOf calls the host, and a host that
+    // re-keys outputs synchronously (KwinAdapter no longer does, ADR-022) makes outputsRekeyed move an
+    // entry of `emptied` to the context's new id. forEach visits the moved entry, which a copy would
+    // not; QV4's for...of would skip the entry after it.
     this.emptied.forEach((id) => {
       const c = this.contexts.get(id);
       if (!c || c.members.length > 0) return;
@@ -1210,8 +1212,9 @@ export class Engine {
   }
 
   private markVisibleDirty(onlyStale = false): void {
-    // forEach (PERFORMANCE §7.1): isVisible reads an output, which can re-key outputs (the adapter's
-    // keyOf calls outputsRekeyed), deleting and re-adding contexts; QV4's for...of would skip one.
+    // forEach (PERFORMANCE §7.1): isVisible reads an output from the host. A host that re-keyed outputs
+    // there (KwinAdapter no longer does, ADR-022) deletes and re-adds contexts; QV4's for...of would
+    // skip one.
     this.contexts.forEach((c) => {
       if (this.isVisible(c.key) && (!onlyStale || c.applied !== c.revision || this.dirty.has(c.id))) this.dirty.add(c.id);
     });
@@ -2847,9 +2850,10 @@ export class Engine {
   }
 
   private releaseAllZones(): void {
-    // forEach (PERFORMANCE §7.1): a released window's float rectangle reads the work area, which can
-    // re-key outputs (contexts deleted and re-added); QV4's for...of would skip a context. A context
-    // visited again under its new id is already released (releaseZones is a no-op then).
+    // forEach (PERFORMANCE §7.1): a released window's float rectangle reads the work area from the
+    // host. A host that re-keyed outputs there (KwinAdapter no longer does, ADR-022) deletes and re-adds
+    // contexts; QV4's for...of would skip one. A context visited again under its new id is already
+    // released (releaseZones is a no-op then).
     this.contexts.forEach((c) => this.releaseZones(c));
   }
 
@@ -3097,9 +3101,10 @@ export class Engine {
    */
   contextPreferences(): Array<{ key: ContextKey; prefs: ContextPrefs }> {
     const out: Array<{ key: ContextKey; prefs: ContextPrefs }> = [];
-    // Two passes over a copy (PERFORMANCE §7.1): prefsOf can re-key outputs, which deletes and re-adds
-    // contexts under new keys. Live iteration loses one in QV4 and visits one twice in ECMAScript;
-    // a copy visits each context once, and reading the keys after every prefsOf gives the current ones.
+    // Two passes over a copy (PERFORMANCE §7.1): prefsOf calls the host, and a host that re-keys outputs
+    // synchronously (KwinAdapter no longer does, ADR-022) deletes and re-adds contexts under new keys.
+    // Live iteration loses one in QV4 and visits one twice in ECMAScript; a copy visits each context
+    // once, and reading the keys after every prefsOf gives the current ones.
     const live = Array.from(this.contexts.values());
     const prefs = live.map((c) => this.prefsOf(c));
     for (let i = 0; i < live.length; ++i) {

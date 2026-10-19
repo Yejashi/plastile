@@ -4,18 +4,24 @@
 // for...of over a Map, Set or one of their iterators skips the entry after one deleted at or
 // before its position (docs/validation/PERFORMANCE.md §7.1); a Node test cannot see that.
 //
-// Every scenario drives a real re-entrant path from src/: a call made inside a loop over an engine
-// collection ends in a call that deletes from that collection.
+// The scenarios drive the paths on which a call made inside a loop over an engine collection could
+// end in a call that deletes from that collection.
 //
-//  - The adapter edge (scenarios marked `adapter`): any HostPort read that resolves an output key,
-//    and the configuration's settingsFor (through ContextNames.outputNameOf), goes through
-//    KwinAdapter.keyOf. When KWin lists an output the adapter has not keyed yet (a twin monitor,
-//    before screensChanged reaches the script) keyOf rebuilds the keys and calls
-//    engine.outputsRekeyed synchronously, which deletes and re-adds the renamed contexts (and their
-//    `emptied`, `dirty` and `retained` entries). These run the real KwinAdapter over the fake KWin
-//    surface (fakeKwin.ts); the order of events is chosen so that the first key lookup after the
-//    twin appears is made inside the loop. Whether KWin ever delivers events in that order was not
-//    tested.
+//  - The adapter scenarios run the real KwinAdapter over the fake KWin surface (fakeKwin.ts). A twin
+//    monitor appears (KWin lists it; screensChanged has not reached the script), and the first output
+//    key lookup after that is made inside an engine loop: a HostPort read that resolves an output key,
+//    or the configuration's settingsFor (through ContextNames.outputNameOf). Whether KWin ever
+//    delivers events in that order was not tested. Each scenario runs in two modes:
+//    - `adapter/…`: the adapter as it is. Its queries are read-only; the re-key is committed on the
+//      next deferred turn (ADR-022). The scenario requires that no outputsRekeyed call is made while
+//      another engine call is running (`inside` 0) and that one is made afterwards (`total` 1).
+//    - `reentrant/…`: the first key-resolving read after the twin appears commits the re-key
+//      synchronously before it answers, as KwinAdapter.keyOf did before ADR-022's follow-up change.
+//      outputsRekeyed then deletes and re-adds the renamed contexts (and their `emptied`, `dirty` and
+//      `retained` entries) inside the loop. This keeps the forEach rule tested in QV4 on the engine's
+//      real loops although the adapter no longer takes that path.
+//    Both modes end with `final`: the state after the adapter's turn, screensChanged and every
+//    queued turn. tests/core/rekey.test.ts requires the two modes' `final` to be equal.
 //  - The engine edge (scenarios marked `engine`): the mock compositor calls back into the engine
 //    synchronously from a host call, as KWin's signals do.
 //
@@ -61,11 +67,21 @@ function tiledIn(ws: FakeWindow[], area: R, opened: R): boolean {
   return true;
 }
 
+/** How the output re-key reaches the engine (see the header). */
+export type Mode = "adapter" | "reentrant";
+
+/** The HostPort reads (and ContextNames.outputNameOf) that resolve an output key. */
+const KEY_READS = ["outputs", "activeOutput", "workArea", "visibleDesktop", "outputNameOf", "sendToOutput", "showDesktop"];
+
 interface Rig {
   ws: FakeWorkspace;
   qt: FakeQt;
   adapter: KwinAdapter;
+  /** What the engine and the configuration names see: the adapter, or in `reentrant` mode a proxy of it. */
+  host: KwinAdapter;
   engine: Engine;
+  /** outputsRekeyed calls in total, and those made while another engine call was running. */
+  rekeys: { total: number; inside: number };
   d: FakeDesktop[];
   lg1: FakeOutput;
   dell: FakeOutput;
@@ -75,6 +91,65 @@ interface Rig {
   /** KWin lists the twin first; screensChanged has not reached the script yet. */
   twinAppears(): void;
   frames(): Record<string, string>;
+  /** Let every queued turn run, deliver screensChanged, and report the state reached. */
+  settle(): Final;
+}
+
+/** The state a scenario converges to; compared across modes (and across commits by probes/perf/qv4iter/engine.ts). */
+interface Final {
+  contexts: string[];
+  frames: Record<string, string>;
+  prefs: string[];
+  check: string[];
+}
+
+/**
+ * Count outputsRekeyed calls, and those made while another engine method is on the stack: every
+ * method of the engine instance is wrapped (private ones too: they are prototype methods at run time).
+ */
+export function countRekeys(engine: Engine): { total: number; inside: number } {
+  const n = { total: 0, inside: 0 };
+  let depth = 0;
+  const proto = EngineClass.prototype as unknown as Record<string, unknown>;
+  const inst = engine as unknown as Record<string, unknown>;
+  for (const name of Object.getOwnPropertyNames(proto)) {
+    const d = Object.getOwnPropertyDescriptor(proto, name);
+    if (name === "constructor" || !d || typeof d.value !== "function") continue;
+    const orig = d.value as (...a: unknown[]) => unknown;
+    inst[name] = function (...a: unknown[]): unknown {
+      if (name === "outputsRekeyed") { n.total++; if (depth > 0) n.inside++; }
+      depth++;
+      try { return orig.apply(engine, a); } finally { depth--; }
+    };
+  }
+  return n;
+}
+
+/**
+ * `reentrant` mode: the first key-resolving read after `arm()` commits the adapter's output keys
+ * (its private updateKeys, the commit screensChanged makes) before answering. That is what
+ * KwinAdapter.keyOf did synchronously before ADR-022's follow-up change: the read that found the twin
+ * re-keyed the engine, then answered.
+ */
+function reentrantHost(adapter: KwinAdapter): { host: KwinAdapter; arm(): void } {
+  let armed = false;
+  const target = adapter as unknown as Record<string, unknown>;
+  const host = new Proxy(target, {
+    get(t, p) {
+      const v = t[p as string];
+      if (typeof v !== "function") return v;
+      const f = v as (...a: unknown[]) => unknown;
+      if (KEY_READS.indexOf(p as string) < 0) return (...a: unknown[]) => f.apply(t, a);
+      return (...a: unknown[]) => {
+        if (armed) {
+          armed = false;
+          (t.updateKeys as () => void).call(t);
+        }
+        return f.apply(t, a);
+      };
+    },
+  }) as unknown as KwinAdapter;
+  return { host, arm() { armed = true; } };
 }
 
 const OPENED: R = { x: 40, y: 40, width: 300, height: 200 };
@@ -82,7 +157,7 @@ const OPENED: R = { x: 40, y: 40, width: 300, height: 200 };
 function opened(o: FakeOutput): R { return { ...OPENED, x: o.geometry.x + OPENED.x }; }
 
 /** The real adapter and engine over the fake KWin, wired as src/runtime/main.ts wires them. */
-function rig(flat: Record<string, unknown>, place: (r: Rig) => void): Rig {
+function rig(mode: Mode, flat: Record<string, unknown>, place: (r: Rig) => void): Rig {
   const d = [desktop("D1", 1), desktop("D2", 2)];
   const lg1 = edid("DP-1", LG1, "LG", "27UL", "");
   const dell = edid("HDMI-A-1", DELL, "Dell", "U2720Q", "ABC");
@@ -90,12 +165,15 @@ function rig(flat: Record<string, unknown>, place: (r: Rig) => void): Rig {
   const ws = new FakeWorkspace([lg1, dell], d);
   const qt = new FakeQt();
   const adapter = new KwinAdapter(ws as never, qt as never);
+  const re = mode === "reentrant" ? reentrantHost(adapter) : null;
+  const host = re ? re.host : adapter;
   const snap = compileConfig(flat, 1);
   if (!snap.ok) throw new Error("configuration rejected");
   const svc: RuntimeServices = { now: () => 0, callLater: (fn) => qt.callLater(fn), deadline: () => () => {}, log: () => {} };
-  const engine = new EngineClass(adapter, svc, engineOptions(snap.snapshot, adapter));
+  const engine = new EngineClass(host, svc, engineOptions(snap.snapshot, host));
+  const rekeys = countRekeys(engine);
   const r: Rig = {
-    ws, qt, adapter, engine, d, lg1, dell, lg2,
+    ws, qt, adapter, host, engine, rekeys, d, lg1, dell, lg2,
     win(caption, o, dk) {
       const w = ws.window({ caption, resourceClass: caption, desktopFileName: caption, output: o, desktops: [dk], frameGeometry: opened(o) });
       ws.windows.push(w);
@@ -104,11 +182,23 @@ function rig(flat: Record<string, unknown>, place: (r: Rig) => void): Rig {
     twinAppears() {
       ws.current.set(lg2.name, ws.current.get(lg1.name)!);
       ws.screens = [lg2, lg1, dell];
+      if (re) re.arm();
     },
     frames() {
       const out: Record<string, string> = {};
       for (const w of ws.windows) out[w.caption] = txt(w.frameGeometry);
       return out;
+    },
+    settle() {
+      qt.drain();
+      ws.screensChanged.emit();
+      qt.drain();
+      return {
+        contexts: engine.contextSummary().map((c) => `${c.id}:${c.layout}:${c.members}/${c.tiled}`),
+        frames: r.frames(),
+        prefs: engine.contextPreferences().map((p) => `${p.key.output}␟${p.key.desktop}␟${p.key.activity}=${JSON.stringify(p.prefs)}`),
+        check: engine.check(),
+      };
     },
   };
   place(r);
@@ -126,6 +216,18 @@ function topology(r: Rig): void {
 
 function ids(r: Rig): string[] { return r.engine.contextSummary().map((c) => c.id); }
 
+/**
+ * A scenario's result: `ok` also requires the re-key to reach the engine as the mode says. Adapter
+ * mode: once, and never while another engine call runs. Reentrant mode: once, inside the engine call
+ * that made the read. Then the scenario settles and reports `final`.
+ */
+function finish(r: Rig, mode: Mode, ok: boolean, obs: Record<string, unknown>): unknown {
+  const final = r.settle();
+  const k = r.rekeys;
+  const rekeyOk = k.total === 1 && k.inside === (mode === "adapter" ? 0 : 1);
+  return { ok: ok && rekeyOk && final.check.length === 0, ...obs, rekeys: { total: k.total, inside: k.inside }, final };
+}
+
 // ----------------------------------------------------------------------------------------- adapter
 
 /**
@@ -133,9 +235,9 @@ function ids(r: Rig): string[] { return r.engine.contextSummary().map((c) => c.i
  * twin appeared. The context switched to (HDMI-A-1 / D2, three windows that were never shown) must
  * be marked and solved.
  */
-function visibilitySwitch(): unknown {
+function visibilitySwitch(mode: Mode): unknown {
   let c: FakeWindow[] = [];
-  const r = rig({}, (x) => {
+  const r = rig(mode, {}, (x) => {
     x.win("a1", x.lg1, x.d[0]); x.win("a2", x.lg1, x.d[0]);           // context A: DP-1 / D1 (shown)
     c = [x.win("c1", x.dell, x.d[1]), x.win("c2", x.dell, x.d[1])];    // context C: HDMI-A-1 / D2 (hidden)
     x.win("b1", x.lg1, x.d[1]);                                         // context B: DP-1 / D2 (hidden)
@@ -148,7 +250,7 @@ function visibilitySwitch(): unknown {
   r.ws.setCurrentDesktopForScreen(r.d[1], r.lg1); // currentDesktopChanged -> engine.visibilityChanged
   r.qt.drain();
   c = [...c, c3];
-  return { ok: tiledIn(c, DELL, opened(r.dell)), frames: r.frames(), contexts: ids(r), check: r.engine.check() };
+  return finish(r, mode, tiledIn(c, DELL, opened(r.dell)), { frames: r.frames(), contexts: ids(r), check: r.engine.check() });
 }
 
 /**
@@ -156,8 +258,8 @@ function visibilitySwitch(): unknown {
  * settings resolves them first; that lookup re-keys DP-1's contexts. The shown HDMI-A-1 context
  * after it must still be compared, and re-solved with the new gap.
  */
-function configureGaps(): unknown {
-  const r = rig({ gapInner: "8" }, (x) => {
+function configureGaps(mode: Mode): unknown {
+  const r = rig(mode, { gapInner: "8" }, (x) => {
     x.win("a1", x.lg1, x.d[0]); x.win("a2", x.lg1, x.d[0]);   // A: DP-1 / D1 (shown)
     x.win("c1", x.dell, x.d[1]);                                // C: HDMI-A-1 / D2 (hidden)
     x.win("d1", x.dell, x.d[0]); x.win("d2", x.dell, x.d[0]);   // D: HDMI-A-1 / D1 (shown)
@@ -167,15 +269,15 @@ function configureGaps(): unknown {
   r.twinAppears();
   const next = compileConfig({ gapInner: "20" }, 2);
   if (!next.ok) throw new Error("configuration rejected");
-  r.engine.configure({ ...engineOptions(next.snapshot, r.adapter), changes: { rules: false, settings: true } });
+  r.engine.configure({ ...engineOptions(next.snapshot, r.host), changes: { rules: false, settings: true } });
   r.qt.drain();
   const gap = (a: string, b: string): number => {
     const fa = r.ws.windows.find((w) => w.caption === a)!.frameGeometry as R;
     const fb = r.ws.windows.find((w) => w.caption === b)!.frameGeometry as R;
     return fb.x - (fa.x + fa.width);
   };
-  return { ok: gap("d1", "d2") === 20 && gap("a1", "a2") === 20, gapA: gap("a1", "a2"), gapD: gap("d1", "d2"),
-           frames: r.frames(), contexts: ids(r), check: r.engine.check() };
+  return finish(r, mode, gap("d1", "d2") === 20 && gap("a1", "a2") === 20, { gapA: gap("a1", "a2"), gapD: gap("d1", "d2"),
+           frames: r.frames(), contexts: ids(r), check: r.engine.check() });
 }
 
 /**
@@ -183,9 +285,9 @@ function configureGaps(): unknown {
  * settings, and that lookup re-keys DP-1's contexts. Every context's preference must be saved,
  * once, under the context's current key.
  */
-function savedPreferences(): unknown {
+function savedPreferences(mode: Mode): unknown {
   const ratios: Record<string, number> = { a1: 0.45, c1: 0.6, d1: 0.7, b1: 0.65 };
-  const r = rig({}, (x) => {
+  const r = rig(mode, {}, (x) => {
     x.win("a1", x.lg1, x.d[0]);    // A: DP-1 / D1 (shown)
     x.win("c1", x.dell, x.d[1]);   // C: HDMI-A-1 / D2 (hidden)
     x.win("d1", x.dell, x.d[0]);   // D: HDMI-A-1 / D1 (shown)
@@ -199,15 +301,17 @@ function savedPreferences(): unknown {
   r.qt.drain();
   topology(r);
   r.twinAppears();
-  // The keys are checked on this call's own result: it is the call during which the re-key happens
-  // (a second call re-keys nothing, so it would show current keys even if this one saved a stale one).
+  // The keys are checked on this call's own result: in reentrant mode it is the call during which the
+  // re-key happens (a second call re-keys nothing, so it would show current keys even if this one saved
+  // a stale one). In adapter mode nothing is re-keyed before the next turn: the call saves the
+  // committed keys, which are the live contexts' keys; `final` shows the save after the commit.
   const prefs = r.engine.contextPreferences();
   const saved = prefs.map((p) => `${p.key.output}␟${p.key.desktop}=${p.prefs.masterStack?.ratio}`);
   const live = ids(r);
   const keys = prefs.map((p) => `${p.key.output}␟${p.key.desktop}`);
   const ok = saved.length === 4 && new Set(keys).size === 4 && keys.every((k) => live.some((id) => id.startsWith(k + "␟")))
     && Object.keys(ratios).every((k) => saved.some((s) => s.endsWith("=" + ratios[k])));
-  return { ok, saved, contexts: live };
+  return finish(r, mode, ok, { saved, contexts: live });
 }
 
 /**
@@ -215,9 +319,9 @@ function savedPreferences(): unknown {
  * reads the work area and re-keys DP-1's contexts. The HDMI-A-1 context after it must be released
  * too: a window the user moves while tiling is suspended stays where it was put on resume.
  */
-function suspendZones(): unknown {
+function suspendZones(mode: Mode): unknown {
   let a1: FakeWindow = null, c1: FakeWindow = null;
-  const r = rig({ layout: "zones" }, (x) => {
+  const r = rig(mode, { layout: "zones" }, (x) => {
     a1 = x.win("a1", x.lg1, x.d[0]);   // A: DP-1 / D1
     c1 = x.win("c1", x.dell, x.d[0]);  // C: HDMI-A-1 / D1
   });
@@ -236,7 +340,7 @@ function suspendZones(): unknown {
   r.ws.kwinSetFrame(c1, moved); // the user moves it while tiling is suspended
   r.engine.execute("plastile.runtime.toggle-suspend");
   r.qt.drain();
-  return { ok: zoned !== txt(moved) && txt(c1.frameGeometry) === txt(moved), zoned, frames: r.frames(), contexts: ids(r) };
+  return finish(r, mode, zoned !== txt(moved) && txt(c1.frameGeometry) === txt(moved), { zoned, frames: r.frames(), contexts: ids(r) });
 }
 
 // ------------------------------------------------------------------------------------------ engine
@@ -317,10 +421,14 @@ function collectEmptied(): unknown {
 }
 
 const SCENARIOS: Record<string, () => unknown> = {
-  "adapter/visibility-switch": visibilitySwitch,
-  "adapter/configure-gaps": configureGaps,
-  "adapter/saved-preferences": savedPreferences,
-  "adapter/suspend-zones": suspendZones,
+  "adapter/visibility-switch": () => visibilitySwitch("adapter"),
+  "adapter/configure-gaps": () => configureGaps("adapter"),
+  "adapter/saved-preferences": () => savedPreferences("adapter"),
+  "adapter/suspend-zones": () => suspendZones("adapter"),
+  "reentrant/visibility-switch": () => visibilitySwitch("reentrant"),
+  "reentrant/configure-gaps": () => configureGaps("reentrant"),
+  "reentrant/saved-preferences": () => savedPreferences("reentrant"),
+  "reentrant/suspend-zones": () => suspendZones("reentrant"),
   "engine/apply-leaves": applyLeaves,
   "engine/collect-emptied": collectEmptied,
 };
