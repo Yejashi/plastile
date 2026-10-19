@@ -845,8 +845,8 @@ reached (see `replug-identity-O05`).
 - Early exits need a flag, and the loop visits every entry. The five such sites walk all windows
   (`disarmIfIdle`), the outputs, one context's plan, a window's suspensions, or at most 64 float preferences.
 - The CI core job has no Qt, so it skips the QV4 tests. Since the follow-up, the `native-tools` job installs the
-  `qml` tool and runs them with `PLASTILE_REQUIRE_QV4=1`; that workflow change is unverified until a hosted run
-  shows it. The build guard runs everywhere.
+  `qml` tool and runs them with `PLASTILE_REQUIRE_QV4=1`; its first hosted run
+  (run 39300522170) ran 17/17 with none skipped. The build guard runs everywhere.
 - ~~The adapter's re-entrant edge itself is kept.~~ Removed by the follow-up below, with the two further effects the
   review found (the triggering lookup answered for the old key; a dirty context renamed during a flush was not
   solved in it). The engine keeps `forEach` at the five sites: they do not rely on the adapter.

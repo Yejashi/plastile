@@ -32,8 +32,8 @@ Status of the workflow itself (2026-10-17):
 | `core` | `ubuntu-latest` (Ubuntu 24.04 per runner-images on 2026-10-17) | yes | `actions/setup-node@v7` (Node 26) and `actions/setup-python@v7` (3.14), Node major guard, `npm ci`, `npm run typecheck`, `npm test`, `npm run build` + bundle sanity grep, `python3 tools/check_docs.py`, `python3 tools/release.py --check --out dist`, `python3 tests/integration/run.py --list` (import check only), `make -C fixtures/client` (`libwayland-dev wayland-protocols pkg-config`), `make -C fixtures/xclient` (`libxcb1-dev libxcb-icccm4-dev`) |
 | `core`, input injector | same | yes (seen green 2026-10-18) | `apt-get install libei-dev` (1.2.1 on 24.04) then `make -C tools/input` |
 | `native-tools` | `ubuntu-26.04` | yes (seen green 2026-10-18) | `tools/measure` (needs Qt >= 6.5; 24.04 has Qt 6.4.2) and `tools/settings-check` (needs Qt6 UiTools and KF6Config/KF6ConfigWidgets; 24.04 has no KF6). Ubuntu 26.04 has Qt 6.10 and KF 6.24 (`libkf6configwidgets-dev` 6.24.0, `qt6-tools-dev` ships `Qt6UiToolsConfig.cmake`). Build only: `plastile-settings-check` needs a display to run |
-| `native-tools`, persistence helper | same | yes (**not yet run on a hosted runner**) | `cmake -S helper -B build/helper` (Qt 6 Core + DBus, `-Werror`; ADR-020). Built only; the nested jobs build and run their own |
-| `native-tools`, QV4 tests | same | yes (**not yet run on a hosted runner**) | `actions/setup-node@v7` (Node 26), `apt-get install qml-qt6 qml6-module-qtqml` (`/usr/bin/qml6`, `/usr/lib/qt6/bin/qml` and the QtQml module, per the Ubuntu 26.04 "resolute" file lists), `npm ci`, then `node --test tests/core/qv4iteration.test.ts tests/core/rekey.test.ts` with `PLASTILE_REQUIRE_QV4=1` (a missing qml tool fails instead of skipping) and `QT_QPA_PLATFORM=offscreen`, and a check that the reporter printed `skipped 0`. The core job skips these tests (no Qt). Layer: QV4 in the `qml` tool, offscreen; not KWin |
+| `native-tools`, persistence helper | same | yes (green on hosted runners, e.g. run 39300522170) | `cmake -S helper -B build/helper` (Qt 6 Core + DBus, `-Werror`; ADR-020). Built only; the nested jobs build and run their own |
+| `native-tools`, QV4 tests | same | yes (first hosted run 39300522170 at `cf5fe36`: 17/17, skipped 0) | `actions/setup-node@v7` (Node 26), `apt-get install qml-qt6 qml6-module-qtqml` (`/usr/bin/qml6`, `/usr/lib/qt6/bin/qml` and the QtQml module, per the Ubuntu 26.04 "resolute" file lists), `npm ci`, then `node --test tests/core/qv4iteration.test.ts tests/core/rekey.test.ts` with `PLASTILE_REQUIRE_QV4=1` (a missing qml tool fails instead of skipping) and `QT_QPA_PLATFORM=offscreen`, and a check that the reporter printed `skipped 0`. The core job skips these tests (no Qt). Layer: QV4 in the `qml` tool, offscreen; not KWin |
 
 The release-zip and X11-fixture steps are guarded with `hashFiles(...) != ''` so the workflow
 stays valid if those files are not yet committed; when the files exist the steps are mandatory.
@@ -219,7 +219,8 @@ presentation) have no tests because the features do not exist.
   ([tools/sandbox](../../tools/sandbox/README.md)) on the hosted runner and runs the whole suite
   against KWin 6.7.5 (QPainter compositing, so GL-only checks report SKIP). It was enabled once the
   suite passed locally in that sandbox (637/637 checks, 67 scenarios, 2 SKIP on 2026-10-18).
-- The persistence helper (ADR-020) in CI, **unverified** (added 2026-10-18, no hosted run yet): the
+- The persistence helper (ADR-020) in CI, verified on hosted runners (both nested jobs start every session
+  with it, and `native-tools` builds it; e.g. run 39300522170): the
   `integration-nested` job builds it inside the Ubuntu sandbox (`cmake`, `ninja-build` and `qt6-base-dev`
   are in `packages.txt`); the Nix environment builds it as a derivation (`env.nix` `plastileState`,
   exported to the suite as `PLASTILE_STATE_HELPER` by `run.sh`), and `package-helper-install-T32` is an
@@ -227,6 +228,6 @@ presentation) have no tests because the features do not exist.
   `native-tools` builds it with `-Werror`. Every nested session installs the helper's activation file on
   its private bus (`tests/integration/harness.py`), so a missing helper fails the suite at start-up.
 - KWin 6.8 in CI: the `integration-nested-kwin68` job runs the suite in the pinned Nix environment
-  ([tools/sandbox/nix](../../tools/sandbox/nix/README.md)). It is `continue-on-error` until seen green on
-  a hosted runner; its outcome is written to the job summary either way. The 6.7.5 job was green on
+  ([tools/sandbox/nix](../../tools/sandbox/nix/README.md)). It is `continue-on-error`: it was green on a hosted runner (39232013184) but the two `Q09` RSS bounds
+  fail in some runs on KWin 6.8's own heap growth ([STATUS](STATUS.md)); its outcome is written to the job summary either way. The 6.7.5 job was green on
   its first hosted run (39094402153).

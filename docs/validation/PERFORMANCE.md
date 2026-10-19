@@ -220,7 +220,7 @@ What to write:
 - Array destructuring of a Map or Set is not checked: QV4 gave the ECMAScript result in the two deleting cases tried.
 - `npm run build` fails with the sites and points here.
 
-[qv4iteration.test.ts](../../tests/core/qv4iteration.test.ts) runs code in QV4 through the Qt 6 `qml` tool. It skips with a message when no tool is installed, or fails instead with `PLASTILE_REQUIRE_QV4=1` (set in CI's `native-tools` job; unverified until a hosted run):
+[qv4iteration.test.ts](../../tests/core/qv4iteration.test.ts) runs code in QV4 through the Qt 6 `qml` tool. It skips with a message when no tool is installed, or fails instead with `PLASTILE_REQUIRE_QV4=1` (set in CI's `native-tools` job; first hosted run run 39300522170):
 
 - It checks that `forEach` and arrays still match ECMAScript in QV4.
 - It runs engine scenarios for each hazard in QV4 and in V8 and requires equal results ([evidence](../status/evidence/qv4-iteration-engine.json)). Before the fix (`5229536`), QV4 failed five scenarios. V8 failed one of the five, where live iteration saved one preference twice.

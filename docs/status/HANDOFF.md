@@ -73,7 +73,7 @@ safe to run on the owner's PC while Plasma is running.
 |---|---|---|
 | Unit/replay | `tests/core/*.test.ts` with `mockHost.ts` and `fakeKwin.ts` | 319/319 on `main` (2026-10-18) |
 | Nested KWin 6.7.5 | Ubuntu 26.10 debootstrap sandbox, [tools/sandbox](../../tools/sandbox/README.md) (QPainter compositing) | 67/67 scenarios, 637/637 checks, 2 SKIP, before the persistence merge. Persistence and D6 scenarios (6) passed separately on their branch. **The full suite has not been re-run on `main` since the persistence merge.** |
-| Nested KWin 6.8.0 | Nix environment, [tools/sandbox/nix](../../tools/sandbox/nix/README.md) (llvmpipe and a udmabuf shim) | Passed locally earlier; the CI job `integration-nested-kwin68` is `continue-on-error`. Its runner segfault (exit -11, no usable render device) has a fix in `840a6b9` that is **unconfirmed on a hosted runner**. |
+| Nested KWin 6.8.0 | Nix environment, [tools/sandbox/nix](../../tools/sandbox/nix/README.md) (llvmpipe and a udmabuf shim) | Passed locally earlier; the CI job `integration-nested-kwin68` is `continue-on-error`. Its runner segfault (exit -11, no usable render device) has a fix in `840a6b9`, confirmed: the job runs the whole suite on hosted runners (green in 39232013184; the `Q09` RSS bounds fail in some runs). |
 | Physical session | [tools/physical](../../tools/physical/README.md) and the [runbook](../validation/PHYSICAL_RUNBOOK.md) | **Never run.** |
 
 The 2 expected SKIPs:
@@ -188,7 +188,7 @@ Beyond [AGENTS.md](../../AGENTS.md):
   - Nested sessions cannot reach the re-key path: the virtual backend reports no EDID.
   - `tests/core/qv4iteration.test.ts` checks the engine in QV4 through the Qt 6 `qml` tool. It is skipped without
     one, e.g. in the CI core job. `PLASTILE_REQUIRE_QV4=1` makes a missing tool a failure. CI's `native-tools` job
-    sets it and installs `qml-qt6`; that is unverified until a hosted run shows the job green. Qt 5's `qml`
+    sets it and installs `qml-qt6` (green on its first hosted run, run 39300522170). Qt 5's `qml`
     (often `/usr/bin/qml`) is rejected.
   - See [PERFORMANCE §7.1](../validation/PERFORMANCE.md#71-qv4-iteration-allocates-measured), and the probes
     `probes/perf/qv4iter/run.py` and `probes/perf/qv4iter/engine.ts --rev REV`.
