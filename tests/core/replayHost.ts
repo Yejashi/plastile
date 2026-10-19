@@ -306,6 +306,7 @@ export class ReplayHost implements HostPort, RuntimeServices {
   frame(id: string, gen: number): Rect | null { return this.answer(`frame|${id}|${gen}`) as Rect | null; }
   activate(id: string, gen: number): boolean { return this.op("activate", [id, gen]) as boolean; }
   raise(id: string, gen: number): boolean { return this.op("raise", [id, gen]) as boolean; }
+  unmaximize(id: string, gen: number): boolean { return this.op("unmaximize", [id, gen]) as boolean; }
   releaseNativeTile(id: string, gen: number): boolean { return this.op("releaseNativeTile", [id, gen]) as boolean; }
   setNoBorder(id: string, gen: number, v: boolean): boolean { return this.op("setNoBorder", [id, gen, v]) as boolean; }
   noBorder(id: string, gen: number): boolean | null { return this.answer(`noBorder|${id}|${gen}`) as boolean | null; }

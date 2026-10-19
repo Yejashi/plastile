@@ -201,6 +201,8 @@ export function describeWindow(x: Obj | null, ctx: InspectContext): InspectorVie
   const sus = Array.isArray(x.suspensions) ? (x.suspensions as unknown[]).map((v) => SUSPENSIONS[s(v)] ?? s(v)) : [];
   if (suspended) rows.push({ label: "Layout", text: placement(mode, layout) });
   else if (sus.length) rows.push({ label: "Paused", text: `KWin owns the window while it is ${list(sus)}; Plastile resumes afterwards.` });
+  // What Plastile did with a maximize the window arrived with (ADR-021).
+  if (x.onOpen) rows.push({ label: "On open", text: `${s(x.onOpen).charAt(0).toUpperCase()}${s(x.onOpen).slice(1)}.` });
   const sz = sizeText(obj(x.constraints), x.learnedMin);
   if (sz) rows.push({ label: "Size", text: sz });
   const st = statusText(mode, obj(x.ledger));

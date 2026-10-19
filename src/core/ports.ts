@@ -43,6 +43,13 @@ export interface HostPort {
   frame(id: WindowId, gen: number): Rect | null;
   activate(id: WindowId, gen: number): boolean;
   raise(id: WindowId, gen: number): boolean;
+  /**
+   * Clear KWin's maximize state (both directions) of a window that arrived maximized (ADR-021).
+   * False when the window is gone or KWin would refuse (not maximizable: fixed size, or a KWin
+   * rule that forces maximize). X11 applies it synchronously (maximizedChanged inside the call);
+   * on Wayland KWin reports the new state once the client acknowledges the configure.
+   */
+  unmaximize(id: WindowId, gen: number): boolean;
   /** Release a native tile association so the engine owns geometry. */
   releaseNativeTile(id: WindowId, gen: number): boolean;
   setNoBorder(id: WindowId, gen: number, noBorder: boolean): boolean;

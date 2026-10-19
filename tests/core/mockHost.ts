@@ -20,7 +20,13 @@
 //  - `ignore` acks configures but keeps its size (fixture --ignore-size), so a commit
 //    still moves the window to the configure's position;
 //  - at scales other than 1 the committed frame can differ from the request by up to
-//    one device pixel (commitOffset; measured 0.571 px at scale 1.75).
+//    one device pixel (commitOffset; measured 0.571 px at scale 1.75);
+//  - setMaximize(false, false) (ADR-021): X11 clears maximizeMode inside the call and moves the
+//    frame to its restore geometry; an xdg-toplevel gets a configure (the restore geometry) and
+//    KWin reports maximizeMode 0 only when the client commits it. KWin's configure timer
+//    coalesces it with a frame write in the same turn into one configure (scheduleConfigure).
+//    `remaximize` is a client that sets maximized again before acknowledging: its commit keeps
+//    the maximize and the maximize area (`maxArea`).
 
 import { rect, rectOf, type Rect } from "../../src/core/geometry.ts";
 import type { FrameWrite, HostPort, OutputInfo, RuntimeServices, WindowSnapshot } from "../../src/core/ports.ts";
@@ -31,6 +37,8 @@ import { Engine, type EngineOptions } from "../../src/core/engine.ts";
 export interface Configure {
   readonly rect: Rect;
   readonly at: number;
+  /** Carries an un-maximize: the window reports maximized=false when the client commits it. */
+  readonly unmax?: boolean;
 }
 
 export interface MockWindow {
@@ -52,6 +60,14 @@ export interface MockWindow {
   nativeTile: boolean;
   noBorder: boolean;
   alive: boolean;
+  /** KWin's isMaximizable (false: fixed size, or a KWin rule forcing maximize). */
+  maximizable: boolean;
+  /** Where KWin's un-maximize puts the window (geometryRestore, or the client's own size). */
+  restore: Rect;
+  /** The client maximizes itself again before acknowledging an un-maximize (see the header). */
+  remaximize: boolean;
+  /** The maximize area a re-maximizing client commits. */
+  maxArea: Rect;
 }
 
 export function meta(appId = "app", patch: Partial<WindowMeta> = {}): WindowMeta {
@@ -86,6 +102,10 @@ export class MockHost implements HostPort, RuntimeServices {
   engine!: Engine;
   logs: Array<{ level: string; message: string }> = [];
   writes: Array<{ id: string; target: Rect; t: number }> = [];
+  /** unmaximize calls that reached a window, in order. */
+  unmaximizes: string[] = [];
+  /** Configures sent per window (the client's view: one per coalesced turn). */
+  configuresSent = new Map<string, number>();
   raises: string[] = [];
   private later: Array<() => void> = [];
   private timers: Array<{ at: number; fn: () => void; cancelled: boolean }> = [];
@@ -157,11 +177,24 @@ export class MockHost implements HostPort, RuntimeServices {
   /** The client acks and commits its oldest configure: KWin places the window at that configure's bounds. */
   private commit(w: MockWindow): void {
     const c = w.configures.shift()!;
+    if (c.unmax && w.remaximize) {
+      // The client asked to be maximized again before acknowledging: KWin's acknowledged states
+      // never lose the maximize, and the client commits the maximize area.
+      this.setFrame(w, rectOf(w.maxArea));
+      return;
+    }
+    // KWin applies the committed geometry first, then the acknowledged states
+    // (XdgSurfaceWindow::handleCommit: handleNextWindowGeometry, then handleRoleCommit).
+    const ack = c.unmax === true && w.states.maximized;
     let width = c.rect.width, height = c.rect.height;
     if (w.clampToMin) { width = Math.max(width, w.constraints.minFrame.width); height = Math.max(height, w.constraints.minFrame.height); }
     if (w.ignore) { width = w.frame.width; height = w.frame.height; }
     else { width += w.commitOffset.width; height += w.commitOffset.height; }
     this.setFrame(w, rect(c.rect.x, c.rect.y, width, height));
+    if (ack) {
+      w.states = { ...w.states, maximized: false };
+      this.engine.statesChanged(w.id, w.gen, w.states);
+    }
   }
 
   /** KWin's updateGeometry: frameGeometryChanged only when the frame actually changed. */
@@ -181,6 +214,12 @@ export class MockHost implements HostPort, RuntimeServices {
       // X11: KWin moves and resizes the frame at once (size hints applied synchronously).
       const min = w.clampToMin ? w.constraints.minFrame : { width: 0, height: 0 };
       this.setFrame(w, rect(target.x, target.y, Math.max(target.width, min.width), Math.max(target.height, min.height)));
+    } else if (w.configures.length && w.configures[w.configures.length - 1].unmax &&
+               w.configures[w.configures.length - 1].at === this.t + w.delay) {
+      // The un-maximize of this same turn moved KWin's requested geometry to the restore rectangle:
+      // this write replaces it, whatever its size, and KWin sends one configure carrying both.
+      const last = w.configures.length - 1;
+      w.configures[last] = { rect: rectOf(target), at: w.configures[last].at, unmax: true };
     } else if (Math.abs(target.width - w.frame.width) < 0.5 && Math.abs(target.height - w.frame.height) < 0.5) {
       // The committed size: no configure. The position applies synchronously inside the write,
       // and a configure already in flight still commits later at its own bounds (E04).
@@ -188,10 +227,31 @@ export class MockHost implements HostPort, RuntimeServices {
     } else {
       // A configure carrying size and position: nothing changes until the client commits it.
       const last = w.configures.length - 1;
-      if (w.delayMode === "latest" && last >= 0) w.configures[last] = { rect: rectOf(target), at: w.configures[last].at };
-      else w.configures.push({ rect: rectOf(target), at: this.t + w.delay });
+      const prev = last >= 0 ? w.configures[last] : null;
+      if (w.delayMode === "latest" && prev) {
+        w.configures[last] = { rect: rectOf(target), at: prev.at, unmax: prev.unmax };
+        this.configuresSent.set(id, (this.configuresSent.get(id) ?? 0) + 1); // sent; the client answers only the newest
+      } else {
+        w.configures.push({ rect: rectOf(target), at: this.t + w.delay });
+        this.configuresSent.set(id, (this.configuresSent.get(id) ?? 0) + 1);
+      }
     }
     return { before, after: rectOf(w.frame) };
+  }
+  unmaximize(id: string, gen: number): boolean {
+    const w = this.windows.get(id);
+    if (!w || !w.alive || w.gen !== gen || !w.states.maximized || !w.maximizable) return false;
+    this.unmaximizes.push(id);
+    if (w.x11) {
+      // X11Window::maximize(MaximizeRestore): maximizedChanged and the restore geometry inside the call.
+      w.states = { ...w.states, maximized: false };
+      this.engine.statesChanged(id, gen, w.states);
+      this.setFrame(w, rectOf(w.restore));
+      return true;
+    }
+    w.configures.push({ rect: rectOf(w.restore), at: this.t + w.delay, unmax: true });
+    this.configuresSent.set(id, (this.configuresSent.get(id) ?? 0) + 1);
+    return true;
   }
   frame(id: string, gen: number): Rect | null {
     const w = this.windows.get(id);
@@ -257,7 +317,8 @@ export class MockHost implements HostPort, RuntimeServices {
       id, gen: this.nextGen++, meta: meta(id), membership: { output: "O1", desktops: ["D1"], onAllDesktops: false, activities: [] },
       states: NO_STATES, constraints: FREE, frame: rect(100, 100, 400, 300), configures: [], delay: 0, delayMode: "latest",
       x11: false, clampToMin: false, ignore: false, commitOffset: { width: 0, height: 0 }, nativeTile: false, noBorder: false,
-      alive: true, ...patch,
+      alive: true, maximizable: true, restore: rect(100, 100, 400, 300), remaximize: false, maxArea: rect(0, 0, 1280, 800),
+      ...patch,
     };
     this.windows.set(id, w);
     return w;

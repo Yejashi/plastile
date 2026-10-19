@@ -74,6 +74,11 @@ export interface KWindow {
   readonly minimized: boolean;
   readonly fullScreen: boolean;
   readonly maximizeMode: number;
+  /**
+   * False for a fixed-size window and for one a KWin rule forces maximized or un-maximized
+   * (observed source, KWin 6.7.5 and 6.8.0: XdgToplevelWindow/X11Window::isMaximizable).
+   */
+  readonly maximizable: boolean;
   readonly move: boolean;
   readonly resize: boolean;
   readonly hidden: boolean;
@@ -83,6 +88,12 @@ export interface KWindow {
   readonly maxSize: KSize;
   readonly tile: KTile | null;
   noBorder: boolean;
+  /**
+   * Q_INVOKABLE (window.h, 6.7.5 and 6.8.0; the restore rectangle argument is not used). The
+   * only script-visible way to change maximize state: `maximizeMode` is read-only. X11 applies it
+   * at once; an xdg-toplevel's `maximizeMode` changes when the client acknowledges the configure.
+   */
+  setMaximize(vertically: boolean, horizontally: boolean): void;
 
   readonly frameGeometryChanged: KSignal;
   readonly minimizedChanged: KSignal;

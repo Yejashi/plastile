@@ -211,6 +211,26 @@ interface Rec {
   startFrame: Rect | null;
   /** Activation order (0 = never activated while known): cross-output focus picks the most recent. */
   focusSeq: number;
+  /**
+   * A window that arrives maximized (ADR-021). "wait": opened after start(), decided in the first
+   * flush after it is classified; "watch": it was not maximized then, and a maximize before its first
+   * tile request settles (or `openUntil`) still counts as arriving maximized (a client that sets
+   * it after its first commit); "requested": Plastile asked KWin to un-maximize it and waits for KWin
+   * to report it (Wayland: the client's acknowledgement), until `openUntil`; null: decided. At most
+   * one un-maximize per window: after it, a maximize is honoured as before.
+   */
+  open: "wait" | "watch" | "requested" | null;
+  openUntil: number;
+  /** What happened to the window's maximize state on open, for explain (null: nothing to say). */
+  openNote: string | null;
+  /** Plastile un-maximized this window on open (a later maximize is noted as honoured). */
+  unmaximized: boolean;
+  /**
+   * The next plan target is written even when the frame already equals it: KWin's un-maximize
+   * moved the requested geometry to the restore rectangle, so a maximized frame equal to the tile
+   * (no gaps, one window) would otherwise be configured to the restore size (ADR-021).
+   */
+  placeOnce: boolean;
 }
 
 interface Ctx {
@@ -279,6 +299,8 @@ export class Engine {
   private pendingFloats = new Map<string, FloatPreference>();
   /** Windows to match against pendingFloats in the next flush (after a burst of adoptions). */
   private restoreChecks = new Set<WindowId>();
+  /** Windows opened after start() whose arrival maximize state is decided in the next flush (ADR-021). */
+  private openChecks = new Set<WindowId>();
   /**
    * Called (cheaply, possibly from a command) when something persistence saves changed: a
    * context preference or a user float decision. The listener only marks state dirty.
@@ -393,6 +415,7 @@ export class Engine {
     this.floatPrefs.clear();
     this.pendingFloats.clear();
     this.restoreChecks.clear();
+    this.openChecks.clear();
     this.onPersistChange = null;
     this.onLayoutChange = null;
     this.onSuspendChange = null;
@@ -439,14 +462,21 @@ export class Engine {
 
   windowAdded(s: WindowSnapshot): void {
     if (!this.alive) return;
-    this.add(s, true);
+    const r = this.add(s, true);
+    // A window opened while Plastile runs: whether it arrived maximized is decided once it is
+    // ready (ADR-021). Windows adopted at start(), at a resume or by reconcile are left as they are.
+    if (r && !this.suspended) {
+      r.open = "wait";
+      if (r.mode !== "pending") this.openChecks.add(r.id);
+    }
   }
 
-  private add(s: WindowSnapshot, schedule: boolean): void {
+  /** Returns the record when a new one was created (null: stale, or an update of a known window). */
+  private add(s: WindowSnapshot, schedule: boolean): Rec | null {
     const dead = this.tombstones.get(s.id);
-    if (dead !== undefined && s.gen <= dead) { this.counters.staleEvents++; return; }
+    if (dead !== undefined && s.gen <= dead) { this.counters.staleEvents++; return null; }
     const existing = this.recs.get(s.id);
-    if (existing && existing.gen >= s.gen) { this.updateSnapshot(existing, s); return; } // C01
+    if (existing && existing.gen >= s.gen) { this.updateSnapshot(existing, s); return null; } // C01
     if (existing) this.drop(existing);
     const r: Rec = {
       id: s.id, gen: s.gen, meta: s.meta, membership: s.membership, states: s.states, base: s.constraints,
@@ -456,7 +486,7 @@ export class Engine {
       mode: "pending", userMode: null, ctx: null, suspensions: suspensionsOf(s.states),
       ledger: L.newEntry(rectOf(s.frame)), floatRect: null, insertedAt: ++this.insertSeq, exception: null,
       readyBy: null, border: null, rules: null, restoreChecked: false, startFrame: null, focusSeq: 0, reparks: 0,
-      reparkTarget: null,
+      reparkTarget: null, open: null, openUntil: 0, openNote: null, unmaximized: false, placeOnce: false,
     };
     this.recs.set(r.id, r);
     this.counters.adopted++;
@@ -469,13 +499,14 @@ export class Engine {
       this.reclassify(r, "added");
     }
     if (schedule) this.ensureFlush();
+    return r;
   }
 
   private updateSnapshot(r: Rec, s: WindowSnapshot): void {
     r.meta = s.meta; r.membership = s.membership; r.states = s.states; r.base = s.constraints;
     r.frame = rectOf(s.frame); r.nativeTile = s.nativeTile;
     if (s.nativeTile) r.nativeYield = true;
-    r.suspensions = suspensionsOf(s.states);
+    r.suspensions = this.suspensionsFor(r, s.states);
     this.reclassify(r, "resync");
   }
 
@@ -503,6 +534,7 @@ export class Engine {
     this.liveLast.delete(r.id);
     this.parked.delete(r.id);
     this.zoneNotes.delete(r.id);
+    this.openChecks.delete(r.id);
     this.recs.delete(r.id);
     if (r.userMode === "floating") this.releaseFloat(r);
   }
@@ -552,9 +584,11 @@ export class Engine {
     const r = this.live(id, gen);
     if (!r) return;
     const prevInteractive = r.states.interactive;
+    const wasMaximized = r.states.maximized;
     r.states = st;
+    if (st.maximized && !wasMaximized) this.maximizedLater(r);
     const prevSet = r.suspensions;
-    const next = suspensionsOf(st);
+    const next = this.suspensionsFor(r, st);
     const changed = !sameSet(next, prevSet);
     r.suspensions = next;
     if (changed) {
@@ -639,6 +673,7 @@ export class Engine {
       return;
     }
     const o = L.observe(r.ledger, f);
+    if (o === "settled" && r.open === "watch") r.open = null; // its first tile arrived: the open phase is over
     switch (o) {
       case "settled":
         this.counters.settled++;
@@ -957,6 +992,7 @@ export class Engine {
       r.restoreChecked = true;
       this.restoreChecks.add(r.id);
     }
+    if (r.open === "wait" && r.mode !== "pending") this.openChecks.add(r.id); // ready: decided in the next flush
     if (!this.suspended) this.applyBorderPolicy(r); // suspended: no owned property writes
   }
 
@@ -1187,6 +1223,7 @@ export class Engine {
       }
       this.matchRestores();
       this.retryOverflows();
+      this.runOpenChecks();
       if (this.endedInteractions.size) {
         const ended = [...this.endedInteractions];
         this.endedInteractions.clear();
@@ -1221,7 +1258,7 @@ export class Engine {
       this.counters.errors++;
       this.svc.log("error", "flush failed", String(e));
     }
-    if (this.dirty.size > 0 || this.corrections.size > 0 || this.queued.length > 0) this.ensureFlush();
+    if (this.dirty.size > 0 || this.corrections.size > 0 || this.queued.length > 0 || this.openChecks.size > 0) this.ensureFlush();
     else this.disarmIfIdle();
   }
 
@@ -1450,10 +1487,15 @@ export class Engine {
     }
     const now = this.host.frame(r.id, r.gen);
     if (now === null) return; // gone: removal event follows; peers continue
-    const dec = L.decideWrite(r.ledger, target, now);
+    let dec = L.decideWrite(r.ledger, target, now);
+    if (r.placeOnce) { r.placeOnce = false; if (dec === "skip-noop") dec = "write"; }
     switch (dec) {
       case "skip-outstanding": this.counters.skipOutstanding++; L.setDesired(r.ledger, target); return;
-      case "skip-noop": this.counters.skipNoop++; L.acceptNoop(r.ledger, target, this.svc.now()); return;
+      case "skip-noop":
+        this.counters.skipNoop++;
+        L.acceptNoop(r.ledger, target, this.svc.now());
+        if (r.open === "watch") r.open = null; // already at its first tile
+        return;
       case "skip-diverged": this.counters.skipDiverged++; return;
       default: this.write(r, target, r.ledger.request && rectNear(r.ledger.request.rect, target, r.ledger.tol) ? "correction" : "plan");
     }
@@ -1488,6 +1530,7 @@ export class Engine {
     this.trace.record(now, "write", r.id, { reason, seq, settled });
     if (settled && wasOutstanding) this.counters.settled++;
     else if (!settled) this.armDeadline(now + this.opts.deadlineMs);
+    if (settled && r.open === "watch") r.open = null; // X11: the first tile applied inside the write
   }
 
   // ----------------------------------------------------------------- deadlines
@@ -1503,7 +1546,7 @@ export class Engine {
   private disarmIfIdle(): void {
     if (!this.cancelDeadline) return;
     for (const r of this.recs.values()) {
-      if (r.ledger.outstanding || r.readyBy !== null) return;
+      if (r.ledger.outstanding || r.readyBy !== null || r.open === "requested") return;
     }
     this.cancelDeadline();
     this.cancelDeadline = null;
@@ -1521,6 +1564,11 @@ export class Engine {
       if (r.mode === "pending" && r.readyBy !== null) {
         if (r.readyBy <= now) { r.readyBy = null; this.reclassify(r, "readiness-deadline"); }
         else next = Math.min(next, r.readyBy);
+        continue;
+      }
+      if (r.open === "requested") {
+        if (r.openUntil > now) { next = Math.min(next, r.openUntil); continue; }
+        this.unmaximizeRefused(r);
         continue;
       }
       const e = r.ledger;
@@ -1550,6 +1598,127 @@ export class Engine {
     }
     if (next < Infinity) this.armDeadline(next);
     this.ensureFlush();
+  }
+
+  // --------------------------------------------------- arriving maximized (ADR-021)
+
+  /** Suspensions from KWin's states, without the maximize Plastile asked KWin to clear on open. */
+  private suspensionsFor(r: Rec, st: WindowStates): Set<Suspension> {
+    const next = suspensionsOf(st);
+    if (r.open === "requested") {
+      // KWin reports an xdg-toplevel's un-maximize only when the client acknowledges the configure.
+      if (st.maximized) next.delete("maximized");
+      else {
+        r.open = null;
+        this.trace.record(this.svc.now(), "unmaximized", r.id);
+      }
+    }
+    return next;
+  }
+
+  /**
+   * The window became maximized. In its open phase (no tile settled yet) this still counts as
+   * arriving maximized: decided in the next flush. After Plastile un-maximized it once, a maximize
+   * (the application's or the user's) is honoured and noted.
+   */
+  private maximizedLater(r: Rec): void {
+    if (r.open === "watch") {
+      if (this.svc.now() <= r.openUntil) {
+        r.open = "wait";
+        this.openChecks.add(r.id);
+        this.ensureFlush();
+        return;
+      }
+      r.open = null;
+    }
+    if (r.unmaximized && r.open === null) {
+      r.openNote = "maximized again after Plastile un-maximized it when it opened; honoured: Plastile un-maximizes a window " +
+        "only once, when it opens";
+      this.trace.record(this.svc.now(), "remaximized", r.id);
+    }
+  }
+
+  private runOpenChecks(): void {
+    if (this.openChecks.size === 0) return;
+    const ids = [...this.openChecks];
+    this.openChecks.clear();
+    for (const id of ids) {
+      const r = this.recs.get(id);
+      if (r && r.open === "wait") this.contained("open check", () => this.openCheck(r)); // queued once classified
+    }
+  }
+
+  /**
+   * Decide, once, whether a window opened while Plastile runs arrived maximized (the application
+   * or KWin chose it, not the user). With maximizedOnOpen "tile", one that would otherwise tile
+   * has its maximize cleared before it joins the layout, in this flush: KWin coalesces the
+   * un-maximize and the tile write into one configure, so it is placed once. Full screen on open,
+   * floating windows (rules, dialogs, the user's floats), a context that places nothing and
+   * "keep" leave the maximize to KWin, as T17 does for any later maximize.
+   */
+  private openCheck(r: Rec): void {
+    r.open = null;
+    const c = r.mode === "tiled" && r.ctx ? this.contexts.get(contextId(r.ctx)) : undefined;
+    const tiles = !!c && !this.placesNothing(c, r.id) && !r.states.fullscreen && r.states.interactive === "none";
+    if (!r.states.maximized) {
+      if (tiles) { r.open = "watch"; r.openUntil = this.svc.now() + this.opts.deadlineMs; }
+      return;
+    }
+    if (!tiles || !c) return;
+    const now = this.svc.now();
+    if (this.ctxSettings(c).maximizedOnOpen === "keep") {
+      r.openNote = "it opened maximized and stays maximized (maximizedOnOpen: keep)";
+      this.trace.record(now, "open-maximized", r.id, { action: "kept", why: "keep" });
+      return;
+    }
+    r.open = "requested";
+    r.openUntil = now + this.opts.deadlineMs;
+    r.suspensions.delete("maximized");
+    let ok = false;
+    try {
+      ok = this.host.unmaximize(r.id, r.gen);
+    } catch (e) {
+      this.counters.errors++;
+      this.svc.log("warn", "unmaximize failed", { id: r.id, error: String(e) });
+    }
+    if (!ok) {
+      if (r.open === "requested") r.open = null;
+      if (r.states.maximized) r.suspensions.add("maximized");
+      r.openNote = "it opened maximized and stays maximized: KWin does not allow un-maximizing it (fixed size, or a KWin " +
+        "window rule forces it maximized)";
+      this.trace.record(now, "open-maximized", r.id, { action: "kept", why: "not maximizable" });
+      return;
+    }
+    // X11 cleared it inside the call (maximizedChanged arrived already, ending the wait).
+    if (r.open === "requested" && !r.states.maximized) r.open = null;
+    r.unmaximized = true;
+    r.openNote = "unmaximized on open: it opened maximized (the application or KWin chose it) and maximizedOnOpen is tile; " +
+      "a maximize after that is honoured";
+    this.trace.record(now, "open-maximized", r.id, { action: "unmaximized" });
+    // Placed from scratch: the tile is a plan write, not a correction of an older request, and it
+    // is written even if the maximized frame already equals it (placeOnce).
+    r.ledger = L.newEntry(r.frame, r.ledger.tol);
+    r.placeOnce = true;
+    this.corrections.delete(r.id);
+    this.markDirty(c.key);
+    if (r.open === "requested") this.armDeadline(r.openUntil);
+  }
+
+  /**
+   * KWin still reports the window maximized when the wait for the un-maximize ends: the client
+   * maximized itself again before acknowledging, or the request never reached it. Honoured, never
+   * asked again: its tile request is cancelled and it is a maximized member like any other.
+   */
+  private unmaximizeRefused(r: Rec): void {
+    r.open = null;
+    if (!r.states.maximized) return;
+    L.cancel(r.ledger);
+    this.corrections.delete(r.id);
+    r.suspensions.add("maximized");
+    r.openNote = "Plastile un-maximized it when it opened, but it stayed maximized (the application maximized itself " +
+      "again); honoured";
+    this.trace.record(this.svc.now(), "remaximized", r.id, { before: "acknowledged" });
+    if (r.ctx && r.mode === "tiled") this.markDirty(r.ctx);
   }
 
   // ------------------------------------------------------------- interaction
@@ -1756,6 +1925,9 @@ export class Engine {
       if (action === "toggle-suspend") {
         if (!this.suspended) {
           this.suspended = true;
+          // A window still waiting for its open decision is adopted at resume, left as it is (ADR-021).
+          for (const w of this.recs.values()) if (w.open === "wait" || w.open === "watch") w.open = null;
+          this.openChecks.clear();
           this.releaseOwnership();
           this.notify(() => this.onSuspendChange && this.onSuspendChange(true));
           return ok();
@@ -2691,6 +2863,8 @@ export class Engine {
       exception: r.exception, nativeTile: r.nativeTile, nativeYield: r.nativeYield, parked: this.parked.has(r.id),
       zone: c && this.layoutKind(c) === "zones" ? this.zoneExplain(c, r) : null,
       suspended: suspendedText(r), paused: this.suspended,
+      // What happened to a maximize the window arrived with (ADR-021); absent when nothing did.
+      ...(r.openNote !== null ? { onOpen: r.openNote } : {}),
     };
   }
 

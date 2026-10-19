@@ -60,6 +60,8 @@ export class FakeWorkspace {
   current = new Map<string, FakeDesktop>();
   /** Script frame writes, in order (the adapter is the only script writer). */
   writes: Array<{ caption: string; rect: R }> = [];
+  /** Script setMaximize calls, in order: caption and the (vertical, horizontal) arguments. */
+  maximizeCalls: Array<{ caption: string; v: boolean; h: boolean }> = [];
   clientAreaCalls = 0;
   windowAdded = new Sig(); windowRemoved = new Sig(); windowActivated = new Sig();
   currentDesktopChanged = new Sig(); currentActivityChanged = new Sig(); activitiesChanged = new Sig();
@@ -112,7 +114,7 @@ export class FakeWorkspace {
       dndIcon: false, popupWindow: false, specialWindow: false, managed: true, deleted: false, transient: false,
       transientFor: null, modal: false, resizeable: true, moveable: true, skipTaskbar: false,
       output: this.screens[0], desktops: [this.desktops[0]], onAllDesktops: false, activities: [],
-      minimized: false, fullScreen: false, maximizeMode: 0, move: false, resize: false, hidden: false,
+      minimized: false, fullScreen: false, maximizeMode: 0, maximizable: true, move: false, resize: false, hidden: false,
       minSize: { width: 0, height: 0 }, maxSize: { width: 2147483647, height: 2147483647 }, tile: null,
       ...o,
     };
@@ -141,6 +143,17 @@ export class FakeWorkspace {
       w.clientGeometryChanged.emit();
     };
     Object.defineProperty(w, "frameGeometry", { configurable: true, get: () => ({ ...fg }), set: (r: R) => w._setFrame(r, true) });
+    // X11-style synchronous maximize (X11Window::maximize): the mode and maximizedChanged inside the
+    // call, then the restore geometry (`restore`) or the maximize area.
+    w.setMaximize = (v: boolean, hz: boolean) => {
+      ws.maximizeCalls.push({ caption: String(w.caption), v, h: hz });
+      const mode = (v ? 1 : 0) | (hz ? 2 : 0);
+      if (mode === w.maximizeMode) return;
+      w.maximizeMode = mode;
+      w.maximizedChanged.emit();
+      const area = ws.clientArea(ws.MaximizeArea, w.output, w.desktops[0]);
+      w._setFrame(mode === 0 ? ((o.restore as R) ?? { x: 100, y: 100, width: 400, height: 300 }) : area, false);
+    };
     // `csdShadow`: an X11 client-side-decorated window (GTK, _GTK_FRAME_EXTENTS): the X window, which
     // KWin reports as the client geometry, extends past the frame by the shadow on every side.
     const shadow = Number(o.csdShadow ?? 0);
