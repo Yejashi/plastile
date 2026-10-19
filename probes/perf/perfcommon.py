@@ -35,6 +35,15 @@ def git_meta() -> dict:
             "dirtyPaths": [ln[3:] for ln in dirty.splitlines()][:20]}
 
 
+def sha256(path: Path) -> str | None:
+    """Content hash of a file (the bundle a unit measured), or None when it is missing."""
+    import hashlib
+    try:
+        return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+    except OSError:
+        return None
+
+
 def versions() -> dict:
     def out(argv: list[str]) -> str | None:
         try:
