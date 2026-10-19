@@ -207,12 +207,24 @@ def gc_attrib(d: Path, v: dict) -> list[dict]:
     """
     import re
     took = re.compile(r"Garbage collection took (\d+) us")
+    freed = re.compile(r"Freed up bytes\s*: (\d+)")
+    after = re.compile(r"Regular item memory after GC: (\d+)")
     perf = re.compile(r"plastile perf (\{.*\})$")
     out = []
     for ud in sorted(d.glob(f"u*-{v['name']}")):
         log = (ud / "diag.log").read_text().splitlines() if (ud / "diag.log").exists() else []
         cmds, pend = [], []
+        freed_total, n_freed, live_after = 0, 0, []
         for ln in log:
+            f = freed.search(ln)
+            if f:
+                freed_total += int(f.group(1))
+                n_freed += 1
+                continue
+            a = after.search(ln)
+            if a:
+                live_after.append(int(a.group(1)))
+                continue
             m = took.search(ln)
             if m:
                 pend.append(int(m.group(1)) / 1e3)
@@ -228,6 +240,10 @@ def gc_attrib(d: Path, v: dict) -> list[dict]:
         gcs = [g for c in cmds for g in c["gc"]]
         with_gc = [c for c in solving if c["gc"]]
         out.append({"unit": ud.name, "commands": len(cmds), "collections": len(gcs),
+                    # Managed-heap bytes freed by the collections logged in the measured part, per command: the
+                    # allocation that did not survive, i.e. the per-command garbage (all of KWin's QV4 engine).
+                    "freedBytesPerCommand": round(freed_total / max(1, len(cmds))) if n_freed else None,
+                    "liveAfterCollectionBytes": {"p50": nr(live_after, 0.5), "max": max(live_after) if live_after else None},
                     "collectionsPer1000Commands": r4(1000 * len(gcs) / max(1, len(cmds))),
                     "collectionMs": {"p50": r4(nr(gcs, 0.5)), "p95": r4(nr(gcs, 0.95)), "max": r4(max(gcs)) if gcs else None},
                     "solvingCommands": len(solving), "solvingCommandsWithCollection": len(with_gc),
