@@ -1169,8 +1169,10 @@ export class Engine {
    */
   private participates(r: Rec): boolean {
     if (r.mode !== "tiled" || r.ctx === null) return false;
-    for (const s of r.suspensions) if (s !== "interactive") return false;
-    return true;
+    // Only "interactive" (or nothing) suspends it. Size checks, not for-of: iterating a Set
+    // allocates an iterator per call in QV4, and this runs per member in every solve (§16).
+    const s = r.suspensions;
+    return s.size === 0 || (s.size === 1 && s.has("interactive"));
   }
 
   /** Participates and may receive frame requests (the user owns the frame while dragging). */
@@ -1402,7 +1404,9 @@ export class Engine {
     const constraints = new Map<WindowId, Constraints>();
     const insertedAt = new Map<WindowId, number>();
     const ids: WindowId[] = [];
-    for (const id of c.members) {
+    const members = c.members;
+    for (let i = 0; i < members.length; ++i) {
+      const id = members[i];
       const r = this.recs.get(id);
       if (!r) continue;
       constraints.set(id, this.effectiveConstraints(r));
@@ -1415,6 +1419,22 @@ export class Engine {
       area: area ?? { x: 0, y: 0, width: 1920, height: 1080 },
       ids, members: c.members.slice(), constraints, settings: this.ctxSettings(c), focused, insertedAt,
     };
+  }
+
+  /**
+   * Position of `id` among the windows the context's solve takes part in (solveInput's `ids`),
+   * or -1. The same order without building a whole SolveInput (its maps and KWin reads).
+   */
+  private participantIndex(c: Ctx, id: WindowId): number {
+    const members = c.members;
+    let k = 0;
+    for (let i = 0; i < members.length; ++i) {
+      const r = this.recs.get(members[i]);
+      if (!r || !this.participates(r)) continue;
+      if (members[i] === id) return k;
+      k++;
+    }
+    return -1;
   }
 
   private solveAndApply(c: Ctx): void {
@@ -1462,14 +1482,16 @@ export class Engine {
     const tol = frameTolerance(this.scales.get(c.key.output) ?? 1);
     this.applying++;
     try {
-      for (const [id, target] of res.slots) {
+      // forEach and an index loop rather than for-of: no iterator or entry array per window in QV4 (§16).
+      res.slots.forEach((target, id) => {
         const r = this.recs.get(id);
-        if (!r || !this.writable(r)) continue;
+        if (!r || !this.writable(r)) return;
         r.ledger.tol = tol;
         this.applyTarget(r, target);
-      }
-      for (const id of res.raise) {
-        const r = this.recs.get(id);
+      });
+      const raise = res.raise;
+      for (let i = 0; i < raise.length; ++i) {
+        const r = this.recs.get(raise[i]);
         if (r && this.host.raise(r.id, r.gen)) this.counters.raises++;
       }
     } finally {
@@ -2130,7 +2152,7 @@ export class Engine {
         // Master/stack: growing a stack window shrinks the master column.
         if (kind === "master-stack" && r && r.ctx && sameContext(r.ctx, c.key)) {
           const ms = this.layoutState(c, "master-stack");
-          const idx = this.solveInput(c, null).ids.indexOf(r.id);
+          const idx = this.participantIndex(c, r.id);
           if (idx >= ms.masterCount) delta = -delta;
         }
         return this.layoutCommand(c, { kind: "ratio", delta });

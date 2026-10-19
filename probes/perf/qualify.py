@@ -33,7 +33,9 @@ Diagnostic modes (--diag, never pooled with the above):
   gc      the QV4 garbage collector's own log (qt.qml.gc.*: incremental GC state transitions and
           step timings): instrumented, it attributes tails to collections inside a handler;
           uninstrumented, it gives the collection rate of the production path (no perf lines)
-  frames  instrumented + a passive KWin script counting frameGeometryChanged per window, to check
+  gcstats only qt.qml.gc.allocatorStats: one block of lines per collection (its duration, heap
+          before/after), not one line per incremental step, so it perturbs each cycle less than `gc`
+  frames instrumented + a passive KWin script counting frameGeometryChanged per window, to check
           one geometry request per changed window against KWin's own observation
 
 Client-side stages come from the fixtures' own logs (same CLOCK_MONOTONIC): first/last xdg
@@ -42,7 +44,7 @@ virtual backend's software timeline (not physical scanout).
 
 Usage: python3 probes/perf/qualify.py --n 32 --mode uninstrumented --run 0 [--seed 1]
            [--samples 1000] [--noop-samples 200] [--warmup 20] [--block 100] [--inactive 3]
-           [--diag gc|frames] [--out DIR]
+           [--diag gc|gcstats|frames] [--qml ROOT] [--out DIR]
 Writes DIR/{unit.json,samples.jsonl} (raw, local; artifacts/ is never committed).
 """
 from __future__ import annotations
@@ -221,7 +223,9 @@ def main() -> int:
     ap.add_argument("--block", type=int, default=100)
     ap.add_argument("--inactive", type=int, default=3, help="inactive desktops with 2 fixtures each")
     ap.add_argument("--workloads", default="ratio,swap,master,focus,noop")
-    ap.add_argument("--diag", choices=("gc", "frames"), default=None)
+    ap.add_argument("--diag", choices=("gc", "gcstats", "frames"), default=None)
+    ap.add_argument("--qml", type=Path, default=HERE / "main.qml",
+                    help="measurement root (default this tree's; probes/perf/ab_bundles.py builds roots for other commits' bundles)")
     ap.add_argument("--out", type=Path, default=None)
     args = ap.parse_args()
     if args.diag == "frames" and args.mode != "instrumented":
@@ -251,9 +255,14 @@ def main() -> int:
     env = measure_env()
     if args.diag == "gc":
         env["QT_LOGGING_RULES"] = "js=true;qml=true;kwin_scripting=true;qt.qml.gc.*=true"
+    elif args.diag == "gcstats":
+        env["QT_LOGGING_RULES"] = "js=true;qml=true;kwin_scripting=true;qt.qml.gc.allocatorStats=true"
+    qml = args.qml.resolve()
+    unit["root"] = {"qml": str(qml.relative_to(ROOT)) if qml.is_relative_to(ROOT) else "outside the tree",
+                    "bundleSha256": common.sha256(qml.parent.parent.parent / "package/contents/code/plastile.mjs")}
     blocks, samples = [], []
     t_unit = time.monotonic()
-    with Session(out / "session", width=1920, height=stack_output_height(n), extra_env=env, qml=HERE / "main.qml",
+    with Session(out / "session", width=1920, height=stack_output_height(n), extra_env=env, qml=qml,
                  config=config) as s:
         st = setup(s, n, args.inactive)
         unit["setup"] = {k: v for k, v in st.items() if k != "counters"} | {"counters": st["counters"]["counters"]}
@@ -281,7 +290,7 @@ def main() -> int:
         unit["diagLog"] = None
         if args.diag:
             # Raw log lines kept for attribution (local artifact): GC statistics or frame changes, and the perf lines.
-            pat = r"qt\.qml\.gc|plastile perf " if args.diag == "gc" else r"PLT-L frame |plastile perf "
+            pat = r"qt\.qml\.gc|plastile perf " if args.diag in ("gc", "gcstats") else r"PLT-L frame |plastile perf "
             lines = s.log_lines(pat, log_off)
             (out / "diag.log").write_text("\n".join(lines) + "\n")
             unit["diagLog"] = {"lines": len(lines)}

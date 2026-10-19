@@ -16,8 +16,9 @@ missing:
    (unplug) and P2e (suspend) checks become declared limitations or get run; the optional P9 G1 repeat.
 5. **KWin 6.8** is only a provisional CI job (RSS noise from KWin 6.8's own allocation), so 6.8 cannot be
    declared supported.
-6. **Smaller open items:** the nested pure-solve p99 budget is not met (G2), physical uninstall (PHY-10) has not
-   run, and no test checks that the live trace leaves out private data.
+6. **Smaller open items:** physical uninstall (PHY-10) has not run, and no test checks that the live trace leaves
+   out private data. The nested pure-solve p99 budget, open at G2, is met since `212d86b`
+   ([G2 §16](G2_REPORT.md#16-follow-up-the-median-slowdown-and-the-pure-solve-p99-nested-virtual-kwin-675-2026-10-19)).
 
 States: **met**, **partly met**, **open**, **owner decision**, **pending**. Layers: **unit** (Node, mock host or
 fake KWin), **nested** (a disposable `kwin_wayland --virtual` session, never physical), **nested-windowed-gpu**
@@ -53,7 +54,7 @@ Plasma session). A nested result never stands in for a physical one.
 | # | Clause | State | Layer | Evidence |
 |---|---|---|---|---|
 | FB-1 | Master/stack, BSP, monocle, floating, keyboard commands, window rules, scoped settings, correct topology and lifecycle | met in nested; partly physical | unit, nested, physical | The scenarios listed in [integration-host-5773b61.json](evidence/integration-host-5773b61.json); physical P2a–c, P3, P4, P5 and P7 at `97fec4a` |
-| FB-2 | Measured responsiveness | partly met | nested met; physical open | Nested budgets in [G2_REPORT §3](G2_REPORT.md#3-4-budgets): dispatch → last request met at 32 windows; **pure-solve p99 1.06–1.07 ms against 1 ms, not met**; the command path is 12 % slower at the median than `b60e618`, cause not attributed (G2 §15). Physical: G3-3 |
+| FB-2 | Measured responsiveness | partly met | nested met; physical open | Nested budgets in [G2_REPORT §3](G2_REPORT.md#3-4-budgets): dispatch → last request met at 32 windows. Pure-solve p99 was 1.06–1.07 ms at G2; since `212d86b` it is 0.166–0.170 ms against 1 ms, met. The 12 % median slowdown since `b60e618` is attributed in part (its largest single cause, 0.04–0.06 ms, a `Set` iterator in `participates()`, `8a4bea5`; the rest to commit ranges only) and outweighed: the median is now 0.10–0.11 ms below `b60e618` (re-measured in review, G2 §16.9) ([G2 §16](G2_REPORT.md#16-follow-up-the-median-slowdown-and-the-pure-solve-p99-nested-virtual-kwin-675-2026-10-19)). Physical: G3-3 |
 | FB-3 | Animation optional and disabled by default | met | unit | No animation exists ([ADR-018](../design/DECISIONS.md#adr-018-close-t31-presentation-as-deferred-animation-stays-disabled)); the `animation` setting accepts only `{ "enabled": false, "durationMs": 0 }` ([CONFIGURATION](../user/CONFIGURATION.md#settings-patch)) |
 | FB-4 | Scrolling (M8) and zones (M9) in or out of the first release | owner decision | nested only | Experimental and off unless selected ([ADR-014](../design/DECISIONS.md#adr-014-start-m8m9-as-experimental-opt-in-layouts-before-g3-physical-sign-off)); no physical check of either |
 | FB-5 | The G1 backend decision repeated physically ("part of G3", ADR-003) | owner decision (optional P9) | physical | Not run. The runbook makes P9 optional and needs consent C8 ([runbook P9](../validation/PHYSICAL_RUNBOOK.md#p9-g1-physical-repeat-optional-consent)) |

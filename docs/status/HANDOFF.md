@@ -172,6 +172,9 @@ Beyond [AGENTS.md](../../AGENTS.md):
 - In `probes/perf/focus/run.py`, loading the measurement root again after unloading it, with other declarative
   scripts loaded and a static screen, sometimes never started (the script reported loaded, nothing logged, no error
   for 60 s). The probe uses one session per block instead. The cause was not investigated.
+- **QV4's `for…of` over a `Map` or `Set` skips an entry when the loop deletes the current or an earlier one** (Qt 6.12.0;
+  `forEach` and V8 do not). Node tests cannot catch it. Iterate a copy when the body can delete
+  ([PERFORMANCE §7.1](../validation/PERFORMANCE.md#71-qv4-iteration-allocates-measured), probe `probes/perf/qv4iter/run.py`).
 - Every push to `main` cancels the CI run in progress (a concurrency group). Wait for a run to finish before
   pushing again if you need its result.
 - Commit message trailers and the "no model identifiers in the repository" rule come from the session

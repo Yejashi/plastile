@@ -24,6 +24,22 @@ explained, and teardown is clean. The open items:
 
 [STATUS](STATUS.md) is unchanged by this report.
 
+**Update, 2026-10-19 (§16, nested only).** Both open performance items are fixed in `src/`. The slow mode is explained;
+the slowdown only in part (review, §16.9):
+
+- **Slowdown since `b60e618` (0.09–0.12 ms).** Its largest single part, 0.04–0.06 ms, was a `Set` iterator added to
+  `participates()` in `8a4bea5`. The other 0.03–0.065 ms is spread over later commits and attributed to commit ranges
+  only.
+- **Solve slow mode.** It was QV4 garbage collection triggered inside the solve span: 151 of 153 slow solves in a
+  diagnostic unit had a collection start in their command.
+- **Fix.** The solve path and the apply loop now iterate without iterator objects or per-item arrays.
+- **Result at `212d86b`:**
+  - pure-solve p99 at 32 windows: **0.166–0.170 ms (met)**, against 1.055–1.092 ms before; reproduced with a new
+    seed in review (§16.9);
+  - command-path median: 0.10–0.11 ms faster than `b60e618`. The rest of the slowdown is outweighed, not removed.
+
+The sections below are the G2 measurement at `320cf72` and are left as measured.
+
 ## 1. Environment
 
 | Item | Value |
@@ -436,10 +452,10 @@ The physical gate G3 stays open. Its consent points are in the [runbook](../vali
 | Idle accounting summed live threads; one ended thread gave negative wakeups | probe | fixed (per-thread snapshots) |
 | `baseline-upstream/run.py` read `.git/HEAD`, which fails in a linked worktree | probe | fixed |
 | P05 n = 32 overlap (HANDOFF §6) | not a defect | infeasible workload in the sandbox's decoration; engine exact at the boundary |
-| Solve p99 1.07 ms at n = 32 | budget miss | attributed to QV4 GC (§6); no `src/` change |
+| Solve p99 1.07 ms at n = 32 | budget miss | attributed to QV4 GC (§6); no `src/` change in G2. **Follow-up (§16):** attributed per solve to collections triggered in the command; allocation removed from the solve path (`224beea`, `d6f5647`); p99 0.166–0.170 ms, met (nested) |
 | Upstream baseline Plastile run r1: 15 swaps at 8–11 ms | unexplained | open (§6) |
 | Windowed GPU focus block with 1 solve | unexplained (earlier evidence) | open; not reproducible here (0 solves in 50,000 nested-virtual focus commands), and windowed sessions were out of scope for this run |
-| Command path at n = 32 slower than at `b60e618` (+0.09 ms p50 ratio, +0.07–0.08 ms swap; review §15) | slowdown, within budget | open: not bisected over the 74 `src/` commits since then; the measurement root also gained the persistence store |
+| Command path at n = 32 slower than at `b60e618` (+0.09 ms p50 ratio, +0.07–0.08 ms swap; review §15) | slowdown, within budget | open in G2. **Follow-up (§16):** bisected. +0.059 ms came at `8a4bea5`, 0.042 ms of it a `Set` iterator in `participates()` (fixed, `224beea`); the rest is spread per-write bookkeeping. The persistence store costs nothing measurable. After `212d86b` the median is 0.10 ms below `b60e618` |
 
 No `src/` defect was found, so `src/` is unchanged.
 
@@ -552,3 +568,388 @@ has 300 samples per cell, so it gives medians only, not p99.
 - The correction budget is narrowed to "met for P03 and P07 n = 2; not demonstrated per target elsewhere".
 - No number in this report is physical, and the Node P04 numbers say nothing about QV4.
 
+## 16. Follow-up: the median slowdown and the pure-solve p99 (nested-virtual, KWin 6.7.5, 2026-10-19)
+
+Branch `wf/g2-perf`, from `eca2df5`, on the same host and KWin 6.7.5 / Qt 6.12.0 as §1. Every number here is nested
+KWin on the virtual backend: no number is physical, and none is an input-to-photon result. Evidence:
+[g2-followup.json](evidence/g2-followup.json), with every measured sample (151,600 rows) in
+[g2-followup-samples.csv.xz](evidence/g2-followup-samples.csv.xz). [g2_followup.py](../../probes/perf/g2_followup.py)
+computes both from the local unit directories. Statistics: nearest-rank quantiles, p99 only from ≥ 5000 samples, and
+95 % intervals from a bootstrap over whole units. A difference resamples the units of both variants.
+
+**Result.** Both items are fixed in `src/`; the first is explained only in part (corrected in review, §16.9):
+
+- **The slowdown since `b60e618`** has its largest single step, about half of it, at one change in `8a4bea5` (T29).
+  `participates()` started to walk a window's suspension `Set` with `for…of`. It runs for every member in every solve
+  input and again for every slot written. The rest is spread over later commits (§16.2).
+- **The p99 miss** was QV4's garbage collector. In a diagnostic unit, 151 of 153 slow solves had a collection start
+  in their command's interval (§16.4).
+- **Three commits** remove the iterators and per-item arrays from the solve path and the apply loop:
+  - `224beea`: `participates()` without a Set iterator.
+  - `d6f5647`: master/stack solve, `allocate()`, `solveInput` and the apply loop with index loops and flat cut
+    arrays.
+  - `212d86b`: `resize.grow/shrink` finds the active window's slot without building a whole solve input.
+
+  The solver's output is unchanged. `tests/core/solveAlloc.test.ts` compares slots, overflow and notes bit for bit
+  against a verbatim copy of the old code over 4000 random contexts.
+- **Measured with the G2 protocol at `212d86b`:**
+  - The pure-solve p99 at 32 windows is **0.166 / 0.170 / 0.170 ms** (ratio / swap / master), against the 1 ms
+    budget. **The budget is met in nested KWin.**
+  - The command path at n = 32 is now **0.10 ms faster** at the median than `b60e618` (it was 0.09–0.12 ms slower).
+
+The p99 budget is met by moving the collections out of the solve span. They have not gone away: §16.7 says what is
+left.
+
+### 16.1 Why iteration costs this much in QV4
+
+The bundle targets ES2016 ([tools/bundle-options.ts](../../tools/bundle-options.ts)), so `for…of`, spread and array
+destructuring reach QV4 as written. In QV4 each of them works through the iterator protocol, and each step creates
+garbage-collected objects (observed source: qtdeclarative v6.12.0
+`src/qml/jsruntime/qv4mapiterator.cpp`, `MapIteratorPrototype::method_next`):
+
+| Construct | Heap objects created |
+|---|---|
+| Each loop | one iterator object |
+| Each step | one `{value, done}` result object |
+| Each `Map` entry | a new `[key, value]` array |
+| `for (const [id, slot] of map)` | the entry array is then destructured through a second iterator |
+| `Math.max(...xs.map(f))` | a mapped array, then iteration again for the spread |
+
+The collector runs when an allocation finds no free slot and the heap holds more than twice what survived the last
+sweep, or when the unmanaged heap passes its limit (observed source: `src/qml/memory/qv4mm_p.h`
+`MemoryManager::allocate`, `qv4mm.cpp` `shouldRunGC`). The incremental time limit defaults to 5 ms (`QV4_GC_TIMELIMIT`,
+`qv4mm.cpp` `GCStateMachine`). A cycle of about 0.8 ms therefore runs to the end inside whichever span made the
+triggering allocation. How often a cycle lands in the solve depends on the solve's share of the allocation.
+
+**Iteration order differs too (review, §16.9).** QV4's `for…of` over a `Map` or `Set` is not the ECMAScript one when
+the loop deletes entries: it skips the entry after one deleted at or before its position. `forEach` follows
+ECMAScript. Moving the apply loop to `forEach` therefore changed KWin-side behaviour in that case; it did not keep it.
+
+### 16.2 Item 1: where the 0.09 ms came from
+
+**Method.** [ab_bundles.py](../../probes/perf/ab_bundles.py) builds the bundle of each commit's `src/` and runs it under
+this tree's measurement root, harness, fixture and KWin. Only the bundle differs between variants. The workload is §15's
+A/B workload, `b60e618`'s `run.py` P03:
+
+- n = 32, 1920×5798 output, master/stack, no inactive desktops;
+- 300 ratio, then 300 swap, then 300 focus commands, 15–30 ms apart (seed 1);
+- instrumented; "inner" is the bundle's dispatch → return span.
+
+Each round runs every variant once, in a seeded shuffled order, one nested KWin per unit. There were two campaigns:
+
+- coarse: 13 variants × 4 rounds, 11 first-parent points;
+- fine: 8 variants × 5 rounds.
+
+`+pick=` applies one later commit's `src/` change to an older tree.
+
+Median of the n = 32 ratio command, inner span, ms. The difference is to `b60e618` in the same campaign, with its 95 %
+interval:
+
+| Variant | ratio p50 | Δ ratio | Δ swap | solve p50 | apply p50 |
+|---|---|---|---|---|---|
+| `b60e618` (fine) | 0.762 | — | — | 0.156 | 0.407 |
+| `8a4bea5` (T29) | 0.821 | +0.059 [0.052, 0.068] | +0.041 [0.032, 0.053] | 0.165 | 0.429 |
+| `8a4bea5` + `224beea` | 0.779 | +0.017 [0.008, 0.026] | +0.011 [0.003, 0.019] | 0.159 | 0.416 |
+| `0ce3413` | 0.831 | +0.070 [0.063, 0.075] | +0.051 [0.039, 0.068] | 0.166 | 0.434 |
+| `eca2df5` (before) | 0.886 | +0.124 [0.112, 0.136] | +0.094 [0.087, 0.102] | 0.171 | 0.472 |
+| `224beea` | 0.825 | +0.063 [0.050, 0.078] | +0.042 [0.036, 0.049] | 0.162 | 0.450 |
+| `d6f5647` | 0.691 | −0.070 [−0.080, −0.059] | −0.081 [−0.089, −0.073] | 0.094 | 0.409 |
+| `212d86b` (after) | 0.663 | **−0.098 [−0.107, −0.089]** | **−0.084 [−0.092, −0.075]** | 0.095 | 0.402 |
+
+The coarse campaign, with `b60e618` at 0.770 ms, puts the later steps in order:
+
+| Step | Δ ratio, cumulative |
+|---|---|
+| `0ce3413` | +0.057 |
+| `34204e2` | +0.072 |
+| `f794f2d` | +0.077 |
+| `308f280` | +0.084 |
+| `6c13213` | +0.091 |
+| `8d8bdf1` | +0.093 |
+| `52f7873` | +0.110 |
+| `f3d1f8f` | +0.097 |
+| `0f55edf` | +0.106 |
+| `a5642dd` | +0.114 |
+| `eca2df5` | +0.092 [0.085, 0.102] |
+
+The root without the persistence store (`+nostate`) measured +0.104: **the store costs nothing measurable.**
+
+Attribution:
+
+- **`8a4bea5`: +0.059 ms, of which 0.042 ms is the Set iterator in `participates()`.** Applying only that fix to
+  `8a4bea5` leaves +0.017 [0.008, 0.026]. The rest of that commit (`writable()`, the interaction checks) is not split
+  further.
+- **The later commits add 0.03–0.05 ms, spread over many steps.** No single step stands out from the run-to-run spread
+  (about ±0.01 ms). Most of it is in the apply span: from 0.434 ms at `0ce3413` to 0.47 ms at `eca2df5`, about
+  1 µs per written window. That is per-write bookkeeping added since then:
+  - the adapter's requested-size record and write guard (`34204e2`, +0.011 apply in the coarse campaign);
+  - the T13 plan-slot validation and the T14 write traces;
+  - the hidden-context checks.
+
+  This residual is **not attributed to individual lines**.
+- **The fixes remove more than the regression.**
+  - `224beea` and `d6f5647` together take 0.077 ms off the solve span (0.171 → 0.094 ms).
+  - `d6f5647` takes 0.04 ms off the apply loop (0.450 → 0.409 ms): the per-window entry arrays and iterators, which
+    `b60e618` had as well.
+  - The per-write bookkeeping above is still there; at `212d86b` the apply span is back at `b60e618`'s level.
+
+**A protocol deviation, reported here.** Eight of the 92 bisect units started while one of this session's own analysis
+processes (`python3`, a bootstrap) was using a core:
+
+- coarse `u038`–`u040`;
+- fine `u000`–`u004`, all of round 0.
+
+They are kept in every number above. Without them every difference stays within 0.008 ms of the published one, and no
+conclusion changes (`sensitivityWithoutThoseUnits` in the evidence). The coarse campaign ran the probe before it was
+committed; the fine campaign ran exactly the version committed in `772aeee`.
+
+### 16.3 Item 2: the pure-solve p99, G2 protocol
+
+[ab_qualify.py](../../probes/perf/ab_qualify.py) runs [qualify.py](../../probes/perf/qualify.py) unchanged, with the
+same protocol as §2:
+
+- n = 32 tiled fixtures plus 3 inactive desktops;
+- ratio, swap, master, focus and no-op commands in seeded shuffled blocks of 100, 15–30 ms apart, declared warm-up;
+- G2's seed, so run r of both variants sends the same commands.
+
+The only difference is the bundle: `eca2df5` (before) or `212d86b` (after), in alternating order, 5 instrumented runs
+each. "Pure solve" is the same span as before: the engine's `solveAndApply` clock points, unchanged.
+
+| n = 32, instrumented, 5 × 1000 | before (`eca2df5`) | after (`212d86b`) |
+|---|---|---|
+| ratio solve p50 / p95 | 0.170 / 0.264 | 0.095 / 0.142 |
+| ratio solve **p99** [CI] | 1.055 [1.046, 1.070] | **0.166 [0.164, 0.167]** |
+| swap solve **p99** [CI] | 1.092 [1.070, 1.113] | **0.170 [0.166, 0.174]** |
+| master solve **p99** [CI] | 1.063 [1.049, 1.081] | **0.170 [0.168, 0.171]** |
+| solves > 0.5 ms (ratio / swap / master) | 2.6 / 2.0 / 2.4 % | 0.22 / 0.08 / 0.06 % |
+| solve max (ratio / swap / master) | 1.39 / 1.46 / 1.46 | 1.16 / 1.06 / 0.95 |
+| ratio outer p50 / p95 / p99 | 0.924 / 1.716 / 1.998 | 0.713 / 0.934 / 1.613 |
+| swap outer p50 / p95 / p99 | 0.708 / 1.141 / 1.736 | 0.553 / 0.738 / 1.097 |
+
+- The "before" column reproduces §3 at the current tree: p99 1.055–1.092 ms, 2.0–2.6 % in the slow mode.
+- After the change the pure-solve p99 is **0.17 ms against 1 ms**, and p95 0.14–0.15 ms against 0.5 ms. **Both solve
+  budgets are met in nested KWin 6.7.5.**
+- The slow mode still exists: 3–11 solves in 5000 per command exceed 0.5 ms, and the largest is 1.16 ms. It no
+  longer reaches the p99.
+
+All 10 units passed:
+
+- no tiling errors, no failures, 0 outstanding requests, teardown complete;
+- every one of 10,200 instrumented focus commands made 0 solves and 0 writes;
+- 0–3 corrections per unit, every one of them a `stale` (E04), as in §3.
+
+Nine of the ten units recorded `implementationDirty: true`. The dirty path was `probes/perf/g2_followup.py`, the
+evidence script, untracked while those units ran; nothing on the measured path imports it.
+
+**Uninstrumented, 3 runs each** (production mode, the outer span; 3000 samples per cell, so no p99), dispatch → last
+request at n = 32. These units were clean.
+
+| p50 / p95, ms | before | after | Δ p50 [CI] |
+|---|---|---|---|
+| ratio | 0.882 / 1.614 | 0.676 / 0.911 | −0.205 [−0.211, −0.200] |
+| swap | 0.679 / 1.051 | 0.516 / 0.678 | −0.162 [−0.172, −0.152] |
+| master | 0.847 / 1.506 | 0.674 / 0.924 | −0.173 [−0.179, −0.167] |
+| focus | 0.721 / 1.025 | 0.719 / 1.018 | −0.001 [−0.084, 0.142] |
+
+Focus does not solve and does not change, as expected. The no-op cell's median falls between its two commands
+(bimodal, §5), so it is not compared here.
+
+### 16.4 Attribution of the slow mode to the collector
+
+The diagnostic mode `qualify.py --diag gcstats` logs only `qt.qml.gc.allocatorStats`. That category prints a block
+per cycle, with a header at the triggering allocation (`qv4mm.cpp` `runGC` → `CollectorStatistics::start`). We ran 2
+units per variant, never pooled with the measured units.
+
+A cycle start counts for command k when its header is logged after perf line k−1 and before perf line k. That covers
+command k's handler and the event-loop work between the two commands.
+
+| gcstats unit | cycle starts / 1000 commands | freed bytes / command | slow solves with a cycle start | P(slow \| cycle start) | P(slow \| none) |
+|---|---|---|---|---|---|
+| before r0 | 111 | 187 kB | 92 of 93 | 21 % | 0.04 % |
+| before r1 | 87 | 188 kB | 59 of 60 | 17 % | 0.04 % |
+| after r0 | 70 | 102 kB | 6 of 6 | 2.1 % | 0 |
+| after r1 | 59 | 100 kB | 4 of 4 | 1.7 % | 0 |
+
+- This is the stronger attribution §6 asked for. **151 of 153 slow solves had a collection triggered in their
+  command's interval.** Without one, a solve was slow 0.04 % of the time; the two exceptions took 0.50 and 0.61 ms.
+- After the change, KWin's QV4 engine frees about **46 % fewer bytes per command**: the per-command garbage of the
+  whole engine, Plastile included.
+- A solving command with a cycle start now has a slow solve 1.7–2.1 % of the time, against 17–21 % before. That fits
+  the solve's smaller share of the allocation. The live heap after a collection is unchanged at about 1.7 MB.
+- This logging is still not free. Under it a cycle outlasts the 5 ms incremental limit and finishes on later
+  event-loop turns, so the per-cycle "took" figures in these units are wall time under logging. They are not
+  production durations and are not used.
+
+### 16.5 The JavaScript engine alone: QV4 with a mock host
+
+[qv4solve](../../probes/perf/qv4solve/run.py) bundles the engine with the mock compositor
+([mockHost.ts](../../tests/core/mockHost.ts)) and runs it inside a nested KWin's QV4: no KWin window objects, no
+frame writes into KWin. This layer is QV4 only, not the §4 P03 measurement. The setup:
+
+- 32 windows with the fixture's 150×178 minimum;
+- ratio, swap and master in shuffled blocks of 100, 5000 solves each;
+- 3 rounds per variant.
+
+| QV4 + mock host, solve ms | before p50 / p99 / max | after p50 / p99 / max | > 0.5 ms before / after |
+|---|---|---|---|
+| ratio | 0.121 / 0.468 / 0.79 | 0.061 / 0.103 / 0.13 | 0.37 % / 0 |
+| swap | 0.120 / 0.543 / 0.98 | 0.060 / 0.103 / 0.12 | 1.45 % / 0 |
+| master | 0.121 / 0.468 / 0.69 | 0.061 / 0.102 / 0.13 | 0.41 % / 0 |
+
+- The solve's own code halves in QV4 (0.12 → 0.06 ms p50), apart from KWin.
+- With `allocatorStats` logging (one unit each, 15,600 commands), the engine ran 1686 cycles before and 1225 after.
+  Before, 2.4–2.7 % of solves went above 0.5 ms; the logging lengthens each cycle. After, none did (max 0.12 ms).
+
+### 16.6 Verdicts after this follow-up (nested-virtual, KWin 6.7.5, `212d86b`)
+
+| §4 budget | Verdict |
+|---|---|
+| Pure solve, 32 windows, p95 ≤ 0.5 ms | **met**: 0.142 / 0.154 / 0.149 ms (ratio / swap / master) |
+| Pure solve, 32 windows, p99 ≤ 1 ms | **met**: 0.166 / 0.170 / 0.170 ms, 5 × 1000 each, CIs above. Was not met (§3) |
+| Dispatch-to-last-request p95 ≤ 2 ms, p99 ≤ 4 ms | **met**. Instrumented outer p95 0.93 / 0.74 / 0.93 ms and p99 1.61 / 1.10 / 1.51 ms; uninstrumented p95 0.91 / 0.68 / 0.92 ms (3 runs, no p99) |
+| Focus-only: 0 writes, 0 solves | **met**: 10,200 instrumented focus commands, 0 solves, 0 writes |
+| Every other §4 row | not re-measured here. The full nested suite passes on these changes (§16.8) |
+
+### 16.7 What is still open
+
+- **Physical.** Nothing here is physical, and the QV4 heap of a real Plasma session is larger: more scripts, the
+  user's windows. The slow mode's share depends on the solve's share of the allocation, which these changes reduce,
+  but a physical run has to confirm it (runbook P6).
+- **Collections are not gone.** They now land in the apply loop, in KWin's frame writes and observations, and between
+  commands. They still cost about 0.8 ms each. The solve span is only less likely to hold one.
+  - The command path's outer p99 (1.1–1.6 ms) is where the remaining collections show.
+  - The adapter's per-write allocation (frame reads and writes as `QRectF` wrappers, the request record, write
+    traces) was not changed.
+- **Not changed, and outside the budget's workload:** the bsp, monocle, scrolling and zones solvers, and the engine's
+  other 80 or so `for…of` loops. Most are not on the measured command path; they were not audited one by one. Writing
+  hot paths with index loops is now a measured rule
+  ([PERFORMANCE §7.1](../validation/PERFORMANCE.md#71-qv4-iteration-allocates-measured)).
+- **The residual 0.03–0.05 ms per-write bookkeeping** added after `0ce3413` is attributed only to commit ranges
+  (§16.2).
+- §15's other open items are unaffected: the burst of slow swaps in one baseline run, the windowed-GPU focus solve, and
+  P03 at 64 windows.
+
+### 16.8 Tests
+
+- **Unit/replay:** 490 of 490 (`npm run check`: typecheck, `node --test`, bundle). That is the 488 earlier tests
+  unchanged, plus the two equivalence tests of `solveAlloc.test.ts`.
+- **Full nested suite** at `8e57abd`, a clean tree with the same `src/` as `212d86b`, on KWin 6.7.5 (reference host):
+  - 1897 of 1897 checks;
+  - 141 of 141 run scenarios;
+  - 1 expected SKIP (`output-negative-origin-G02`).
+
+  Evidence: [integration-host-8e57abd.json](evidence/integration-host-8e57abd.json).
+- **Not run:** the CI jobs (Ubuntu sandbox and KWin 6.8 Nix) on this branch.
+
+
+### 16.9 Adversarial review of §16 (branch `wf/g2-perf-review`, nested-virtual, KWin 6.7.5, 2026-10-19)
+
+Same host and day as §16, one nested session at a time, in shuffled order. Nothing here is physical. Evidence:
+[g2-perf-review.json](evidence/g2-perf-review.json), written by [g2_perf_review.py](../../probes/perf/g2_perf_review.py),
+a second implementation (its own reader, nearest-rank quantile and unit bootstrap), and
+[qv4-iteration.json](evidence/qv4-iteration.json) from [qv4iter](../../probes/perf/qv4iter/run.py). Every review unit
+passed and recorded `implementationDirty: false`. The host carried the same background load as §16 (`polkitd` near
+80 % of a core, `tailscaled`, `gdm`); it is recorded per unit.
+
+**The workloads and metrics did not change.** `qualify.py` gained only the `gcstats` mode and the `--qml` root
+option; the commands, pauses, blocks, warm-up, sample filter and the solve span's clock points are as at G2.
+`ab_bundles.py` runs `b60e618`'s workload with a fixed pause seed for every variant.
+
+**Item 2 re-measured with a new seed** (`ab_qualify.py`, seed 20261119 instead of G2's, 5 instrumented runs per
+variant, so a different command sequence):
+
+| n = 32, instrumented, 5 × 1000 | before (`eca2df5`) | after (`212d86b`) | §16.3 after |
+|---|---|---|---|
+| ratio solve p99 [CI] | 1.004 [0.340, 1.060] | **0.166 [0.164, 0.167]** | 0.166 |
+| swap solve p99 [CI] | 1.101 [1.030, 1.137] | **0.170 [0.169, 0.171]** | 0.170 |
+| master solve p99 [CI] | 1.074 [1.054, 1.086] | **0.170 [0.167, 0.173]** | 0.170 |
+| solves > 0.5 ms (ratio / swap / master), of 5000 | 79 / 96 / 109 | 11 / 6 / 7 | 11 / 4 / 3 |
+| solve max (ratio / swap / master) | 1.28 / 1.42 / 1.30 | 1.15 / 1.16 / 1.09 | 1.16 / 1.06 / 0.95 |
+| ratio outer p50 / p95 / p99 | 0.919 / 1.611 / 1.999 | 0.710 / 0.950 / 1.613 | 0.713 / 0.934 / 1.613 |
+
+- The "after" column reproduces §16.3 to within 0.001 ms at p99. **The p99 budget holds at a second seed (nested).**
+- This run's "before" ratio p99 sits at the budget's edge (1.004, interval reaching down to 0.34), with 1.6–2.2 % in
+  the slow mode against §16.3's 2.0–2.6 %. The before/after contrast does not depend on it.
+- Every measured focus command (5000 per variant) made 0 solves and 0 writes. Corrections: 0–2 per unit, all `stale`.
+
+Uninstrumented, 3 runs each (3000 samples per cell, no p99), dispatch → last request p50 / p95:
+
+| ms | before | after | Δ p50 [CI] |
+|---|---|---|---|
+| ratio | 0.883 / 1.582 | 0.670 / 0.882 | −0.213 [−0.220, −0.206] |
+| swap | 0.679 / 1.024 | 0.517 / 0.688 | −0.162 [−0.167, −0.159] |
+| master | 0.839 / 1.476 | 0.673 / 0.918 | −0.167 [−0.178, −0.157] |
+| focus | 0.759 / 1.093 | 0.843 / 1.070 | +0.084 [−0.073, 0.150], not distinguishable |
+
+The pooled no-op median moves +0.146 ms, but that is the bimodal mixture (§16.3): per command, `context.reset` goes
+0.575 → 0.429 ms and `layout.master-stack` 0.054 → 0.055 ms.
+
+**Item 1 re-measured** (`ab_bundles.py`, 6 variants × 4 rounds, new order seed; it adds `8a4bea5`'s parent `18ddcfd`).
+Ratio command, inner span p50, ms, difference to `b60e618` in the same campaign:
+
+| Variant | ratio p50 | Δ [CI], review | Δ [CI], §16.2 fine |
+|---|---|---|---|
+| `b60e618` | 0.782 | — | — |
+| `18ddcfd` (`8a4bea5`'s parent) | 0.770 | −0.013 [−0.021, −0.003] | not measured |
+| `8a4bea5` | 0.826 | +0.044 [0.028, 0.064] | +0.059 [0.052, 0.068] |
+| `8a4bea5` + `224beea` | 0.764 | −0.019 [−0.029, −0.007] | +0.017 [0.008, 0.026] |
+| `eca2df5` | 0.882 | +0.099 [0.087, 0.111] | +0.124 [0.112, 0.136] |
+| `212d86b` | 0.668 | −0.114 [−0.122, −0.105] | −0.098 [−0.107, −0.089] |
+
+- The step is in `8a4bea5` itself: its parent is level with `b60e618`.
+- Here the `Set` fix removes all of that step (0.062 ms; `8a4bea5` + `224beea` is level with the parent). §16.2's
+  +0.017 ms residual in the rest of `8a4bea5` is not reproduced. The iterator's share is 0.04–0.06 ms across the two
+  campaigns.
+- `eca2df5` − `8a4bea5` is 0.055 ms here: the spread residual is real and still attributed to commit ranges only.
+- **The GC attribution reproduces exactly.** Recounted from §16.4's raw logs with a separate parser: 92 of 93,
+  6 of 6, 4 of 4 and 59 of 60 slow solves had a cycle start in their command's interval (151 of 153).
+
+**Behaviour.** The `src/` diff was read line by line. `participates()`, `participantIndex()`, `solveInput`,
+`allocateFlat()` and the master/stack rewrite compute what the code they replace computed (Node and QV4 alike; the
+`Math.max` floors, the `m === 0 || m === n` branch and the cut indices were checked against the old forms). A mutation
+check ran 21 plausible broken versions of the rewritten lines against the unit tests:
+
+- 16 were caught. One is equivalent: dropping the `pinned[]` initialisation leaves `undefined`, which is falsy.
+- **Four, in three places, were not caught by any of the 490 tests:**
+  - `participates()` admitting a window that is interactive and also maximized or fullscreen;
+  - `participantIndex()` counting non-participants, or returning the member index;
+  - the apply loop without its `writable()` check (a dragged window written mid-drag).
+
+  This review adds [participation.test.ts](../../tests/core/participation.test.ts): 3 tests, each failing on its
+  mutants and passing on both `eca2df5` and `212d86b`.
+
+**One claim is wrong: QV4's `forEach` does not iterate as its `for…of` does.** `d6f5647` says "QV4 keeps forEach safe
+across deletions, as it does iterators". `qv4iter` runs the same cases in QV4 (the `qml` tool, Qt 6.12.0, the
+library KWin loads; offscreen, no compositor) and in V8:
+
+- QV4's `for…of` over a `Map`, `Map.keys()` or a `Set` **skips the entry after one deleted at or before the current
+  position**. Deleting the current entry visits `abde` instead of `abcde`; deleting an earlier one visits `abce`.
+  12 of 40 cases differ from ECMAScript, all of them `for…of`.
+- QV4's `forEach` matches ECMAScript in all 40 cases.
+- Adding keys and setting an existing key's value behave the same in all forms. So `fitMaxima()` is unchanged.
+
+So the apply loop's switch to `forEach` changed KWin-side behaviour in one case: an entry of the plan deleted
+synchronously during a frame write (a window removed, or moved to another context, inside `applyFrame`). Before, QV4
+skipped the next window's write; it was then left out of place until a later solve. Node never skipped it. Now QV4
+writes it, as the Node tests always assumed. This is a fix, not a regression, but it is not "unchanged". Whether KWin
+ever delivers such an event inside a frame write was not tested.
+
+A text search found no other `for…of` in `src/` that deletes from the collection it walks within its own body; the
+loops that delete iterate a copy (`[...this.parked]`) or another collection. Deletions through called functions were not
+audited.
+
+**Corrections made to §16 and the documents that cite it:**
+
+| Was | Data says | Where |
+|---|---|---|
+| "Both … are explained"; "most of it was a `Set` iterator" | The iterator is the largest single part, 0.04–0.06 of 0.09–0.12 ms. The rest, 0.03–0.065 ms, is attributed to commit ranges only. The median is below `b60e618` because the rewrite removed other costs, not because the rest was found | verdict update, §16 Result, G3 checklist FB-2, PERFORMANCE §7.1 |
+| "QV4 keeps forEach safe across deletions, as it does iterators" (`d6f5647`) | QV4's `for…of` skips an entry after a deletion; its `forEach` does not (`qv4iter`) | §16.1, PERFORMANCE §7.1, HANDOFF §8 |
+| Not mentioned: what covers the rewritten engine lines (the equivalence tests cover only the solver and `allocate()`) | 4 mutants of the rewritten engine lines passed all 490 tests; 3 tests added | §16.8 |
+
+**Tests at the review head:**
+
+- Unit/replay: 493 of 493 (490 plus `participation.test.ts`); `check_docs.py` PASS.
+- Full nested suite re-run by the review at `97361a7` (a clean tree; `src/` identical to `212d86b`), KWin 6.7.5 on the
+  reference host: 1897 of 1897 checks, 141 of 141 run scenarios, 1 expected SKIP (`output-negative-origin-G02`).
+  This confirms §16.8 independently. Evidence: [integration-host-97361a7.json](evidence/integration-host-97361a7.json).
+- Still not run: the CI jobs (Ubuntu sandbox, KWin 6.8 Nix) and anything physical (runbook P6).

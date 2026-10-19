@@ -1,0 +1,302 @@
+{
+ "probe": "probes/perf/qv4iter",
+ "layer": "QV4 in the qml tool (offscreen), V8 in Node; not KWin, not nested",
+ "qml": "Qml Runtime 6.12.0",
+ "node": "v26.11.1",
+ "rows": [
+  {
+   "case": "delete-current",
+   "kind": "map-for-of",
+   "qv4": "abde",
+   "v8": "abcde",
+   "same": false
+  },
+  {
+   "case": "delete-current",
+   "kind": "map-keys-for-of",
+   "qv4": "abde",
+   "v8": "abcde",
+   "same": false
+  },
+  {
+   "case": "delete-current",
+   "kind": "map-forEach",
+   "qv4": "abcde",
+   "v8": "abcde",
+   "same": true
+  },
+  {
+   "case": "delete-current",
+   "kind": "set-for-of",
+   "qv4": "abde",
+   "v8": "abcde",
+   "same": false
+  },
+  {
+   "case": "delete-current",
+   "kind": "set-forEach",
+   "qv4": "abcde",
+   "v8": "abcde",
+   "same": true
+  },
+  {
+   "case": "delete-next",
+   "kind": "map-for-of",
+   "qv4": "abde",
+   "v8": "abde",
+   "same": true
+  },
+  {
+   "case": "delete-next",
+   "kind": "map-keys-for-of",
+   "qv4": "abde",
+   "v8": "abde",
+   "same": true
+  },
+  {
+   "case": "delete-next",
+   "kind": "map-forEach",
+   "qv4": "abde",
+   "v8": "abde",
+   "same": true
+  },
+  {
+   "case": "delete-next",
+   "kind": "set-for-of",
+   "qv4": "abde",
+   "v8": "abde",
+   "same": true
+  },
+  {
+   "case": "delete-next",
+   "kind": "set-forEach",
+   "qv4": "abde",
+   "v8": "abde",
+   "same": true
+  },
+  {
+   "case": "delete-earlier",
+   "kind": "map-for-of",
+   "qv4": "abce",
+   "v8": "abcde",
+   "same": false
+  },
+  {
+   "case": "delete-earlier",
+   "kind": "map-keys-for-of",
+   "qv4": "abce",
+   "v8": "abcde",
+   "same": false
+  },
+  {
+   "case": "delete-earlier",
+   "kind": "map-forEach",
+   "qv4": "abcde",
+   "v8": "abcde",
+   "same": true
+  },
+  {
+   "case": "delete-earlier",
+   "kind": "set-for-of",
+   "qv4": "abce",
+   "v8": "abcde",
+   "same": false
+  },
+  {
+   "case": "delete-earlier",
+   "kind": "set-forEach",
+   "qv4": "abcde",
+   "v8": "abcde",
+   "same": true
+  },
+  {
+   "case": "delete-current-and-next",
+   "kind": "map-for-of",
+   "qv4": "abe",
+   "v8": "abde",
+   "same": false
+  },
+  {
+   "case": "delete-current-and-next",
+   "kind": "map-keys-for-of",
+   "qv4": "abe",
+   "v8": "abde",
+   "same": false
+  },
+  {
+   "case": "delete-current-and-next",
+   "kind": "map-forEach",
+   "qv4": "abde",
+   "v8": "abde",
+   "same": true
+  },
+  {
+   "case": "delete-current-and-next",
+   "kind": "set-for-of",
+   "qv4": "abe",
+   "v8": "abde",
+   "same": false
+  },
+  {
+   "case": "delete-current-and-next",
+   "kind": "set-forEach",
+   "qv4": "abde",
+   "v8": "abde",
+   "same": true
+  },
+  {
+   "case": "set-existing",
+   "kind": "map-for-of",
+   "qv4": "abcde",
+   "v8": "abcde",
+   "same": true
+  },
+  {
+   "case": "set-existing",
+   "kind": "map-keys-for-of",
+   "qv4": "abcde",
+   "v8": "abcde",
+   "same": true
+  },
+  {
+   "case": "set-existing",
+   "kind": "map-forEach",
+   "qv4": "abcde",
+   "v8": "abcde",
+   "same": true
+  },
+  {
+   "case": "set-existing",
+   "kind": "set-for-of",
+   "qv4": "abcde",
+   "v8": "abcde",
+   "same": true
+  },
+  {
+   "case": "set-existing",
+   "kind": "set-forEach",
+   "qv4": "abcde",
+   "v8": "abcde",
+   "same": true
+  },
+  {
+   "case": "add-new",
+   "kind": "map-for-of",
+   "qv4": "abcdez",
+   "v8": "abcdez",
+   "same": true
+  },
+  {
+   "case": "add-new",
+   "kind": "map-keys-for-of",
+   "qv4": "abcdez",
+   "v8": "abcdez",
+   "same": true
+  },
+  {
+   "case": "add-new",
+   "kind": "map-forEach",
+   "qv4": "abcdez",
+   "v8": "abcdez",
+   "same": true
+  },
+  {
+   "case": "add-new",
+   "kind": "set-for-of",
+   "qv4": "abcdez",
+   "v8": "abcdez",
+   "same": true
+  },
+  {
+   "case": "add-new",
+   "kind": "set-forEach",
+   "qv4": "abcdez",
+   "v8": "abcdez",
+   "same": true
+  },
+  {
+   "case": "delete-and-readd-current-once",
+   "kind": "map-for-of",
+   "qv4": "abdeb",
+   "v8": "abcdeb",
+   "same": false
+  },
+  {
+   "case": "delete-and-readd-current-once",
+   "kind": "map-keys-for-of",
+   "qv4": "abdeb",
+   "v8": "abcdeb",
+   "same": false
+  },
+  {
+   "case": "delete-and-readd-current-once",
+   "kind": "map-forEach",
+   "qv4": "abcdeb",
+   "v8": "abcdeb",
+   "same": true
+  },
+  {
+   "case": "delete-and-readd-current-once",
+   "kind": "set-for-of",
+   "qv4": "abdeb",
+   "v8": "abcdeb",
+   "same": false
+  },
+  {
+   "case": "delete-and-readd-current-once",
+   "kind": "set-forEach",
+   "qv4": "abcdeb",
+   "v8": "abcdeb",
+   "same": true
+  },
+  {
+   "case": "clear",
+   "kind": "map-for-of",
+   "qv4": "ab",
+   "v8": "ab",
+   "same": true
+  },
+  {
+   "case": "clear",
+   "kind": "map-keys-for-of",
+   "qv4": "ab",
+   "v8": "ab",
+   "same": true
+  },
+  {
+   "case": "clear",
+   "kind": "map-forEach",
+   "qv4": "ab",
+   "v8": "ab",
+   "same": true
+  },
+  {
+   "case": "clear",
+   "kind": "set-for-of",
+   "qv4": "ab",
+   "v8": "ab",
+   "same": true
+  },
+  {
+   "case": "clear",
+   "kind": "set-forEach",
+   "qv4": "ab",
+   "v8": "ab",
+   "same": true
+  }
+ ],
+ "deviations": [
+  "delete-current / map-for-of: QV4 abde, ECMAScript (V8) abcde",
+  "delete-current / map-keys-for-of: QV4 abde, ECMAScript (V8) abcde",
+  "delete-current / set-for-of: QV4 abde, ECMAScript (V8) abcde",
+  "delete-earlier / map-for-of: QV4 abce, ECMAScript (V8) abcde",
+  "delete-earlier / map-keys-for-of: QV4 abce, ECMAScript (V8) abcde",
+  "delete-earlier / set-for-of: QV4 abce, ECMAScript (V8) abcde",
+  "delete-current-and-next / map-for-of: QV4 abe, ECMAScript (V8) abde",
+  "delete-current-and-next / map-keys-for-of: QV4 abe, ECMAScript (V8) abde",
+  "delete-current-and-next / set-for-of: QV4 abe, ECMAScript (V8) abde",
+  "delete-and-readd-current-once / map-for-of: QV4 abdeb, ECMAScript (V8) abcdeb",
+  "delete-and-readd-current-once / map-keys-for-of: QV4 abdeb, ECMAScript (V8) abcdeb",
+  "delete-and-readd-current-once / set-for-of: QV4 abdeb, ECMAScript (V8) abcdeb"
+ ]
+}

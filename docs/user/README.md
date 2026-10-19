@@ -229,7 +229,7 @@ Every number below names its layer. **Nested** numbers come from disposable `kwi
 | Measure | Result | Proposed budget |
 |---|---|---|
 | Command dispatch → last geometry request, 32 windows, grow/shrink | p95 1.59 ms, p99 1.90 ms | p95 ≤ 2, p99 ≤ 4 ms: met |
-| Layout solve, 32 windows | p95 0.27–0.28 ms, p99 1.06–1.07 ms (2–3 % of solves fall in a 0.8–1.5 ms mode, attributed to the script engine's garbage collection by duration) | p95 ≤ 0.5, p99 ≤ 1 ms: **p99 not met** |
+| Layout solve, 32 windows | Since `212d86b`: p95 0.14–0.15 ms, p99 0.17 ms ([G2 report §16](../status/G2_REPORT.md#16-follow-up-the-median-slowdown-and-the-pure-solve-p99-nested-virtual-kwin-675-2026-10-19)). Before: p99 1.06–1.07 ms, from the script engine's garbage collection running inside 2–3 % of solves | p95 ≤ 0.5, p99 ≤ 1 ms: met since `212d86b` (nested) |
 | Focus commands | 0 layout solves and 0 geometry writes in 50,000 commands | 0: met |
 | Idle | no Plastile work, KWin wakeup or log line in 60 s windows after 20 min of churn | none: met |
 | Swap, 3 windows, send → first configure, against Polonium 1.2.2 | Plastile p50 0.83 ms, Polonium 11.3 ms | comparison only |
