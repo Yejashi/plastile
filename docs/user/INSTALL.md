@@ -2,7 +2,13 @@
 
 Plastile is a KWin script package (`KWin/Script`, plugin id `plastile`). Nothing is compiled against KWin. The package is a directory holding QML, a generated JavaScript bundle, a KConfig XT schema and a settings form.
 
-**Supported target:** KWin 6.7.x on Wayland. The package declares `X-Plasma-API-Minimum-Version: 6.7`. Only 6.7.5 has been exercised, and only in nested sessions ([status](README.md#status-read-this-first)).
+**Supported target:** KWin 6.7 on Wayland (a Plasma 6 Wayland session; XWayland applications inside it are tiled, a Plasma X11 session is not supported). The package declares `X-Plasma-API-Minimum-Version: 6.7`. Versions exercised:
+
+- **KWin 6.7.5:** nested sessions on the reference host and in CI; a physical session on the reference desktop (build `97fec4a`; the physical runbook is not complete); and, by hand, a laptop at scale 1.35 (an earlier build).
+- **KWin 6.8.0:** only in a provisional CI job (nested). Its reload memory checks fail in some runs on KWin 6.8's own allocation, so 6.8 is not declared supported yet.
+- Any other version: untested.
+
+This is a release candidate, not a release ([status](README.md#status-read-this-first), [G3 checklist](../status/G3_CHECKLIST.md)). Plastile has no licence yet (`"License": "Undecided"` in `metadata.json`, [ADR-012](../design/DECISIONS.md#adr-012-license-and-upstream-reuse-are-deliberate)).
 
 ## 1. Build from source
 
@@ -58,7 +64,7 @@ kpackagetool6 --type KWin/Script --remove plastile
 
 This copies the package to `~/.local/share/kwin/scripts/plastile/` (or `$XDG_DATA_HOME/kwin/scripts/plastile/`).
 
-**`tools/install.sh`.** If your checkout has a `tools/install.sh` script, it wraps exactly these commands (`install`, `upgrade`, `remove`, `status`). It refuses to install a package without the built bundle. It never enables, reloads or restarts anything and never writes `kwinrc`. If `tools/release.py` is present, it can build a `dist/plastile-<version>.kwinscript` archive, and both `kpackagetool6` and `install.sh` accept that archive instead of the `package` directory.
+**`tools/install.sh`** wraps exactly these commands (`install`, `upgrade`, `remove`, `status`) and adds `install-helper` and `remove-helper` for the [persistence helper](#persistence-helper). It refuses to install a package without the built bundle. It never enables, reloads or restarts anything and never writes `kwinrc`. `python3 tools/release.py --out dist` builds a `dist/plastile-<version>.kwinscript` archive, and both `kpackagetool6` and `install.sh` accept that archive instead of the `package` directory. The physical runs installed with `tools/install.sh install` and `install-helper`.
 
 What was measured (nested KWin 6.7.5, kpackagetool6 2.0, package installed into the session's private data directory):
 
@@ -78,7 +84,7 @@ tools/install.sh remove-helper     # uninstall it (the saved state is kept)
 
 `install-helper` builds `helper/` with CMake in `build/helper-install`, installs the binary as `~/.local/libexec/plastile-state` (`PLASTILE_HELPER_PREFIX` changes `~/.local`), writes `~/.local/share/dbus-1/services/org.kde.plastile.State.service` (under `$XDG_DATA_HOME` if set), and asks the session bus to re-read its service files. Nothing starts until Plastile asks; the helper exits after a minute without requests. A Plastile that is already running without the helper notices it at its next start: disable and re-enable the script, or log out and in. A release also carries the helper's sources as `dist/plastile-state-<version>.tar.gz` (built by `tools/release.py`), which builds the same way with `cmake`.
 
-Without the helper Plastile tiles normally and logs `plastile warn persistence unavailable` once at start-up. Measured in nested sessions only: installation into a private prefix and data directory, D-Bus activation and saving (`package-helper-install-T32`). It has not been tried on a physical session bus.
+Without the helper Plastile tiles normally and logs `plastile warn persistence unavailable` once at start-up. Measured in nested sessions: installation into a private prefix and data directory, D-Bus activation and saving (`package-helper-install-T32`). In both physical sessions (KWin 6.7.5) the session bus activated the helper on Plastile's first request (dbus-broker under systemd on the reference desktop), and on the laptop a layout survived a re-login ([first run](../status/evidence/physical-first-run-20261018.json), [runbook](../status/evidence/physical-runbook-20261018.json)). How long that activation takes in a physical session was not measured.
 
 **Leftover shortcut entries.** While the script is loaded, it registers one global shortcut per command in `~/.config/kglobalshortcutsrc`. These entries stay after the script is disabled or removed (measured). They are inert without the script.
 
@@ -102,7 +108,7 @@ Not measured: an upgrade in a physical session, and an upgrade between two relea
 
 1. Open **System Settings > Window Management > KWin Scripts**.
 2. Tick **Plastile** and click **Apply**. The page writes `[Plugins] plastileEnabled=true` and calls `org.kde.kwin.Scripting.start` (observed source: kwin v6.7.5 `src/kcms/scripts/module.cpp`). KWin loads the script, which adopts the windows already open and registers its shortcuts.
-3. To stop it, untick and Apply. Unloading disconnects every signal, stops Plastile's single timer, restores borders it changed and leaves windows where they are. Plastile's own teardown was measured in nested KWin sessions over 100 disable/enable cycles with pending work (`reload-Q09`: KWin's exported script objects, the shortcut list, idle CPU and RSS stay flat) and 20 unloads with unsaved layout changes (`persist-reload-cycles-Q09`: each saves exactly once). The earlier 300-cycle lifecycle probe measured KWin's script loader before Plastile existed and says nothing about Plastile itself. Not yet checked on a physical session.
+3. To stop it, untick and Apply. Unloading disconnects every signal, stops Plastile's single timer, restores borders it changed and leaves windows where they are. Plastile's own teardown was measured in nested KWin sessions over 100 disable/enable cycles with pending work (`reload-Q09`: KWin's exported script objects, the shortcut list, idle CPU and RSS stay flat) and 20 unloads with unsaved layout changes (`persist-reload-cycles-Q09`: each saves exactly once). The earlier 300-cycle lifecycle probe measured KWin's script loader before Plastile existed and says nothing about Plastile itself. In the physical runbook the latency and idle runs unloaded and loaded Plastile many times over D-Bus; resource counts across those reloads were not recorded there, and the multi-hour soak is still running.
 
 The script is **not enabled by default** (`EnabledByDefault: false`).
 
@@ -112,7 +118,7 @@ The script is **not enabled by default** (`EnabledByDefault: false`).
 journalctl --user -b | grep plastile
 ```
 
-Look for `plastile notice started 0.1.0: N windows, configuration revision 1; layout master-stack on <screen> / <desktop>`. It is shown at the default log level. No such line means the script did not load. A desktop in monocle or floating, or a maximized window, looks like no tiling: `Meta+Shift+Space` cycles the layouts, each change shows an on-screen message and a `plastile notice layout ...` line, and a layout you chose is remembered for that desktop across logins. The [user guide](README.md#is-it-working) has the full checklist. (In the first physical session, KWin 6.7.5, this journal showed KWin's own warnings about the script but none of Plastile's lines: the older default level hid them.)
+Look for `plastile notice started 0.1.0: N windows, configuration revision 1; layout master-stack on <screen> / <desktop>`. It is shown at the default log level. No such line means the script did not load. A desktop in monocle or floating, or a maximized window, looks like no tiling: `Meta+Shift+Space` cycles the layouts, each change shows an on-screen message and a `plastile notice layout ...` line, and a layout you chose is remembered for that desktop across logins. The [user guide](README.md#is-it-working) has the full checklist. (In the first physical session, KWin 6.7.5, this journal showed KWin's own warnings about the script but none of Plastile's lines: the older default level hid them. On the reference desktop, with the current default level, the `started` line appeared in the user journal and there was no `qt.qml.usedbeforedeclared` warning.)
 
 Equivalent from a terminal in the same session (the path the package scenario measured):
 
@@ -121,7 +127,7 @@ kwriteconfig6 --file kwinrc --group Plugins --key plastileEnabled true
 qdbus6 org.kde.KWin /Scripting org.kde.kwin.Scripting.start
 ```
 
-The KWin Scripts page itself has not been clicked through in a live System Settings window. The check covered only its D-Bus effect.
+The KWin Scripts page itself has not been clicked through in a physical session: on the reference desktop Plastile was enabled with the two commands above, on the owner's behalf. The nested check covered only the page's D-Bus effect.
 
 ## 4. Settings dialog
 
@@ -131,6 +137,7 @@ The configure button next to Plastile in KWin Scripts opens KWin's generic scrip
 - **Master and stack:** master area width, windows in the master area, where new windows go.
 - **Binary split (BSP):** which tile a new window splits, split direction.
 - **Layout** also has the on-screen message switch (`osd`): Plasma's on-screen display when a shortcut changes the layout or pauses tiling.
+- **Layout** also has *Windows that open maximized* (`maximizedOnOpen`): *Un-maximize and tile them* (the default) or *Leave them maximized* ([CONFIGURATION](CONFIGURATION.md#flat-keys)).
 - **Advanced:** log level (off, errors only, warnings and notices, information, debug), diagnostic trace size, and the JSON text for per-screen overrides and window rules ([CONFIGURATION](CONFIGURATION.md)).
 
 The dialog writes values to `~/.config/kwinrc` under `[Script-plastile]`, using the key names in [CONFIGURATION](CONFIGURATION.md#flat-keys). Choices are stored by name (`layout=bsp`).
@@ -142,7 +149,7 @@ The dialog was verified headlessly with `tools/settings-check`, which loads the 
 - edits are saved in the vocabulary the runtime expects
 - hand-edited values load back
 
-It has **not** been clicked through in a live System Settings window.
+It has been opened and applied in KWin's real dialog in a nested session (`kcmshell6 kcm_kwin_scripts`, driven with real input; scenario `settings-dialog-T28`), but **not** clicked through in a physical session.
 
 ## Applying settings changes
 
@@ -207,3 +214,16 @@ The `configJson` key holds the JSON document as a single KConfig string. The set
 6. Optionally, delete `~/.local/state/plastile/`, which holds saved layout preferences ([details](README.md#saved-layout-preferences)).
 
 Windows keep the geometry they had at unload. Nothing is restored to a pre-Plastile arrangement, because no such arrangement is stored.
+
+Steps 1, 2 and 4 were measured in nested KWin 6.7.5 (`package-install-autoload-T32`, `package-upgrade-bindings-T26-T32`). The uninstall has not been run in a physical session yet (runbook PHY-10).
+
+## 7. Recovery
+
+If tiling misbehaves and you need your desktop back at once, without logging out:
+
+1. **Pause it:** press *Suspend/resume tiling* (`Meta+Ctrl+S`, unless you rebound it). Plastile stops placing windows and leaves them where they are. Press it again to resume.
+2. **Turn it off:** untick Plastile in System Settings > Window Management > KWin Scripts and Apply, or run `kwriteconfig6 --file kwinrc --group Plugins --key plastileEnabled false` and then `qdbus6 org.kde.KWin /Scripting org.kde.kwin.Scripting.unloadScript plastile`. Windows stay where they are.
+3. **Start it without saved preferences:** turn it off, delete `~/.local/state/plastile/`, turn it on again.
+4. **Start it without your configuration:** turn it off, remove the `[Script-plastile]` group from `~/.config/kwinrc` (keep a copy), turn it on again.
+
+Never use `kwin_wayland --replace` to recover: on Wayland it ends your session. [TROUBLESHOOTING](TROUBLESHOOTING.md) has the diagnostics to collect first if you want to report the problem.
