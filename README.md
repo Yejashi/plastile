@@ -9,7 +9,7 @@ exist as experimental opt-in layouts (ADR-014).
 nested KWin sessions (KWin 6.7.5 on the reference machine and in CI; KWin 6.8.0 only in a provisional CI job
 with open failures), and by a physical-session runbook on one desktop (KWin 6.7.5, build `97fec4a`). That
 runbook is not complete: input-to-visible latency passes at 60 Hz but fails for two workloads at 144 Hz and is
-incomplete at 100 Hz, the soak is still running, the owner skipped the unplug and suspend checks, and later
+incomplete at 100 Hz, the soak so far covered an idle session only, the owner skipped the unplug and suspend checks, and later
 builds have not run physically. Nested numbers are labelled as nested, physical numbers as physical. The open
 gates are in the [G3 checklist](docs/status/G3_CHECKLIST.md); results and failures in
 [STATUS](docs/status/STATUS.md).

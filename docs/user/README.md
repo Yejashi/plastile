@@ -52,7 +52,7 @@ The last full nested suite on the reference host passed: 141 scenarios, 1897 of 
 - **Physical latency:** grow/shrink and focus fail their latency comparison at 144 Hz, and the 100 Hz run is incomplete ([below](#performance-what-was-measured)).
 - **Physical topology:** unplugging a monitor and suspending the machine were not checked in a physical session (the owner skipped them). VRR was not covered (the reference monitors report it as not capable).
 - **In-app actions in a physical session:** clicking titlebar buttons and tabs of tiled windows, and turning a window's border off and on (G14, G15). The injector sends only Meta chords.
-- **Long sessions:** the multi-hour physical soak is still running.
+- **Long sessions:** a 3.83 h physical soak with the desktop left alone showed no growth in KWin's memory or Plastile's connections; a soak with normal use has not run.
 - **KWin 6.8:** only a provisional CI job.
 - **Scrolling and zones:** experimental, nested only.
 - **Uninstall in a physical session.**

@@ -11,7 +11,7 @@ diagnosability problems (a user could not tell monocle from a dead tiler)
 ([evidence](../status/evidence/physical-first-run-20261018.json)). That covers part of P0 and P1 only. The runbook then ran on the reference desktop with the owner's consent, on
 build `97fec4a` ([evidence](../status/evidence/physical-runbook-20261018.json)): P0, P1, P2a–c, P3, P4, P5, P7 and
 P8b (idle) passed; P6 passed at 60 Hz, failed at 144 Hz (ratio and focus) and is incomplete at 100 Hz; P8a (soak)
-is in progress; the owner skipped P2d and P2e; P9 and the uninstall (§6) have not run. Until it is complete,
+ran 3.83 h unattended with no growth but no window activity, so its normal-use half is open; the owner skipped P2d and P2e; P9 and the uninstall (§6) have not run. Until it is complete,
 Plastile remains a **candidate** with the physical gate open ([G3 checklist](../status/G3_CHECKLIST.md)).
 
 ## 1. What was validated where

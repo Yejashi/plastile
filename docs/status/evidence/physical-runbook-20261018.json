@@ -3661,6 +3661,78 @@
     }
    ],
    "plastileIdleWorkSeen": false
+  },
+  "soak": {
+   "layer": "physical",
+   "what": "soak.py sample every 10 min for 4 h on the live session (read-only: /proc and Plastile's counters)",
+   "start": "2026-10-19T00:07:45-0400",
+   "end": "2026-10-19T03:57:46-0400",
+   "samples": 24,
+   "durationH": 3.83,
+   "use": "none: the session was unattended overnight. Plastile's solve and write counters stayed at 3 and 3 for the whole period, so no window was opened, closed or moved. This is an idle soak, not the 'several hours of normal use' the runbook asks for",
+   "series": {
+    "kwinRssKiB": {
+     "n": 24,
+     "first": 418972,
+     "last": 418976,
+     "max": 419036,
+     "min": 418972,
+     "slopePerHour": -11.362143599954367
+    },
+    "connections": {
+     "n": 24,
+     "first": 175,
+     "last": 175,
+     "max": 175,
+     "min": 175,
+     "slopePerHour": 0.0
+    },
+    "windows": {
+     "n": 24,
+     "first": 13,
+     "last": 13,
+     "max": 13,
+     "min": 13,
+     "slopePerHour": 0.0
+    },
+    "contexts": {
+     "n": 24,
+     "first": 4,
+     "last": 4,
+     "max": 4,
+     "min": 4,
+     "slopePerHour": 0.0
+    },
+    "outstanding": {
+     "n": 24,
+     "first": 0,
+     "last": 0,
+     "max": 0,
+     "min": 0,
+     "slopePerHour": 0.0
+    },
+    "errors": {
+     "n": 24,
+     "first": 0,
+     "last": 0,
+     "max": 0,
+     "min": 0,
+     "slopePerHour": 0.0
+    }
+   },
+   "kwinCpuPercentMean": 3.172,
+   "kwinContextSwitchesPerSMean": 881.8,
+   "cpuNote": "KWin's mean CPU over the soak (3.17 %) is higher than in the P8b idle periods (1.54 %); its cause (for example the screen locker or display power management overnight) was not examined, and Plastile did no work in the period",
+   "plastileSolvesFirstLast": [
+    3,
+    3
+   ],
+   "plastileWritesFirstLast": [
+    3,
+    3
+   ],
+   "verdict": "idle half pass (no growth: KWin RSS +4 KiB over 3.83 h, connections 175 throughout, errors 0); the normal-use half is open",
+   "build": "97fec4a"
   }
  }
 }
