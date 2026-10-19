@@ -43,21 +43,41 @@ def redact(text: str, kw: NestedKwin | None = None) -> str:
     return text
 
 
-def _kwinrc_hash(kw: NestedKwin) -> str:
-    path = kw.root / "config/kwinrc"
-    return hashlib.sha256(path.read_bytes()).hexdigest() if path.exists() else "absent"
+def kwinrc_entries(path: Path) -> dict:
+    """Every kwinrc key as {"[group] key": value} (read-only), to name what changed."""
+    out, cur = {}, ""
+    for line in (path.read_text().splitlines() if path.exists() else ()):
+        if line.startswith("["):
+            cur = line
+        elif "=" in line:
+            k, v = line.split("=", 1)
+            out[f"{cur} {k}"] = v
+    return out
+
+
+def kwinrc_change(before: dict, after: dict) -> dict:
+    """Whether the installer left kwinrc alone, and every key that changed while it ran.
+
+    KWin's tile manager writes its own [Tiling][output][desktop] layout on a deferred save (KWin 6.8 writes the
+    default layout for each output and desktop some time after start-up, measured in CI); a save landing while
+    install.sh runs is KWin's, not the installer's, so those groups are recorded but do not count.
+    """
+    changed = {k: [before.get(k), after.get(k)] for k in sorted(before.keys() | after.keys())
+               if before.get(k) != after.get(k)}
+    return {"kwinrcUnchanged": all(k.startswith("[Tiling]") for k in changed), "kwinrcChanged": changed}
 
 
 def sh(kw: NestedKwin, *args: str) -> dict:
     """Run tools/install.sh inside the nested session's environment (XDG_DATA_HOME etc.).
 
-    kwinrc is hashed immediately before and after: the installer must never write it.
+    kwinrc is read immediately before and after: the installer must never write it.
     """
-    before = _kwinrc_hash(kw)
+    path = kw.root / "config/kwinrc"
+    before = kwinrc_entries(path)
     r = subprocess.run(["sh", str(INSTALL), *args], env=kw.env(), capture_output=True, text=True, timeout=60)
-    return {"argv": ["tools/install.sh", *[redact(a, kw) for a in args]], "rc": r.returncode,
-            "stdout": redact(r.stdout, kw), "stderr": redact(r.stderr, kw),
-            "kwinrcUnchanged": before == _kwinrc_hash(kw)}
+    return {**kwinrc_change(before, kwinrc_entries(path)), "rc": r.returncode,
+            "argv": ["tools/install.sh", *[redact(a, kw) for a in args]],
+            "stdout": redact(r.stdout, kw), "stderr": redact(r.stderr, kw)}
 
 
 def kpt(kw: NestedKwin, *args: str) -> dict:
@@ -164,7 +184,7 @@ def package_install_autoload(out: Path, c: Checks):
           and "org.kde.kwin.Scripting.start" in pr.get("stdout", "")
           and "Window Management > KWin Scripts" in pr.get("stdout", ""), None)
         # The installer must not have written the session's kwinrc (hashed around the call, before KWin ran).
-        c("install.sh left kwinrc untouched (hash before == after, taken before KWin started)",
+        c("install.sh left kwinrc untouched (every key read before and after, taken before KWin started)",
           pr.get("kwinrcUnchanged") is True, None)
 
         # Autoload: nobody called loadDeclarativeScript; KWin itself must have started the package.

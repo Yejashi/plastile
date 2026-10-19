@@ -22,7 +22,6 @@ for the rebound focus commands also from KWin's active window.
 """
 from __future__ import annotations
 
-import hashlib
 import io
 import json
 import re
@@ -34,7 +33,7 @@ from pathlib import Path
 
 from harness import ROOT, PLUGIN, Input, NestedError, Session, evidence_file, near
 from scenarios import Checks, Skipped, scenario
-from scenarios_package import STARTED, STOPPED, build_zip, redact
+from scenarios_package import STARTED, STOPPED, build_zip, kwinrc_change, kwinrc_entries, redact
 
 INSTALL = ROOT / "tools/install.sh"
 OLD_COMMIT = "34204e2b11f668f2b744d2d09705e05b96aa733f"  # 0b1c8b9^: suspend Meta+Shift+S, grow/shrink Meta+Shift+=/-
@@ -154,9 +153,6 @@ class Profile:
         d = self.base / "cache/kwin/qmlcache"
         return sum(1 for _ in d.iterdir()) if d.is_dir() else 0
 
-    def kwinrc_hash(self) -> str:
-        return hashlib.sha256(self.kwinrc.read_bytes()).hexdigest()
-
     def group(self, name: str) -> dict:
         """One kwinrc group as {key: value} (read-only)."""
         out, cur = {}, None
@@ -200,11 +196,11 @@ class ProfileSession(Session):
 
 def install_sh(s_or_kw, profile: Profile, *args: str) -> dict:
     kw = getattr(s_or_kw, "kw", s_or_kw)
-    before = profile.kwinrc_hash()
+    before = kwinrc_entries(profile.kwinrc)
     r = subprocess.run(["sh", str(INSTALL), *args], env=kw.env(), capture_output=True, text=True, timeout=60)
     clean = lambda t: redact(t.replace(str(profile.base), "<profile>"), kw)  # noqa: E731
-    return {"argv": ["tools/install.sh", *[clean(a) for a in args]], "rc": r.returncode, "stdout": clean(r.stdout),
-            "stderr": clean(r.stderr), "kwinrcUnchanged": before == profile.kwinrc_hash()}
+    return {**kwinrc_change(before, kwinrc_entries(profile.kwinrc)), "rc": r.returncode,
+            "argv": ["tools/install.sh", *[clean(a) for a in args]], "stdout": clean(r.stdout), "stderr": clean(r.stderr)}
 
 
 # ------------------------------------------------------------------ KGlobalAccel on the nested bus
