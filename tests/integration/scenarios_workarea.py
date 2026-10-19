@@ -12,7 +12,7 @@ import subprocess
 import time
 from pathlib import Path
 
-from harness import FIXTURE, Session, delta, near, tiling_errors
+from harness import FIXTURE, Session, delta, explain, near, tiling_errors
 from scenarios import Checks, scenario, three
 
 GAP = 8
@@ -250,5 +250,111 @@ def panel_one_output(out: Path, c: Checks):
               not w0, {"solvedContexts": [str(x).split("\u241f")[0] for x in solves]})
             info = panel_record(s)
             c("e: panel is on Virtual-1", len(info) == 1 and info[0]["output"] == "Virtual-1", info)
+        finally:
+            quit_panel(p)
+
+
+@scenario("workarea-hidden-desktop-O07")
+def panel_hidden_desktop(out: Path, c: Checks):
+    """(f) a panel appears while another desktop is shown (physical runbook, KWin 6.7.5).
+
+    KWin's own work-area check (checkWorkspacePosition) confines the windows of the hidden
+    desktop to the new area. Plastile must not correct or write to them while hidden, nothing
+    may diverge, and they tile into the new area when their desktop is shown again. Two cases:
+    "move": three tiles and a 48 px panel; KWin only moves the stack column left (a position
+    change, applied synchronously inside KWin's rearrange, before the panel is announced).
+    "resize": one full-width tile, as in the physical session; KWin must shrink it, which is a
+    configure the client commits after Plastile's area-change flush (the physical order).
+    "slow": the same with a client that answers configures after 1 s, slower than the 750 ms
+    convergence deadline (as a client on a hidden desktop that gets no frame callbacks may be):
+    without the fix this reproduces the physical divergence, a correction then "diverged".
+    """
+    hidden_case(out / "move", c, "f-move", 3)
+    hidden_case(out / "resize", c, "f-resize", 1)
+    hidden_case(out / "slow", c, "f-slow", 1, ("--configure-delay-ms", "1000"))
+
+
+def hidden_case(out: Path, c: Checks, tag: str, n: int, args: tuple[str, ...] = ()):
+    panel = 48
+    slow = bool(args)
+    with Session(out, config={"traceCapacity": 8192}) as s:
+        s.js("workspace.createDesktop(1, 'Two'); emit(1)")
+        for i in range(1, n + 1):
+            s.spawn(i, *args)
+        s.load()
+        s.settle()
+        a0 = s.area()
+        ids = {x["id"]: x["caption"] for x in tiles(s)}
+        f0 = {x["id"]: x["frame"] for x in tiles(s)}
+        c(f"{tag}: setup: {n} tiles on desktop 1", len(ids) == n and not tiling_errors(tiles(s), a0, GAP), list(f0.values()))
+        s.js("workspace.currentDesktop = workspace.desktops[1]; emit(1)")
+        s.settle()
+        c(f"{tag}: desktop 2 shown", json.loads(s.js("emit(workspace.currentDesktop.x11DesktopNumber)")[0]) == 2)
+        c0 = s.counters()
+        t0 = last_t(s)
+        p = spawn_panel(s, "right", "right", panel)
+        try:
+            shrunk = until(lambda: s.area()["width"] == a0["width"] - panel)
+            a1 = s.area()
+            c(f"{tag}: work area shrinks by {panel} px on the right", shrunk and a1["x"] == a0["x"] and a1["width"] == a0["width"] - panel, a1)
+            # KWin's confinement commits asynchronously; then wait past the convergence deadline
+            # (750 ms) twice so a correction and its expiry would both have happened.
+            until(lambda: all(x["frame"]["x"] + x["frame"]["width"] <= a1["x"] + a1["width"] + 0.5 for x in tiles(s)), 3.0)
+            time.sleep(2.0)
+            c1 = s.settle()
+            hidden = {x["id"]: x["frame"] for x in tiles(s)}
+            moved = sorted(ids[i] for i in hidden if hidden[i] != f0[i])
+            # Precondition, not Plastile's work: KWin itself moved the hidden windows (the physical trigger).
+            c(f"{tag}: KWin confined the hidden desktop-1 windows to the new area itself", bool(moved),
+              {"moved": moved, "before": f0, "after": hidden})
+            if n == 1:
+                resized = [ids[i] for i in hidden if hidden[i]["width"] != f0[i]["width"]]
+                c(f"{tag}: KWin resized the full-width hidden window (a configure, committed after the area flush)",
+                  bool(resized), {"before": f0, "after": hidden})
+            recs = trace_since(s, t0)
+            w = [r for r in recs if r["kind"] == "write" and r.get("id") in ids]
+            c(f"{tag}: zero writes to the desktop-1 windows while hidden (Plastile trace)", not w, w)
+            d = delta(c0, c1)
+            c(f"{tag}: no correction and no divergence while hidden", d.get("corrections", 0) == 0 and d.get("diverged", 0) == 0, d)
+            c(f"{tag}: no deadline expiry while hidden (nothing was requested)", d.get("deadlines", 0) == 0, d)
+            kinds = [r["kind"] for r in recs]
+            c(f"{tag}: the hidden changes are recorded as deferred, not as external drift",
+              "external" not in kinds and ("hidden-external" in kinds or not moved),
+              {k: kinds.count(k) for k in sorted(set(kinds))})
+            t1 = last_t(s)
+            s.js("workspace.currentDesktop = workspace.desktops[0]; emit(1)")
+            until(lambda: not tiling_errors(tiles(s), s.area(), GAP) and
+                  abs(max(x["frame"]["x"] + x["frame"]["width"] for x in tiles(s)) - (a1["x"] + a1["width"] - GAP)) <= 0.5, 4.0)
+            time.sleep(0.5)
+            c2 = s.settle()
+            a2 = s.area()
+            f = tiles(s)
+            errs = tiling_errors(f, a2, GAP)
+            c(f"{tag}: shown again: {n} tiles inside the new area, no overlap, gaps>=8", len(f) == n and a2 == a1 and not errs,
+              errs or [x["frame"] for x in f])
+            right = max((x["frame"]["x"] + x["frame"]["width"] for x in f), default=None)
+            c(f"{tag}: shown again: rightmost tile edge == area.right - 8 (fills the new area)",
+              right is not None and abs(right - (a2["x"] + a2["width"] - GAP)) <= 0.5,
+              {"rightmost": right, "expected": a2["x"] + a2["width"] - GAP})
+            d2 = delta(c1, c2)
+            mine = [r for r in trace_since(s, t1) if r["kind"] == "write" and r.get("id") in ids]
+            per = {ids[i]: sum(1 for r in mine if r["id"] == i) for i in ids}
+            if slow:
+                # Visible now: a client slower than the deadline gets its ordinary bounded correction.
+                c(f"{tag}: shown again: one solve, at most one plan write plus the correction budget, no divergence",
+                  d2.get("solves", 0) == 1 and all(k <= 3 for k in per.values()) and d2.get("diverged", 0) == 0,
+                  {"writes": per, "counters": d2})
+            else:
+                c(f"{tag}: shown again: one solve, each tile written at most once, no correction or divergence",
+                  d2.get("solves", 0) == 1 and all(k <= 1 for k in per.values()) and d2.get("corrections", 0) == 0
+                  and d2.get("diverged", 0) == 0, {"writes": per, "counters": d2})
+            time.sleep(1.0)
+            c3 = s.settle()
+            c(f"{tag}: converged (no further writes 1 s later)", delta(c2, c3).get("writes", 0) == 0, delta(c2, c3))
+            # Explain activates the window, which would switch desktops: only once desktop 1 is shown.
+            ex = [explain(s, ids[i]) for i in ids]
+            c(f"{tag}: no window explained as diverged", all(not e.get("exception") for e in ex),
+              [(e.get("id"), e.get("exception"), e.get("ledger")) for e in ex])
+            c(f"{tag}: model invariants: no errors", c3["counters"]["errors"] == 0, c3["counters"]["errors"])
         finally:
             quit_panel(p)

@@ -234,7 +234,8 @@ export type Expiry =
   | { readonly kind: "accepted" }
   | { readonly kind: "learn"; readonly min: Size | null; readonly max: Size | null }
   | { readonly kind: "correct" }
-  | { readonly kind: "diverged" };
+  | { readonly kind: "diverged" }
+  | { readonly kind: "deferred" };
 
 /** At the target position, no dimension larger than the target and none short by more than ROUNDING. */
 function withinRounding(target: Rect, observed: Rect, tol: number): boolean {
@@ -251,8 +252,14 @@ function withinRounding(target: Rect, observed: Rect, tol: number): boolean {
  * (slow, stalled or ignoring client) and is never learned: correct within budget, then
  * diverge. Neither is an older target's size (a superseded configure committed, the
  * current one did not).
+ *
+ * `hidden`: the window's context is not shown. KWin moves such windows itself (its work-area
+ * check after a panel or output change), so any frame other than the target, or a rounding of
+ * it, is no answer from the client, and the window is not written while hidden: the request
+ * is dropped without learning, correcting or diverging, and the caller re-solves the context
+ * when it is shown.
  */
-export function expire(e: LedgerEntry, observedNow: Rect | null): Expiry {
+export function expire(e: LedgerEntry, observedNow: Rect | null, hidden = false): Expiry {
   if (e.request && rectNear(observedNow, e.request.rect, e.tol)) { settle(e); return { kind: "settled" }; }
   const target = e.request?.rect ?? null;
   if (target && observedNow && withinRounding(target, observedNow, e.tol)) {
@@ -260,6 +267,7 @@ export function expire(e: LedgerEntry, observedNow: Rect | null): Expiry {
     settle(e);
     return { kind: "accepted" };
   }
+  if (hidden) { cancel(e); return { kind: "deferred" }; }
   const answered = !!observedNow && !(e.before && sizeNear(observedNow, e.before, e.tol)) && !olderTargetSize(e, observedNow);
   if (target && observedNow && answered) {
     const minW = observedNow.width > target.width + e.tol ? observedNow.width : 0;
