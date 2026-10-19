@@ -26,7 +26,7 @@ let
   kde = pkgs.kdePackages;
   # Breeze decorations draw caption text; without a configured font Qt has no font at all.
   fontsConf = pkgs.makeFontsConf { fontDirectories = [ pkgs.dejavu_fonts ]; };
-  python = pkgs.python3.withPackages (ps: [ ps.dbus-python ]); # drag scenarios (EIS fd over D-Bus)
+  python = pkgs.python3.withPackages (ps: [ ps.dbus-python ps.pygobject3 ]); # drag scenarios (EIS fd over D-Bus); the fake OSD (GLib main loop)
   # nixpkgs' dbus-daemon reads /etc/dbus-1/session.conf for --session (NixOS generates that
   # file; other hosts have none or their own). tools/nested.py runs `dbus-daemon --session`,
   # so the environment's dbus-daemon maps --session to this copy of the upstream session

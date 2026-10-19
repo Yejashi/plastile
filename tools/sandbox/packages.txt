@@ -10,6 +10,7 @@ dbus
 dbus-bin
 python3
 python3-dbus
+python3-gi
 qdbus-qt6
 qml-qt6
 qt6-wayland

@@ -16,6 +16,15 @@ from harness import FIXTURE, Session, delta, explain, near, tiling_errors
 from scenarios import Checks, scenario, three
 
 GAP = 8
+
+
+def kwin_confines_to_struts() -> bool:
+    """KWin 6.7 moves a window that touched a work-area edge when a strut appears there (Window::
+    checkWorkspacePosition, kwin v6.7.5 src/window.cpp, the strut-edge block); KWin 6.8 removed that
+    block (kwin v6.8.0 src/window.cpp), so a new panel leaves the windows where they are."""
+    out = subprocess.run(["kwin_wayland", "--version"], capture_output=True, text=True).stdout.split()
+    major, minor = (int(x) for x in out[-1].split(".")[:2])
+    return (major, minor) < (6, 8)
 PANEL_INFO = (
     "emit(workspace.windowList().filter(w => w.dock).map(w => ({dock: w.dock, windowType: w.windowType,"
     " normalWindow: w.normalWindow, managed: w.managed, resourceClass: String(w.resourceClass),"
@@ -258,8 +267,8 @@ def panel_one_output(out: Path, c: Checks):
 def panel_hidden_desktop(out: Path, c: Checks):
     """(f) a panel appears while another desktop is shown (physical runbook, KWin 6.7.5).
 
-    KWin's own work-area check (checkWorkspacePosition) confines the windows of the hidden
-    desktop to the new area. Plastile must not correct or write to them while hidden, nothing
+    On KWin 6.7, KWin's own work-area check (checkWorkspacePosition) confines the windows of the
+    hidden desktop to the new area; KWin 6.8 leaves them in place (kwin_confines_to_struts). Plastile must not correct or write to them while hidden, nothing
     may diverge, and they tile into the new area when their desktop is shown again. Two cases:
     "move": three tiles and a 48 px panel; KWin only moves the stack column left (a position
     change, applied synchronously inside KWin's rearrange, before the panel is announced).
@@ -304,13 +313,18 @@ def hidden_case(out: Path, c: Checks, tag: str, n: int, args: tuple[str, ...] = 
             c1 = s.settle()
             hidden = {x["id"]: x["frame"] for x in tiles(s)}
             moved = sorted(ids[i] for i in hidden if hidden[i] != f0[i])
-            # Precondition, not Plastile's work: KWin itself moved the hidden windows (the physical trigger).
-            c(f"{tag}: KWin confined the hidden desktop-1 windows to the new area itself", bool(moved),
-              {"moved": moved, "before": f0, "after": hidden})
-            if n == 1:
-                resized = [ids[i] for i in hidden if hidden[i]["width"] != f0[i]["width"]]
-                c(f"{tag}: KWin resized the full-width hidden window (a configure, committed after the area flush)",
-                  bool(resized), {"before": f0, "after": hidden})
+            if kwin_confines_to_struts():
+                # Precondition, not Plastile's work: KWin itself moved the hidden windows (the physical trigger).
+                c(f"{tag}: KWin confined the hidden desktop-1 windows to the new area itself", bool(moved),
+                  {"moved": moved, "before": f0, "after": hidden})
+                if n == 1:
+                    resized = [ids[i] for i in hidden if hidden[i]["width"] != f0[i]["width"]]
+                    c(f"{tag}: KWin resized the full-width hidden window (a configure, committed after the area flush)",
+                      bool(resized), {"before": f0, "after": hidden})
+            else:
+                # KWin 6.8 has no strut confinement: the hidden windows keep their frames (and Plastile writes nothing).
+                c(f"{tag}: KWin 6.8 left the hidden desktop-1 windows in place", not moved,
+                  {"moved": moved, "before": f0, "after": hidden})
             recs = trace_since(s, t0)
             w = [r for r in recs if r["kind"] == "write" and r.get("id") in ids]
             c(f"{tag}: zero writes to the desktop-1 windows while hidden (Plastile trace)", not w, w)

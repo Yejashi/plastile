@@ -326,21 +326,32 @@ def open_late(out: Path, c: Checks):
         c("stable: still tiled a second later", g[fx(2)]["maximizeMode"] == 0 and near(g[fx(2)]["frame"], f[fx(2)]["frame"], 1.0),
           g[fx(2)]["frame"])
 
-        # A slower client (40 ms per configure, answering only the newest): it acknowledges Plastile's tile
-        # configure, which already carries the maximized state it asked for, so KWin reports the tile
+        # A slower client (answering only the newest configure, after a delay): it acknowledges Plastile's
+        # tile configure, which already carries the maximized state it asked for, so KWin reports the tile
         # frame and then the maximize in one commit. That maximize still counts as arriving maximized.
-        f3 = s.spawn(3, "--maximize-after-map", "--configure-delay-ms", "40")
-        time.sleep(1.5); s.settle()
-        f = s.frames()
-        cfg = fixture_events(f3.log, "configure")
-        acks = fixture_events(f3.log, "commit")
-        c("slow client: it acknowledged a configure with the tile size and the maximized state (client log)",
-          any(maximized(e) and e["width"] < area["width"] / 2 for e in cfg),
-          [{"states": e["states"], "w": e["width"], "h": e["height"]} for e in cfg])
-        frames = [f[fx(1)], f[fx(2)], f[fx(3)]]
-        c("slow client: it ends tiled and not maximized (KWin)", f[fx(3)]["maximizeMode"] == 0 and not tiling_errors(frames, area, GAP),
-          {"frames": [x["frame"] for x in frames], "maximizeMode": f[fx(3)]["maximizeMode"],
-           "commits": [(e["width"], e["height"]) for e in acks]})
+        # Whether the client's maximize request reaches KWin before Plastile's tile configure is a race;
+        # 40 ms reproduces it on the reference host, other machines may need another delay, so a few
+        # delays are tried until one reproduces it. Every attempt must end tiled.
+        attempts = []
+        for k, delay in enumerate(("40", "20", "60", "100")):
+            fk = s.spawn(3 + k, "--maximize-after-map", "--configure-delay-ms", delay)
+            time.sleep(1.5); s.settle()
+            f = s.frames()
+            cfg = fixture_events(fk.log, "configure")
+            acks = fixture_events(fk.log, "commit")
+            raced = any(maximized(e) and e["width"] < area["width"] / 2 for e in cfg)
+            frames = [f[fx(1)], f[fx(2)], f[fx(3 + k)]]
+            attempts.append({"delayMs": int(delay), "raced": raced, "maximizeMode": f[fx(3 + k)]["maximizeMode"],
+                             "tilingErrors": tiling_errors(frames, area, GAP),
+                             "configures": [{"states": e["states"], "w": e["width"], "h": e["height"]} for e in cfg],
+                             "commits": [(e["width"], e["height"]) for e in acks]})
+            s.kill(3 + k); s.settle()
+            if raced:
+                break
+        c("slow client: in one attempt it acknowledged a configure with the tile size and the maximized state (client log)",
+          any(a["raced"] for a in attempts), attempts)
+        c("slow client: every attempt ends tiled and not maximized (KWin)",
+          all(a["maximizeMode"] == 0 and not a["tilingErrors"] for a in attempts), attempts)
 
 
 # ----------------------------------------------------------------------------- no room for it
