@@ -4,7 +4,7 @@
 
 import { inset, rect, centreIn, type Rect } from "../geometry.ts";
 import type { ContextSettings, WindowId, Constraints } from "../types.ts";
-import { allocate } from "./allocate.ts";
+import { allocate, allocateFlat } from "./allocate.ts";
 import type { CommandOutcome, Layout, LayoutCommand, SolveInput, SolveResult } from "./layout.ts";
 
 export interface MasterStackState {
@@ -35,14 +35,38 @@ interface Attempt {
   notes: string[];
 }
 
-function column(x: number, width: number, a: Rect, ids: readonly WindowId[], state: MasterStackState,
-  input: SolveInput, slots: Map<WindowId, Rect>): string | null {
+// The solve runs on every layout command inside KWin's QV4, where iterators, spreads and
+// per-item arrays are garbage-collected heap objects (G2 report §16). The helpers below use
+// index loops over ranges of `ids` and flat cut arrays; they compute the same numbers in the
+// same order as the map/spread/slice forms they replace.
+
+/** Widest minimum frame width of ids[from, to), and at least `floor`. */
+function widestMin(c: ReadonlyMap<WindowId, Constraints>, ids: readonly WindowId[], from: number, to: number,
+  floor: number): number {
+  let w = floor;
+  for (let i = from; i < to; ++i) w = Math.max(w, minOf(c, ids[i]).width);
+  return w;
+}
+
+/** Rows for ids[from, to) in one column at x/width: null on success, else the failure. */
+function column(x: number, width: number, a: Rect, ids: readonly WindowId[], from: number, to: number,
+  state: MasterStackState, input: SolveInput, slots: Map<WindowId, Rect>): string | null {
   const gap = input.settings.gaps.inner;
-  const weights = ids.map((id) => state.weights[id] ?? 1);
-  const mins = ids.map((id) => minOf(input.constraints, id).height);
-  const rows = allocate(a.y, a.height, weights, mins, gap);
-  if (rows === null) return `column of ${ids.length} needs ${mins.reduce((s, m) => s + m, 0) + gap * (ids.length - 1)} px height, has ${a.height}`;
-  for (let i = 0; i < ids.length; ++i) slots.set(ids[i], rect(x, rows[i][0], width, rows[i][1] - rows[i][0]));
+  const n = to - from;
+  const weights = new Array<number>(n);
+  const mins = new Array<number>(n);
+  for (let i = 0; i < n; ++i) {
+    const id = ids[from + i];
+    weights[i] = state.weights[id] ?? 1;
+    mins[i] = minOf(input.constraints, id).height;
+  }
+  const rows = allocateFlat(a.y, a.height, weights, mins, gap);
+  if (rows === null) {
+    let need = 0;
+    for (let i = 0; i < n; ++i) need += mins[i];
+    return `column of ${n} needs ${need + gap * (n - 1)} px height, has ${a.height}`;
+  }
+  for (let i = 0; i < n; ++i) slots.set(ids[from + i], rect(x, rows[2 * i], width, rows[2 * i + 1] - rows[2 * i]));
   return null;
 }
 
@@ -54,41 +78,41 @@ function attempt(state: MasterStackState, ids: readonly WindowId[], input: Solve
   const a = outerArea(input, n);
   const gap = input.settings.gaps.inner;
   const m = Math.max(0, Math.min(state.masterCount, n));
-  const masters = ids.slice(0, m);
-  const stack = ids.slice(m);
-  if (masters.length === 0 || stack.length === 0) {
-    const all = masters.length ? masters : stack;
-    const minW = Math.max(0, ...all.map((id) => minOf(input.constraints, id).width));
+  if (m === 0 || m === n) {
+    // One column: every window a master, or none.
+    const minW = widestMin(input.constraints, ids, 0, n, 0);
     if (minW > a.width) return { slots, failure: `needs ${minW} px width, has ${a.width}`, notes };
-    const f = column(a.x, a.width, a, all, state, input, slots);
+    const f = column(a.x, a.width, a, ids, 0, n, state, input, slots);
     return { slots, failure: f, notes };
   }
-  const minMaster = Math.max(...masters.map((id) => minOf(input.constraints, id).width));
-  const minStack = Math.max(...stack.map((id) => minOf(input.constraints, id).width));
-  const cols = allocate(a.x, a.width, [state.ratio, 1 - state.ratio], [minMaster, minStack], gap);
+  const minMaster = widestMin(input.constraints, ids, 0, m, -Infinity);
+  const minStack = widestMin(input.constraints, ids, m, n, -Infinity);
+  const cols = allocateFlat(a.x, a.width, [state.ratio, 1 - state.ratio], [minMaster, minStack], gap);
   if (cols === null) return { slots, failure: `columns need ${minMaster + gap + minStack} px width, have ${a.width}`, notes };
   const usable = a.width - gap;
-  const achieved = (cols[0][1] - cols[0][0]) / usable;
+  const achieved = (cols[1] - cols[0]) / usable;
   if (Math.abs(achieved - state.ratio) > 1 / Math.max(1, usable)) notes.push(`ratio ${state.ratio.toFixed(3)} clamped to ${achieved.toFixed(3)} by minimum widths`);
-  const f1 = column(cols[0][0], cols[0][1] - cols[0][0], a, masters, state, input, slots);
+  const f1 = column(cols[0], cols[1] - cols[0], a, ids, 0, m, state, input, slots);
   if (f1) return { slots, failure: `master ${f1}`, notes };
-  const f2 = column(cols[1][0], cols[1][1] - cols[1][0], a, stack, state, input, slots);
+  const f2 = column(cols[2], cols[3] - cols[2], a, ids, m, n, state, input, slots);
   if (f2) return { slots, failure: `stack ${f2}`, notes };
   return { slots, failure: null, notes };
 }
 
 /** Apply max-size constraints: a slot larger than the window's maximum gets a centred frame. */
 export function fitMaxima(slots: Map<WindowId, Rect>, input: SolveInput, notes: string[]): void {
-  for (const [id, slot] of slots) {
+  // forEach, not for-of: no iterator result or entry array per slot. Replacing an existing
+  // key's value during forEach visits every key once, in insertion order, as for-of does.
+  slots.forEach((slot, id) => {
     const c = input.constraints.get(id);
-    if (!c) continue;
+    if (!c) return;
     const w = Math.min(slot.width, c.maxFrame.width);
     const h = Math.min(slot.height, c.maxFrame.height);
     if (w < slot.width || h < slot.height) {
       slots.set(id, centreIn(slot, { width: w, height: h }));
       notes.push(`${id}: centred at maximum size ${w}x${h}`);
     }
-  }
+  });
 }
 
 /**
@@ -102,7 +126,7 @@ export function fitMaxima(slots: Map<WindowId, Rect>, input: SolveInput, notes: 
 export function solveWithOverflow(ids: readonly WindowId[], input: SolveInput,
   tryIds: (ids: readonly WindowId[]) => Attempt): SolveResult {
   const done = (r: Attempt, overflow: WindowId[], notes: string[]): SolveResult => {
-    notes.push(...r.notes);
+    for (let i = 0; i < r.notes.length; ++i) notes.push(r.notes[i]);
     fitMaxima(r.slots, input, notes);
     return { slots: r.slots, overflow, notes, raise: [] };
   };

@@ -1404,7 +1404,9 @@ export class Engine {
     const constraints = new Map<WindowId, Constraints>();
     const insertedAt = new Map<WindowId, number>();
     const ids: WindowId[] = [];
-    for (const id of c.members) {
+    const members = c.members;
+    for (let i = 0; i < members.length; ++i) {
+      const id = members[i];
       const r = this.recs.get(id);
       if (!r) continue;
       constraints.set(id, this.effectiveConstraints(r));
@@ -1464,14 +1466,16 @@ export class Engine {
     const tol = frameTolerance(this.scales.get(c.key.output) ?? 1);
     this.applying++;
     try {
-      for (const [id, target] of res.slots) {
+      // forEach and an index loop rather than for-of: no iterator or entry array per window in QV4 (§16).
+      res.slots.forEach((target, id) => {
         const r = this.recs.get(id);
-        if (!r || !this.writable(r)) continue;
+        if (!r || !this.writable(r)) return;
         r.ledger.tol = tol;
         this.applyTarget(r, target);
-      }
-      for (const id of res.raise) {
-        const r = this.recs.get(id);
+      });
+      const raise = res.raise;
+      for (let i = 0; i < raise.length; ++i) {
+        const r = this.recs.get(raise[i]);
         if (r && this.host.raise(r.id, r.gen)) this.counters.raises++;
       }
     } finally {

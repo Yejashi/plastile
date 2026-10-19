@@ -12,17 +12,34 @@
  */
 export function allocate(start: number, length: number, weights: readonly number[], minsIn: readonly number[],
   gap: number): Array<[number, number]> | null {
+  const flat = allocateFlat(start, length, weights, minsIn, gap);
+  if (flat === null) return null;
+  const out: Array<[number, number]> = [];
+  for (let i = 0; i < flat.length; i += 2) out.push([flat[i], flat[i + 1]]);
+  return out;
+}
+
+/**
+ * allocate() with the intervals flattened: [begin0, end0, begin1, end1, ...], or null. The
+ * same arithmetic in the same order, so the same numbers; it only avoids one array per
+ * interval. Solvers on the command path use it (G2 report §16: allocation in the solve span
+ * feeds QV4's garbage collector), and it allocates nothing per item beyond its working arrays.
+ */
+export function allocateFlat(start: number, length: number, weights: readonly number[], minsIn: readonly number[],
+  gap: number): number[] | null {
   const n = weights.length;
-  // Every slot is at least 1 px: a zero-sized frame is never a valid placement.
-  const mins = minsIn.map((m) => Math.max(1, m));
   if (n === 0) return [];
+  // Every slot is at least 1 px: a zero-sized frame is never a valid placement.
+  const mins = new Array<number>(n);
+  for (let i = 0; i < n; ++i) mins[i] = Math.max(1, minsIn[i]);
   const usable = length - gap * (n - 1);
   let minSum = 0;
-  for (const m of mins) minSum += Math.max(0, m);
+  for (let i = 0; i < n; ++i) minSum += Math.max(0, mins[i]);
   if (usable < minSum - 1e-9 || usable <= 0) return null;
 
-  const size = new Array<number>(n).fill(0);
-  const pinned = new Array<boolean>(n).fill(false);
+  const size = new Array<number>(n);
+  const pinned = new Array<boolean>(n);
+  for (let i = 0; i < n; ++i) { size[i] = 0; pinned[i] = false; }
   for (let pass = 0; pass <= n; ++pass) {
     let free = usable;
     let wsum = 0;
@@ -51,9 +68,10 @@ export function allocate(start: number, length: number, weights: readonly number
   // When no whole pixel lies in that range (under a pixel of slack), the cut stays at
   // its clamped fractional position: feasibility is the same as the check above.
   const end = start + length;
-  const tail = new Array<number>(n).fill(0);
+  const tail = new Array<number>(n);
+  tail[n - 1] = 0;
   for (let i = n - 2; i >= 0; --i) tail[i] = tail[i + 1] + gap + mins[i + 1];
-  const out: Array<[number, number]> = [];
+  const out = new Array<number>(2 * n);
   let acc = 0;
   let begin = start;
   for (let i = 0; i < n; ++i) {
@@ -66,7 +84,8 @@ export function allocate(start: number, length: number, weights: readonly number
       const ilo = Math.ceil(lo), ihi = Math.floor(hi);
       cut = ilo <= ihi ? Math.min(ihi, Math.max(ilo, Math.round(want))) : Math.min(hi, Math.max(lo, want));
     }
-    out.push([begin, cut]);
+    out[2 * i] = begin;
+    out[2 * i + 1] = cut;
     begin = cut + gap;
   }
   return out;
