@@ -1,6 +1,6 @@
 # G3 release checklist
 
-**Verdict (2026-10-19, `main` at `c9775ca`): Plastile 0.1.0 is a release candidate, not a qualified release.**
+**Verdict (2026-10-19, `main` at `5773b61`): Plastile 0.1.0 is a release candidate, not a qualified release.**
 G3 ([ROADMAP §10](../implementation/ROADMAP.md#10-m7-packaging-documentation-and-initial-release)) and T35
 ([BACKLOG](../implementation/BACKLOG.md#t35--release-documentation-and-g3)) are not met. The gates that are
 missing:
@@ -11,15 +11,12 @@ missing:
 3. **The current code has not run physically.** The physical runbook ran on build `97fec4a`. Two changes since
    then touch `src/`: the hidden-workarea fix (`a5642dd`) and windows that open maximized (ADR-021, merged
    `0a371c9`). Testing them needs an install and a re-login (KWin keeps running the old code until it restarts).
-4. **No full nested suite on the current code.** The last committed full run is `0f55edf`, the code the physical
-   build `97fec4a` carries. Since then only the new scenarios and the unit tests have run. A full run on this
-   machine is in progress and is not reported here.
-5. **Owner decisions:** the licence (ADR-012; the package says `"License": "Undecided"` and the repository has no
+4. **Owner decisions:** the licence (ADR-012; the package says `"License": "Undecided"` and the repository has no
    licence file); whether the experimental scrolling and zones layouts ship (ADR-014); whether the skipped P2d
    (unplug) and P2e (suspend) checks become declared limitations or get run; the optional P9 G1 repeat.
-6. **KWin 6.8** is only a provisional CI job (RSS noise from KWin 6.8's own allocation), so 6.8 cannot be
+5. **KWin 6.8** is only a provisional CI job (RSS noise from KWin 6.8's own allocation), so 6.8 cannot be
    declared supported.
-7. **Smaller open items:** the nested pure-solve p99 budget is not met (G2), physical uninstall (PHY-10) has not
+6. **Smaller open items:** the nested pure-solve p99 budget is not met (G2), physical uninstall (PHY-10) has not
    run, and no test checks that the live trace leaves out private data.
 
 States: **met**, **partly met**, **open**, **owner decision**, **pending**. Layers: **unit** (Node, mock host or
@@ -31,11 +28,11 @@ Plasma session). A nested result never stands in for a physical one.
 
 | # | Clause | State | Layer | Evidence |
 |---|---|---|---|---|
-| G3-1 | All initial mandatory test scenarios pass on the declared support versions: KWin 6.7.5, nested | partly met | nested | [integration-host-0f55edf.json](evidence/integration-host-0f55edf.json): 133 scenarios, 1795/1795 checks, 1 expected SKIP (`output-negative-origin-G02`), at the code of physical build `97fec4a`. Changes since then have only targeted scenarios: `maximized-open-*-T17` ([scenarios_maximize.py](../../tests/integration/scenarios_maximize.py), [ADR-021](../design/DECISIONS.md#adr-021-a-window-that-arrives-maximized-is-un-maximized-and-tiled)) and `workarea-hidden-desktop-O07` ([scenarios_workarea.py](../../tests/integration/scenarios_workarea.py)), with no committed result file. The full suite on `c9775ca` is running |
+| G3-1 | All initial mandatory test scenarios pass on the declared support versions: KWin 6.7.5, nested | met at `5773b61` | nested | [integration-host-5773b61.json](evidence/integration-host-5773b61.json): 141 scenarios run, 1897/1897 checks, 1 expected SKIP (`output-negative-origin-G02`), including `maximized-open-*-T17` (ADR-021) and `workarea-hidden-desktop-O07`. The previous full run, [integration-host-0f55edf.json](evidence/integration-host-0f55edf.json), is the code of physical build `97fec4a` |
 | G3-1a | The same on the second CI environment (Ubuntu 26.10 sandbox, KWin 6.7.5, QPainter) | met at `0652336` | nested | 1527/1527 checks, 113/113 scenarios, 4 expected SKIPs, CI run 39141496877 ([STATUS](STATUS.md), [CI](CI.md)). That commit is older than the current code |
 | G3-1b | KWin 6.8 | open (provisional) | nested | CI Nix job, 1484/1484 checks at `0652336`, but `reload-Q09` and `persist-reload-cycles-Q09` fail in some runs on KWin 6.8's own heap growth: an empty script grows KWin by 45–77 MiB over 100 reloads ([q09-kwin68-control.json](evidence/q09-kwin68-control.json)). Until this is resolved, the docs declare only KWin 6.7 ([INSTALL](../user/INSTALL.md)) |
 | G3-1c | Mandatory physical scenarios | partly met at `97fec4a` | physical | [physical-runbook-20261018.json](evidence/physical-runbook-20261018.json): P0, P1, P2a (mixed refresh), P2b (fractional scale), P2c (output priority), P3 (panels), P4 (activities), P5 (real apps), P7 (shortcuts) pass. P2d (unplug) and P2e (suspend) were **skipped by the owner**. P5 did not test in-app actions (G14 border toggle, G15 titlebar clicks): the injector sends Meta chords only |
-| G3-2 | Physical-session smoke test complete | met at `97fec4a`; open for `c9775ca` | physical | P0 and P1 in [physical-runbook-20261018.json](evidence/physical-runbook-20261018.json): session check exit 0, `plastile notice started` in the user journal, 68 shortcuts, errors 0, helper activated by the session bus. Earlier hand-run smoke test on a laptop: [physical-first-run-20261018.json](evidence/physical-first-run-20261018.json). The settings dialog was not clicked through physically (covered nested by `settings-dialog-T28`) |
+| G3-2 | Physical-session smoke test complete | met at `97fec4a`; open for `5773b61` | physical | P0 and P1 in [physical-runbook-20261018.json](evidence/physical-runbook-20261018.json): session check exit 0, `plastile notice started` in the user journal, 68 shortcuts, errors 0, helper activated by the session bus. Earlier hand-run smoke test on a laptop: [physical-first-run-20261018.json](evidence/physical-first-run-20261018.json). The settings dialog was not clicked through physically (covered nested by `settings-dialog-T28`) |
 | G3-3 | Physical input-to-visible tests complete | open | physical | P6 in [physical-runbook-20261018.json](evidence/physical-runbook-20261018.json), 5 runs × 1000 samples per workload, 4 windows. **60 Hz (DP-1): pass** for every Plastile workload against its matched baseline. **144 Hz (HDMI-A-1):** swap pass; **ratio fail** against quick tile (+11.5 ms median, +30.3 ms p95). Plastile's input→configure is 0.6 ms; the difference is in KWin's commit→present of the resized windows (grow 84.5 ms, shrink 43.2 ms, quick tile 35.8–53.2 ms median). **Focus fail** against KWin's window switch (+10.3 ms median): mostly the Aurorae decoration's re-render, which grows with window area ([PERFORMANCE §5.1](../validation/PERFORMANCE.md#51-focus-activation-cost-depends-on-the-decoration-and-window-size), [focus-latency-nested-20261019.json](evidence/focus-latency-nested-20261019.json)); a 1.2 ms residual at equal area stays open. **100 Hz (DP-2): incomplete.** The run stopped in block 4 after 10 taps without effect, so it needs a re-run |
 | G3-4 | Long-session churn and repeated reload show no growing resource counts | partly met | nested met; physical pending | Nested 6.7.5: P14 (100 reloads with pending work: connections 80/80, script objects 1, kglobalaccel names 235/235) and P15 (20 min churn, 4254 operations), RSS bounded with an explanation ([G2_REPORT §7](G2_REPORT.md#7-resource-tracking-p14-p15-and-the-rss-bisection), [g2-churn.json](evidence/g2-churn.json), [g2-rss-bisect.json](evidence/g2-rss-bisect.json)). 6.8: see G3-1b. **Physical soak (P8a): pending, in progress** |
 | G3-4a | Idle produces no periodic Plastile work | met | nested and physical | Nested: [G2_REPORT §3](G2_REPORT.md#3-4-budgets) idle row (`suspend-idle-C14`). Physical P8b, 3 × 300 s loaded and unloaded in a seeded order: 0 flushes, deadlines, solves, writes and corrections while idle. KWin CPU median 1.540 % loaded vs 1.537 % unloaded (per period 1.530–1.553 vs 1.530–1.540), context switches median 567 vs 568 per s (567–576 vs 437–571) ([physical-runbook-20261018.json](evidence/physical-runbook-20261018.json) `P8`). This is not a claim of 0 % CPU |
@@ -55,7 +52,7 @@ Plasma session). A nested result never stands in for a physical one.
 
 | # | Clause | State | Layer | Evidence |
 |---|---|---|---|---|
-| FB-1 | Master/stack, BSP, monocle, floating, keyboard commands, window rules, scoped settings, correct topology and lifecycle | met in nested; partly physical | unit, nested, physical | The scenarios listed in [integration-host-0f55edf.json](evidence/integration-host-0f55edf.json); physical P2a–c, P3, P4, P5 and P7 at `97fec4a` |
+| FB-1 | Master/stack, BSP, monocle, floating, keyboard commands, window rules, scoped settings, correct topology and lifecycle | met in nested; partly physical | unit, nested, physical | The scenarios listed in [integration-host-5773b61.json](evidence/integration-host-5773b61.json); physical P2a–c, P3, P4, P5 and P7 at `97fec4a` |
 | FB-2 | Measured responsiveness | partly met | nested met; physical open | Nested budgets in [G2_REPORT §3](G2_REPORT.md#3-4-budgets): dispatch → last request met at 32 windows; **pure-solve p99 1.06–1.07 ms against 1 ms, not met**; the command path is 12 % slower at the median than `b60e618`, cause not attributed (G2 §15). Physical: G3-3 |
 | FB-3 | Animation optional and disabled by default | met | unit | No animation exists ([ADR-018](../design/DECISIONS.md#adr-018-close-t31-presentation-as-deferred-animation-stays-disabled)); the `animation` setting accepts only `{ "enabled": false, "durationMs": 0 }` ([CONFIGURATION](../user/CONFIGURATION.md#settings-patch)) |
 | FB-4 | Scrolling (M8) and zones (M9) in or out of the first release | owner decision | nested only | Experimental and off unless selected ([ADR-014](../design/DECISIONS.md#adr-014-start-m8m9-as-experimental-opt-in-layouts-before-g3-physical-sign-off)); no physical check of either |

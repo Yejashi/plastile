@@ -1,0 +1,587 @@
+{
+ "implementationCommit": "5773b61495a815f9fa5d0cfa3825afba88f86c3c",
+ "implementationDirty": false,
+ "kwin": "kwin 6.7.5",
+ "layer": "nested KWin virtual backend (not physical)",
+ "summary": {
+  "scenarios": 142,
+  "failedScenarios": 0,
+  "skippedScenarios": 1,
+  "skipped": {
+   "output-negative-origin-G02": "KWin rejects a negative position for an enabled output and normalizes logical output origins to (0, 0) (kscreen-doctor: 'sition of enabled output Virtual-0 is negative (-1,280, 0)\\n132037.996 kscreen.doctor Set output position QPoint(-1280,0)'); a negative origin cannot occur"
+  },
+  "checks": 1897,
+  "passedChecks": 1897
+ },
+ "scenarios": {
+  "adopt-open-close": {
+   "pass": true,
+   "checks": 7
+  },
+  "noop-and-focus-C11-C12": {
+   "pass": true,
+   "checks": 5
+  },
+  "ratio-reversal-G05": {
+   "pass": true,
+   "checks": 3
+  },
+  "swap-move-layouts-L06": {
+   "pass": true,
+   "checks": 10
+  },
+  "burst-C09": {
+   "pass": true,
+   "checks": 4
+  },
+  "constraints-G08-G12": {
+   "pass": true,
+   "checks": 12
+  },
+  "app-resize-G11": {
+   "pass": true,
+   "checks": 5
+  },
+  "states-L09-L12": {
+   "pass": true,
+   "checks": 7
+  },
+  "native-quicktile-L13": {
+   "pass": true,
+   "checks": 3
+  },
+  "float-toggle-L08": {
+   "pass": true,
+   "checks": 4
+  },
+  "transient-dialog-L07": {
+   "pass": true,
+   "checks": 9
+  },
+  "outputs-O01": {
+   "pass": true,
+   "checks": 3
+  },
+  "desktops-L15": {
+   "pass": true,
+   "checks": 3
+  },
+  "reload-Q09": {
+   "pass": true,
+   "checks": 9
+  },
+  "config-Q01": {
+   "pass": true,
+   "checks": 4
+  },
+  "suspend-idle-C14": {
+   "pass": true,
+   "checks": 5
+  },
+  "fractional-scale-G03": {
+   "pass": true,
+   "checks": 12
+  },
+  "rotation-portrait-O02": {
+   "pass": true,
+   "checks": 3
+  },
+  "unplug-O04": {
+   "pass": true,
+   "checks": 6
+  },
+  "replug-identity-O05": {
+   "pass": true,
+   "checks": 6
+  },
+  "reconcile": {
+   "pass": true,
+   "checks": 2
+  },
+  "drag-I01-I02": {
+   "pass": true,
+   "checks": 7
+  },
+  "resize-I03": {
+   "pass": true,
+   "checks": 4
+  },
+  "drag-teardown-I04": {
+   "pass": true,
+   "checks": 3
+  },
+  "classify-builtin-T16": {
+   "pass": true,
+   "checks": 15
+  },
+  "classify-rule-title-T16": {
+   "pass": true,
+   "checks": 11
+  },
+  "classify-rule-border-Q10-T16": {
+   "pass": true,
+   "checks": 11
+  },
+  "classify-rule-title-reconfigure-T16": {
+   "pass": true,
+   "checks": 7
+  },
+  "config-desktop-rename-Q02": {
+   "pass": true,
+   "checks": 4
+  },
+  "classify-tiny-helper-T16": {
+   "pass": true,
+   "checks": 7
+  },
+  "rules-context-T25": {
+   "pass": true,
+   "checks": 12
+  },
+  "reload-config-D9-Q04": {
+   "pass": true,
+   "checks": 8
+  },
+  "shortcuts-conflict-Q08": {
+   "pass": true,
+   "checks": 6
+  },
+  "inspector-T28": {
+   "pass": true,
+   "checks": 12
+  },
+  "constraints-runtime-min-G08": {
+   "pass": true,
+   "checks": 8
+  },
+  "per-output-desktops-O08": {
+   "pass": true,
+   "checks": 17
+  },
+  "follow-on-send-T24": {
+   "pass": true,
+   "checks": 13
+  },
+  "activities-E08": {
+   "pass": true,
+   "checks": 16
+  },
+  "activities-late-service-E08": {
+   "pass": true,
+   "checks": 7
+  },
+  "activities-add-second-E08": {
+   "pass": true,
+   "checks": 7
+  },
+  "float-output-D6": {
+   "pass": true,
+   "checks": 8
+  },
+  "persist-reload-restart-T27": {
+   "pass": true,
+   "checks": 20
+  },
+  "persist-kwin-exit-T27": {
+   "pass": true,
+   "checks": 8
+  },
+  "persist-ambiguous-Q06": {
+   "pass": true,
+   "checks": 9
+  },
+  "persist-damaged-Q07": {
+   "pass": true,
+   "checks": 10
+  },
+  "persist-no-helper-Q05": {
+   "pass": true,
+   "checks": 6
+  },
+  "persist-helper-stopped-Q05": {
+   "pass": true,
+   "checks": 11
+  },
+  "persist-helper-delayed-Q05": {
+   "pass": true,
+   "checks": 11
+  },
+  "persist-reload-cycles-Q09": {
+   "pass": true,
+   "checks": 9
+  },
+  "firstrun-notice-default-FR1": {
+   "pass": true,
+   "checks": 9
+  },
+  "firstrun-osd-fake-FR2": {
+   "pass": true,
+   "checks": 4
+  },
+  "firstrun-osd-off-absent-FR3": {
+   "pass": true,
+   "checks": 7
+  },
+  "firstrun-target-visible-FR4": {
+   "pass": true,
+   "checks": 7
+  },
+  "firstrun-maximized-suspended-FR5": {
+   "pass": true,
+   "checks": 5
+  },
+  "firstrun-restored-notice-FR6": {
+   "pass": true,
+   "checks": 3
+  },
+  "persist-helper-contract-T27": {
+   "pass": true,
+   "checks": 24
+  },
+  "output-offset-origin-G02": {
+   "pass": true,
+   "checks": 14
+  },
+  "output-negative-origin-G02": {
+   "pass": true,
+   "checks": 2,
+   "skipped": true
+  },
+  "output-reorder-O03": {
+   "pass": true,
+   "checks": 17
+  },
+  "desktops-rename-reorder-remove-O10": {
+   "pass": true,
+   "checks": 22
+  },
+  "all-desktops-L16": {
+   "pass": true,
+   "checks": 11
+  },
+  "focus-output-wrap-T23": {
+   "pass": true,
+   "checks": 8
+  },
+  "monocle-focus-cycle-T22": {
+   "pass": true,
+   "checks": 7
+  },
+  "monocle-unload-T22": {
+   "pass": true,
+   "checks": 21
+  },
+  "live-resize-T29": {
+   "pass": true,
+   "checks": 11
+  },
+  "drag-output-removal-I04": {
+   "pass": true,
+   "checks": 9
+  },
+  "resize-rapid-keys-I05": {
+   "pass": true,
+   "checks": 28
+  },
+  "fixed-size-G07": {
+   "pass": true,
+   "checks": 10
+  },
+  "max-size-G09": {
+   "pass": true,
+   "checks": 13
+  },
+  "late-min-size-D3": {
+   "pass": true,
+   "checks": 9
+  },
+  "write-signal-C06": {
+   "pass": true,
+   "checks": 11
+  },
+  "create-remove-C04": {
+   "pass": true,
+   "checks": 17
+  },
+  "remove-during-apply-C07": {
+   "pass": true,
+   "checks": 7
+  },
+  "maximized-open-tile-T17": {
+   "pass": true,
+   "checks": 14
+  },
+  "maximized-open-keep-T17": {
+   "pass": true,
+   "checks": 5
+  },
+  "maximized-open-startup-T17": {
+   "pass": true,
+   "checks": 5
+  },
+  "maximized-open-remaximize-T17": {
+   "pass": true,
+   "checks": 7
+  },
+  "maximized-open-xwayland-T17": {
+   "pass": true,
+   "checks": 6
+  },
+  "maximized-open-late-T17": {
+   "pass": true,
+   "checks": 7
+  },
+  "maximized-open-overflow-T17": {
+   "pass": true,
+   "checks": 5
+  },
+  "maximized-open-hidden-T17": {
+   "pass": true,
+   "checks": 9
+  },
+  "membership-all-desktops-T24": {
+   "pass": true,
+   "checks": 86
+  },
+  "membership-two-desktops-T24": {
+   "pass": true,
+   "checks": 81
+  },
+  "membership-two-activities-T24": {
+   "pass": true,
+   "checks": 86
+  },
+  "send-activity-switch-T24": {
+   "pass": true,
+   "checks": 99
+  },
+  "native-tree-edit-L14": {
+   "pass": true,
+   "checks": 7
+  },
+  "native-manage-L14": {
+   "pass": true,
+   "checks": 17
+  },
+  "native-editor-toggle-L14": {
+   "pass": true,
+   "checks": 7
+  },
+  "native-quicktile-repeat-L13": {
+   "pass": true,
+   "checks": 8
+  },
+  "native-adopt-noop-L13": {
+   "pass": true,
+   "checks": 4
+  },
+  "native-unmanage-config-L14": {
+   "pass": true,
+   "checks": 4
+  },
+  "package-install-autoload-T32": {
+   "pass": true,
+   "checks": 28
+  },
+  "package-post-start-discovery-T32": {
+   "pass": true,
+   "checks": 8
+  },
+  "package-helper-install-T32": {
+   "pass": true,
+   "checks": 10
+  },
+  "realapps-dolphin": {
+   "pass": true,
+   "checks": 18
+  },
+  "realapps-systemsettings": {
+   "pass": true,
+   "checks": 17
+  },
+  "realapps-systemsettings-tall": {
+   "pass": true,
+   "checks": 18
+  },
+  "realapps-gnome-calculator": {
+   "pass": true,
+   "checks": 17
+  },
+  "realapps-gnome-calculator-tall": {
+   "pass": true,
+   "checks": 18
+  },
+  "realapps-gnome-calculator-x11-tall": {
+   "pass": true,
+   "checks": 18
+  },
+  "realapps-alacritty": {
+   "pass": true,
+   "checks": 18
+  },
+  "realapps-firefox": {
+   "pass": true,
+   "checks": 18
+  },
+  "realapps-chromium": {
+   "pass": true,
+   "checks": 18
+  },
+  "realapps-xmessage": {
+   "pass": true,
+   "checks": 18
+  },
+  "realapps-zenity-info": {
+   "pass": true,
+   "checks": 17
+  },
+  "realapps-zenity-info-x11": {
+   "pass": true,
+   "checks": 17
+  },
+  "workarea-panel-add-remove-O07": {
+   "pass": true,
+   "checks": 18
+  },
+  "workarea-panel-before-load-O07": {
+   "pass": true,
+   "checks": 5
+  },
+  "workarea-two-panels-O07": {
+   "pass": true,
+   "checks": 15
+  },
+  "workarea-panel-one-output-O07": {
+   "pass": true,
+   "checks": 12
+  },
+  "workarea-hidden-desktop-O07": {
+   "pass": true,
+   "checks": 44
+  },
+  "plasmashell-panels-O07": {
+   "pass": true,
+   "checks": 26
+  },
+  "resume-missed-events-T19": {
+   "pass": true,
+   "checks": 21
+  },
+  "reenable-missed-events-T19": {
+   "pass": true,
+   "checks": 17
+  },
+  "send-reflow-once-T24": {
+   "pass": true,
+   "checks": 25
+  },
+  "send-stale-close-T24": {
+   "pass": true,
+   "checks": 13
+  },
+  "resume-floats-T19": {
+   "pass": true,
+   "checks": 18
+  },
+  "reenable-floats-T19": {
+   "pass": true,
+   "checks": 12
+  },
+  "replay-capture-T10": {
+   "pass": true,
+   "checks": 31
+  },
+  "scrolling-park-M8": {
+   "pass": true,
+   "checks": 8
+  },
+  "scrolling-activate-parked-M8": {
+   "pass": true,
+   "checks": 4
+  },
+  "scrolling-topology-M8": {
+   "pass": true,
+   "checks": 8
+  },
+  "scrolling-unload-M8": {
+   "pass": true,
+   "checks": 7
+  },
+  "scrolling-pullback-M8": {
+   "pass": true,
+   "checks": 3
+  },
+  "shortcuts-defaults-real-input": {
+   "pass": true,
+   "checks": 3
+  },
+  "settings-dialog-T28": {
+   "pass": true,
+   "checks": 24
+  },
+  "settings-keyboard-only-inspector-T28": {
+   "pass": true,
+   "checks": 4
+  },
+  "transient-parent-minimize-T16": {
+   "pass": true,
+   "checks": 12
+  },
+  "transient-parent-desktop-T16": {
+   "pass": true,
+   "checks": 12
+  },
+  "transient-parent-close-T16": {
+   "pass": true,
+   "checks": 13
+  },
+  "package-upgrade-bindings-T26-T32": {
+   "pass": true,
+   "checks": 60
+  },
+  "xwayland-tile-close-G10": {
+   "pass": true,
+   "checks": 11
+  },
+  "xwayland-min-G10": {
+   "pass": true,
+   "checks": 6
+  },
+  "xwayland-inc-G10": {
+   "pass": true,
+   "checks": 4
+  },
+  "xwayland-fixed-G10": {
+   "pass": true,
+   "checks": 5
+  },
+  "xwayland-dialog-G10": {
+   "pass": true,
+   "checks": 9
+  },
+  "xwayland-aspect-G10": {
+   "pass": true,
+   "checks": 3
+  },
+  "xtransient-parent-minimize-T16": {
+   "pass": true,
+   "checks": 12
+  },
+  "xtransient-parent-desktop-T16": {
+   "pass": true,
+   "checks": 12
+  },
+  "xtransient-parent-close-T16": {
+   "pass": true,
+   "checks": 13
+  },
+  "zones-assign-M9": {
+   "pass": true,
+   "checks": 14
+  },
+  "zones-overlay-M9": {
+   "pass": true,
+   "checks": 13
+  }
+ }
+}

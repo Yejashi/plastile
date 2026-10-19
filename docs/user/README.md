@@ -26,7 +26,7 @@ Plastile 0.1.0 is a **release candidate**, not a qualified release. The gates st
 
 ### What works (measured in nested KWin 6.7.5)
 
-The last full nested suite on the reference host passed: 133 scenarios, 1795 of 1795 checks, one expected SKIP (`output-negative-origin-G02`: KWin normalizes output origins), at commit `0f55edf` ([evidence](../status/evidence/integration-host-0f55edf.json)). Each item below is covered by one or more of its scenarios, except where it says otherwise.
+The last full nested suite on the reference host passed: 141 scenarios, 1897 of 1897 checks, one expected SKIP (`output-negative-origin-G02`: KWin normalizes output origins), at commit `5773b61` ([evidence](../status/evidence/integration-host-5773b61.json)). Each item below is covered by one or more of its scenarios, except where it says otherwise.
 
 - Adopting existing windows at load, tiling new windows and reflowing on close, with bounded work for a burst of nine windows.
 - Master/stack, BSP and monocle layouts, and switching between them with window order preserved. BSP rotate, mirror, reinsert and equalize. The floating layout does not fight user geometry.
@@ -45,7 +45,7 @@ The last full nested suite on the reference host passed: 133 scenarios, 1795 of 
 - Pointer drags. Dropping a tile onto another tile swaps them on release, with no re-tiling during the drag. Dropping it into a gap snaps it back. Meta+right-drag resizing moves the shared divider. Closing the window or unloading the script mid-drag leaves no errors.
 - Real keyboard input: all 20 default bindings reach Plastile when pressed through libei in a nested session (US keymap). Three earlier defaults that did not were replaced; see [SHORTCUTS](SHORTCUTS.md#default-bindings-measured-with-real-key-presses).
 - Activities (the Activities service started late, a second activity added, windows on two activities float), plasmashell panels and work-area changes, per-screen virtual desktops, XWayland applications, and real applications (Dolphin, System Settings, GNOME Calculator, Alacritty, Firefox, Chromium, xmessage, zenity).
-- Windows that open maximized are un-maximized once and tiled (`maximizedOnOpen`, [ADR-021](../design/DECISIONS.md#adr-021-a-window-that-arrives-maximized-is-un-maximized-and-tiled)). This and the hidden-desktop work-area fix came after `0f55edf`. Their own scenarios (`maximized-open-*-T17`, `workarea-hidden-desktop-O07`) and the unit tests pass, but a full suite has not yet run on that code.
+- Windows that open maximized are un-maximized once and tiled (`maximizedOnOpen`, [ADR-021](../design/DECISIONS.md#adr-021-a-window-that-arrives-maximized-is-un-maximized-and-tiled)). This and the hidden-desktop work-area fix pass nested (`maximized-open-*-T17`, `workarea-hidden-desktop-O07`) but came after the physical build `97fec4a`, so they have not run physically yet.
 
 ### What is not covered
 
