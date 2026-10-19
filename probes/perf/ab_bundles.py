@@ -117,7 +117,9 @@ def unit(var: dict, n: int, samples: int, seed: int, out: Path, gc_log: bool) ->
     env = measure_env()
     if gc_log:
         env["QT_LOGGING_RULES"] = "js=true;qml=true;kwin_scripting=true;qt.qml.gc.*=true"
-    others = subprocess.run(["pgrep", "-c", "-f", "kwin_wayland --virtual"], capture_output=True, text=True).stdout.strip()
+    # Exact process name (a shell whose command line merely mentions kwin_wayland must not count).
+    ps = subprocess.run(["pgrep", "-a", "-x", "kwin_wayland"], capture_output=True, text=True).stdout
+    others = sum(1 for ln in ps.splitlines() if " --virtual" in ln)
     rec = {"variant": var["spec"], "name": var["name"], "commit": var["commit"], "machineStart": common.machine_state(),
            "otherNestedKwinAtStart": int(others or 0)}
     rng = random.Random(seed)
