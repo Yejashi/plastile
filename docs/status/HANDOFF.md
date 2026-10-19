@@ -178,7 +178,9 @@ Beyond [AGENTS.md](../../AGENTS.md):
     `KwinAdapter.keyOf`, which can call `engine.outputsRekeyed`, which deletes and re-adds contexts.
   - Five engine loops were exposed that way (ADR-022).
   - `npm run build` now rejects any `for…of` over a Map, Set or iterator in `src/` (`tools/itercheck.ts`, type-aware).
-    Use `forEach`, or an array snapshot when each original entry should be visited once.
+    It also rejects a hand-written `next()` loop, `yield*`, and `Array.from` with a callback over one, which QV4
+    walks the same way. Use `forEach`, or an array snapshot when each original entry should be visited once.
+  - Nested sessions cannot reach the re-key path: the virtual backend reports no EDID.
   - `tests/core/qv4iteration.test.ts` checks the engine in QV4 through the `qml` tool. It is skipped without one,
     e.g. in the CI core job.
   - See [PERFORMANCE §7.1](../validation/PERFORMANCE.md#71-qv4-iteration-allocates-measured), and the probes

@@ -3,7 +3,7 @@
  "layer": "QV4 in the qml tool (offscreen) and V8 in Node; not KWin, not nested",
  "qml": "Qml Runtime 6.12.0",
  "node": "v26.11.1",
- "scenarios": "tests/core/qv4Scenarios.ts at 4648e24 for every run",
+ "scenarios": "tests/core/qv4Scenarios.ts at 1d6edc7 for every run (review: saved-preferences checks the keys of the re-keying call)",
  "runs": [
   {
    "label": "before d6f5647 (apply loop still for...of)",

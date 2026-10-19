@@ -197,7 +197,8 @@ Verify any such change with the QV4 probes ([qv4solve](../../probes/perf/qv4solv
 - QV4 walks a `Map`, a `Set`, or their `keys()`/`values()`/`entries()` with `for…of` as an index into a compacted list.
   - Deleting the current entry, or any earlier one, skips the entry after it: deleting the current `b` of `abcde` visits `abde`.
   - Deleting a later entry, adding entries, and setting an existing key behave as in ECMAScript.
-  - 48 of 150 cases differ, all of them Map/Set `for…of` with a deletion.
+  - A hand-written `next()` loop, `yield*`, and `Array.from` with a callback walk the same iterator and skip the same way.
+  - 80 of 210 cases differ. All of them walk a Map or Set through its iterator while entries are deleted.
 - `forEach` on a Map or Set follows ECMAScript in QV4 in every case. So does array iteration (`for…of` and `forEach`), which is index-based in both engines.
 - Node runs V8, which follows the specification, so a unit test cannot see the difference.
 - The deletion need not be in the loop body. The audit for ADR-022 found five loops that could delete from their collection through called functions: a HostPort read or `settingsFor` resolves an output key in the adapter, which can call `engine.outputsRekeyed`, which deletes and re-adds contexts.
@@ -211,7 +212,12 @@ What to write:
 [tools/itercheck.ts](../../tools/itercheck.ts) enforces the rule:
 
 - It runs the TypeScript checker on `tsconfig.runtime.json` and rejects `for…of` over anything that is not an array, a tuple or a string. That covers a Map, a Set, their iterators, `Iterable<T>`, a type parameter constrained to one of them, and a union containing one.
-- It also rejects `Array.from(x, callback)` over a non-array.
+- It also rejects the same walk written other ways:
+  - `Array.from(x, callback)`, or a typed array's `from`, over a non-array, by the resolved signature, so through an alias of `Array` too;
+  - a built-in `from` used other than by a direct call;
+  - `next()` on an iterator held in a variable or property (one step from a fresh iterator, `m.keys().next().value`, is allowed);
+  - `yield*` over a non-array.
+- Array destructuring of a Map or Set is not checked: QV4 gave the ECMAScript result in the two deleting cases tried.
 - `npm run build` fails with the sites and points here.
 
 [qv4iteration.test.ts](../../tests/core/qv4iteration.test.ts) runs code in QV4 through the `qml` tool and skips with a message when no tool is installed:
