@@ -1,5 +1,5 @@
 {
- "what": "Physical runbook (owner consent 2026-10-18), reference desktop; steps P0, P1, P2a-c, P3, P4, P5, P7 (P6, P8 pending; P2d, P2e skipped by the owner)",
+ "what": "Physical runbook (owner consent 2026-10-18), reference desktop; steps P0, P1, P2a-c, P3, P4, P5, P6 (60 and 144 Hz; 100 Hz incomplete), P7, P8 idle (soak pending); P2d, P2e skipped by the owner",
  "layer": "physical",
  "commit": "97fec4a (merged first-run fixes); package 0.1.0 from tools/release.py, installed with tools/install.sh install + install-helper",
  "environment": {
@@ -565,6 +565,3102 @@
    "Meta+T": "KWin's tile editor opens with Plastile loaded; while open it grabs the keyboard, so a second injected Meta+T did not close it (closed through kglobalaccel 'Edit Tiles')",
    "Meta+Ctrl+S": "reached Plastile despite the Wacom conflict: 'tiling paused' / 'tiling resumed' notices",
    "Meta+Shift+S": "not tested (Spectacle overlay needs Esc)"
+  }
+ },
+ "P6": {
+  "layer": "physical",
+  "installedBuild": "97fec4a (installedBundleSha256 recorded per sample; the samples' implementationCommit field names the checkout at run time, f3ff41f, which differs)",
+  "protocol": "5 runs x 1000 samples per workload, 50 warm-up taps per block, randomized order, --toggle dbus, 4 fixture windows",
+  "byRefresh": {
+   "60": {
+    "comparisons": [
+     {
+      "candidate": "P03-swap",
+      "baseline": "P00-maximize",
+      "layer": "physical",
+      "outputName": "DP-1",
+      "refreshHzDeclared": 60,
+      "windowCount": 4,
+      "metric": "inputToFirstPresentNs",
+      "thresholdNs": 16666666,
+      "matchedBaseline": false,
+      "medianDiffNs": -43206494,
+      "medianDiffCi95": [
+       -43470611,
+       -42821566
+      ],
+      "p95DiffNs": -51070544,
+      "p95DiffCi95": [
+       -51250195,
+       -50699575
+      ],
+      "protocolMet": true,
+      "medianRule": "pass",
+      "p95Rule": "pass",
+      "verdict": "pass"
+     },
+     {
+      "candidate": "P03-swap",
+      "baseline": "P02-quicktile",
+      "layer": "physical",
+      "outputName": "DP-1",
+      "refreshHzDeclared": 60,
+      "windowCount": 4,
+      "metric": "inputToFirstPresentNs",
+      "thresholdNs": 16666666,
+      "matchedBaseline": true,
+      "medianDiffNs": -7398665,
+      "medianDiffCi95": [
+       -7671475,
+       -7326798
+      ],
+      "p95DiffNs": 4099587,
+      "p95DiffCi95": [
+       4010823,
+       4556095
+      ],
+      "protocolMet": true,
+      "medianRule": "pass",
+      "p95Rule": "pass",
+      "verdict": "pass"
+     },
+     {
+      "candidate": "P03-swap",
+      "baseline": "P00-switch",
+      "layer": "physical",
+      "outputName": "DP-1",
+      "refreshHzDeclared": 60,
+      "windowCount": 4,
+      "metric": "inputToFirstPresentNs",
+      "thresholdNs": 16666666,
+      "matchedBaseline": false,
+      "medianDiffNs": 9080295,
+      "medianDiffCi95": [
+       8454691,
+       9470439
+      ],
+      "p95DiffNs": 24958631,
+      "p95DiffCi95": [
+       24724447,
+       25228163
+      ],
+      "protocolMet": true,
+      "medianRule": "pass",
+      "p95Rule": "fail",
+      "verdict": "fail"
+     },
+     {
+      "candidate": "P03-ratio",
+      "baseline": "P00-maximize",
+      "layer": "physical",
+      "outputName": "DP-1",
+      "refreshHzDeclared": 60,
+      "windowCount": 4,
+      "metric": "inputToFirstPresentNs",
+      "thresholdNs": 16666666,
+      "matchedBaseline": false,
+      "medianDiffNs": -38345500,
+      "medianDiffCi95": [
+       -38467545,
+       -37772277
+      ],
+      "p95DiffNs": -57134146,
+      "p95DiffCi95": [
+       -57915713,
+       -55355504
+      ],
+      "protocolMet": true,
+      "medianRule": "pass",
+      "p95Rule": "pass",
+      "verdict": "pass"
+     },
+     {
+      "candidate": "P03-ratio",
+      "baseline": "P02-quicktile",
+      "layer": "physical",
+      "outputName": "DP-1",
+      "refreshHzDeclared": 60,
+      "windowCount": 4,
+      "metric": "inputToFirstPresentNs",
+      "thresholdNs": 16666666,
+      "matchedBaseline": true,
+      "medianDiffNs": -2537671,
+      "medianDiffCi95": [
+       -2657647,
+       -2265872
+      ],
+      "p95DiffNs": -1964015,
+      "p95DiffCi95": [
+       -2753895,
+       -33000
+      ],
+      "protocolMet": true,
+      "medianRule": "pass",
+      "p95Rule": "pass",
+      "verdict": "pass"
+     },
+     {
+      "candidate": "P03-ratio",
+      "baseline": "P00-switch",
+      "layer": "physical",
+      "outputName": "DP-1",
+      "refreshHzDeclared": 60,
+      "windowCount": 4,
+      "metric": "inputToFirstPresentNs",
+      "thresholdNs": 16666666,
+      "matchedBaseline": false,
+      "medianDiffNs": 13941289,
+      "medianDiffCi95": [
+       13414975,
+       14472538
+      ],
+      "p95DiffNs": 18895029,
+      "p95DiffCi95": [
+       18093062,
+       20617305
+      ],
+      "protocolMet": true,
+      "medianRule": "pass",
+      "p95Rule": "fail",
+      "verdict": "fail"
+     },
+     {
+      "candidate": "P03-focus",
+      "baseline": "P00-maximize",
+      "layer": "physical",
+      "outputName": "DP-1",
+      "refreshHzDeclared": 60,
+      "windowCount": 4,
+      "metric": "inputToFirstPresentNs",
+      "thresholdNs": 16666666,
+      "matchedBaseline": false,
+      "medianDiffNs": -48212884,
+      "medianDiffCi95": [
+       -48825095,
+       -47587234
+      ],
+      "p95DiffNs": -71654168,
+      "p95DiffCi95": [
+       -72405312,
+       -69813380
+      ],
+      "protocolMet": true,
+      "medianRule": "pass",
+      "p95Rule": "pass",
+      "verdict": "pass"
+     },
+     {
+      "candidate": "P03-focus",
+      "baseline": "P02-quicktile",
+      "layer": "physical",
+      "outputName": "DP-1",
+      "refreshHzDeclared": 60,
+      "windowCount": 4,
+      "metric": "inputToFirstPresentNs",
+      "thresholdNs": 16666666,
+      "matchedBaseline": false,
+      "medianDiffNs": -12405055,
+      "medianDiffCi95": [
+       -13021441,
+       -11906411
+      ],
+      "p95DiffNs": -16484037,
+      "p95DiffCi95": [
+       -17153503,
+       -14656966
+      ],
+      "protocolMet": true,
+      "medianRule": "pass",
+      "p95Rule": "pass",
+      "verdict": "pass"
+     },
+     {
+      "candidate": "P03-focus",
+      "baseline": "P00-switch",
+      "layer": "physical",
+      "outputName": "DP-1",
+      "refreshHzDeclared": 60,
+      "windowCount": 4,
+      "metric": "inputToFirstPresentNs",
+      "thresholdNs": 16666666,
+      "matchedBaseline": true,
+      "medianDiffNs": 4073905,
+      "medianDiffCi95": [
+       3229911,
+       4735085
+      ],
+      "p95DiffNs": 4375007,
+      "p95DiffCi95": [
+       3613144,
+       6218664
+      ],
+      "protocolMet": true,
+      "medianRule": "pass",
+      "p95Rule": "pass",
+      "verdict": "pass"
+     }
+    ],
+    "groups": [
+     {
+      "layer": "physical",
+      "workload": "P00-maximize",
+      "condition": "none",
+      "outputName": "DP-1",
+      "refreshHzDeclared": 60,
+      "windowCount": 4,
+      "samples": 5000,
+      "successes": 5000,
+      "successRate": 1.0,
+      "runs": 5,
+      "failures": {},
+      "refreshNsObservedMedian": 16666666,
+      "metrics": {
+       "inputToFirstPresentNs": {
+        "pooled": {
+         "n": 5000,
+         "median": 69010133,
+         "p95": 100283282,
+         "p99": 101625057,
+         "max": 103598509,
+         "min": 34934944
+        },
+        "ci95ByRun": {
+         "median": [
+          68658788,
+          69010133
+         ],
+         "p95": [
+          99938842,
+          100475475
+         ],
+         "p99": [
+          101572989,
+          102022146
+         ]
+        },
+        "perRun": {
+         "run1": {
+          "n": 1000,
+          "median": 68922158,
+          "p95": 100593357,
+          "p99": null,
+          "max": 102633810,
+          "min": 35470163,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run2": {
+          "n": 1000,
+          "median": 68658788,
+          "p95": 100115751,
+          "p99": null,
+          "max": 103369040,
+          "min": 35196825,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run3": {
+          "n": 1000,
+          "median": 68545701,
+          "p95": 100289655,
+          "p99": null,
+          "max": 103598509,
+          "min": 35138064,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run4": {
+          "n": 1000,
+          "median": 68624960,
+          "p95": 100258787,
+          "p99": null,
+          "max": 102751632,
+          "min": 34934944,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run5": {
+          "n": 1000,
+          "median": 69010133,
+          "p95": 99835266,
+          "p99": null,
+          "max": 102772252,
+          "min": 35224817,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         }
+        }
+       },
+       "inputToSettledNs": {
+        "pooled": {
+         "n": 5000,
+         "median": 69010133,
+         "p95": 100283282,
+         "p99": 101625057,
+         "max": 103598509,
+         "min": 34934944
+        },
+        "ci95ByRun": {
+         "median": [
+          68658788,
+          69010133
+         ],
+         "p95": [
+          99938842,
+          100477303
+         ],
+         "p99": [
+          101572989,
+          102022146
+         ]
+        },
+        "perRun": {
+         "run1": {
+          "n": 1000,
+          "median": 68922158,
+          "p95": 100593357,
+          "p99": null,
+          "max": 102633810,
+          "min": 35470163,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run2": {
+          "n": 1000,
+          "median": 68658788,
+          "p95": 100115751,
+          "p99": null,
+          "max": 103369040,
+          "min": 35196825,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run3": {
+          "n": 1000,
+          "median": 68545701,
+          "p95": 100289655,
+          "p99": null,
+          "max": 103598509,
+          "min": 35138064,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run4": {
+          "n": 1000,
+          "median": 68624960,
+          "p95": 100258787,
+          "p99": null,
+          "max": 102751632,
+          "min": 34934944,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run5": {
+          "n": 1000,
+          "median": 69010133,
+          "p95": 99835266,
+          "p99": null,
+          "max": 102772252,
+          "min": 35224817,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         }
+        }
+       }
+      },
+      "protocol": {
+       "runs": 5,
+       "minRuns": 5,
+       "pooledSuccesses": 5000,
+       "minSamplesForP99": 5000,
+       "met": true
+      }
+     },
+     {
+      "layer": "physical",
+      "workload": "P00-switch",
+      "condition": "none",
+      "outputName": "DP-1",
+      "refreshHzDeclared": 60,
+      "windowCount": 4,
+      "samples": 5000,
+      "successes": 5000,
+      "successRate": 1.0,
+      "runs": 5,
+      "failures": {},
+      "refreshNsObservedMedian": 16666666,
+      "metrics": {
+       "inputToFirstPresentNs": {
+        "pooled": {
+         "n": 5000,
+         "median": 16723344,
+         "p95": 24254107,
+         "p99": 26222739,
+         "max": 39167036,
+         "min": 7208645
+        },
+        "ci95ByRun": {
+         "median": [
+          16328166,
+          17194464
+         ],
+         "p95": [
+          24163229,
+          24484436
+         ],
+         "p99": [
+          24850642,
+          29158223
+         ]
+        },
+        "perRun": {
+         "run1": {
+          "n": 1000,
+          "median": 16353577,
+          "p95": 24184981,
+          "p99": null,
+          "max": 38172273,
+          "min": 7208645,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run2": {
+          "n": 1000,
+          "median": 17214126,
+          "p95": 24491688,
+          "p99": null,
+          "max": 39167036,
+          "min": 7248314,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run3": {
+          "n": 1000,
+          "median": 16461788,
+          "p95": 24493474,
+          "p99": null,
+          "max": 30167039,
+          "min": 7507073,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run4": {
+          "n": 1000,
+          "median": 17488021,
+          "p95": 24319839,
+          "p99": null,
+          "max": 37873960,
+          "min": 7314150,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run5": {
+          "n": 1000,
+          "median": 16203163,
+          "p95": 23854958,
+          "p99": null,
+          "max": 37410580,
+          "min": 7522298,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         }
+        }
+       },
+       "inputToSettledNs": {
+        "pooled": {
+         "n": 5000,
+         "median": 16932771,
+         "p95": 24450556,
+         "p99": 26778710,
+         "max": 39167036,
+         "min": 7352397
+        },
+        "ci95ByRun": {
+         "median": [
+          16488490,
+          17487987
+         ],
+         "p95": [
+          24221699,
+          24518899
+         ],
+         "p99": [
+          25144366,
+          29462971
+         ]
+        },
+        "perRun": {
+         "run1": {
+          "n": 1000,
+          "median": 16492913,
+          "p95": 24214744,
+          "p99": null,
+          "max": 38172273,
+          "min": 7538880,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run2": {
+          "n": 1000,
+          "median": 17349799,
+          "p95": 24521878,
+          "p99": null,
+          "max": 39167036,
+          "min": 7451739,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run3": {
+          "n": 1000,
+          "median": 16576628,
+          "p95": 24532901,
+          "p99": null,
+          "max": 30167039,
+          "min": 7507073,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run4": {
+          "n": 1000,
+          "median": 17862738,
+          "p95": 24502809,
+          "p99": null,
+          "max": 37873960,
+          "min": 7352397,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run5": {
+          "n": 1000,
+          "median": 16415256,
+          "p95": 24150732,
+          "p99": null,
+          "max": 37410580,
+          "min": 7522298,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         }
+        }
+       }
+      },
+      "protocol": {
+       "runs": 5,
+       "minRuns": 5,
+       "pooledSuccesses": 5000,
+       "minSamplesForP99": 5000,
+       "met": true
+      }
+     },
+     {
+      "layer": "physical",
+      "workload": "P02-quicktile",
+      "condition": "none",
+      "outputName": "DP-1",
+      "refreshHzDeclared": 60,
+      "windowCount": 4,
+      "samples": 5000,
+      "successes": 5000,
+      "successRate": 1.0,
+      "runs": 5,
+      "failures": {},
+      "refreshNsObservedMedian": 16666666,
+      "metrics": {
+       "inputToFirstPresentNs": {
+        "pooled": {
+         "n": 5000,
+         "median": 33202304,
+         "p95": 45113151,
+         "p99": 46540642,
+         "max": 48122881,
+         "min": 18751867
+        },
+        "ci95ByRun": {
+         "median": [
+          33167774,
+          33218862
+         ],
+         "p95": [
+          44870036,
+          45189555
+         ],
+         "p99": [
+          46522436,
+          46587719
+         ]
+        },
+        "perRun": {
+         "run1": {
+          "n": 1000,
+          "median": 33198485,
+          "p95": 45144014,
+          "p99": null,
+          "max": 47529099,
+          "min": 19528317,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run2": {
+          "n": 1000,
+          "median": 33222591,
+          "p95": 45234761,
+          "p99": null,
+          "max": 47523515,
+          "min": 19160840,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run3": {
+          "n": 1000,
+          "median": 33196457,
+          "p95": 44909757,
+          "p99": null,
+          "max": 47196583,
+          "min": 18751867,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run4": {
+          "n": 1000,
+          "median": 33210238,
+          "p95": 44560594,
+          "p99": null,
+          "max": 48122881,
+          "min": 19519223,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run5": {
+          "n": 1000,
+          "median": 33156529,
+          "p95": 45146382,
+          "p99": null,
+          "max": 47207751,
+          "min": 19127118,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         }
+        }
+       },
+       "inputToSettledNs": {
+        "pooled": {
+         "n": 5000,
+         "median": 33202304,
+         "p95": 45113151,
+         "p99": 46540642,
+         "max": 48122881,
+         "min": 18751867
+        },
+        "ci95ByRun": {
+         "median": [
+          33167774,
+          33218862
+         ],
+         "p95": [
+          44869082,
+          45189555
+         ],
+         "p99": [
+          46522436,
+          46587719
+         ]
+        },
+        "perRun": {
+         "run1": {
+          "n": 1000,
+          "median": 33198485,
+          "p95": 45144014,
+          "p99": null,
+          "max": 47529099,
+          "min": 19528317,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run2": {
+          "n": 1000,
+          "median": 33222591,
+          "p95": 45234761,
+          "p99": null,
+          "max": 47523515,
+          "min": 19160840,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run3": {
+          "n": 1000,
+          "median": 33196457,
+          "p95": 44909757,
+          "p99": null,
+          "max": 47196583,
+          "min": 18751867,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run4": {
+          "n": 1000,
+          "median": 33210238,
+          "p95": 44560594,
+          "p99": null,
+          "max": 48122881,
+          "min": 19519223,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run5": {
+          "n": 1000,
+          "median": 33156529,
+          "p95": 45146382,
+          "p99": null,
+          "max": 47207751,
+          "min": 19127118,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         }
+        }
+       }
+      },
+      "protocol": {
+       "runs": 5,
+       "minRuns": 5,
+       "pooledSuccesses": 5000,
+       "minSamplesForP99": 5000,
+       "met": true
+      }
+     },
+     {
+      "layer": "physical",
+      "workload": "P03-focus",
+      "condition": "plastile",
+      "outputName": "DP-1",
+      "refreshHzDeclared": 60,
+      "windowCount": 4,
+      "samples": 5000,
+      "successes": 5000,
+      "successRate": 1.0,
+      "runs": 5,
+      "failures": {},
+      "refreshNsObservedMedian": 16666666,
+      "metrics": {
+       "inputToFirstPresentNs": {
+        "pooled": {
+         "n": 5000,
+         "median": 20797249,
+         "p95": 28629114,
+         "p99": 38850961,
+         "max": 49522840,
+         "min": 9475287
+        },
+        "ci95ByRun": {
+         "median": [
+          20185038,
+          21273120
+         ],
+         "p95": [
+          27876815,
+          30456185
+         ],
+         "p99": [
+          29091265,
+          43162234
+         ]
+        },
+        "perRun": {
+         "run1": {
+          "n": 1000,
+          "median": 21522182,
+          "p95": 32834148,
+          "p99": null,
+          "max": 49517230,
+          "min": 11480509,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run2": {
+          "n": 1000,
+          "median": 21213328,
+          "p95": 31860076,
+          "p99": null,
+          "max": 49522840,
+          "min": 10800763,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run3": {
+          "n": 1000,
+          "median": 20847407,
+          "p95": 28169247,
+          "p99": null,
+          "max": 31223395,
+          "min": 11495311,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run4": {
+          "n": 1000,
+          "median": 19617531,
+          "p95": 27750546,
+          "p99": null,
+          "max": 29868681,
+          "min": 9529549,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run5": {
+          "n": 1000,
+          "median": 20189013,
+          "p95": 27804990,
+          "p99": null,
+          "max": 32834614,
+          "min": 9475287,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         }
+        }
+       },
+       "inputToSettledNs": {
+        "pooled": {
+         "n": 5000,
+         "median": 21130719,
+         "p95": 29117556,
+         "p99": 39860495,
+         "max": 55548689,
+         "min": 11011346
+        },
+        "ci95ByRun": {
+         "median": [
+          20454035,
+          21682646
+         ],
+         "p95": [
+          28166249,
+          31187182
+         ],
+         "p99": [
+          29311230,
+          45527455
+         ]
+        },
+        "perRun": {
+         "run1": {
+          "n": 1000,
+          "median": 21932167,
+          "p95": 34197699,
+          "p99": null,
+          "max": 54529297,
+          "min": 11772131,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run2": {
+          "n": 1000,
+          "median": 21573997,
+          "p95": 33510404,
+          "p99": null,
+          "max": 55548689,
+          "min": 11671473,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run3": {
+          "n": 1000,
+          "median": 21210638,
+          "p95": 28524623,
+          "p99": null,
+          "max": 31728687,
+          "min": 12109758,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run4": {
+          "n": 1000,
+          "median": 20081413,
+          "p95": 27880723,
+          "p99": null,
+          "max": 29868681,
+          "min": 11011346,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run5": {
+          "n": 1000,
+          "median": 20515170,
+          "p95": 28166249,
+          "p99": null,
+          "max": 33829775,
+          "min": 11208806,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         }
+        }
+       }
+      },
+      "protocol": {
+       "runs": 5,
+       "minRuns": 5,
+       "pooledSuccesses": 5000,
+       "minSamplesForP99": 5000,
+       "met": true
+      }
+     },
+     {
+      "layer": "physical",
+      "workload": "P03-ratio",
+      "condition": "plastile",
+      "outputName": "DP-1",
+      "refreshHzDeclared": 60,
+      "windowCount": 4,
+      "samples": 5000,
+      "successes": 5000,
+      "successRate": 1.0,
+      "runs": 5,
+      "failures": {},
+      "refreshNsObservedMedian": 16666666,
+      "metrics": {
+       "inputToFirstPresentNs": {
+        "pooled": {
+         "n": 5000,
+         "median": 30664633,
+         "p95": 43149136,
+         "p99": 56279582,
+         "max": 73248255,
+         "min": 17573224
+        },
+        "ci95ByRun": {
+         "median": [
+          30522816,
+          30925905
+         ],
+         "p95": [
+          42392487,
+          44889395
+         ],
+         "p99": [
+          52587633,
+          58843273
+         ]
+        },
+        "perRun": {
+         "run1": {
+          "n": 1000,
+          "median": 30622866,
+          "p95": 42419600,
+          "p99": null,
+          "max": 65586673,
+          "min": 17586106,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run2": {
+          "n": 1000,
+          "median": 30240582,
+          "p95": 46232320,
+          "p99": null,
+          "max": 73248255,
+          "min": 17598715,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run3": {
+          "n": 1000,
+          "median": 30968187,
+          "p95": 43213134,
+          "p99": null,
+          "max": 69613170,
+          "min": 17615826,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run4": {
+          "n": 1000,
+          "median": 30842958,
+          "p95": 42294403,
+          "p99": null,
+          "max": 69949745,
+          "min": 17573224,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run5": {
+          "n": 1000,
+          "median": 30576712,
+          "p95": 42347529,
+          "p99": null,
+          "max": 65898185,
+          "min": 17581754,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         }
+        }
+       },
+       "inputToSettledNs": {
+        "pooled": {
+         "n": 5000,
+         "median": 63575844,
+         "p95": 73246832,
+         "p99": 75953291,
+         "max": 84613086,
+         "min": 52260105
+        },
+        "ci95ByRun": {
+         "median": [
+          61936255,
+          65607237
+         ],
+         "p95": [
+          69963014,
+          74967101
+         ],
+         "p99": [
+          72245099,
+          77224000
+         ]
+        },
+        "perRun": {
+         "run1": {
+          "n": 1000,
+          "median": 62262126,
+          "p95": 70930882,
+          "p99": null,
+          "max": 73881935,
+          "min": 52285840,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run2": {
+          "n": 1000,
+          "median": 68251829,
+          "p95": 75937794,
+          "p99": null,
+          "max": 84613086,
+          "min": 57934232,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run3": {
+          "n": 1000,
+          "median": 63293280,
+          "p95": 71255390,
+          "p99": null,
+          "max": 79888454,
+          "min": 52583699,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run4": {
+          "n": 1000,
+          "median": 62198832,
+          "p95": 69949745,
+          "p99": null,
+          "max": 76625141,
+          "min": 52933854,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run5": {
+          "n": 1000,
+          "median": 61577706,
+          "p95": 69618568,
+          "p99": null,
+          "max": 73934589,
+          "min": 52260105,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         }
+        }
+       }
+      },
+      "protocol": {
+       "runs": 5,
+       "minRuns": 5,
+       "pooledSuccesses": 5000,
+       "minSamplesForP99": 5000,
+       "met": true
+      }
+     },
+     {
+      "layer": "physical",
+      "workload": "P03-swap",
+      "condition": "plastile",
+      "outputName": "DP-1",
+      "refreshHzDeclared": 60,
+      "windowCount": 4,
+      "samples": 5000,
+      "successes": 5000,
+      "successRate": 1.0,
+      "runs": 5,
+      "failures": {},
+      "refreshNsObservedMedian": 16666666,
+      "metrics": {
+       "inputToFirstPresentNs": {
+        "pooled": {
+         "n": 5000,
+         "median": 25803639,
+         "p95": 49212738,
+         "p99": 50206432,
+         "max": 51535086,
+         "min": 4822437
+        },
+        "ci95ByRun": {
+         "median": [
+          25538698,
+          25863635
+         ],
+         "p95": [
+          49172325,
+          49477696
+         ],
+         "p99": [
+          50042648,
+          50260861
+         ]
+        },
+        "perRun": {
+         "run1": {
+          "n": 1000,
+          "median": 25549262,
+          "p95": 49510345,
+          "p99": null,
+          "max": 51535086,
+          "min": 17432634,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run2": {
+          "n": 1000,
+          "median": 25900232,
+          "p95": 49205853,
+          "p99": null,
+          "max": 50549171,
+          "min": 17519478,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run3": {
+          "n": 1000,
+          "median": 25898466,
+          "p95": 49473567,
+          "p99": null,
+          "max": 51480914,
+          "min": 17484762,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run4": {
+          "n": 1000,
+          "median": 25512759,
+          "p95": 49167696,
+          "p99": null,
+          "max": 50587984,
+          "min": 4822437,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run5": {
+          "n": 1000,
+          "median": 25533062,
+          "p95": 49161260,
+          "p99": null,
+          "max": 50846564,
+          "min": 17463257,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         }
+        }
+       },
+       "inputToSettledNs": {
+        "pooled": {
+         "n": 5000,
+         "median": 41875617,
+         "p95": 49593050,
+         "p99": 50929116,
+         "max": 57274719,
+         "min": 32154758
+        },
+        "ci95ByRun": {
+         "median": [
+          41514182,
+          42215262
+         ],
+         "p95": [
+          49224824,
+          50116606
+         ],
+         "p99": [
+          50503734,
+          51215564
+         ]
+        },
+        "perRun": {
+         "run1": {
+          "n": 1000,
+          "median": 42284295,
+          "p95": 50197028,
+          "p99": null,
+          "max": 52208800,
+          "min": 32193136,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run2": {
+          "n": 1000,
+          "median": 42198097,
+          "p95": 49545855,
+          "p99": null,
+          "max": 57274719,
+          "min": 32834012,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run3": {
+          "n": 1000,
+          "median": 42198044,
+          "p95": 49853117,
+          "p99": null,
+          "max": 52483583,
+          "min": 32180959,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run4": {
+          "n": 1000,
+          "median": 41227867,
+          "p95": 49188811,
+          "p99": null,
+          "max": 52517499,
+          "min": 32154758,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run5": {
+          "n": 1000,
+          "median": 41572944,
+          "p95": 49495518,
+          "p99": null,
+          "max": 52153548,
+          "min": 32856080,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         }
+        }
+       }
+      },
+      "protocol": {
+       "runs": 5,
+       "minRuns": 5,
+       "pooledSuccesses": 5000,
+       "minSamplesForP99": 5000,
+       "met": true
+      }
+     }
+    ],
+    "blockChecks": [],
+    "stagesMs": {
+     "plastile:plastile.swap.master": {
+      "n": 5000,
+      "inputToConfigure": [
+       0.58,
+       0.67
+      ],
+      "configureToCommit": [
+       0.16,
+       0.19
+      ],
+      "commitToPresent": [
+       24.98,
+       48.5
+      ]
+     },
+     "none:Window Maximize": {
+      "n": 5000,
+      "inputToConfigure": [
+       2.49,
+       52.12
+      ],
+      "configureToCommit": [
+       0.44,
+       0.6
+      ],
+      "commitToPresent": [
+       42.28,
+       63.71
+      ]
+     },
+     "plastile:plastile.resize.grow": {
+      "n": 2500,
+      "inputToConfigure": [
+       0.61,
+       0.72
+      ],
+      "configureToCommit": [
+       0.22,
+       0.26
+      ],
+      "commitToPresent": [
+       30.13,
+       42.99
+      ]
+     },
+     "plastile:plastile.resize.shrink": {
+      "n": 2500,
+      "inputToConfigure": [
+       0.62,
+       0.73
+      ],
+      "configureToCommit": [
+       0.2,
+       0.24
+      ],
+      "commitToPresent": [
+       29.31,
+       41.43
+      ]
+     },
+     "none:Window Quick Tile Top": {
+      "n": 2500,
+      "inputToConfigure": [
+       0.27,
+       0.31
+      ],
+      "configureToCommit": [
+       0.14,
+       0.19
+      ],
+      "commitToPresent": [
+       27.42,
+       35.08
+      ]
+     },
+     "none:Window Quick Tile Bottom": {
+      "n": 2500,
+      "inputToConfigure": [
+       0.27,
+       0.31
+      ],
+      "configureToCommit": [
+       0.26,
+       0.35
+      ],
+      "commitToPresent": [
+       37.63,
+       45.34
+      ]
+     },
+     "plastile:plastile.focus.next": {
+      "n": 5000,
+      "inputToConfigure": [
+       6.36,
+       7.88
+      ],
+      "configureToCommit": [
+       0.2,
+       0.39
+      ],
+      "commitToPresent": [
+       13.8,
+       22.58
+      ]
+     },
+     "none:Switch Window Right": {
+      "n": 5000,
+      "inputToConfigure": [
+       2.85,
+       4.06
+      ],
+      "configureToCommit": [
+       0.07,
+       0.43
+      ],
+      "commitToPresent": [
+       13.65,
+       20.68
+      ]
+     }
+    }
+   },
+   "144": {
+    "comparisons": [
+     {
+      "candidate": "P03-swap",
+      "baseline": "P02-quicktile",
+      "layer": "physical",
+      "outputName": "HDMI-A-1",
+      "refreshHzDeclared": 143.99899291992188,
+      "windowCount": 4,
+      "metric": "inputToFirstPresentNs",
+      "thresholdNs": 6944492,
+      "matchedBaseline": true,
+      "medianDiffNs": -23301874,
+      "medianDiffCi95": [
+       -29886528,
+       -9772719
+      ],
+      "p95DiffNs": -39537663,
+      "p95DiffCi95": [
+       -39911284,
+       -38418343
+      ],
+      "protocolMet": true,
+      "medianRule": "pass",
+      "p95Rule": "pass",
+      "verdict": "pass"
+     },
+     {
+      "candidate": "P03-swap",
+      "baseline": "P00-switch",
+      "layer": "physical",
+      "outputName": "HDMI-A-1",
+      "refreshHzDeclared": 143.99899291992188,
+      "windowCount": 4,
+      "metric": "inputToFirstPresentNs",
+      "thresholdNs": 6944492,
+      "matchedBaseline": false,
+      "medianDiffNs": 635846,
+      "medianDiffCi95": [
+       351144,
+       975414
+      ],
+      "p95DiffNs": 517957,
+      "p95DiffCi95": [
+       201173,
+       1036179
+      ],
+      "protocolMet": true,
+      "medianRule": "pass",
+      "p95Rule": "pass",
+      "verdict": "pass"
+     },
+     {
+      "candidate": "P03-swap",
+      "baseline": "P00-maximize",
+      "layer": "physical",
+      "outputName": "HDMI-A-1",
+      "refreshHzDeclared": 143.99899291992188,
+      "windowCount": 4,
+      "metric": "inputToFirstPresentNs",
+      "thresholdNs": 6944492,
+      "matchedBaseline": false,
+      "medianDiffNs": -9580837,
+      "medianDiffCi95": [
+       -9804554,
+       -7007330
+      ],
+      "p95DiffNs": -84581855,
+      "p95DiffCi95": [
+       -84835255,
+       -84148088
+      ],
+      "protocolMet": true,
+      "medianRule": "pass",
+      "p95Rule": "pass",
+      "verdict": "pass"
+     },
+     {
+      "candidate": "P03-focus",
+      "baseline": "P02-quicktile",
+      "layer": "physical",
+      "outputName": "HDMI-A-1",
+      "refreshHzDeclared": 143.99899291992188,
+      "windowCount": 4,
+      "metric": "inputToFirstPresentNs",
+      "thresholdNs": 6944492,
+      "matchedBaseline": false,
+      "medianDiffNs": -13682079,
+      "medianDiffCi95": [
+       -20299641,
+       -76800
+      ],
+      "p95DiffNs": -28962454,
+      "p95DiffCi95": [
+       -29337111,
+       -27537803
+      ],
+      "protocolMet": true,
+      "medianRule": "pass",
+      "p95Rule": "pass",
+      "verdict": "pass"
+     },
+     {
+      "candidate": "P03-focus",
+      "baseline": "P00-switch",
+      "layer": "physical",
+      "outputName": "HDMI-A-1",
+      "refreshHzDeclared": 143.99899291992188,
+      "windowCount": 4,
+      "metric": "inputToFirstPresentNs",
+      "thresholdNs": 6944492,
+      "matchedBaseline": true,
+      "medianDiffNs": 10255641,
+      "medianDiffCi95": [
+       9463084,
+       10941688
+      ],
+      "p95DiffNs": 11093166,
+      "p95DiffCi95": [
+       10743501,
+       11827260
+      ],
+      "protocolMet": true,
+      "medianRule": "fail",
+      "p95Rule": "fail",
+      "verdict": "fail"
+     },
+     {
+      "candidate": "P03-focus",
+      "baseline": "P00-maximize",
+      "layer": "physical",
+      "outputName": "HDMI-A-1",
+      "refreshHzDeclared": 143.99899291992188,
+      "windowCount": 4,
+      "metric": "inputToFirstPresentNs",
+      "thresholdNs": 6944492,
+      "matchedBaseline": false,
+      "medianDiffNs": 38958,
+      "medianDiffCi95": [
+       -256087,
+       2976291
+      ],
+      "p95DiffNs": -74006646,
+      "p95DiffCi95": [
+       -74256659,
+       -73327756
+      ],
+      "protocolMet": true,
+      "medianRule": "pass",
+      "p95Rule": "pass",
+      "verdict": "pass"
+     },
+     {
+      "candidate": "P03-ratio",
+      "baseline": "P02-quicktile",
+      "layer": "physical",
+      "outputName": "HDMI-A-1",
+      "refreshHzDeclared": 143.99899291992188,
+      "windowCount": 4,
+      "metric": "inputToFirstPresentNs",
+      "thresholdNs": 6944492,
+      "matchedBaseline": true,
+      "medianDiffNs": 11513453,
+      "medianDiffCi95": [
+       4832792,
+       25108701
+      ],
+      "p95DiffNs": 30337376,
+      "p95DiffCi95": [
+       29602512,
+       31422197
+      ],
+      "protocolMet": true,
+      "medianRule": "fail",
+      "p95Rule": "fail",
+      "verdict": "fail"
+     },
+     {
+      "candidate": "P03-ratio",
+      "baseline": "P00-switch",
+      "layer": "physical",
+      "outputName": "HDMI-A-1",
+      "refreshHzDeclared": 143.99899291992188,
+      "windowCount": 4,
+      "metric": "inputToFirstPresentNs",
+      "thresholdNs": 6944492,
+      "matchedBaseline": false,
+      "medianDiffNs": 35451173,
+      "medianDiffCi95": [
+       35077223,
+       36223794
+      ],
+      "p95DiffNs": 70392996,
+      "p95DiffCi95": [
+       69673676,
+       70804813
+      ],
+      "protocolMet": true,
+      "medianRule": "fail",
+      "p95Rule": "fail",
+      "verdict": "fail"
+     },
+     {
+      "candidate": "P03-ratio",
+      "baseline": "P00-maximize",
+      "layer": "physical",
+      "outputName": "HDMI-A-1",
+      "refreshHzDeclared": 143.99899291992188,
+      "windowCount": 4,
+      "metric": "inputToFirstPresentNs",
+      "thresholdNs": 6944492,
+      "matchedBaseline": false,
+      "medianDiffNs": 25234490,
+      "medianDiffCi95": [
+       24938291,
+       28121984
+      ],
+      "p95DiffNs": -14706816,
+      "p95DiffCi95": [
+       -15382646,
+       -14384685
+      ],
+      "protocolMet": true,
+      "medianRule": "fail",
+      "p95Rule": "pass",
+      "verdict": "fail"
+     }
+    ],
+    "groups": [
+     {
+      "layer": "physical",
+      "workload": "P00-maximize",
+      "condition": "none",
+      "outputName": "HDMI-A-1",
+      "refreshHzDeclared": 143.99899291992188,
+      "windowCount": 4,
+      "samples": 5000,
+      "successes": 5000,
+      "successRate": 1.0,
+      "runs": 5,
+      "failures": {},
+      "refreshNsObservedMedian": 6944492,
+      "metrics": {
+       "inputToFirstPresentNs": {
+        "pooled": {
+         "n": 5000,
+         "median": 24946037,
+         "p95": 103111932,
+         "p99": 104673055,
+         "max": 110469031,
+         "min": 10748954
+        },
+        "ci95ByRun": {
+         "median": [
+          22581361,
+          24946037
+         ],
+         "p95": [
+          103095236,
+          103125210
+         ],
+         "p99": [
+          104415532,
+          105014538
+         ]
+        },
+        "perRun": {
+         "run1": {
+          "n": 1000,
+          "median": 22581361,
+          "p95": 103036996,
+          "p99": null,
+          "max": 109131653,
+          "min": 10823490,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run2": {
+          "n": 1000,
+          "median": 24946037,
+          "p95": 103124458,
+          "p99": null,
+          "max": 109769532,
+          "min": 10748954,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run3": {
+          "n": 1000,
+          "median": 22645477,
+          "p95": 103112082,
+          "p99": null,
+          "max": 109022699,
+          "min": 10818000,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run4": {
+          "n": 1000,
+          "median": 21916622,
+          "p95": 103125232,
+          "p99": null,
+          "max": 109298433,
+          "min": 10770042,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run5": {
+          "n": 1000,
+          "median": 21680202,
+          "p95": 103095236,
+          "p99": null,
+          "max": 110469031,
+          "min": 10846982,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         }
+        }
+       },
+       "inputToSettledNs": {
+        "pooled": {
+         "n": 5000,
+         "median": 24946037,
+         "p95": 103111932,
+         "p99": 104673055,
+         "max": 110469031,
+         "min": 10748954
+        },
+        "ci95ByRun": {
+         "median": [
+          22581361,
+          24946037
+         ],
+         "p95": [
+          103095236,
+          103125210
+         ],
+         "p99": [
+          104415532,
+          105014538
+         ]
+        },
+        "perRun": {
+         "run1": {
+          "n": 1000,
+          "median": 22581361,
+          "p95": 103036996,
+          "p99": null,
+          "max": 109131653,
+          "min": 10823490,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run2": {
+          "n": 1000,
+          "median": 24946037,
+          "p95": 103124458,
+          "p99": null,
+          "max": 109769532,
+          "min": 10748954,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run3": {
+          "n": 1000,
+          "median": 22645477,
+          "p95": 103112082,
+          "p99": null,
+          "max": 109022699,
+          "min": 10818000,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run4": {
+          "n": 1000,
+          "median": 21916622,
+          "p95": 103125232,
+          "p99": null,
+          "max": 109298433,
+          "min": 10770042,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run5": {
+          "n": 1000,
+          "median": 21680202,
+          "p95": 103095236,
+          "p99": null,
+          "max": 110469031,
+          "min": 10846982,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         }
+        }
+       }
+      },
+      "protocol": {
+       "runs": 5,
+       "minRuns": 5,
+       "pooledSuccesses": 5000,
+       "minSamplesForP99": 5000,
+       "met": true
+      }
+     },
+     {
+      "layer": "physical",
+      "workload": "P00-switch",
+      "condition": "none",
+      "outputName": "HDMI-A-1",
+      "refreshHzDeclared": 143.99899291992188,
+      "windowCount": 4,
+      "samples": 5000,
+      "successes": 5000,
+      "successRate": 1.0,
+      "runs": 5,
+      "failures": {},
+      "refreshNsObservedMedian": 6944492,
+      "metrics": {
+       "inputToFirstPresentNs": {
+        "pooled": {
+         "n": 5000,
+         "median": 14729354,
+         "p95": 18012120,
+         "p99": 18931019,
+         "max": 24563978,
+         "min": 9441424
+        },
+        "ci95ByRun": {
+         "median": [
+          14604976,
+          14884898
+         ],
+         "p95": [
+          17864715,
+          18215406
+         ],
+         "p99": [
+          18692793,
+          19556946
+         ]
+        },
+        "perRun": {
+         "run1": {
+          "n": 1000,
+          "median": 14744569,
+          "p95": 17901991,
+          "p99": null,
+          "max": 20931509,
+          "min": 9914261,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run2": {
+          "n": 1000,
+          "median": 14668985,
+          "p95": 17864684,
+          "p99": null,
+          "max": 24563978,
+          "min": 9441424,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run3": {
+          "n": 1000,
+          "median": 15059627,
+          "p95": 18321042,
+          "p99": null,
+          "max": 24126615,
+          "min": 9809979,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run4": {
+          "n": 1000,
+          "median": 14550813,
+          "p95": 17868569,
+          "p99": null,
+          "max": 19943915,
+          "min": 9977307,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run5": {
+          "n": 1000,
+          "median": 14648311,
+          "p95": 17851065,
+          "p99": null,
+          "max": 19974247,
+          "min": 9878607,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         }
+        }
+       },
+       "inputToSettledNs": {
+        "pooled": {
+         "n": 5000,
+         "median": 15086593,
+         "p95": 18369969,
+         "p99": 19556946,
+         "max": 24563978,
+         "min": 9809979
+        },
+        "ci95ByRun": {
+         "median": [
+          14938590,
+          15254094
+         ],
+         "p95": [
+          18165268,
+          18618678
+         ],
+         "p99": [
+          19080544,
+          19904319
+         ]
+        },
+        "perRun": {
+         "run1": {
+          "n": 1000,
+          "median": 15059292,
+          "p95": 18149986,
+          "p99": null,
+          "max": 24096193,
+          "min": 10243701,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run2": {
+          "n": 1000,
+          "median": 15071805,
+          "p95": 18382396,
+          "p99": null,
+          "max": 24563978,
+          "min": 10303742,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run3": {
+          "n": 1000,
+          "median": 15410571,
+          "p95": 18800512,
+          "p99": null,
+          "max": 24405434,
+          "min": 9809979,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run4": {
+          "n": 1000,
+          "median": 14848996,
+          "p95": 18272698,
+          "p99": null,
+          "max": 19943915,
+          "min": 10478969,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run5": {
+          "n": 1000,
+          "median": 15084530,
+          "p95": 18190898,
+          "p99": null,
+          "max": 19999449,
+          "min": 10055044,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         }
+        }
+       }
+      },
+      "protocol": {
+       "runs": 5,
+       "minRuns": 5,
+       "pooledSuccesses": 5000,
+       "minSamplesForP99": 5000,
+       "met": true
+      }
+     },
+     {
+      "layer": "physical",
+      "workload": "P02-quicktile",
+      "condition": "none",
+      "outputName": "HDMI-A-1",
+      "refreshHzDeclared": 143.99899291992188,
+      "windowCount": 4,
+      "samples": 5000,
+      "successes": 5000,
+      "successRate": 1.0,
+      "runs": 5,
+      "failures": {},
+      "refreshNsObservedMedian": 6944492,
+      "metrics": {
+       "inputToFirstPresentNs": {
+        "pooled": {
+         "n": 5000,
+         "median": 38667074,
+         "p95": 58067740,
+         "p99": 59175026,
+         "max": 63742823,
+         "min": 12842615
+        },
+        "ci95ByRun": {
+         "median": [
+          25159918,
+          45082352
+         ],
+         "p95": [
+          57110818,
+          58301083
+         ],
+         "p99": [
+          58415847,
+          59282362
+         ]
+        },
+        "perRun": {
+         "run1": {
+          "n": 1000,
+          "median": 21220289,
+          "p95": 27204563,
+          "p99": null,
+          "max": 28692730,
+          "min": 12842615,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run2": {
+          "n": 1000,
+          "median": 41289482,
+          "p95": 58192965,
+          "p99": null,
+          "max": 60156152,
+          "min": 27223990,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run3": {
+          "n": 1000,
+          "median": 41537441,
+          "p95": 58169391,
+          "p99": null,
+          "max": 63742823,
+          "min": 27217284,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run4": {
+          "n": 1000,
+          "median": 45082352,
+          "p95": 58855580,
+          "p99": null,
+          "max": 60156229,
+          "min": 27485881,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run5": {
+          "n": 1000,
+          "median": 41156042,
+          "p95": 57937736,
+          "p99": null,
+          "max": 59991127,
+          "min": 27358029,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         }
+        }
+       },
+       "inputToSettledNs": {
+        "pooled": {
+         "n": 5000,
+         "median": 38667074,
+         "p95": 58067740,
+         "p99": 59175026,
+         "max": 63742823,
+         "min": 12842615
+        },
+        "ci95ByRun": {
+         "median": [
+          25159918,
+          45082352
+         ],
+         "p95": [
+          57076661,
+          58340679
+         ],
+         "p99": [
+          58535650,
+          59321039
+         ]
+        },
+        "perRun": {
+         "run1": {
+          "n": 1000,
+          "median": 21220289,
+          "p95": 27204563,
+          "p99": null,
+          "max": 28692730,
+          "min": 12842615,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run2": {
+          "n": 1000,
+          "median": 41289482,
+          "p95": 58192965,
+          "p99": null,
+          "max": 60156152,
+          "min": 27223990,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run3": {
+          "n": 1000,
+          "median": 41537441,
+          "p95": 58169391,
+          "p99": null,
+          "max": 63742823,
+          "min": 27217284,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run4": {
+          "n": 1000,
+          "median": 45082352,
+          "p95": 58855580,
+          "p99": null,
+          "max": 60156229,
+          "min": 27485881,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run5": {
+          "n": 1000,
+          "median": 41156042,
+          "p95": 57937736,
+          "p99": null,
+          "max": 59991127,
+          "min": 27358029,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         }
+        }
+       }
+      },
+      "protocol": {
+       "runs": 5,
+       "minRuns": 5,
+       "pooledSuccesses": 5000,
+       "minSamplesForP99": 5000,
+       "met": true
+      }
+     },
+     {
+      "layer": "physical",
+      "workload": "P03-focus",
+      "condition": "plastile",
+      "outputName": "HDMI-A-1",
+      "refreshHzDeclared": 143.99899291992188,
+      "windowCount": 4,
+      "samples": 5000,
+      "successes": 5000,
+      "successRate": 1.0,
+      "runs": 5,
+      "failures": {},
+      "refreshNsObservedMedian": 6944492,
+      "metrics": {
+       "inputToFirstPresentNs": {
+        "pooled": {
+         "n": 5000,
+         "median": 24984995,
+         "p95": 29105286,
+         "p99": 30868446,
+         "max": 34861333,
+         "min": 14437237
+        },
+        "ci95ByRun": {
+         "median": [
+          24180967,
+          25644075
+         ],
+         "p95": [
+          28856477,
+          29778864
+         ],
+         "p99": [
+          30080397,
+          30975368
+         ]
+        },
+        "perRun": {
+         "run1": {
+          "n": 1000,
+          "median": 24882257,
+          "p95": 28755738,
+          "p99": null,
+          "max": 32666100,
+          "min": 15717080,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run2": {
+          "n": 1000,
+          "median": 25553704,
+          "p95": 29862433,
+          "p99": null,
+          "max": 31927285,
+          "min": 17011730,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run3": {
+          "n": 1000,
+          "median": 25742240,
+          "p95": 29758932,
+          "p99": null,
+          "max": 34861333,
+          "min": 16165066,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run4": {
+          "n": 1000,
+          "median": 23709146,
+          "p95": 28659302,
+          "p99": null,
+          "max": 31781469,
+          "min": 14437237,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run5": {
+          "n": 1000,
+          "median": 25107322,
+          "p95": 29765601,
+          "p99": null,
+          "max": 34738907,
+          "min": 16127205,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         }
+        }
+       },
+       "inputToSettledNs": {
+        "pooled": {
+         "n": 5000,
+         "median": 25051994,
+         "p95": 29583068,
+         "p99": 30899773,
+         "max": 34861333,
+         "min": 16134554
+        },
+        "ci95ByRun": {
+         "median": [
+          24797188,
+          25687547
+         ],
+         "p95": [
+          28878639,
+          29816533
+         ],
+         "p99": [
+          30083642,
+          31011904
+         ]
+        },
+        "perRun": {
+         "run1": {
+          "n": 1000,
+          "median": 24907786,
+          "p95": 28762272,
+          "p99": null,
+          "max": 32666100,
+          "min": 17980307,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run2": {
+          "n": 1000,
+          "median": 25632626,
+          "p95": 29906737,
+          "p99": null,
+          "max": 32061535,
+          "min": 19139691,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run3": {
+          "n": 1000,
+          "median": 25801380,
+          "p95": 29796824,
+          "p99": null,
+          "max": 34861333,
+          "min": 18714093,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run4": {
+          "n": 1000,
+          "median": 24112080,
+          "p95": 28729328,
+          "p99": null,
+          "max": 31781469,
+          "min": 16134554,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run5": {
+          "n": 1000,
+          "median": 25142378,
+          "p95": 29775300,
+          "p99": null,
+          "max": 34738907,
+          "min": 18872552,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         }
+        }
+       }
+      },
+      "protocol": {
+       "runs": 5,
+       "minRuns": 5,
+       "pooledSuccesses": 5000,
+       "minSamplesForP99": 5000,
+       "met": true
+      }
+     },
+     {
+      "layer": "physical",
+      "workload": "P03-ratio",
+      "condition": "plastile",
+      "outputName": "HDMI-A-1",
+      "refreshHzDeclared": 143.99899291992188,
+      "windowCount": 4,
+      "samples": 5000,
+      "successes": 5000,
+      "successRate": 1.0,
+      "runs": 5,
+      "failures": {},
+      "refreshNsObservedMedian": 6944492,
+      "metrics": {
+       "inputToFirstPresentNs": {
+        "pooled": {
+         "n": 5000,
+         "median": 50180527,
+         "p95": 88405116,
+         "p99": 91134119,
+         "max": 99559096,
+         "min": 26808723
+        },
+        "ci95ByRun": {
+         "median": [
+          49884328,
+          50903634
+         ],
+         "p95": [
+          87726617,
+          88724578
+         ],
+         "p99": [
+          90521289,
+          91428323
+         ]
+        },
+        "perRun": {
+         "run1": {
+          "n": 1000,
+          "median": 49964932,
+          "p95": 87742173,
+          "p99": null,
+          "max": 99559096,
+          "min": 26808723,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run2": {
+          "n": 1000,
+          "median": 49499686,
+          "p95": 87487109,
+          "p99": null,
+          "max": 94836330,
+          "min": 27911861,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run3": {
+          "n": 1000,
+          "median": 51933192,
+          "p95": 88844595,
+          "p99": null,
+          "max": 99477659,
+          "min": 26990486,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run4": {
+          "n": 1000,
+          "median": 49920022,
+          "p95": 87901638,
+          "p99": null,
+          "max": 93388033,
+          "min": 27963675,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run5": {
+          "n": 1000,
+          "median": 49989952,
+          "p95": 88803552,
+          "p99": null,
+          "max": 98663772,
+          "min": 34001301,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         }
+        }
+       },
+       "inputToSettledNs": {
+        "pooled": {
+         "n": 5000,
+         "median": 52567184,
+         "p95": 88491211,
+         "p99": 91149852,
+         "max": 99559096,
+         "min": 37724022
+        },
+        "ci95ByRun": {
+         "median": [
+          52166862,
+          52567184
+         ],
+         "p95": [
+          87758013,
+          88799309
+         ],
+         "p99": [
+          90521289,
+          91440988
+         ]
+        },
+        "perRun": {
+         "run1": {
+          "n": 1000,
+          "median": 52166862,
+          "p95": 87783234,
+          "p99": null,
+          "max": 99559096,
+          "min": 37737946,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run2": {
+          "n": 1000,
+          "median": 51882395,
+          "p95": 87566837,
+          "p99": null,
+          "max": 94836330,
+          "min": 37724022,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run3": {
+          "n": 1000,
+          "median": 52567184,
+          "p95": 88896924,
+          "p99": null,
+          "max": 99477659,
+          "min": 39127711,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run4": {
+          "n": 1000,
+          "median": 50624586,
+          "p95": 87955074,
+          "p99": null,
+          "max": 93388033,
+          "min": 38259071,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run5": {
+          "n": 1000,
+          "median": 52185232,
+          "p95": 89036247,
+          "p99": null,
+          "max": 98663772,
+          "min": 38074036,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         }
+        }
+       }
+      },
+      "protocol": {
+       "runs": 5,
+       "minRuns": 5,
+       "pooledSuccesses": 5000,
+       "minSamplesForP99": 5000,
+       "met": true
+      }
+     },
+     {
+      "layer": "physical",
+      "workload": "P03-swap",
+      "condition": "plastile",
+      "outputName": "HDMI-A-1",
+      "refreshHzDeclared": 143.99899291992188,
+      "windowCount": 4,
+      "samples": 5000,
+      "successes": 5000,
+      "successRate": 1.0,
+      "runs": 5,
+      "failures": {},
+      "refreshNsObservedMedian": 6944492,
+      "metrics": {
+       "inputToFirstPresentNs": {
+        "pooled": {
+         "n": 5000,
+         "median": 15365200,
+         "p95": 18530077,
+         "p99": 20498349,
+         "max": 25082818,
+         "min": 10586803
+        },
+        "ci95ByRun": {
+         "median": [
+          15137591,
+          15662177
+         ],
+         "p95": [
+          18287215,
+          18956598
+         ],
+         "p99": [
+          19152691,
+          20993324
+         ]
+        },
+        "perRun": {
+         "run1": {
+          "n": 1000,
+          "median": 15190297,
+          "p95": 18346200,
+          "p99": null,
+          "max": 21742604,
+          "min": 10755237,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run2": {
+          "n": 1000,
+          "median": 15105604,
+          "p95": 18311211,
+          "p99": null,
+          "max": 21030569,
+          "min": 10599722,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run3": {
+          "n": 1000,
+          "median": 15638147,
+          "p95": 18964070,
+          "p99": null,
+          "max": 24712242,
+          "min": 10586803,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run4": {
+          "n": 1000,
+          "median": 15106404,
+          "p95": 18240802,
+          "p99": null,
+          "max": 22872102,
+          "min": 11024580,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run5": {
+          "n": 1000,
+          "median": 15816027,
+          "p95": 19251261,
+          "p99": null,
+          "max": 25082818,
+          "min": 10943798,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         }
+        }
+       },
+       "inputToSettledNs": {
+        "pooled": {
+         "n": 5000,
+         "median": 15953364,
+         "p95": 19097020,
+         "p99": 20698813,
+         "max": 25082818,
+         "min": 11234202
+        },
+        "ci95ByRun": {
+         "median": [
+          15824672,
+          16148621
+         ],
+         "p95": [
+          18972595,
+          19495204
+         ],
+         "p99": [
+          19882194,
+          21080322
+         ]
+        },
+        "perRun": {
+         "run1": {
+          "n": 1000,
+          "median": 15905621,
+          "p95": 18980902,
+          "p99": null,
+          "max": 21742604,
+          "min": 11488041,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run2": {
+          "n": 1000,
+          "median": 15731741,
+          "p95": 18955319,
+          "p99": null,
+          "max": 21105757,
+          "min": 11234202,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run3": {
+          "n": 1000,
+          "median": 15961557,
+          "p95": 19420597,
+          "p99": null,
+          "max": 24712242,
+          "min": 11502379,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run4": {
+          "n": 1000,
+          "median": 15859969,
+          "p95": 19016964,
+          "p99": null,
+          "max": 22946219,
+          "min": 11553674,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         },
+         "run5": {
+          "n": 1000,
+          "median": 16336538,
+          "p95": 19802047,
+          "p99": null,
+          "max": 25082818,
+          "min": 11422737,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         }
+        }
+       }
+      },
+      "protocol": {
+       "runs": 5,
+       "minRuns": 5,
+       "pooledSuccesses": 5000,
+       "minSamplesForP99": 5000,
+       "met": true
+      }
+     }
+    ],
+    "blockChecks": [],
+    "stagesMs": {
+     "none:Window Quick Tile Top": {
+      "n": 2500,
+      "inputToConfigure": [
+       0.28,
+       0.88
+      ],
+      "configureToCommit": [
+       0.22,
+       0.3
+      ],
+      "commitToPresent": [
+       35.81,
+       39.52
+      ]
+     },
+     "none:Window Quick Tile Bottom": {
+      "n": 2500,
+      "inputToConfigure": [
+       0.28,
+       0.76
+      ],
+      "configureToCommit": [
+       0.44,
+       0.57
+      ],
+      "commitToPresent": [
+       53.22,
+       57.98
+      ]
+     },
+     "none:Switch Window Right": {
+      "n": 5000,
+      "inputToConfigure": [
+       3.05,
+       5.02
+      ],
+      "configureToCommit": [
+       0.07,
+       0.62
+      ],
+      "commitToPresent": [
+       11.14,
+       14.76
+      ]
+     },
+     "plastile:plastile.swap.master": {
+      "n": 5000,
+      "inputToConfigure": [
+       0.59,
+       1.53
+      ],
+      "configureToCommit": [
+       0.28,
+       0.33
+      ],
+      "commitToPresent": [
+       14.41,
+       17.09
+      ]
+     },
+     "plastile:plastile.focus.next": {
+      "n": 5000,
+      "inputToConfigure": [
+       9.91,
+       11.3
+      ],
+      "configureToCommit": [
+       0.32,
+       0.61
+      ],
+      "commitToPresent": [
+       15.18,
+       18.73
+      ]
+     },
+     "none:Window Maximize": {
+      "n": 5000,
+      "inputToConfigure": [
+       8.5,
+       87.1
+      ],
+      "configureToCommit": [
+       0.35,
+       1.03
+      ],
+      "commitToPresent": [
+       13.86,
+       17.39
+      ]
+     },
+     "plastile:plastile.resize.grow": {
+      "n": 2500,
+      "inputToConfigure": [
+       0.63,
+       1.41
+      ],
+      "configureToCommit": [
+       0.4,
+       0.47
+      ],
+      "commitToPresent": [
+       84.5,
+       88.07
+      ]
+     },
+     "plastile:plastile.resize.shrink": {
+      "n": 2500,
+      "inputToConfigure": [
+       0.62,
+       1.49
+      ],
+      "configureToCommit": [
+       0.36,
+       0.42
+      ],
+      "commitToPresent": [
+       43.16,
+       47.12
+      ]
+     }
+    }
+   },
+   "100": {
+    "comparisons": [
+     {
+      "candidate": "P03-focus",
+      "baseline": "P00-switch",
+      "layer": "physical",
+      "outputName": "DP-2",
+      "refreshHzDeclared": 100,
+      "windowCount": 4,
+      "metric": "inputToFirstPresentNs",
+      "thresholdNs": 10000000,
+      "matchedBaseline": true,
+      "medianDiffNs": -416846,
+      "medianDiffCi95": null,
+      "p95DiffNs": -704148,
+      "p95DiffCi95": null,
+      "protocolMet": false,
+      "medianRule": "inconclusive",
+      "p95Rule": "inconclusive",
+      "verdict": "inconclusive",
+      "reason": "protocol not met (needs >= 5 runs and >= 5000 samples per side)"
+     },
+     {
+      "candidate": "P03-focus",
+      "baseline": "P00-maximize",
+      "layer": "physical",
+      "outputName": "DP-2",
+      "refreshHzDeclared": 100,
+      "windowCount": 4,
+      "metric": "inputToFirstPresentNs",
+      "thresholdNs": 10000000,
+      "matchedBaseline": false,
+      "medianDiffNs": -35082482,
+      "medianDiffCi95": null,
+      "p95DiffNs": -62206876,
+      "p95DiffCi95": null,
+      "protocolMet": false,
+      "medianRule": "inconclusive",
+      "p95Rule": "inconclusive",
+      "verdict": "inconclusive",
+      "reason": "protocol not met (needs >= 5 runs and >= 5000 samples per side)"
+     }
+    ],
+    "groups": [
+     {
+      "layer": "physical",
+      "workload": "P00-maximize",
+      "condition": "none",
+      "outputName": "DP-2",
+      "refreshHzDeclared": 100,
+      "windowCount": 4,
+      "samples": 1000,
+      "successes": 1000,
+      "successRate": 1.0,
+      "runs": 1,
+      "failures": {},
+      "refreshNsObservedMedian": 10000000,
+      "metrics": {
+       "inputToFirstPresentNs": {
+        "pooled": {
+         "n": 1000,
+         "median": 50677028,
+         "p95": 81921523,
+         "p99": null,
+         "max": 85343922,
+         "min": 10706697,
+         "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+        },
+        "ci95ByRun": {
+         "median": null,
+         "p95": null
+        },
+        "perRun": {
+         "run1": {
+          "n": 1000,
+          "median": 50677028,
+          "p95": 81921523,
+          "p99": null,
+          "max": 85343922,
+          "min": 10706697,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         }
+        }
+       },
+       "inputToSettledNs": {
+        "pooled": {
+         "n": 1000,
+         "median": 50677028,
+         "p95": 81921523,
+         "p99": null,
+         "max": 85343922,
+         "min": 10706697,
+         "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+        },
+        "ci95ByRun": {
+         "median": null,
+         "p95": null
+        },
+        "perRun": {
+         "run1": {
+          "n": 1000,
+          "median": 50677028,
+          "p95": 81921523,
+          "p99": null,
+          "max": 85343922,
+          "min": 10706697,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         }
+        }
+       }
+      },
+      "protocol": {
+       "runs": 1,
+       "minRuns": 5,
+       "pooledSuccesses": 1000,
+       "minSamplesForP99": 5000,
+       "met": false
+      }
+     },
+     {
+      "layer": "physical",
+      "workload": "P00-switch",
+      "condition": "none",
+      "outputName": "DP-2",
+      "refreshHzDeclared": 100,
+      "windowCount": 4,
+      "samples": 1000,
+      "successes": 1000,
+      "successRate": 1.0,
+      "runs": 1,
+      "failures": {},
+      "refreshNsObservedMedian": 10000000,
+      "metrics": {
+       "inputToFirstPresentNs": {
+        "pooled": {
+         "n": 1000,
+         "median": 16011392,
+         "p95": 20418795,
+         "p99": null,
+         "max": 27656660,
+         "min": 9631237,
+         "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+        },
+        "ci95ByRun": {
+         "median": null,
+         "p95": null
+        },
+        "perRun": {
+         "run1": {
+          "n": 1000,
+          "median": 16011392,
+          "p95": 20418795,
+          "p99": null,
+          "max": 27656660,
+          "min": 9631237,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         }
+        }
+       },
+       "inputToSettledNs": {
+        "pooled": {
+         "n": 1000,
+         "median": 16278068,
+         "p95": 20700392,
+         "p99": null,
+         "max": 27656660,
+         "min": 10193777,
+         "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+        },
+        "ci95ByRun": {
+         "median": null,
+         "p95": null
+        },
+        "perRun": {
+         "run1": {
+          "n": 1000,
+          "median": 16278068,
+          "p95": 20700392,
+          "p99": null,
+          "max": 27656660,
+          "min": 10193777,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         }
+        }
+       }
+      },
+      "protocol": {
+       "runs": 1,
+       "minRuns": 5,
+       "pooledSuccesses": 1000,
+       "minSamplesForP99": 5000,
+       "met": false
+      }
+     },
+     {
+      "layer": "physical",
+      "workload": "P03-focus",
+      "condition": "plastile",
+      "outputName": "DP-2",
+      "refreshHzDeclared": 100,
+      "windowCount": 4,
+      "samples": 1000,
+      "successes": 1000,
+      "successRate": 1.0,
+      "runs": 1,
+      "failures": {},
+      "refreshNsObservedMedian": 10000000,
+      "metrics": {
+       "inputToFirstPresentNs": {
+        "pooled": {
+         "n": 1000,
+         "median": 15594546,
+         "p95": 19714647,
+         "p99": null,
+         "max": 28648510,
+         "min": 10523755,
+         "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+        },
+        "ci95ByRun": {
+         "median": null,
+         "p95": null
+        },
+        "perRun": {
+         "run1": {
+          "n": 1000,
+          "median": 15594546,
+          "p95": 19714647,
+          "p99": null,
+          "max": 28648510,
+          "min": 10523755,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         }
+        }
+       },
+       "inputToSettledNs": {
+        "pooled": {
+         "n": 1000,
+         "median": 17667892,
+         "p95": 23668152,
+         "p99": null,
+         "max": 28648510,
+         "min": 10523755,
+         "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+        },
+        "ci95ByRun": {
+         "median": null,
+         "p95": null
+        },
+        "perRun": {
+         "run1": {
+          "n": 1000,
+          "median": 17667892,
+          "p95": 23668152,
+          "p99": null,
+          "max": 28648510,
+          "min": 10523755,
+          "p99WithheldReason": "n=1000 < 5000 (PERFORMANCE section 6.5)"
+         }
+        }
+       }
+      },
+      "protocol": {
+       "runs": 1,
+       "minRuns": 5,
+       "pooledSuccesses": 1000,
+       "minSamplesForP99": 5000,
+       "met": false
+      }
+     }
+    ],
+    "blockChecks": [
+     "block 3 P03-swap n=4: aborted run: 10 consecutive taps produced no configure: the chords are not reaching the fixtures (unbound or rebound shortcut, wrong condition, or focus elsewhere); stopping"
+    ],
+    "stagesMs": {
+     "none:Switch Window Right": {
+      "n": 1000,
+      "inputToConfigure": [
+       3.99,
+       5.53
+      ],
+      "configureToCommit": [
+       0.07,
+       0.58
+      ],
+      "commitToPresent": [
+       11.86,
+       16.41
+      ]
+     },
+     "plastile:plastile.focus.next": {
+      "n": 1000,
+      "inputToConfigure": [
+       5.15,
+       5.56
+      ],
+      "configureToCommit": [
+       0.07,
+       0.08
+      ],
+      "commitToPresent": [
+       10.2,
+       14.57
+      ]
+     },
+     "none:Window Maximize": {
+      "n": 1000,
+      "inputToConfigure": [
+       3.65,
+       54.02
+      ],
+      "configureToCommit": [
+       0.43,
+       0.61
+      ],
+      "commitToPresent": [
+       29.66,
+       41.09
+      ]
+     }
+    }
+   }
+  },
+  "plastileWork": "every P03 block: one solve per ratio/swap command, writes only to the changed windows, 0 corrections/stale/diverged; focus: 0 solves and 0 writes in 10,500 commands",
+  "verdicts": {
+   "60Hz": "pass for every Plastile workload against its matched baseline",
+   "144Hz": "P03-swap pass; P03-ratio FAIL vs quick tile (+11.5 ms median, +30 ms p95); P03-focus FAIL vs KWin's window switch (+10.3 ms median)",
+   "100Hz": "INCOMPLETE: stopped in block 4 (10 taps without effect); re-run pending"
+  },
+  "attribution": {
+   "ratio144": "input->configure is 0.6 ms (KWin quick tile 0.28 ms); the difference is in commit->present (grow 84.5 ms, shrink 43.2 ms, quick tile 36-54 ms median), i.e. KWin's presentation of resized windows, consistent with KWin's geometry-animation effects holding presentation (inference, not yet isolated)",
+   "focus": "input->configure 9.9 ms at 144 Hz and 6.4 ms at 60 Hz against 3.05 / 2.85 ms for KWin's own window switch: Plastile's focus/activation path adds 3.5-7 ms; under investigation"
+  }
+ },
+ "P8": {
+  "layer": "physical",
+  "idle": "3 x 300 s Plastile loaded vs not loaded, seeded order, --toggle dbus, hands off",
+  "summary": {
+   "seed": 8,
+   "order": [
+    "none",
+    "plastile",
+    "plastile",
+    "none",
+    "plastile",
+    "none"
+   ],
+   "seconds": 300.0,
+   "plastile": {
+    "periods": 3,
+    "cpuPercent": [
+     1.529991983341873,
+     1.5533222258367814,
+     1.5399877551364929
+    ],
+    "contextSwitchesPerS": [
+     567.2236945998253,
+     575.9225483597155,
+     567.0554911868179
+    ],
+    "cpuMedian": 1.5399877551364929,
+    "csMedian": 567.2236945998253
+   },
+   "none": {
+    "periods": 3,
+    "cpuPercent": [
+     1.5399859888430016,
+     1.5299896897003544,
+     1.5366560740712556
+    ],
+    "contextSwitchesPerS": [
+     436.9793575917171,
+     567.669507920152,
+     571.1327296907658
+    ],
+    "cpuMedian": 1.5366560740712556,
+    "csMedian": 567.669507920152
+   },
+   "plastileWorkDuringIdle": [
+    {
+     "flushes": 0,
+     "deadlines": 0,
+     "solves": 0,
+     "writes": 0,
+     "corrections": 0
+    },
+    {
+     "flushes": 0,
+     "deadlines": 0,
+     "solves": 0,
+     "writes": 0,
+     "corrections": 0
+    },
+    {
+     "flushes": 0,
+     "deadlines": 0,
+     "solves": 0,
+     "writes": 0,
+     "corrections": 0
+    }
+   ],
+   "plastileIdleWorkSeen": false
   }
  }
 }
