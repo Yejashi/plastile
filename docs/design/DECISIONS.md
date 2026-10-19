@@ -723,3 +723,93 @@ a test) and two more nested scenarios, each passed three times:
 
 **Revisit if** a common application maximizes itself repeatedly after mapping, users report windows they wanted
 maximized being tiled, or KWin exposes whether a maximize came from the user.
+
+## ADR-022: No for...of over a Map or Set in src/; a type-aware build guard enforces it
+
+**Status:** accepted (2026-10-19), branch `wf/qv4-iteration`. Constrains the coding style of `src/`; nothing in
+behaviour changes except the five sites below, which now do what the unit tests always assumed.
+
+**Context.** QV4 (Qt 6.12.0) walks a `Map`, a `Set`, or one of their `keys()`/`values()`/`entries()` iterators with
+`for...of` as if it held an index into a compacted list. Deleting the current entry, or one before it, therefore
+skips the entry after it. `forEach` follows ECMAScript, and so does every engine Node runs. Arrays behave the same in
+both engines. Insertion never differs. This was measured in the `qml` tool, which loads the library KWin loads
+([qv4iter](../../probes/perf/qv4iter/run.py), [evidence](../status/evidence/qv4-iteration-cases.json): 150 cases,
+48 differ, all of them Map/Set `for...of` with a deletion). No unit test can see the difference.
+
+The G2 review (§16.9) found the deviation in the apply loop. It also noted that deletions through called functions
+had not been audited. That audit covered all 45 `for...of` sites over a Map, Set or iterator in `src/` (listed by
+the guard below) and followed each body's call graph through the engine, ledger, trace, adapter, configuration
+callbacks and persistence. Five sites could delete from the collection they walk. All five go through one edge:
+
+- Every HostPort read that resolves an output key (`visibleDesktop`, `workArea`, `outputs`, `activeOutput`) goes
+  through `KwinAdapter.keyOf`.
+- So does the configuration's `settingsFor`/`rulesFor`, through `ContextNames.outputNameOf`.
+- If KWin lists an output the adapter has not keyed yet (an identical monitor, before `screensChanged` reaches the
+  script), `keyOf` rebuilds the keys and calls `engine.outputsRekeyed` synchronously.
+- `outputsRekeyed` deletes and re-adds the renamed contexts and their `emptied`, `dirty` and `retained` entries.
+
+The five sites and what QV4 did there:
+
+| Site | Collection | QV4 outcome (V8 outcome) |
+|---|---|---|
+| `markVisibleDirty` (desktop or activity switch) | `contexts` | a context that became visible is not solved |
+| `configure`, the settings snapshot | `contexts` | a shown context keeps its old gaps |
+| `releaseAllZones` (suspend, unload) | `contexts` | a context's zones are not released |
+| `collectEmpty` | `emptied` | an empty context is not collected |
+| `contextPreferences` (persistence save) | `contexts` | a context's preference is not saved (V8: one saved twice, once under its stale key) |
+
+The other 40 sites could not delete from what they walk. No path from their bodies reaches a deletion, assuming
+KWin does not emit `windowRemoved` inside a property write. The apply loop's earlier hazard (G2 §16.9) was already
+removed by `d6f5647`.
+
+**Decision.**
+
+- `src/` uses `for...of` only over arrays, tuples and strings. A Map or Set is walked with `forEach`, which QV4 runs
+  as ECMAScript does. Use a first-match flag where a loop exits early. Iterate an array snapshot
+  (`Array.from(m.keys())`, `[...set]`) only when visiting each original entry once is the intended semantics; a
+  snapshot does not visit an entry re-added under a new key, which `collectEmpty` needs.
+- `contextPreferences` takes a copy, resolves every context's preferences first, and reads the keys afterwards.
+  Each context is saved once, under its current key.
+- **The guard:** [tools/itercheck.ts](../../tools/itercheck.ts) runs the TypeScript checker on
+  `tsconfig.runtime.json`. It rejects any `for...of` whose expression is not array-like: a Map, a Set, their readonly
+  forms and iterators, `Iterable<T>`, a type parameter constrained to one of them, or a union containing one. It
+  also rejects `Array.from(x, callback)` over a non-array. [tools/build.mjs](../../tools/build.mjs) fails with the
+  sites and a pointer to [PERFORMANCE §7.1](../validation/PERFORMANCE.md#71-qv4-iteration-allocates-measured). The
+  check is on `src/`, not the bundle, because the bundle has lost the types.
+- **QV4-level proof:** [tests/core/qv4iteration.test.ts](../../tests/core/qv4iteration.test.ts) runs in
+  `npm test` when a `qml` tool is installed (`$PLASTILE_QML`, `qml6` or `qml`). Without one it skips and says so.
+  - It requires `forEach` and array iteration in QV4 to match ECMAScript.
+  - It runs [qv4Scenarios.ts](../../tests/core/qv4Scenarios.ts) bundled in QV4 and in V8 and requires equal results.
+    Each scenario drives one of the paths above: the real adapter over the fake KWin surface, or the engine with the
+    mock compositor.
+
+**Evidence** ([qv4-iteration-engine.json](../status/evidence/qv4-iteration-engine.json); QV4 in the `qml` tool,
+offscreen; not KWin, not nested). The same scenarios ran against three commits' `src/`:
+
+| `src/` at | QV4 | V8 |
+|---|---|---|
+| `eca2df5` (apply loop still `for...of`) | 6 of 6 fail | `saved-preferences` fails |
+| `5229536` (the audit's base) | 5 fail (`apply-leaves` passes) | `saved-preferences` fails |
+| this change | all pass | all pass, identical results |
+
+Unit tests passed on `5229536` (493/493), which shows that Node does not see these hazards. Guard tests: 16 rejected
+and 18 allowed forms ([itercheck.test.ts](../../tests/core/itercheck.test.ts)). A planted `for...of` over
+`rects.values()` fails `node tools/build.mjs`.
+
+**Consequences.**
+
+- The style rule costs a closure per `forEach` call instead of an iterator per loop plus a result object per step
+  (PERFORMANCE §7.1).
+- Early exits need a flag, and the loop visits every entry. The five such sites walk all windows
+  (`disarmIfIdle`), the outputs, one context's plan, a window's suspensions, or at most 64 float preferences.
+- The CI core job has no Qt, so it skips the QV4 tests. The build guard runs everywhere.
+- The adapter's re-entrant edge itself is kept. It re-keys the engine before a window event uses a stale key, and
+  removing it is a separate change.
+- Not tested: whether KWin ever delivers events in an order that makes the first key lookup after a twin appears
+  fall inside one of these loops. The scenarios choose that order. In the order KWin is known to use, a window
+  signal or `screensChanged` reaches `keyOf` first, outside any loop. A symptom would also be repaired by the next
+  re-solve, which `screensChanged` triggers.
+- Nothing here is physical.
+
+**Revisit if** a Qt release iterates Maps and Sets as ECMAScript does (the QV4 semantics test reports the count of
+deviations), or if TypeScript's checker API changes `isArrayType`/`isTupleType`.

@@ -186,12 +186,38 @@ Finding from the G2 follow-up (2026-10-19, nested KWin 6.7.5 / Qt 6.12.0, [G2 re
 **Rule for code on the command path** (solve, apply, adapter writes, observation handlers):
 
 - Iterate arrays with index loops and Maps with `forEach`.
-- Know that the two are not interchangeable in QV4 when the loop deletes entries. QV4's `for…of` over a `Map`, `Map.keys()` or a `Set` skips the entry after one deleted at or before its position; `forEach` follows ECMAScript, as V8 does (measured, Qt 6.12.0: [qv4iter](../../probes/perf/qv4iter/run.py), [evidence](../status/evidence/qv4-iteration.json)). A Node test cannot see the difference. Do not delete from a collection inside a `for…of` over it; iterate a copy, or use `forEach`.
 - Do not spread into calls.
 - Do not `map`/`slice` per window when an index range will do.
 - Return flat arrays rather than one small array per item.
 
 Verify any such change with the QV4 probes ([qv4solve](../../probes/perf/qv4solve/run.py), [ab_bundles](../../probes/perf/ab_bundles.py), [ab_qualify](../../probes/perf/ab_qualify.py)). A Node benchmark does not measure QV4's iterator or collector costs. Collections still happen, now mostly outside the solve span (apply, KWin's frame writes, observations), so they remain in the command path's outer p99 (1.1–1.6 ms nested). A physical session's heap is larger and has not been measured.
+
+**Rule for all of `src/`: no `for…of` over a Map or a Set (ADR-022, enforced by the build).** Iteration order differs as well as cost (measured, Qt 6.12.0, the `qml` tool, which loads the library KWin loads; not KWin, not nested: [qv4iter](../../probes/perf/qv4iter/run.py), [evidence](../status/evidence/qv4-iteration-cases.json)).
+
+- QV4 walks a `Map`, a `Set`, or their `keys()`/`values()`/`entries()` with `for…of` as an index into a compacted list.
+  - Deleting the current entry, or any earlier one, skips the entry after it: deleting the current `b` of `abcde` visits `abde`.
+  - Deleting a later entry, adding entries, and setting an existing key behave as in ECMAScript.
+  - 48 of 150 cases differ, all of them Map/Set `for…of` with a deletion.
+- `forEach` on a Map or Set follows ECMAScript in QV4 in every case. So does array iteration (`for…of` and `forEach`), which is index-based in both engines.
+- Node runs V8, which follows the specification, so a unit test cannot see the difference.
+- The deletion need not be in the loop body. The audit for ADR-022 found five loops that could delete from their collection through called functions: a HostPort read or `settingsFor` resolves an output key in the adapter, which can call `engine.outputsRekeyed`, which deletes and re-adds contexts.
+
+What to write:
+
+- Walk a Map or Set with `forEach`. For an early exit, set a first-match flag and test it in the callback.
+- Iterate an array snapshot (`Array.from(m.keys())`, `[...set]`) only where each original entry should be visited once. A snapshot misses an entry re-added under a new key.
+- Snapshots without a callback (`[...m]`, `Array.from(s)`, `new Map(m)`) finish iterating before any other code runs, so they are safe.
+
+[tools/itercheck.ts](../../tools/itercheck.ts) enforces the rule:
+
+- It runs the TypeScript checker on `tsconfig.runtime.json` and rejects `for…of` over anything that is not an array, a tuple or a string. That covers a Map, a Set, their iterators, `Iterable<T>`, a type parameter constrained to one of them, and a union containing one.
+- It also rejects `Array.from(x, callback)` over a non-array.
+- `npm run build` fails with the sites and points here.
+
+[qv4iteration.test.ts](../../tests/core/qv4iteration.test.ts) runs code in QV4 through the `qml` tool and skips with a message when no tool is installed:
+
+- It checks that `forEach` and arrays still match ECMAScript in QV4.
+- It runs engine scenarios for each hazard in QV4 and in V8 and requires equal results ([evidence](../status/evidence/qv4-iteration-engine.json)). Before the fix (`5229536`), QV4 failed five scenarios. V8 failed one of the five, where live iteration saved one preference twice.
 
 ## 8. Raw result schema
 

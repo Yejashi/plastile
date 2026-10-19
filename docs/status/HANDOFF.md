@@ -172,9 +172,17 @@ Beyond [AGENTS.md](../../AGENTS.md):
 - In `probes/perf/focus/run.py`, loading the measurement root again after unloading it, with other declarative
   scripts loaded and a static screen, sometimes never started (the script reported loaded, nothing logged, no error
   for 60 s). The probe uses one session per block instead. The cause was not investigated.
-- **QV4's `for…of` over a `Map` or `Set` skips an entry when the loop deletes the current or an earlier one** (Qt 6.12.0;
-  `forEach` and V8 do not). Node tests cannot catch it. Iterate a copy when the body can delete
-  ([PERFORMANCE §7.1](../validation/PERFORMANCE.md#71-qv4-iteration-allocates-measured), probe `probes/perf/qv4iter/run.py`).
+- **QV4's `for…of` over a `Map` or `Set` skips an entry when something deletes the current or an earlier one**
+  (Qt 6.12.0). `forEach`, arrays and V8 follow ECMAScript, so Node tests cannot catch it.
+  - The deletion can be several calls away. A HostPort read or `settingsFor` resolves an output key in
+    `KwinAdapter.keyOf`, which can call `engine.outputsRekeyed`, which deletes and re-adds contexts.
+  - Five engine loops were exposed that way (ADR-022).
+  - `npm run build` now rejects any `for…of` over a Map, Set or iterator in `src/` (`tools/itercheck.ts`, type-aware).
+    Use `forEach`, or an array snapshot when each original entry should be visited once.
+  - `tests/core/qv4iteration.test.ts` checks the engine in QV4 through the `qml` tool. It is skipped without one,
+    e.g. in the CI core job.
+  - See [PERFORMANCE §7.1](../validation/PERFORMANCE.md#71-qv4-iteration-allocates-measured), and the probes
+    `probes/perf/qv4iter/run.py` and `probes/perf/qv4iter/engine.ts --rev REV`.
 - Every push to `main` cancels the CI run in progress (a concurrency group). Wait for a run to finish before
   pushing again if you need its result.
 - Commit message trailers and the "no model identifiers in the repository" rule come from the session

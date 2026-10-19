@@ -936,7 +936,8 @@ ever delivers such an event inside a frame write was not tested.
 
 A text search found no other `for…of` in `src/` that deletes from the collection it walks within its own body; the
 loops that delete iterate a copy (`[...this.parked]`) or another collection. Deletions through called functions were not
-audited.
+audited. *(Since audited: five loops could delete through called functions; they are fixed, and the build now rejects
+`for...of` over a Map or Set in `src/`. See [ADR-022](../design/DECISIONS.md#adr-022-no-forof-over-a-map-or-set-in-src-a-type-aware-build-guard-enforces-it).)*
 
 **Corrections made to §16 and the documents that cite it:**
 
