@@ -90,30 +90,31 @@ def summarize(d: Path) -> dict:
 
 
 def gc_summary(ud: Path) -> dict:
-    """Collections per command and their placement relative to the perf lines (gcstats units)."""
+    """Cycle starts per command interval and the slow solves (gcstats units).
+
+    The allocatorStats header is printed when a cycle starts, at the triggering allocation; a
+    logged cycle outlasts QV4's 5 ms incremental limit, so its end line comes turns later and is
+    not used. g2_followup.gc_attrib reports the same with the freed bytes per command.
+    """
     import re
     log = (ud / "diag.log").read_text().splitlines() if (ud / "diag.log").exists() else []
-    took = re.compile(r"Garbage collection took (\d+) us")
     perf = re.compile(r"plastile perf (\{.*\})$")
-    cmds, pending, inside = [], [], []
+    cmds, starts = [], 0
     for ln in log:
-        m = took.search(ln)
-        if m:
-            pending.append(int(m.group(1)) / 1e3)
+        if "========== GC ==========" in ln:
+            starts += 1
             continue
         p = perf.search(ln)
         if p:
-            r = json.loads(p.group(1))
-            cmds.append({"solve": ((r.get("timing") or {}).get("solveNs") or 0) / 1e6, "gc": pending})
-            pending = []
-    slow = [c for c in cmds if c["solve"] > SLOW_MS]
-    gcs = [g for c in cmds for g in c["gc"]]
-    return {"commands": len(cmds), "collectionsBeforePerfLines": len(gcs),
-            "collectionsPer1000Commands": round(1000 * len(gcs) / max(1, len(cmds)), 1),
-            "collectionMs": {"p50": q(gcs, 0.5), "max": max(gcs) if gcs else None},
-            "slowSolves": len(slow), "slowSolvesWithCollection": sum(1 for c in slow if c["gc"]),
-            "solvesWithCollectionBefore": sum(1 for c in cmds if c["gc"] and c["solve"] > 0),
-            "solvesTotal": sum(1 for c in cmds if c["solve"] > 0)}
+            t = json.loads(p.group(1)).get("timing")
+            cmds.append({"solve": t["solveNs"] / 1e6 if t else None, "starts": starts})
+            starts = 0
+    solving = [c for c in cmds if c["solve"] is not None]
+    slow = [c for c in solving if c["solve"] > SLOW_MS]
+    return {"commands": len(cmds), "cycleStarts": sum(c["starts"] for c in cmds),
+            "cycleStartsPer1000Commands": round(1000 * sum(c["starts"] for c in cmds) / max(1, len(cmds)), 1),
+            "solvingCommands": len(solving), "solvingCommandsWithCycleStart": sum(1 for c in solving if c["starts"]),
+            "slowSolves": len(slow), "slowSolvesWithCycleStart": sum(1 for c in slow if c["starts"])}
 
 
 def main() -> int:
