@@ -114,8 +114,10 @@ Nested results: branch `wf/motion`, KWin 6.8.1, OpenGL ES on the reference host'
     (`output-negative-origin-G02`); the package and upgrade scenarios are included. `npm run check` 535/535.
   - Unchanged: `src/` differs from `a0d66a0` only in the `animation` error message.
 - **CI:** KWin loads scripted effects only on hardware OpenGL. In both CI jobs (QPainter 6.7.5, llvmpipe 6.8.0) the
-  motion scenarios are expected SKIPs, except `motion-package-T31`, which runs without its load checks. Not yet
-  observed on a hosted run.
+  motion scenarios are expected SKIPs, except `motion-package-T31`, which runs without its load checks. Observed on
+  hosted run 40229452063 at `f43de02`: both jobs skipped the nine load-dependent scenarios with the
+  `animationsSupported` reason and passed `motion-package-T31` (so the `KWin/Effect` package type is present).
+  Ubuntu 1679/1679; the provisional 6.8 job failed only the known KWin 6.8.0 Q09 RSS checks.
 - **Open, physical only:**
   - smoothness at 144, 100 and 60 Hz;
   - perceived lag of the picture behind input;
@@ -155,7 +157,7 @@ Nested only; none is a physical input-to-photon measurement.
 
 1. Physical, now on KWin 6.8.1 (the reference desktop updated; build `0a0798c` installed and loaded after a re-login on 2026-10-25). Done: windows that open maximized (ADR-021): at login 5 restored windows were un-maximized and tiled and 1 kept (no free slot, by design); a new kitty tiled and settled with 0 corrections, but it did not open maximized this time, so the owner's usual launch path is not yet re-checked. P8a soak during normal use, 1 h (the owner shortened it from 4 h): connections grew by exactly 17 per tracked window and were flat at a constant window count, KWin RSS flat within 2.6 MiB at 10 windows, errors 0 ([evidence](evidence/physical-recheck-20261025.json)). Waiting for the owner to be away from the machine: the hidden-desktop panel case (P3, `a5642dd`) and P6 at 100 Hz with P00-switch-tiled. Raw results stay in `artifacts/physical/recheck-20261025/`.
 2. Done: QV4 `for...of` deletion audit (ADR-022). Five loops could skip an entry when a host read re-keyed an output mid-walk (identical second monitor); fixed, each fix proven to fail when reverted in QV4 (`qml` tool, not KWin), and `tools/itercheck.ts` now fails the build on `for...of`/`next()`/`yield*`/`Array.from(…, fn)` over a non-array in `src/`. Command-path A/B: no change beyond noop outer p50 0.346→0.359 ms (nested; [evidence](evidence/qv4-iteration-perf.json)). Open: whether KWin ever delivers that first key lookup inside a loop needs two identical monitors (physical). Optional: the adapter's per-write allocations (outer p99 1.1–1.6 ms). Done on `wf/rekey`: the adapter's queries no longer re-key the engine. New keys are staged and committed on the adapter's deferred turn or at `screensChanged`, with the same renames in the same order. The final state is the same as before in nine event orders and a two-stage re-key (unit; the review added the two-stage tests after a mutation check found staged-order bugs undetected) and in the QV4 scenarios ([evidence](evidence/output-rekey-convergence.json)). CI's `native-tools` job now runs the QV4 tests with `PLASTILE_REQUIRE_QV4=1` (hosted run 39300522170: 17/17, skipped 0).
-3. Physical, when the owner wants motion: enable Plastile Motion on the reference desktop and judge smoothness and lag at 144, 100 and 60 Hz (swap, grow/shrink bursts, scrolling); merge `wf/motion` only after that judgement.
+3. Physical: merged to main as `f43de02` (disabled by default) and installed, disabled, in the owner's home on 2026-10-25 (`tools/install.sh install-effect`). Open: the owner enables Plastile Motion and judges smoothness and lag at 144, 100 and 60 Hz (swap, grow/shrink bursts, scrolling).
 4. The open rows of the [G3 checklist](G3_CHECKLIST.md); owner decisions: licence (ADR-012), scrolling/zones (ADR-014), P2d/P2e.
 
 ## Conventions

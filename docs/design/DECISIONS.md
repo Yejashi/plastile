@@ -930,7 +930,7 @@ deviations), or if TypeScript's checker API changes `isArrayType`/`isTupleType`.
 
 ## ADR-023: Window motion is an optional transform-only KWin effect (Plastile Motion)
 
-**Status:** accepted (2026-10-25), branch `wf/motion`; task T31 reopened. Supersedes ADR-018. Refines ADR-006 without
+**Status:** accepted (2026-10-25), merged to main as `f43de02`; task T31 reopened. Supersedes ADR-018. Refines ADR-006 without
 changing it: Plastile's geometry stays instantaneous.
 
 **Context.** The owner asked for an animation when windows move: the deliberate feature decision T31 and ADR-018
