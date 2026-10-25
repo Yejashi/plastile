@@ -200,6 +200,27 @@ test("T26: the shortcut check starts on a later turn, logs one warning, and is s
   rt.shutdown();
 });
 
+test("T26: counters report the shortcut check as pending until it finishes, and unavailable without D-Bus", () => {
+  const counters = (f: ReturnType<typeof setup>["f"]) =>
+    JSON.parse(f.lines.filter((l) => l.startsWith("plastile counters ")).pop()!.slice("plastile counters ".length)).shortcuts;
+  const a = setup();
+  a.rt.dispatch("plastile.inspect.counters");
+  assert.deepEqual(counters(a.f), { state: "pending", conflicts: 0 }, "before the check starts");
+  a.qt.turn();
+  a.bus.reply([seq(["/component/kwin"])]);
+  a.rt.dispatch("plastile.inspect.counters");
+  assert.deepEqual(counters(a.f), { state: "pending", conflicts: 0 }, "while components are read");
+  a.bus.reply([seq([])]);
+  a.rt.dispatch("plastile.inspect.counters");
+  assert.deepEqual(counters(a.f), { state: "done", conflicts: 0 });
+  a.rt.shutdown();
+  const b = setup({}, false);
+  b.qt.drain();
+  b.rt.dispatch("plastile.inspect.counters");
+  assert.deepEqual(counters(b.f), { state: "unavailable", conflicts: 0 }, "no session bus: no check");
+  b.rt.shutdown();
+});
+
 test("T28: explain opens the inspector, a second explain closes it, shutdown closes it and drops late replies", () => {
   const { f, qt, bus, rt, ws, wins, opened, inspector } = setup({ diagnostics: "info" });
   qt.drain();

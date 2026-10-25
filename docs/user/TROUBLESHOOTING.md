@@ -68,7 +68,7 @@ qdbus6 org.kde.kglobalaccel /component/kwin org.kde.kglobalaccel.Component.invok
 | `windows` | Windows the adapter tracks. |
 | `contexts` | One entry per screen, desktop and activity: `layout`, `members`, `tiled` (members the layout places now) and `suspended` (members KWin owns for the moment: maximized, full screen, minimized or hidden; `members` = `tiled` + `suspended`), model `revision` and `applied` revision. A desktop whose only window is maximized shows `tiled: 0`. |
 | `configRevision` | Increases with every configuration attempt that differs from the previous input. |
-| `shortcuts` | The startup shortcut check: `state` (`pending`, `done` or `unavailable`) and the number of `conflicts` ([details](SHORTCUTS.md#conflict-report)). |
+| `shortcuts` | The startup shortcut check: `state` (`pending` until the check has finished, `done`, or `unavailable` when KGlobalAccel could not be reached or Plastile has no D-Bus access) and the number of `conflicts` ([details](SHORTCUTS.md#conflict-report)). |
 | `inspectorOpen` | Whether the *Explain active window* inspector is open. |
 | `suspended` | `true` while *Suspend/resume tiling* has suspended all tiling. |
 | `osd` | The on-screen display: `state` (`idle`; `off` by the `osd` setting or without D-Bus; `failed` when the last request failed, so messages are dropped for 30 s and the next command after that tries again; `stopped`), the number of messages `sent` and of `failures`. |

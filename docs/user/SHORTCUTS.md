@@ -149,7 +149,7 @@ Limits:
 - The check sees the components KGlobalAccel knows at that moment. In the nested session that was KWin, Konsole, Dolphin and the keyboard layout switcher, although only KWin was running (measured), so installed applications that declare global shortcuts are included. An application KGlobalAccel has never heard of is not.
 - Keys are compared as single key combinations; multi-key sequences are not checked.
 - A KWin script can only call D-Bus methods without arguments of KDE's own types: KWin's `DBusCall` passes arguments as plain values, so methods taking a key sequence (`globalShortcutsByKey`, `isGlobalShortcutAvailable`) cannot be called. The check therefore lists every shortcut (`allComponents` and each component's `allShortcutInfos`) and compares locally; the work is bounded (at most 64 components and 2048 entries each) and happens once per load or reload.
-- If KGlobalAccel cannot be reached, the log says `shortcut check unavailable: ...` and nothing else changes.
+- If KGlobalAccel cannot be reached, nothing else changes: *Log counters* shows `shortcuts.state` `unavailable`, and at the `info` log level or above the log says `shortcut check unavailable: ...` (the default `warn` level hides that line).
 
 ### Known conflicts on real desktops
 

@@ -312,7 +312,8 @@ export function createRuntime(env: RuntimeEnv): Runtime {
         connections: adapter.connectionCount(), transientConnections: adapter.transientConnectionCount(),
         windows: adapter.windowCount(), contexts: engine.contextSummary(),
         configRevision: snapshot?.revision ?? null,
-        shortcuts: shortcuts ? { state: shortcuts.state, conflicts: shortcuts.conflicts.length } : null,
+        // The check's current report ("pending" until its first run finishes); none runs without a bus.
+        shortcuts: audit ? { state: audit.report.state, conflicts: audit.report.conflicts.length } : { state: "unavailable", conflicts: 0 },
         inspectorOpen: env.inspector ? env.inspector.isOpen() : null, zoneOverlay: env.zones ? env.zones.state() : null,
         osd: { state: osd.state(), sent: osd.sent, failures: osd.failures }, suspended: engine.isSuspended(),
         persistence: persister.summary() }));
