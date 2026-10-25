@@ -3,9 +3,11 @@
 Safety contract (docs/validation/PHYSICAL_RUNBOOK.md):
 
 - Every live-session entry point calls guard_live_session() first. It refuses unless
-  XDG_SESSION_TYPE=wayland, the WAYLAND_DISPLAY socket is served by a non-nested
-  kwin_wayland (directly or through kwin_wayland_wrapper) of the same user, and the
-  session bus's org.kde.KWin belongs to that same process.
+  XDG_SESSION_TYPE=wayland, the WAYLAND_DISPLAY socket is served by a kwin_wayland
+  (directly or through kwin_wayland_wrapper) of the same user, the session bus's
+  org.kde.KWin belongs to that same process, and that KWin reports the DRM output backend
+  (a nested KWin started without a backend flag looks like the physical one on its
+  command line, and owns org.kde.KWin on a nested session's own bus).
 - Nothing here writes kwinrc, kglobalshortcutsrc or any other user configuration.
   Configuration files are only read. The compositor is never restarted or replaced.
 - Python standard library only (plus the system's busctl, kscreen-doctor, qdbus6 and
@@ -14,6 +16,7 @@ Safety contract (docs/validation/PHYSICAL_RUNBOOK.md):
 from __future__ import annotations
 
 import json
+import math
 import os
 import re
 import shutil
@@ -31,6 +34,9 @@ KEYTAP = REPO / "build/physical/plastile-keytap"
 KEYTAP_EI = REPO / "build/physical/plastile-keytap-ei"
 REPO_BUNDLE = REPO / "package/contents/code/plastile.mjs"
 PLUGIN = "plastile"
+MOTION_EFFECT = "plastile_motion"
+MOTION_DEFAULT_MS = 180  # effect/contents/code/main.js MOTION_DEFAULT_MS (Duration 0 = default)
+MOTION_EASINGS = ("OutCubic", "OutQuart", "OutQuad", "InOutCubic", "Linear")  # main.js MOTION_EASINGS
 NESTED_FLAGS = ("--virtual", "--wayland-display", "--x11-display")
 KWIN_COMMS = ("kwin_wayland", "kwin_wayland_wr")  # comm is truncated to 15 characters
 
@@ -165,6 +171,24 @@ class Compositor:
     nested: list[str] = field(default_factory=list)
 
 
+def output_backend(support_information: str | None) -> str | None:
+    """The 'Name:' of KWin's output backend section in supportInformation ('DRM' on a physical seat).
+
+    The section heading is "Output backend" (KWin 6.7) or "LogicalOutput backend" (6.8), underlined
+    with '='. Nested backends report their class name, e.g. 'KWin::VirtualBackend'.
+    """
+    lines = (support_information or "").splitlines()
+    for i in range(len(lines) - 2):
+        if lines[i].strip().lower().endswith("backend") and lines[i + 1].startswith("="):
+            for line in lines[i + 2:]:
+                if not line.strip():
+                    break
+                if line.startswith("Name: "):
+                    return line[len("Name: "):].strip()
+            return None
+    return None
+
+
 def find_compositor(env: dict[str, str], proc: Path = Path("/proc"), peer=socket_peer) -> tuple[Compositor | None, list[str]]:
     """Identify the process serving WAYLAND_DISPLAY. Returns (compositor, problems)."""
     path = wayland_socket_path(env)
@@ -240,6 +264,13 @@ class Bus:
         except (RuntimeError, subprocess.TimeoutExpired):
             return None
 
+    def effect_loaded(self, effect: str) -> bool | None:
+        """Read-only: org.kde.kwin.Effects.isEffectLoaded."""
+        try:
+            return bool(self.call("org.kde.KWin", "/Effects", "org.kde.kwin.Effects", "isEffectLoaded", "s", effect)[0])
+        except (RuntimeError, subprocess.TimeoutExpired, TypeError, IndexError):
+            return None
+
     def support_information(self) -> str | None:
         try:
             data = self.call("org.kde.KWin", "/KWin", "org.kde.KWin", "supportInformation", timeout=10)
@@ -271,11 +302,23 @@ def guard_live_session(env: dict[str, str] | None = None, *, proc: Path = Path("
     elif owner != comp.kwin_pid:
         reasons.append(f"org.kde.KWin on the session bus is pid {owner}, but WAYLAND_DISPLAY is served by "
                        f"kwin_wayland pid {comp.kwin_pid}: the bus and the display belong to different sessions")
+    backend = None
+    if owner is not None and owner == comp.kwin_pid:
+        # Positive identification: only the physical seat's KWin drives outputs through DRM. A nested
+        # KWin started without --virtual/--wayland-display (e.g. a nested Plasma) chooses the Wayland
+        # backend itself and has a command line like the live one.
+        backend = output_backend(bus.support_information())
+        if backend is None:
+            reasons.append(f"cannot read the output backend of kwin_wayland (pid {comp.kwin_pid}) from "
+                           "org.kde.KWin supportInformation")
+        elif backend != "DRM":
+            reasons.append(f"kwin_wayland (pid {comp.kwin_pid}) uses the {backend!r} output backend, not DRM: it runs "
+                           "nested (or headless), and uinput input would reach the physical seat's compositor instead")
     if reasons:
         raise GuardError(reasons)
     return {"socketPath": comp.socket_path, "socketPid": comp.socket_pid, "socketComm": comp.socket_comm,
             "kwinPid": comp.kwin_pid, "kwinArgs": [a for a in (comp.kwin_cmdline or [])[1:] if a.startswith("--")],
-            "nested": False}
+            "outputBackend": backend, "nested": False}
 
 
 # --------------------------------------------------------------------- KConfig (read)
@@ -338,6 +381,48 @@ def kconfig_list(value: str) -> list[str]:
 def config_home(env: dict[str, str] | None = None) -> Path:
     env = os.environ if env is None else env
     return Path(env.get("XDG_CONFIG_HOME") or Path.home() / ".config")
+
+
+def motion_duration_ms(configured_ms: int, factor: float) -> int:
+    """Plastile Motion's effective duration (main.js motionDuration): 0 when the global speed is instant."""
+    if not factor > 0 or not math.isfinite(factor):
+        return 0
+    return max(1, round((configured_ms if configured_ms > 0 else MOTION_DEFAULT_MS) * factor))
+
+
+def motion_state(bus: Bus | None, cfg_home: Path | None = None) -> dict:
+    """Plastile Motion's state (PERFORMANCE section 6.1), read-only: kwinrc [Plugins] plastile_motionEnabled
+    and [Effect-plastile_motion] Duration/Easing, kdeglobals [KDE] AnimationDurationFactor, and whether
+    KWin has the effect loaded now (org.kde.kwin.Effects.isEffectLoaded).
+
+    `on` is true when the effect is loaded and its effective duration is not 0; `label` names the
+    state for every record and summary group ("off", or "on, Duration=... ms, speed factor ...").
+    """
+    cfg_home = cfg_home or config_home()
+    kwinrc = read_kconfig(cfg_home / "kwinrc")
+    eff = kwinrc.get(f"Effect-{MOTION_EFFECT}", {})
+
+    def number(raw: str | None, default, kind):
+        try:
+            return kind(raw.strip()) if raw is not None and raw.strip() else default
+        except ValueError:
+            return default
+    duration = number(eff.get("Duration"), 0, int)
+    easing = number(eff.get("Easing"), 0, int)
+    factor = number(read_kconfig(cfg_home / "kdeglobals").get("KDE", {}).get("AnimationDurationFactor"), 1.0, float)
+    effective = motion_duration_ms(duration, factor)
+    loaded = bus.effect_loaded(MOTION_EFFECT) if bus is not None else None
+    on = bool(loaded) and effective > 0
+    if loaded is None:
+        label = "unknown (isEffectLoaded unavailable)"
+    elif on:
+        label = f"on, Duration={duration or MOTION_DEFAULT_MS} ms, speed factor {factor:g}"
+    else:
+        label = "off"
+    return {"loaded": loaded, "enabledInKwinrc": kwinrc.get("Plugins", {}).get(f"{MOTION_EFFECT}Enabled", "unset").strip(),
+            "durationMs": duration,
+            "easing": MOTION_EASINGS[easing] if 0 <= easing < len(MOTION_EASINGS) else MOTION_EASINGS[0],
+            "animationDurationFactor": factor, "effectiveDurationMs": effective, "on": on, "label": label}
 
 
 def shortcut_bindings(path: Path, component: str | None = None) -> dict[str, dict[str, list[str]]]:

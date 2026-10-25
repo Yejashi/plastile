@@ -54,11 +54,12 @@ def tap(i: int, t: int, write_ns: int = 20_000) -> dict:
 
 def record(run: str, value_ns: int, *, workload: str = "P03-ratio", condition: str = "plastile", sample: int = 0,
            success: bool = True, warmup: bool = False, refresh_ns: int = REFRESH_60, hz: int = 60,
-           layer: str = "synthetic", windows: int = 4) -> dict:
-    """A minimal summarizer input record."""
-    return {"runId": run, "workload": workload, "condition": condition, "layer": layer, "outputName": "DP-1",
+           layer: str = "synthetic", windows: int = 4, **provenance) -> dict:
+    """A minimal summarizer input record (provenance: environmentId, implementationCommit, motion, ...)."""
+    return {**provenance, "runId": run, "workload": workload, "condition": condition, "layer": layer, "outputName": "DP-1",
             "refreshHzDeclared": hz, "windowCount": windows, "sample": sample, "warmup": warmup, "success": success,
             "failureReason": None if success else "no configure in the attribution window",
             "inputToFirstPresentNs": value_ns if success else None,
             "inputToSettledNs": (value_ns + 2 * MS) if success else None,
+            "inputToFinalCommitPresentNs": (value_ns + 2 * MS) if success else None,
             "refreshNsObserved": refresh_ns if success else None}

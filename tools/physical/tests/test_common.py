@@ -27,12 +27,27 @@ class FakeProc:
         self.path = root
 
 
+def support_info(backend: str | None, heading: str = "LogicalOutput backend") -> str:
+    """A KWin supportInformation text with the output backend section (6.8.1 layout, measured)."""
+    section = "" if backend is None else f"{heading}\n{'=' * len(heading)}\nName: {backend}\n"
+    return ("KWin Support Information:\n\nVersion\n=======\nKWin version: 6.8.1\n\n" + section +
+            "Atomic Mode Setting on GPU 0: true\n\nOutputs\n=======\nOutput 0:\nName: DP-1\n")
+
+
 class FakeBus:
-    def __init__(self, owner: int | None):
+    def __init__(self, owner: int | None, backend: str | None = "DRM", effect: bool | None = False):
         self.owner = owner
+        self.backend = backend
+        self.effect = effect
 
     def owner_pid(self, name):
         return self.owner
+
+    def support_information(self):
+        return support_info(self.backend)
+
+    def effect_loaded(self, name):
+        return self.effect
 
 
 ENV = {"XDG_SESSION_TYPE": "wayland", "WAYLAND_DISPLAY": "wayland-0", "XDG_RUNTIME_DIR": "/run/user/1000"}
@@ -76,6 +91,29 @@ class GuardTests(unittest.TestCase):
                 with self.assertRaises(common.GuardError) as cm:
                     common.guard_live_session(env, proc=procs.path, peer=pr, bus=bus)
                 self.assertTrue(any(needle in r for r in cm.exception.reasons), cm.exception.reasons)
+
+    def test_nested_kwin_without_a_backend_flag_is_refused(self):
+        # A nested Plasma (dbus-run-session startplasma-wayland) or `kwin_wayland --socket X` run from a
+        # terminal picks the Wayland backend itself: same command-line shape as the live session, and it
+        # owns org.kde.KWin on its own bus. Only the output backend tells them apart.
+        p = FakeProc({500: ("kwin_wayland_wr", 1, ["kwin_wayland_wrapper", "--xwayland"]),
+                      501: ("kwin_wayland", 500, ["kwin_wayland", "--wayland-fd", "7", "--socket", "wayland-2",
+                                                  "--xwayland"])})
+        for backend, needle in (("KWin::Wayland::WaylandBackend", "not DRM"), ("KWin::VirtualBackend", "not DRM"),
+                                (None, "cannot read the output backend")):
+            with self.subTest(backend=backend):
+                with self.assertRaises(common.GuardError) as cm:
+                    common.guard_live_session(ENV, proc=p.path, peer=peer(500), bus=FakeBus(501, backend))
+                self.assertTrue(any(needle in r for r in cm.exception.reasons), cm.exception.reasons)
+        info = common.guard_live_session(ENV, proc=p.path, peer=peer(500), bus=FakeBus(501, "DRM"))
+        self.assertEqual(info["outputBackend"], "DRM")
+
+    def test_output_backend_parsing(self):
+        self.assertEqual(common.output_backend(support_info("DRM")), "DRM")
+        self.assertEqual(common.output_backend(support_info("DRM", heading="Output backend")), "DRM")  # KWin 6.7
+        self.assertEqual(common.output_backend(support_info("KWin::VirtualBackend")), "KWin::VirtualBackend")
+        self.assertIsNone(common.output_backend(support_info(None)))  # the outputs' "Name: DP-1" is not it
+        self.assertIsNone(common.output_backend(None))
 
     def test_unreachable_socket(self):
         def boom(path):
@@ -175,6 +213,32 @@ class KeySequenceTests(unittest.TestCase):
     def test_has_meta(self):
         self.assertTrue(common.has_meta([125, 42]))
         self.assertFalse(common.has_meta([29, 56]))
+
+
+class MotionStateTests(unittest.TestCase):
+    def _state(self, kwinrc: str, kdeglobals: str = "", effect: bool | None = True) -> dict:
+        with tempfile.TemporaryDirectory() as d:
+            (Path(d) / "kwinrc").write_text(kwinrc)
+            (Path(d) / "kdeglobals").write_text(kdeglobals)
+            return common.motion_state(FakeBus(1, effect=effect), Path(d))
+
+    def test_owner_setup_is_on_with_the_default_duration(self):
+        m = self._state("[Effect-plastile_motion]\nDebug=false\n\n[Plugins]\nplastile_motionEnabled=true\n")
+        self.assertTrue(m["on"])
+        self.assertEqual((m["durationMs"], m["effectiveDurationMs"], m["easing"]), (0, 180, "OutCubic"))
+        self.assertEqual(m["label"], "on, Duration=180 ms, speed factor 1")
+
+    def test_duration_and_speed_factor(self):
+        m = self._state("[Effect-plastile_motion]\nDuration=200\nEasing=4\n", "[KDE]\nAnimationDurationFactor=0.5\n")
+        self.assertEqual((m["effectiveDurationMs"], m["easing"]), (100, "Linear"))
+        self.assertEqual(m["label"], "on, Duration=200 ms, speed factor 0.5")
+
+    def test_off_when_not_loaded_or_instant(self):
+        self.assertEqual(self._state("", effect=False)["label"], "off")
+        m = self._state("[Plugins]\nplastile_motionEnabled=true\n", "[KDE]\nAnimationDurationFactor=0\n")
+        self.assertFalse(m["on"])
+        self.assertEqual(m["label"], "off")
+        self.assertTrue(self._state("", effect=None)["label"].startswith("unknown"))
 
 
 class KscreenTests(unittest.TestCase):
