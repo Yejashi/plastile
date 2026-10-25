@@ -2164,6 +2164,7 @@ export class Engine {
         if (cur === "zones") this.releaseZones(c); // zoned windows keep their frames (ZONES §2)
         c.layoutOverride = next;
         if (next === "floating") this.restoreFloatRects(c);
+        this.retryOverflow(c.id); // layout parameters changed (BEHAVIOR §11)
         this.solveNow(c);
         this.persistChanged({ context: c.key });
         this.layoutChanged(c, cur);
@@ -2200,6 +2201,7 @@ export class Engine {
       this.releaseZones(c);
       c.layoutOverride = null;
       c.states = {};
+      this.retryOverflow(c.id);
       this.solveNow(c);
       this.persistChanged({ context: c.key });
       this.layoutChanged(c, cur);
@@ -3144,7 +3146,10 @@ export class Engine {
     if (!this.alive) return;
     const c = this.contexts.get(contextId(key));
     if (!c) { this.retain(key, prefs); return; }
+    const kind = this.layoutKind(c), ms = c.states["master-stack"];
     this.applyPrefs(c, prefs);
+    // A restored layout or master/stack ratio and count are new layout parameters (BEHAVIOR §11).
+    if (this.layoutKind(c) !== kind || !sameValue(ms, c.states["master-stack"])) this.retryOverflow(c.id);
     c.revision++;
     this.markDirty(c.key);
     this.ensureFlush();

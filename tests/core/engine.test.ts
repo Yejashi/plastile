@@ -1070,6 +1070,43 @@ test("G08/BEHAVIOR §11: an overflow float is reconsidered when the area, constr
   }
 });
 
+test("G08/BEHAVIOR §11: a layout changed by command, reset or restored preferences reconsiders overflow floats", () => {
+  const min700 = { minFrame: { width: 700, height: 0 }, maxFrame: { width: Infinity, height: Infinity }, fixed: false };
+  const ids = ["a", "b", "c"];
+  const patch = { a: { constraints: min700 }, b: { constraints: min700 }, c: { constraints: min700 } };
+  const K1 = { output: "O1", desktop: "D1", activity: "default" };
+  for (const cmd of ["plastile.layout.monocle", "plastile.layout.scrolling"]) {
+    const { h, e } = setup(ids, patch);
+    assert.deepEqual(ids.map((id) => e.modeOf(id)), ["tiled", "floating", "floating"]);
+    h.active = "a";
+    assert.equal(e.execute(cmd).status, "accepted");
+    h.drain();
+    assert.deepEqual(ids.map((id) => e.modeOf(id)), ["tiled", "tiled", "tiled"], cmd);
+    assert.equal(e.explain("c")!.exception, null, cmd);
+  }
+  {
+    // Reset to a configured monocle from a master/stack chosen by command.
+    const h = new MockHost();
+    const e = h.start({ settingsFor: () => ({ ...DEFAULT_SETTINGS, layout: "monocle" }) });
+    for (const id of ids) h.open(id, patch[id as keyof typeof patch]);
+    h.drain();
+    h.active = "a";
+    e.execute("plastile.layout.master-stack");
+    h.drain();
+    assert.deepEqual(ids.map((id) => e.modeOf(id)), ["tiled", "floating", "floating"]);
+    assert.equal(e.execute("plastile.context.reset").status, "accepted");
+    h.drain();
+    assert.deepEqual(ids.map((id) => e.modeOf(id)), ["tiled", "tiled", "tiled"], "context.reset");
+  }
+  {
+    // A saved monocle layout that arrives after the windows overflowed (persistence restore).
+    const { h, e } = setup(ids, patch);
+    e.setContextPreferences(K1, { layout: "monocle", masterStack: null });
+    h.drain();
+    assert.deepEqual(ids.map((id) => e.modeOf(id)), ["tiled", "tiled", "tiled"], "restored preferences");
+  }
+});
+
 test("BSP axis longest: a split follows the shape of the slot on the real output, not a 16:9 placeholder", () => {
   const longest = (insert: "last" | "focused", layout: "bsp" | "master-stack" = "bsp") =>
     ({ ...DEFAULT_SETTINGS, layout, bsp: { ...DEFAULT_SETTINGS.bsp, axis: "longest" as const, insert } });
