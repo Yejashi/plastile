@@ -133,7 +133,9 @@ function PlastileMotion() {
     effects.showingDesktopChanged.connect(transition);
     var self = this;
     effects.stackingOrder.forEach(function (w) { self.manage(w, null); });
-    this.log("loaded duration=" + this.duration() + " easing=" + this.easingName + " windows=" + this.records.size);
+    if (this.debug) {
+        this.log("loaded duration=" + this.duration() + " easing=" + this.easingName + " windows=" + this.records.size);
+    }
 }
 
 PlastileMotion.prototype.loadConfig = function () {
@@ -148,10 +150,9 @@ PlastileMotion.prototype.duration = function () {
     return motionDuration(this.configuredMs, effects.animationTimeFactor);
 };
 
+// Callers test this.debug first, so nothing is formatted unless Debug is set.
 PlastileMotion.prototype.log = function (text) {
-    if (this.debug) {
-        console.info("plastile_motion " + text);
-    }
+    console.info("plastile_motion " + text);
 };
 
 PlastileMotion.prototype.label = function (w) {
@@ -263,7 +264,9 @@ PlastileMotion.prototype.interrupt = function (w, why) {
     rec.target = null;
     cancel(ids);
     this.repaint(w, bound);
-    this.log("cancel " + this.label(w) + " reason=" + why);
+    if (this.debug) {
+        this.log("cancel " + this.label(w) + " reason=" + why);
+    }
 };
 
 // cancel() does not schedule a repaint: damage what the animation covered plus the window's shadow.
@@ -284,7 +287,9 @@ PlastileMotion.prototype.onAnimationEnded = function (w) {
     }
     rec.ids = null;
     rec.bound = null;
-    this.log("end " + this.label(w) + " target=" + motionFormat(rec.target) + " frame=" + motionFormat(motionRect(w.geometry)));
+    if (this.debug) {
+        this.log("end " + this.label(w) + " target=" + motionFormat(rec.target) + " frame=" + motionFormat(motionRect(w.geometry)));
+    }
     rec.target = null;
 };
 
@@ -321,8 +326,10 @@ PlastileMotion.prototype.onGeometry = function (w, oldGeometry) {
             this.interrupt(w, reason);
         }
         if (reason !== "unchanged") {
-            this.log("skip " + this.label(w) + " reason=" + reason + " from=" + (old ? motionFormat(old) : "null")
-                + " to=" + motionFormat(next));
+            if (this.debug) {
+                this.log("skip " + this.label(w) + " reason=" + reason + " from=" + (old ? motionFormat(old) : "null")
+                    + " to=" + motionFormat(next));
+            }
         }
         return;
     }
@@ -334,7 +341,9 @@ PlastileMotion.prototype.onGeometry = function (w, oldGeometry) {
         if (sized) {
             rec.bound = motionUnion(rec.bound || old, next);
             rec.target = next;
-            this.log("retarget " + this.label(w) + " to=" + motionFormat(next) + " ms=" + duration);
+            if (this.debug) {
+                this.log("retarget " + this.label(w) + " to=" + motionFormat(next) + " ms=" + duration);
+            }
             return;
         }
         // Not running any more (it ended in this frame): start afresh from the frame it ended at.
@@ -353,8 +362,10 @@ PlastileMotion.prototype.onGeometry = function (w, oldGeometry) {
     rec.ids = ids;
     rec.bound = motionUnion(old, next);
     rec.target = next;
-    this.log("start " + this.label(w) + " from=" + motionFormat(old) + " to=" + motionFormat(next) + " ms=" + duration
-        + " easing=" + this.easingName);
+    if (this.debug) {
+        this.log("start " + this.label(w) + " from=" + motionFormat(old) + " to=" + motionFormat(next) + " ms=" + duration
+            + " easing=" + this.easingName);
+    }
 };
 
 if (typeof effect !== "undefined" && typeof effects !== "undefined") {

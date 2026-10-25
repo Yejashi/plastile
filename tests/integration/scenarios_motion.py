@@ -617,6 +617,44 @@ def motion_excluded(out: Path, c: Checks):
 
 
 # ------------------------------------------------------------------------------------------------ (7)
+@scenario("motion-hit-test-T31")
+def motion_hit_test(out: Path, c: Checks):
+    """Input follows the real geometry, not the picture: during a 2 s animation a click at the centre of a moved
+    window's real (new) rectangle, where the screen still shows something else, activates that window. This is the
+    documented brief mismatch between what is drawn and where clicks go."""
+    with MotionSession(out, effect_config={"Duration": 2000}) as s:
+        s.require_effect()
+        three_loaded(s)
+        s.load_effect()
+        inp = Input(s)
+        try:
+            before = frames_by_caption(s)
+            off = s.kw.mark()
+            s.cmd("swap.next")
+            wait_motion(s, off, "start", 2)
+            time.sleep(0.4)
+            frames = {f["caption"]: f for f in s.frames_list()}
+            act = json.loads(s.js("emit(workspace.activeWindow ? workspace.activeWindow.caption : null)")[0])
+            moved = [k for k in frames if not near(frames[k]["frame"], before[k])]
+            target = next((k for k in moved if k != act), None)
+            cl = frames[target]["client"] if target else None
+            x, y = (cl["x"] + cl["width"] / 2, cl["y"] + cl["height"] * 0.75) if cl else (0, 0)
+            mid = s.screenshot()
+            inp.do(f"move {x} {y}", "press left", "release left")
+            activated = until_true(lambda: json.loads(s.js("emit(workspace.activeWindow ? "
+                                                          "workspace.activeWindow.caption : null)")[0]) == target, 2)
+            wait_motion(s, off, "end", 2, timeout=4)
+            time.sleep(0.3)
+            final = s.screenshot()
+        finally:
+            inp.close()
+        c("setup: the swap moved a window that is not the active one", target is not None, {"moved": moved, "active": act})
+        c("mid-animation the click point does not show that window yet (picture and input differ)",
+          not close(pixel(mid, x, y), pixel(final, x, y)), {"mid": pixel(mid, x, y), "settled": pixel(final, x, y)})
+        c("the click at the window's real rectangle activated it (input uses real geometry)", activated, target)
+        c("no errors in KWin's log", not s.log_lines(ERRORS), s.log_lines(ERRORS)[:5])
+
+
 @scenario("motion-instant-T31")
 def motion_instant(out: Path, c: Checks):
     """(7) The global animation speed 'Instant' (kdeglobals [KDE] AnimationDurationFactor=0) disables the
@@ -752,18 +790,32 @@ def motion_package(out: Path, c: Checks):
           text[-900:])
         kw.wait_log(r"plastile (?:info|notice) started ", 30, 0)
 
+        comp = kw.compositing_type()
+
         def loaded() -> bool:
-            return bool(kw.call("/Effects", "org.kde.kwin.Effects", "isEffectLoaded", "s", EFFECT)[0])
+            try:
+                return bool(kw.call("/Effects", "org.kde.kwin.Effects", "isEffectLoaded", "s", EFFECT)[0])
+            except NestedError:
+                if comp == "OpenGL":
+                    raise
+                return False   # no effects interface without OpenGL compositing (KWin 6.7.5 QPainter)
         c("startup: the script autoloads, the effect stays off (EnabledByDefault false, no kwinrc key)", not loaded())
         st = sh(kw, "status")
         c("status: effect installed with its version, enabled key unset (default off)",
           st["rc"] == 0 and "effect    : installed" in st["stdout"] and "version 0.1.0" in st["stdout"]
           and "effect on : unset (default: off)" in st["stdout"], st["stdout"][-500:])
-        supported = bool(kw.call("/Effects", "org.kde.kwin.Effects", "isEffectSupported", "s", EFFECT)[0])
+        try:
+            supported = bool(kw.call("/Effects", "org.kde.kwin.Effects", "isEffectSupported", "s", EFFECT)[0])
+        except NestedError:
+            if comp == "OpenGL":
+                raise
+            supported = False
+        # Where KWin cannot run scripted effects (QPainter, llvmpipe) the load checks below cannot be made; the
+        # packaging checks still run. The detail of each load check says which case applied.
         rc = notify_enabled(kw, True)
         on = until_true(loaded, 5)
         c("enable: the printed kwriteconfig6 --notify command loads it in the running KWin (where KWin supports "
-          "scripted effects)", rc == 0 and (on if supported else True), {"supported": supported, "loaded": on})
+          "scripted effects)", rc == 0 and (on if supported else True), {"supported": supported, "compositing": comp, "loaded": on})
         st = sh(kw, "status")
         c("status: reports the kwinrc key as true", "effect on : true" in st["stdout"], st["stdout"][-300:])
         up = sh(kw, "upgrade", str(zip_path))
@@ -784,7 +836,7 @@ def motion_package(out: Path, c: Checks):
         notify_enabled(kw, True)
         on = until_true(loaded, 5)
         c("post-start install: KWin finds the newly installed effect when it is enabled", on if supported else True,
-          {"supported": supported, "loaded": on})
+          {"supported": supported, "compositing": comp, "loaded": on})
         notify_enabled(kw, False)
         until_true(lambda: not loaded(), 5)
         rmall = sh(kw, "remove")

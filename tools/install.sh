@@ -117,6 +117,8 @@ check_effect_source() {
 }
 
 # Install the effect; an installed one is replaced ($1 = upgrade) or left as it is ($1 = keep).
+# $2 = optional (alongside the script): a kpackagetool6 failure is reported and the script install
+# still succeeds, since Plastile works without the effect; otherwise it is fatal.
 put_effect() {
     check_effect_source
     if [ -e "$EFFECT_TARGET" ]; then
@@ -124,9 +126,14 @@ put_effect() {
             printf '\nEffect: %s is already installed and was left as it is (upgrade replaces it).\n' "$EFFECT_TARGET"
             return 0
         fi
-        "$KPT" --type "$EFFECT_TYPE" --upgrade "$EFFECT_SOURCE" || die "upgrading the effect failed"
+        action=--upgrade
     else
-        "$KPT" --type "$EFFECT_TYPE" --install "$EFFECT_SOURCE" || die "installing the effect failed"
+        action=--install
+    fi
+    if ! "$KPT" --type "$EFFECT_TYPE" "$action" "$EFFECT_SOURCE"; then
+        [ "${2:-}" = optional ] || die "kpackagetool6 $action of the effect failed"
+        printf 'install.sh: warning: kpackagetool6 %s of the Plastile Motion effect failed; Plastile is installed and works without it (retry with: tools/install.sh install-effect)\n' "$action" >&2
+        return 0
     fi
     cat <<EOF
 
@@ -142,8 +149,8 @@ or, from a terminal in the same session (KWin loads it when it sees the change):
 
 To turn it off, untick it or run the same command with false. Animation speed "Instant"
 (System Settings > General Behavior) also turns it off. This script prints these commands;
-it does not execute them. A running KWin keeps an already loaded older version of the effect
-until it is turned off and on again.
+it does not execute them. A running KWin reads the effect's files when it loads it: after an
+upgrade, turn the effect off and on again (or log out and in) to run the new version.
 EOF
 }
 
@@ -243,7 +250,7 @@ cmd_install() {
     fi
     "$KPT" --type "$TYPE" --install "$src"
     print_enable_help
-    put_effect keep
+    put_effect keep optional
 }
 
 cmd_upgrade() {
@@ -261,7 +268,7 @@ Management > KWin Scripts, or kwriteconfig6 + Scripting.start) is not enough: KW
 starts the older version again from its QML cache (measured in a nested session).
 Settings in kwinrc and your shortcut bindings are kept. This script restarts nothing.
 EOF
-    put_effect upgrade
+    put_effect upgrade optional
 }
 
 cmd_remove() {
