@@ -142,12 +142,13 @@ The configure button next to Plastile in KWin Scripts opens KWin's generic scrip
 
 The dialog writes values to `~/.config/kwinrc` under `[Script-plastile]`, using the key names in [CONFIGURATION](CONFIGURATION.md#flat-keys). Choices are stored by name (`layout=bsp`).
 
-The dialog was verified headlessly with `tools/settings-check`, which loads the same schema and form the way KWin's dialog does. It confirmed four things:
+The dialog was verified headlessly with `tools/settings-check`, which loads the same schema and form the way KWin's dialog does. It confirmed five things:
 
 - every schema entry is bound to a widget
 - defaults reach the widgets
 - edits are saved in the vocabulary the runtime expects
 - hand-edited values load back
+- hand-set values the form shows exactly (`layout=scrolling`, `masterRatio=0.555`, `ratioStep=0.025`) survive an Apply that changes another field, and choosing *Master and stack* over `layout=scrolling` saves it
 
 It has been opened and applied in KWin's real dialog in a nested session (`kcmshell6 kcm_kwin_scripts`, driven with real input; scenario `settings-dialog-T28`), but **not** clicked through in a physical session.
 
