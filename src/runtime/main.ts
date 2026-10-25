@@ -341,7 +341,9 @@ export function createRuntime(env: RuntimeEnv): Runtime {
         timing: engine.lastTiming, activateNs: engine.lastActivateNs, writes: r.requested }));
     }
     log("debug", "command", r);
-    if (r.status === "accepted" && (id.indexOf("plastile.zone.") === 0 || id.indexOf("plastile.layout.") === 0)) zoneOverlay(true);
+    // Any accepted command may change what a shown overlay draws (a reset leaves zones, a float
+    // releases a zoned window); a hidden or absent overlay costs one state query.
+    if (r.status === "accepted") zoneOverlay(true);
     return r;
   };
 

@@ -139,7 +139,8 @@ Refinements and deviations, each with its reason:
     them, and unload destroys them. Pointer pass-through was not measured.
 12. **Overlay lifecycle.** The QML component is created on the first `zone.show`, hidden and shown again afterwards
     (KWin destroys the internal windows while hidden, so nothing is mapped), and destroyed on unload. It holds no timer
-    or connection. While shown it is refreshed by Plastile's own commands only; other changes appear the next time it is
+    or connection. While shown it is refreshed after every accepted Plastile command (a context reset or layout change
+    that leaves zones hides it; a float updates the counts), and only then; other changes appear the next time it is
     shown. It takes rectangles, labels, a heading and a hint, and holds no zone logic, so another feature (the drop
     preview of ADR-017) can reuse it.
 13. **Own UI.** `isOwnUi` accepts a second fixed caption, `Plastile zones`, under the same no-application-id,

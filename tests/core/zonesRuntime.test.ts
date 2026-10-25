@@ -62,6 +62,27 @@ test("zone.show creates the overlay on first use, toggles it, and unload destroy
   assert.deepEqual(calls.slice(-2), ["show", "destroy"]);
 });
 
+test("any accepted Plastile command refreshes a shown overlay: a reset out of zones hides it, a float updates the count", () => {
+  const a = setup("master-stack");
+  a.rt.dispatch("plastile.layout.zones");
+  a.rt.dispatch("plastile.zone.show");
+  assert.deepEqual(a.calls, ["show"]);
+  assert.equal(a.rt.dispatch("plastile.context.reset")!.status, "accepted");
+  assert.deepEqual(a.calls, ["show", "hide"], "no zone rectangles over a master-stack desktop");
+  a.rt.shutdown();
+
+  const { ws, qt, wins, rt, calls, shown } = setup("zones");
+  ws.activeWindow = wins[0];
+  rt.dispatch("plastile.zone.assign-2");
+  qt.drain();
+  rt.dispatch("plastile.zone.show");
+  assert.match(shown[0].heading, /1 assigned/);
+  assert.equal(rt.dispatch("plastile.window.toggle-float")!.status, "accepted");
+  assert.deepEqual(calls, ["show", "show"]);
+  assert.match(shown[1].heading, /0 assigned/, "the floated window left its zone");
+  rt.shutdown();
+});
+
 test("zone.show outside a zones context shows nothing and says why", () => {
   const { rt, calls, f } = setup("master-stack");
   rt.dispatch("plastile.zone.show");
