@@ -52,6 +52,7 @@ export const LAYOUTS: Record<LayoutKind, AnyLayout> = {
 export const REPARK_LIMIT = 8;
 const LAYOUT_CYCLE: readonly LayoutKind[] = ["master-stack", "bsp", "monocle", "floating"];
 const DIVERGED = "did not reach its target after bounded corrections";
+const SELF_RESIZING = "keeps changing its own size; Plastile stopped correcting it";
 /** Preferences kept for dropped (empty) contexts, most recent first out last. */
 export const RETAINED_MAX = 64;
 
@@ -481,6 +482,7 @@ export class Engine {
     this.releaseAllZones(); // zoned windows keep their frames (ZONES §2)
     this.recs.forEach((r) => {
       L.cancel(r.ledger);
+      r.ledger.request = null; // the user owns the frames now; a resume's targets are fresh requests
       this.restoreBorder(r);
     });
   }
@@ -534,6 +536,7 @@ export class Engine {
     r.frame = rectOf(s.frame); r.nativeTile = s.nativeTile;
     if (s.nativeTile) r.nativeYield = true;
     r.suspensions = this.suspensionsFor(r, s.states);
+    if (r.mode === "pending" && s.meta.appId !== "") r.readyBy = null; // its metadata signal was missed
     this.reclassify(r, "resync");
   }
 
@@ -719,7 +722,8 @@ export class Engine {
     switch (o) {
       case "settled":
         this.counters.settled++;
-        if (r.exception === DIVERGED) r.exception = null; // a slow client got there after all
+        // A slow client got there after all, or a self-resizing one reached a newer target.
+        if (r.exception === DIVERGED || r.exception === SELF_RESIZING) r.exception = null;
         this.trace.record(this.svc.now(), "settled", id);
         this.disarmIfIdle();
         if (this.restoreChecks.has(id)) this.ensureFlush(); // a restore waited for this request
@@ -760,7 +764,7 @@ export class Engine {
           else if (r.ledger.status !== "diverged") {
             L.diverge(r.ledger);
             this.counters.diverged++;
-            r.exception = "keeps changing its own size; Plastile stopped correcting it";
+            r.exception = SELF_RESIZING;
           }
         }
         break;
@@ -1021,6 +1025,10 @@ export class Engine {
   }
 
   private reclassify(r: Rec, why: string): void {
+    // Waiting for late metadata (BEHAVIOR §1): only its arrival or the readiness deadline ends the
+    // wait (both clear readyBy first). Other events (membership, constraints, configuration, a native
+    // tile) are already stored on the record and are classified with the metadata.
+    if (r.mode === "pending" && r.readyBy !== null) return;
     this.counters.reclassified++;
     const key = this.singleContextKey(r.membership);
     const prevMin = r.rules?.minSize;
@@ -1392,12 +1400,16 @@ export class Engine {
     this.corrections.clear();
     for (const id of ids) {
       const r = this.recs.get(id);
-      if (!r || !this.ownsGeometry(r) || !r.ledger.desired) continue;
-      // A dirty context is re-solved in this flush and its fresh target supersedes the old
-      // one (e.g. KWin moved a tile off a new panel before the area change was known).
-      if (this.dirty.has(contextId(r.ctx!))) continue;
+      if (!r) continue;
+      // A correction not written here leaves no request outstanding: one whose deadline already
+      // came due has none left, and a later solve to the same target would skip it as in flight.
+      if (!this.ownsGeometry(r) || !r.ledger.desired) { L.cancel(r.ledger); continue; }
       // Hidden since it was queued: never written while hidden, re-solved when shown.
       if (!this.shown(r)) { this.deferHidden(r, r.frame); continue; }
+      // A dirty context is re-solved in this flush and its fresh target supersedes the old
+      // one (e.g. KWin moved a tile off a new panel before the area change was known); the
+      // same target is written again there as the correction.
+      if (this.dirty.has(contextId(r.ctx!))) { L.cancel(r.ledger); continue; }
       if (rectNear(r.frame, r.ledger.desired, r.ledger.tol) || rectNear(r.frame, r.ledger.accepted, r.ledger.tol)) continue;
       if (!L.canCorrect(r.ledger)) continue;
       this.contained("correction", () => this.write(r, r.ledger.desired!, "correction"));
@@ -1441,11 +1453,14 @@ export class Engine {
    * hidden. KWin moves such windows itself (its work-area check after a panel or output change),
    * so this is not drift to correct: nothing is written while hidden, no correction is spent and
    * nothing diverges. Its context is invalidated and re-solved, against the area then current,
-   * when it is shown (markVisibleDirty).
+   * when it is shown (markVisibleDirty). Its request is dropped, so the write then is a fresh
+   * plan write, not a correction of the same target counted against the window's budget.
    */
   private deferHidden(r: Rec, f: Rect): void {
     this.corrections.delete(r.id);
     this.reparkQueue.delete(r.id);
+    L.cancel(r.ledger);
+    r.ledger.request = null;
     const c = r.ctx ? this.contexts.get(contextId(r.ctx)) : undefined;
     if (c && c.applied === c.revision) c.revision++;
     this.trace.record(this.svc.now(), "hidden-external", r.id, { frame: f, desired: r.ledger.desired });
@@ -1527,6 +1542,7 @@ export class Engine {
       this.counters.overflow++;
       r.exception = "overflow: " + (res.notes.find((n) => n.startsWith(id + ":")) ?? "does not fit");
       this.transition(r, "floating", r.ctx, "overflow");
+      this.applyBorderPolicy(r); // out of the layout: a border rule applies only while tiled
     }
     c.plan = res.slots;
     c.applied = c.revision;
@@ -1690,7 +1706,7 @@ export class Engine {
       } else if (x.kind === "accepted") {
         this.counters.accepted++;
       } else if (x.kind === "correct") {
-        if (this.ownsGeometry(r)) this.corrections.add(r.id);
+        this.corrections.add(r.id); // no deadline is armed for it again: runCorrections writes or cancels it
       } else if (x.kind === "diverged") {
         this.counters.diverged++;
         r.exception = DIVERGED;
@@ -2130,7 +2146,15 @@ export class Engine {
         if (!this.suspended) {
           this.suspended = true;
           // A window still waiting for its open decision is adopted at resume, left as it is (ADR-021).
-          this.recs.forEach((w) => { if (w.open === "wait" || w.open === "watch" || w.open === "hidden") w.open = null; });
+          // So is one whose un-maximize is not acknowledged yet: the suspension ends that wait (its
+          // deadline is cancelled), and while KWin reports it maximized it is suspended as for any maximize.
+          this.recs.forEach((w) => {
+            if (w.open === "wait" || w.open === "watch" || w.open === "hidden") w.open = null;
+            else if (w.open === "requested") {
+              w.open = null;
+              if (w.states.maximized) w.suspensions.add("maximized");
+            }
+          });
           this.openChecks.clear();
           this.openHidden.clear();
           this.releaseOwnership();
@@ -2851,7 +2875,10 @@ export class Engine {
   /**
    * One restore write placing a parked window inside its output's work area: its virtual
    * position clamped into the area (a window larger than the area is shrunk to it). Skipped
-   * when the window is already inside (moved back by KWin, the user or a newer request).
+   * when the window is already inside (moved back by KWin, the user or a newer request) and no
+   * request outside the area is still in flight: a parking write that also changed the size is
+   * a configure the client has not committed yet, and its commit would move the window off every
+   * output. It is superseded by a restore at the size it carries.
    */
   private unpark(r: Rec, p: Parked): void {
     const now = this.host.frame(r.id, r.gen);
@@ -2860,8 +2887,14 @@ export class Engine {
     if (!isValidArea(area) && r.membership.output !== null) area = this.host.workArea(r.membership.output, p.ctx.desktop);
     if (!isValidArea(area)) area = this.host.outputs()[0]?.geometry ?? null;
     if (!isValidArea(area)) return;
-    if (contains(area, now, frameTolerance(this.scales.get(p.ctx.output) ?? 1))) return;
-    const w = Math.min(now.width, area.width), h = Math.min(now.height, area.height);
+    const tol = frameTolerance(this.scales.get(p.ctx.output) ?? 1);
+    // The newest request whose size the client never committed, also after a transition cancelled it.
+    const hist = r.ledger.history, last = hist.length ? hist[hist.length - 1] : null;
+    const req = last && !last.seen && r.ledger.request && rectNear(last.rect, r.ledger.request.rect) ? last.rect : null;
+    const inFlight = req !== null && !contains(area, req, tol);
+    if (!inFlight && contains(area, now, tol)) return;
+    const size = inFlight ? req : now;
+    const w = Math.min(size.width, area.width), h = Math.min(size.height, area.height);
     const x = Math.min(Math.max(p.virtual.x, area.x), area.x + area.width - w);
     const y = Math.min(Math.max(p.virtual.y, area.y), area.y + area.height - h);
     L.cancel(r.ledger);

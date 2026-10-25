@@ -100,8 +100,11 @@ dispatch.
 1. **Nothing stays parked when Plastile stops owning the context.** Unload, suspend, switching the
    context to another layout, a configuration that disables the context, and `reconcile` all unpark.
    Unparking places parked windows back inside their output's work area, either at their virtual
-   position clamped into the area or centred when that is invalid. This is tested by forcing each exit path while
-   windows are parked.
+   position clamped into the area or centred when that is invalid. A window whose parking write also changed
+   its size can still show its old, visible frame when Plastile lets go, because KWin applies that write's
+   position only when the client commits the configure. Such a window is unparked too, at the size that
+   configure carries, and the unparking write replaces the configure. This is tested by forcing each exit path while windows are parked,
+   also while a parked column's resize is still in flight.
 2. After an output topology change, KWin may have pulled parked windows back. The normal topology
    flush re-solves the strip and re-parks them. The brief visible transient is a documented limitation.
 3. A parked window that becomes active, for example through Alt+Tab or a notification, scrolls into
