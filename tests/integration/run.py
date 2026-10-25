@@ -22,7 +22,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
-from harness import FIXTURE, PACKAGE_QML, ROOT, STATE_HELPER  # noqa: E402
+from harness import FIXTURE, PACKAGE_QML, ROOT, STATE_HELPER, provenance  # noqa: E402
 import importlib  # noqa: E402
 from scenarios import SCENARIOS, Checks, Skipped  # noqa: E402
 
@@ -50,12 +50,8 @@ def main() -> int:
     names = [n for n in args.only.split(",") if n] or list(SCENARIOS)
     stamp = time.strftime("%Y%m%dT%H%M%S")
     out = ROOT / "artifacts/integration" / stamp
-    rev = subprocess.run(["git", "-C", str(ROOT), "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip()
-    dirty = bool(subprocess.run(["git", "-C", str(ROOT), "status", "--porcelain", "--", "src", "package", "tests", "tools"],
-                                capture_output=True, text=True).stdout.strip())
     kwin = subprocess.run(["kwin_wayland", "--version"], capture_output=True, text=True).stdout.strip()
-    report = {"implementationCommit": rev, "implementationDirty": dirty, "kwin": kwin,
-              "layer": "nested KWin virtual backend (not physical)", "scenarios": {}}
+    report = {**provenance(), "kwin": kwin, "layer": "nested KWin virtual backend (not physical)", "scenarios": {}}
     failed = 0
     skipped: dict[str, str] = {}
     for name in names:

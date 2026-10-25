@@ -32,7 +32,7 @@ from pathlib import Path
 
 from harness import ROOT, Session, explain, near, tiling_errors
 from scenarios import Checks, scenario
-from scenarios_persist import psession, pload
+from scenarios_persist import DESKTOP_ID, generation, newest, psession, pload, wait_generation
 
 sys.path.insert(0, str(ROOT / "tools"))
 from nested import session_base  # noqa: E402
@@ -127,6 +127,7 @@ def notice_default(out: Path, c: Checks):
         early = plastile_lines(s, off0)
         c("FR1: at load nothing but the start line (no info or debug lines)", early == [want], early)
         area = s.area()
+        pre = s.frames()
         off = s.kw.mark()
         s.cmd("layout.next")
         s.kw.wait_log(r"plastile notice layout ", 5, off)
@@ -136,8 +137,12 @@ def notice_default(out: Path, c: Checks):
           cmd_lines == [f"plastile notice layout bsp on {OUT} / Desktop 1 (was master-stack)"], cmd_lines)
         s.settle()
         f = s.frames()
-        c("FR1: the command took effect (oracle: BSP pair tiles the area)",
-          not tiling_errors([f[fx(1)], f[fx(2)]], area, GAP), [f[fx(1)]["frame"], f[fx(2)]["frame"]])
+        # Master-stack's unequal pair also tiles the area: the BSP pair is told apart by its equal halves.
+        a, b = f[fx(1)]["frame"], f[fx(2)]["frame"]
+        c("FR1: the command took effect (oracle: the tiles changed into a BSP pair, two equal side-by-side halves)",
+          not tiling_errors([f[fx(1)], f[fx(2)]], area, GAP) and abs(a["width"] - b["width"]) <= 1
+          and abs(a["y"] - b["y"]) <= 0.5 and abs(a["height"] - b["height"]) <= 0.5 and not all(near(f[k]["frame"], pre[k]["frame"], 1.0) for k in pre),
+          {"before": [pre[fx(1)]["frame"], pre[fx(2)]["frame"]], "after": [a, b]})
         off = s.kw.mark()
         s.spawn(3); s.settle(); s.kill(3); s.settle()
         quiet = plastile_lines(s, off)
@@ -370,16 +375,26 @@ def restored_notice(out: Path, c: Checks):
                                                                                                   "started": started})
             c("FR6: ... and it is in effect (oracle: monocle, both fill the area)",
               all(near(f[fx(i)]["frame"], full(area), 1.0) for i in (1, 2)), [f[fx(1)]["frame"], f[fx(2)]["frame"]])
+            g1 = generation(base)
             s.cmd("context.reset")
             time.sleep(0.3); s.settle()
             s.unload()
-            time.sleep(0.5)
+            g2 = wait_generation(s, base, (g1 or 0) + 1)
+        snap = newest(base) or {}
+        mine = [x for x in snap.get("contexts", []) if x["outputKey"] == OUT and x["desktopId"] == DESKTOP_ID]
+        c("FR6: the reset was saved (a newer generation; Desktop 1 has no saved layout)",
+          g1 is not None and g2 is not None and g2 > g1 and all(x["layout"] is None for x in mine),
+          {"before": g1, "after": g2, "contexts": mine})
         with psession(out / "third", base) as s:
             s.spawn(1); s.spawn(2)
             off = s.kw.mark()
-            pload(s); s.settle()
+            loaded = message(pload(s)); s.settle()
             time.sleep(0.3)
             restored = s.log_lines(r"plastile notice restored", off)
+            # Without this, a session that could not read the state would announce nothing too.
+            c("FR6: the third session loaded the state saved after the reset",
+              loaded.startswith("plastile info saved state loaded ")
+              and json.loads(loaded.split("saved state loaded ", 1)[1]).get("generation") == g2, loaded)
             c("FR6: after a reset nothing is announced (the saved layout is the configured one)", restored == [], restored)
     finally:
         shutil.rmtree(base, ignore_errors=True)

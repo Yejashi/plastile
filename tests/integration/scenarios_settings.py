@@ -28,7 +28,7 @@ import sys
 import time
 from pathlib import Path
 
-from harness import ROOT, Input, Session, evidence_file, tiling_errors
+from harness import ROOT, Input, Session, evidence_file, provenance, tiling_errors
 from scenarios import Checks, Skipped, scenario
 from scenarios_package import STARTED, installed_dir, kwinrc_text, sh
 from scenarios_shortcuts import codes, defaults
@@ -323,10 +323,8 @@ def settings_dialog(out: Path, c: Checks):
         raise Skipped("the KWin script settings dialog cannot be driven here: missing " + ", ".join(missing))
     import release
     zip_path = Path(release.build(out / "dist")["path"])
-    git = lambda *a: subprocess.run(["git", "-C", str(ROOT), *a], capture_output=True, text=True).stdout.strip()  # noqa: E731
     ev: dict = {"layer": "nested KWin virtual backend (not physical); package installed into the private data home",
-                "implementationCommit": git("rev-parse", "HEAD"),
-                "implementationDirty": bool(git("status", "--porcelain", "--", "src", "package", "tests", "tools")),
+                **provenance(),
                 "kwin": subprocess.run(["kwin_wayland", "--version"], capture_output=True, text=True).stdout.strip(),
                 "kcmshell6": sysinfo.binary_version("kcmshell6"), "atspiRegistry": sysinfo.owning_package(REGISTRYD),
                 "entryPoint": f"kcmshell6 {KCM} > Plastile > Configure… (KCMultiDialog with X-KDE-ConfigModule)",

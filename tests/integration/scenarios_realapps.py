@@ -426,11 +426,18 @@ def run_app(app: App, out: Path, c: Checks) -> None:
             c(f"{app.name}: no errors through close", not final_errs, final_errs[:3])
             result["logErrorsTotal"] = len(final_errs)
     finally:
-        # After KWin, XWayland and the private bus are gone, nothing of this session may remain.
+        # After KWin, XWayland and the private bus are gone, nothing of this session may remain. Survivors are
+        # looked for before the sweep, which would kill them (a bounded wait lets orderly exits finish).
+        deadline = time.monotonic() + 3.0
+        left = session_procs(run_dir, set())
+        while left and time.monotonic() < deadline:
+            time.sleep(0.1)
+            left = session_procs(run_dir, set())
+        c(f"{app.name}: no process of the session survives teardown", not left, [n for _, n in left])
         result["sweptAfterStop"] = sweep(run_dir, set())
         time.sleep(0.5)
         left = session_procs(run_dir, set())
-        c(f"{app.name}: no process of the session survives teardown", not left, [n for _, n in left])
+        c(f"{app.name}: the harness sweep leaves nothing behind", not left, [n for _, n in left])
         finish()
 
 

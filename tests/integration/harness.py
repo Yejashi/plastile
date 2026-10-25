@@ -43,6 +43,22 @@ def evidence_file(name: str) -> Path:
     return base / name
 
 
+# Everything a nested run executes or is built from: the bundle's sources and build configuration, the
+# Motion effect (installed from the working tree), the persistence helper, the fixture clients, the harness
+# and the tools. Documentation is not; an untracked node_modules link is not either.
+IMPLEMENTATION_PATHS = ("src", "package", "effect", "helper", "fixtures", "tests", "tools", "probes", "package.json",
+                        "package-lock.json", "tsconfig.json", "tsconfig.runtime.json")
+
+
+def provenance(root: Path = ROOT, exclude: tuple[str, ...] = ()) -> dict:
+    """{implementationCommit, implementationDirty}: HEAD, and whether any implementation path differs from it.
+
+    `exclude` names paths a run itself writes (scenarios_replay.py captures into tests/fixtures/replay)."""
+    git = lambda *a: subprocess.run(["git", "-C", str(root), *a], capture_output=True, text=True).stdout.strip()  # noqa: E731
+    status = git("status", "--porcelain", "--", *IMPLEMENTATION_PATHS, *(f":(exclude){p}" for p in exclude))
+    return {"implementationCommit": git("rev-parse", "HEAD"), "implementationDirty": bool(status)}
+
+
 def state_service_file(exe: Path = STATE_HELPER, env: dict | None = None) -> dict[str, str]:
     """The helper's D-Bus activation file for a nested session's private bus ({file name: text}).
 
