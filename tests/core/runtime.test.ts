@@ -200,6 +200,28 @@ test("T26: the shortcut check starts on a later turn, logs one warning, and is s
   rt.shutdown();
 });
 
+test("Q01: an invalid configJson at start keeps the dialog's flat settings and says there is no previous revision", () => {
+  const bad = JSON.stringify({ schemaVersion: 1, rules: [{ id: "x", match: { appid: "a" }, actions: {} }] });
+  const { f, qt, wins, rt } = setup({ gapInner: "20", gapOuter: "20", layout: "bsp", diagnostics: "debug", osd: "false", configJson: bad }, false);
+  qt.drain();
+  const rejected = f.lines.filter((l) => l.startsWith("plastile error configuration rejected"));
+  assert.equal(rejected.length, 1);
+  assert.match(rejected[0], /^plastile error configuration rejected; no previous revision, using the settings without configJson \["rules\[0\]\.match\.appid: unknown key"\]$/);
+  assert.match(f.lines.find((l) => l.startsWith("plastile notice started "))!, /layout bsp on O1/);
+  assert.equal(wins[0].frameGeometry.x, 20, "gapOuter 20 from the flat keys");
+  rt.dispatch("plastile.focus.next");
+  assert.ok(f.lines.some((l) => l.startsWith("plastile debug command ")), "the flat diagnostics level applies");
+  rt.dispatch("plastile.inspect.counters");
+  assert.match(f.lines.find((l) => l.startsWith("plastile counters "))!, /"osd":\{"state":"off"/);
+  rt.shutdown();
+  // An invalid flat key too: nothing usable, the built-in defaults.
+  const d = setup({ gapInner: "huge", layout: "bsp", configJson: bad }, false);
+  d.qt.drain();
+  assert.ok(d.f.lines.some((l) => l.startsWith("plastile error configuration rejected; no previous revision, using the built-in defaults")));
+  assert.match(d.f.lines.find((l) => l.startsWith("plastile notice started "))!, /layout master-stack on O1/);
+  d.rt.shutdown();
+});
+
 test("T26: counters report the shortcut check as pending until it finishes, and unavailable without D-Bus", () => {
   const counters = (f: ReturnType<typeof setup>["f"]) =>
     JSON.parse(f.lines.filter((l) => l.startsWith("plastile counters ")).pop()!.slice("plastile counters ".length)).shortcuts;

@@ -95,7 +95,15 @@ export function createRuntime(env: RuntimeEnv): Runtime {
     for (const k of FLAT_KEYS) flat[k] = env.kwin.readConfig(k, "");
     return flat;
   };
-  /** Validate and compile; on failure keep the previous revision (Q01). */
+  const adopt = (snap: ConfigSnapshot): void => {
+    snapshot = snap;
+    level = LEVELS[snap.diagnostics] ?? LEVELS.warn;
+    osd.setEnabled(snap.osd);
+  };
+  /**
+   * Validate and compile; on failure keep the previous revision (Q01). At start there is none:
+   * the flat keys alone when only the JSON document is invalid, else the built-in defaults.
+   */
   let lastInput: string | null = null;
   const loadConfig = (): boolean => {
     const flat = readFlat();
@@ -106,17 +114,20 @@ export function createRuntime(env: RuntimeEnv): Runtime {
     lastInput = key;
     const r = compileConfig(flat, ++revision);
     if (!r.ok) {
-      log("error", "configuration rejected; keeping previous revision", r.errors.slice(0, 20).map(formatError));
-      if (snapshot === null) {
-        const fallback = compileConfig({}, revision);
-        if (fallback.ok) snapshot = fallback.snapshot;
+      const errors = r.errors.slice(0, 20).map(formatError);
+      if (snapshot !== null) {
+        log("error", "configuration rejected; keeping previous revision", errors);
+        return false;
       }
+      const flatOnly = compileConfig({ ...flat, configJson: "" }, revision);
+      log("error", `configuration rejected; no previous revision, using ${flatOnly.ok ? "the settings without configJson"
+        : "the built-in defaults"}`, errors);
+      const fallback = flatOnly.ok ? flatOnly : compileConfig({}, revision);
+      if (fallback.ok) adopt(fallback.snapshot);
       return false;
     }
     for (const w of r.warnings) log("warn", "configuration: " + formatError(w));
-    snapshot = r.snapshot;
-    level = LEVELS[snapshot.diagnostics] ?? LEVELS.warn;
-    osd.setEnabled(snapshot.osd);
+    adopt(r.snapshot);
     return true;
   };
   loadConfig();

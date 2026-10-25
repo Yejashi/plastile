@@ -1,6 +1,6 @@
 # Configuring Plastile
 
-**Configuration is data.** Every value is validated and compiled into an immutable snapshot before it is activated. An invalid configuration is rejected as a whole: the previous one stays active, and each problem is logged with its exact path (for example `rules[2].actions.colour: unknown key`). Matchers are compiled once at activation, so nothing is parsed or compiled while you open windows or press shortcuts. Plastile does not execute user JavaScript.
+**Configuration is data.** Every value is validated and compiled into an immutable snapshot before it is activated. An invalid configuration is rejected as a whole: the previous one stays active, and each problem is logged with its exact path (for example `rules[2].actions.colour: unknown key`). When Plastile starts (at login, or when the script is enabled) there is no previous one: if only `configJson` is invalid, the flat keys (the settings dialog's values) are used without it, otherwise the built-in defaults, and the log says `configuration rejected; no previous revision, using the settings without configJson` or `... using the built-in defaults`. Matchers are compiled once at activation, so nothing is parsed or compiled while you open windows or press shortcuts. Plastile does not execute user JavaScript.
 
 **Where it lives.** Everything is in `~/.config/kwinrc` under `[Script-plastile]`, written by the settings dialog or by hand ([INSTALL](INSTALL.md#4-settings-dialog)).
 
