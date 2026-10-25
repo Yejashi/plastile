@@ -398,7 +398,7 @@ def package_helper_install(out: Path, c: Checks):
     xdg(base)
     with Session(out / "s", helper=False, extra_env={"XDG_STATE_HOME": str(base / "state")}) as s:
         kw = s.kw
-        prefix = kw.root / "prefix"
+        prefix = kw.root / "helper prefix"  # the bus splits Exec= like a shell: a space must stay one argument
         env = {**kw.env(), "PLASTILE_HELPER_PREFIX": str(prefix), "PLASTILE_HELPER_BUILD": str(out / "helper-build")}
 
         def run(*args: str) -> dict:
@@ -412,12 +412,15 @@ def package_helper_install(out: Path, c: Checks):
         inst = run("install-helper")
         text = service.read_text() if service.exists() else ""
         c("install-helper: rc 0, the binary in the private prefix and the activation file in the session's data home "
-          "naming it", inst["rc"] == 0 and os.access(exe, os.X_OK) and f"Exec={exe}\n" in text
+          "naming it in double quotes", inst["rc"] == 0 and os.access(exe, os.X_OK) and f'Exec="{exe}"\n' in text
           and "Name=org.kde.plastile.State" in text, {"result": inst, "service": redact(text, kw)})
         c("install-helper asked the session's own bus to re-read its service files",
           "re-read its service files" in inst["stdout"], inst["stdout"][-400:])
+        c("install-helper with no helper on the bus: nothing is running now", "nothing is running now" in inst["stdout"],
+          inst["stdout"][-400:])
         status = run("status")
-        c("status after install: helper installed", "helper    : installed" in status["stdout"], status["stdout"][-600:])
+        c("status after install: helper installed, at the path with the space",
+          f"helper    : installed ({redact(str(exe), kw)}, " in status["stdout"], status["stdout"][-600:])
         s.spawn(1); s.spawn(2)
         off = kw.mark()
         s.load()
@@ -429,6 +432,10 @@ def package_helper_install(out: Path, c: Checks):
         s.cmd("resize.grow")
         g = wait_generation(s, base, 1, 6)
         c("a save lands through the installed helper (generation 1 in the state directory)", g == 1, {"generation": g})
+        reinst = run("install-helper")
+        c("install-helper over the running helper: rc 0, and it says that helper keeps serving until KWin exits",
+          reinst["rc"] == 0 and "keeps serving this session until\nKWin exits" in reinst["stdout"]
+          and "nothing is running now" not in reinst["stdout"], reinst["stdout"][-400:])
         s.unload()
         rm = run("remove-helper")
         c("remove-helper: rc 0, the activation file and the binary are gone, the saved state is kept",

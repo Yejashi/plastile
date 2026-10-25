@@ -63,7 +63,8 @@ sessions that are running the old binary keep working during a rebuild.
 | `--output NAME` | Panel mode only: anchor the panel to the `wl_output` whose `name` event is NAME (for example `Virtual-1`). Without it the compositor chooses the output. An unknown name logs an `error` and exits with code 1. |
 | `--panel-scope NAME` | Panel mode only: the layer-surface namespace instead of `dock`. KWin types the window by it, and a namespace it does not list (for example `waybar`) gives a normal, unmanaged window that still reserves its exclusive zone (observed source: kwin v6.8.1 `src/layershellv1window.cpp`). |
 
-The delay, ignore-size, and decoration settings also apply to the child. A
+The delay and decoration settings also apply to the child; `--ignore-size`, `--clamp`
+and the min/max hints apply to the main window only (the child commits every configured size). A
 configure size of 0 on an axis uses the current size on that axis. At most one of
 `--exit-after-ms`, `--exit-after-map-ms` and `--exit-on-map` may be given, and the
 exit, late-minimum and maximize options are refused in panel mode.
