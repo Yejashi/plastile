@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Plastile Motion settings (kwinrc [Effect-plastile_motion]), read by contents/code/main.js
+     with effect.readConfig. The global animation speed (System Settings > General Behavior)
+     scales Duration, and "Instant" turns the effect off. -->
+<kcfg xmlns="http://www.kde.org/standards/kcfg/1.0"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.kde.org/standards/kcfg/1.0 http://www.kde.org/standards/kcfg/1.0/kcfg.xsd">
+  <kcfgfile name=""/>
+  <group name="">
+    <entry name="Duration" type="UInt">
+      <label>Animation duration in ms before the global speed factor (0 = default, 180 ms)</label>
+      <default>0</default>
+      <min>0</min>
+      <max>2000</max>
+    </entry>
+    <entry name="Easing" type="Int">
+      <label>Easing curve: 0 OutCubic, 1 OutQuart, 2 OutQuad, 3 InOutCubic, 4 Linear</label>
+      <default>0</default>
+      <min>0</min>
+      <max>4</max>
+    </entry>
+    <entry name="Debug" type="Bool">
+      <label>Log every animation decision (diagnostics; costs a log line per change)</label>
+      <default>false</default>
+    </entry>
+  </group>
+</kcfg>

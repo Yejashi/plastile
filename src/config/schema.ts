@@ -172,9 +172,13 @@ const SETTINGS_KEYS = [
   "followOnSend", "focusWrap", "liveResize", "maximizedOnOpen", "multiContextWindows", "animation",
 ];
 
-function unsupported(s: Sink, v: unknown, path: string, only: unknown): void {
-  if (v !== only) err(s, path, `not supported in this version (only ${JSON.stringify(only)} is accepted)`);
+function unsupported(s: Sink, v: unknown, path: string, only: unknown, hint = ""): void {
+  if (v !== only) err(s, path, `not supported in this version (only ${JSON.stringify(only)} is accepted)${hint}`);
 }
+
+// ADR-023: Plastile never animates geometry; motion is the separate, optional KWin effect.
+const ANIMATION_HINT = "; Plastile moves windows at once, and window motion is the optional 'Plastile Motion' " +
+  "desktop effect (System Settings > Desktop Effects)";
 
 export function readPatch(s: Sink, v: unknown, path: string): SettingsPatch {
   const p: SettingsPatch = {};
@@ -275,14 +279,15 @@ export function readPatch(s: Sink, v: unknown, path: string): SettingsPatch {
     const x = oneOf(s, o.maximizedOnOpen, at(path, "maximizedOnOpen"), MAXIMIZED_ON_OPEN);
     if (x !== null) p.maximizedOnOpen = x;
   }
-  // Accepted for forward compatibility with the documented example, only at their inert values.
+  // Accepted for forward compatibility with the documented example, only at their inert values. `animation` stays
+  // inert for good (ADR-023): the effect cannot be told anything by the script, and Plastile never writes kwinrc.
   if (has(o, "multiContextWindows")) unsupported(s, o.multiContextWindows, at(path, "multiContextWindows"), "float");
   if (has(o, "animation")) {
     const ap = at(path, "animation");
     const a = objectWith(s, o.animation, ap, ["enabled", "durationMs"]);
     if (a) {
-      if (has(a, "enabled")) unsupported(s, a.enabled, at(ap, "enabled"), false);
-      if (has(a, "durationMs")) unsupported(s, a.durationMs, at(ap, "durationMs"), 0);
+      if (has(a, "enabled")) unsupported(s, a.enabled, at(ap, "enabled"), false, ANIMATION_HINT);
+      if (has(a, "durationMs")) unsupported(s, a.durationMs, at(ap, "durationMs"), 0, ANIMATION_HINT);
     }
   }
   return p;

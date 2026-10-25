@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>PlastileMotionConfig</class>
+ <widget class="QWidget" name="PlastileMotionConfig">
+  <layout class="QFormLayout" name="formLayout">
+   <item row="0" column="0">
+    <widget class="QLabel" name="label_Duration">
+     <property name="text">
+      <string>Duration:</string>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="1">
+    <widget class="QSpinBox" name="kcfg_Duration">
+     <property name="specialValueText">
+      <string>Default (180 ms)</string>
+     </property>
+     <property name="suffix">
+      <string> milliseconds</string>
+     </property>
+     <property name="maximum">
+      <number>2000</number>
+     </property>
+     <property name="singleStep">
+      <number>10</number>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="0">
+    <widget class="QLabel" name="label_Easing">
+     <property name="text">
+      <string>Easing:</string>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="1">
+    <widget class="QComboBox" name="kcfg_Easing">
+     <item>
+      <property name="text">
+       <string>Decelerate (cubic)</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>Decelerate (quartic)</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>Decelerate (quadratic)</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>Accelerate, then decelerate</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>Linear</string>
+      </property>
+     </item>
+    </widget>
+   </item>
+   <item row="2" column="0" colspan="2">
+    <widget class="QLabel" name="label_Note">
+     <property name="text">
+      <string>The global animation speed scales the duration; "Instant" turns the effect off. Only the picture moves: clicks go to the window's new place at once.</string>
+     </property>
+     <property name="wordWrap">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
