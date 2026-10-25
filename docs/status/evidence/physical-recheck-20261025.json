@@ -1,0 +1,142 @@
+{
+ "layer": "physical session (reference desktop, live KWin)",
+ "date": "2026-10-25",
+ "kwin": "6.8.1 (Qt 6.12.0, KF 6.31.0)",
+ "installedBuild": "0a0798c (installed bundle sha256 equals the repo build; KWin started after the install, owner re-login)",
+ "ADR-021": {
+  "result": "pass at login; owner's usual kitty launch path not re-checked",
+  "atLogin": "trace: 5 windows that opened maximized were un-maximized and tiled, 1 kept maximized ('no room': no free slot, by design)",
+  "newKitty": "a kitty started by the tester opened tiled, settled, 0 corrections, no suspension; it did not open maximized, so it does not exercise ADR-021"
+ },
+ "P8a-soak-normal-use": {
+  "durationH": 1.01,
+  "samples": 7,
+  "intervalMin": 10,
+  "owner": "used the desktop normally (owner shortened the planned 4 h to 1 h)",
+  "series": {
+   "kwinRssKiB": {
+    "first": 431288,
+    "last": 455792,
+    "min": 431288,
+    "max": 459616,
+    "slopePerHour": 18840.78131332639
+   },
+   "connections": {
+    "first": 90,
+    "last": 141,
+    "min": 90,
+    "max": 141,
+    "slopePerHour": 40.06384046115936
+   },
+   "windows": {
+    "first": 8,
+    "last": 11,
+    "min": 8,
+    "max": 11,
+    "slopePerHour": 2.3566964977152565
+   },
+   "outstanding": {
+    "first": 0,
+    "last": 0,
+    "min": 0,
+    "max": 0,
+    "slopePerHour": 0.0
+   },
+   "errors": {
+    "first": 0,
+    "last": 0,
+    "min": 0,
+    "max": 0,
+    "slopePerHour": 0.0
+   },
+   "contexts": {
+    "first": 3,
+    "last": 3,
+    "min": 3,
+    "max": 3,
+    "slopePerHour": 0.0
+   }
+  },
+  "reading": "connections rose by exactly 17 per tracked window (90/8, 107/9, 124/10, 141/11) and stayed at 124 for the 30 min at 10 windows; KWin RSS 449,604-452,180 KiB over those 30 min (455,792 KiB at 11 windows); errors 0 and outstanding 0 throughout. No growth at a constant window count. 1 h is shorter than the planned soak.",
+  "samplesDetail": [
+   {
+    "elapsedS": 0.0,
+    "kwinRssKiB": 431288,
+    "connections": 90,
+    "windows": 8,
+    "outstanding": 0,
+    "errors": 0,
+    "contexts": 3,
+    "solves": 67,
+    "writes": 89
+   },
+   {
+    "elapsedS": 600.3,
+    "kwinRssKiB": 440760,
+    "connections": 107,
+    "windows": 9,
+    "outstanding": 0,
+    "errors": 0,
+    "contexts": 3,
+    "solves": 94,
+    "writes": 129
+   },
+   {
+    "elapsedS": 1200.3,
+    "kwinRssKiB": 459616,
+    "connections": 124,
+    "windows": 10,
+    "outstanding": 0,
+    "errors": 0,
+    "contexts": 3,
+    "solves": 98,
+    "writes": 134
+   },
+   {
+    "elapsedS": 1800.6,
+    "kwinRssKiB": 449604,
+    "connections": 124,
+    "windows": 10,
+    "outstanding": 0,
+    "errors": 0,
+    "contexts": 3,
+    "solves": 112,
+    "writes": 150
+   },
+   {
+    "elapsedS": 2400.7,
+    "kwinRssKiB": 452180,
+    "connections": 124,
+    "windows": 10,
+    "outstanding": 0,
+    "errors": 0,
+    "contexts": 3,
+    "solves": 119,
+    "writes": 159
+   },
+   {
+    "elapsedS": 3000.7,
+    "kwinRssKiB": 451692,
+    "connections": 124,
+    "windows": 10,
+    "outstanding": 0,
+    "errors": 0,
+    "contexts": 3,
+    "solves": 121,
+    "writes": 162
+   },
+   {
+    "elapsedS": 3600.7,
+    "kwinRssKiB": 455792,
+    "connections": 141,
+    "windows": 11,
+    "outstanding": 0,
+    "errors": 0,
+    "contexts": 3,
+    "solves": 165,
+    "writes": 234
+   }
+  ]
+ },
+ "rawResults": "artifacts/physical/recheck-20261025/ (not committed)"
+}
