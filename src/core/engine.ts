@@ -2116,13 +2116,17 @@ export class Engine {
       if (action === "toggle-float") return this.toggleFloat(r);
       if (action === "adopt-native") {
         if (r.mode !== "native") return noop("window is not natively tiled");
+        // As toggle-float: a window that cannot tile keeps KWin's tile and gets no sticky tile request.
+        const why = this.whyNotTileable(r, this.singleContextKey(r.membership));
+        if (why !== null) return noop("cannot tile: " + why);
         r.releasingTile = true;
         if (!this.host.releaseNativeTile(r.id, r.gen)) r.releasingTile = false;
         r.nativeTile = false;
         r.nativeYield = false;
         r.userMode = "tiled";
         this.reclassify(r, "adopt-native");
-        if (r.ctx) this.solveNow(this.ctxFor(r.ctx));
+        if ((r.mode as PlacementMode) !== "tiled") return noop("cannot tile: " + r.decision.reason);
+        this.solveNow(this.ctxFor(r.ctx!));
         return ok([r.id]);
       }
     }

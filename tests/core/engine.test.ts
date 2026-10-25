@@ -871,6 +871,35 @@ test("L08/L13: toggle-float on a window that cannot tile is a no-op without side
   assert.equal(e2.explain("y")!.userMode, null);
 });
 
+test("L08/L13: adopt-native on a natively tiled window that cannot tile is a no-op that keeps KWin's tile", () => {
+  const fixed = { minFrame: { width: 400, height: 300 }, maxFrame: { width: 400, height: 300 }, fixed: true };
+  const allDesktops = { output: "O1", desktops: [], onAllDesktops: true, activities: [] };
+  const { h, e } = setup(["a", "x", "pin"], { x: { constraints: fixed }, pin: { membership: allDesktops } });
+  for (const id of ["x", "pin"]) {
+    const w = h.windows.get(id)!;
+    w.nativeTile = true;
+    e.nativeTileChanged(id, w.gen, true);
+    h.userSetFrame(id, rect(0, 0, 640, 800));
+    h.drain();
+    assert.equal(e.modeOf(id), "native");
+    const writes = h.writes.filter((x) => x.id === id).length;
+    h.active = id;
+    const r = e.execute("plastile.window.adopt-native");
+    h.drain();
+    assert.equal(r.status, "noop", id);
+    assert.match(String(r.reason), /^cannot tile: /, id);
+    assert.equal(w.nativeTile, true, `${id}: native tile not released`);
+    assert.equal(e.modeOf(id), "native", id);
+    assert.equal(e.explain(id)!.userMode, null, `${id}: no sticky tile request`);
+    assert.equal(h.writes.filter((x) => x.id === id).length, writes, `${id}: no write`);
+  }
+  // The window that was on all desktops moves to one: still KWin's (no tile request was left behind).
+  const pin = h.windows.get("pin")!;
+  e.membershipChanged("pin", pin.gen, { output: "O1", desktops: ["D1"], onAllDesktops: false, activities: [] });
+  h.drain();
+  assert.equal(e.modeOf("pin"), "native");
+});
+
 test("Q10/T16: explain lists every matched rule and the rule behind each action, not only the mode rule", () => {
   const h = new MockHost();
   const e = h.start({ rulesFor: (m) => (m.appId === "a"
