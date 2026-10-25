@@ -38,11 +38,14 @@ function build(groups: WindowId[][], s: ContextSettings = sset()): ScrollState {
     prev = g[0];
     for (const id of g.slice(1)) {
       st = scrolling.insert(st, id, prev, sin([id], { settings: s }));
-      st = consume(st, id).state;
+      st = consume(st, id, sin(g, { settings: s })).state;
     }
   }
   return st;
 }
+
+/** Input where a, b and c take part. */
+const ABC = sin(["a", "b", "c"]);
 
 /** Independent re-implementation of KWin's outputAt (closest pixel, first output wins ties). */
 function kwinOutputAt(px: number, py: number, outputs: readonly Rect[]): Rect {
@@ -303,14 +306,14 @@ test("center command: centres in lazy mode as far as the strip's ends allow", ()
 
 test("consume and expel move a window between columns", () => {
   let st = build([["a"], ["b"], ["c"]]);
-  let o = consume(st, "b");
+  let o = consume(st, "b", ABC);
   assert.ok(o.changed);
   st = o.state;
   assert.deepEqual(st.columns.map((c) => c.windows), [["a", "b"], ["c"]]);
-  assert.equal(consume(st, "a").changed, false, "no column on the left");
-  o = expel(st, "a");
+  assert.equal(consume(st, "a", ABC).changed, false, "no column on the left");
+  o = expel(st, "a", ABC);
   assert.deepEqual(o.state.columns.map((c) => c.windows), [["b"], ["a"], ["c"]]);
-  assert.equal(expel(build([["a"]]), "a").changed, false, "already alone");
+  assert.equal(expel(build([["a"]]), "a", sin(["a"])).changed, false, "already alone");
 });
 
 test("width-cycle steps through the presets and wraps; resize changes the fraction within bounds", () => {
@@ -355,14 +358,31 @@ test("width commands start from the width a minimum holds the column at; nothing
 
 test("swap moves the focused column; swapping windows keeps column structure", () => {
   const st = build([["a", "b"], ["c"]]);
-  const m = moveColumn(st, "c", "left");
+  const m = moveColumn(st, "c", "left", ABC);
   assert.deepEqual(m.state.columns.map((c) => c.windows), [["c"], ["a", "b"]]);
-  assert.equal(moveColumn(st, "c", "right").changed, false);
+  assert.equal(moveColumn(st, "c", "right", ABC).changed, false);
   const s2 = swapWindows(st, "b", "c");
   assert.deepEqual(s2.columns.map((c) => c.windows), [["a", "c"], ["b"]]);
   assert.equal(columnNeighbour(st, "a", "down", ["a", "b", "c"]), "b");
   assert.equal(columnNeighbour(st, "a", "up", ["a", "b", "c"]), null);
   assert.deepEqual(stripOrder(m.state, ["a", "b", "c"]), ["c", "a", "b"]);
+});
+
+test("column commands skip columns that show nothing (only suspended members)", () => {
+  const st = build([["a"], ["b"], ["c"]]);
+  const AC = sin(["a", "c"]); // b is minimized: its column keeps its slot but is not laid out
+  const cols = (s: ScrollState) => s.columns.map((c) => c.windows);
+  assert.deepEqual(cols(moveColumn(st, "a", "right", AC).state), [["b"], ["c"], ["a"]], "a moves past c on the first press");
+  assert.deepEqual(cols(moveColumn(st, "c", "left", AC).state), [["c"], ["a"], ["b"]]);
+  assert.equal(moveColumn(st, "c", "right", AC).changed, false);
+  assert.equal(moveColumn(build([["a"], ["b"]]), "a", "right", sin(["a"])).changed, false, "nothing shown on the right");
+  assert.deepEqual(cols(consume(st, "c", AC).state), [["a", "c"], ["b"]], "c joins the shown column on its left");
+  assert.equal(consume(build([["b"], ["c"]]), "c", sin(["c"])).changed, false, "nothing shown on the left");
+  const shared = build([["a"], ["b", "c"]]);
+  assert.equal(expel(shared, "c", AC).changed, false, "alone as shown: its column-mate is suspended");
+  assert.ok(expel(shared, "c", ABC).changed);
+  // Adjacent shown columns still simply swap.
+  assert.deepEqual(cols(moveColumn(st, "b", "right", ABC).state), [["a"], ["c"], ["b"]]);
 });
 
 test("virtual navigation: right means the next column even when it is parked", () => {
@@ -406,7 +426,7 @@ test("property: random strips, outputs, focus and policies satisfy the strip ora
     for (const id of ids) {
       const after = st.columns.length && rnd() < 0.5 ? st.columns[Math.floor(rnd() * st.columns.length)].windows[0] : null;
       st = scrolling.insert(st, id, after, sin([id], { settings: s }));
-      if (rnd() < 0.3) st = consume(st, id).state;
+      if (rnd() < 0.3) st = consume(st, id, sin(ids, { settings: s })).state;
       if (rnd() < 0.3) st = cycleWidth(st, id, s.scrolling.widthPresets, sin(ids, { settings: s })).state;
     }
     const constraints = new Map<WindowId, ReturnType<typeof minC>>();

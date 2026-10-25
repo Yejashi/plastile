@@ -284,14 +284,28 @@ function same(state: ScrollState, reason: string): Outcome {
   return { state, changed: false, reason };
 }
 
-/** Move `id` into the column on its left (appended at the bottom). */
-export function consume(state: ScrollState, id: WindowId): Outcome {
+/**
+ * Index of the nearest column from `i` in `step`'s direction that the strip shows (holds a
+ * participant), or -1. A suspended member keeps a column the strip does not lay out (§5.6);
+ * commands that act on a neighbouring column skip it.
+ */
+function shownNeighbour(state: ScrollState, i: number, step: 1 | -1, ids: readonly WindowId[]): number {
+  for (let j = i + step; j >= 0 && j < state.columns.length; j += step) {
+    const ws = state.columns[j].windows;
+    for (const w of ws) if (ids.indexOf(w) >= 0) return j;
+  }
+  return -1;
+}
+
+/** Move `id` into the shown column on its left (appended at the bottom). */
+export function consume(state: ScrollState, id: WindowId, input: SolveInput): Outcome {
   const i = columnIndex(state, id);
   if (i < 0) return same(state, "window not in the strip");
-  if (i === 0) return same(state, "no column on the left");
-  const src = state.columns[i], dst = state.columns[i - 1];
+  const k = shownNeighbour(state, i, -1, input.ids);
+  if (k < 0) return same(state, "no column on the left");
+  const src = state.columns[i], dst = state.columns[k];
   const columns = state.columns.slice();
-  columns[i - 1] = { id: dst.id, windows: [...dst.windows, id], width: dst.width, weights: dst.weights };
+  columns[k] = { id: dst.id, windows: [...dst.windows, id], width: dst.width, weights: dst.weights };
   const rest = src.windows.filter((w) => w !== id);
   if (rest.length === 0) columns.splice(i, 1);
   else columns[i] = { id: src.id, windows: rest, width: src.width, weights: dropWeight(src.weights, id) };
@@ -299,11 +313,14 @@ export function consume(state: ScrollState, id: WindowId): Outcome {
 }
 
 /** Move `id` out of a shared column into its own column just right of it, with the same width. */
-export function expel(state: ScrollState, id: WindowId): Outcome {
+export function expel(state: ScrollState, id: WindowId, input: SolveInput): Outcome {
   const i = columnIndex(state, id);
   if (i < 0) return same(state, "window not in the strip");
   const src = state.columns[i];
-  if (src.windows.length < 2) return same(state, "already alone in its column");
+  // Alone as shown: a suspended column-mate is not on screen to share the column with.
+  let shown = 0;
+  for (const w of src.windows) if (w === id || input.ids.indexOf(w) >= 0) shown++;
+  if (shown < 2) return same(state, "already alone in its column");
   const columns = state.columns.slice();
   columns[i] = { id: src.id, windows: src.windows.filter((w) => w !== id), width: src.width, weights: dropWeight(src.weights, id) };
   columns.splice(i + 1, 0, { id: state.nextId, windows: [id], width: src.width, weights: {} });
@@ -366,15 +383,18 @@ export function resizeColumn(state: ScrollState, id: WindowId, delta: number, in
   return { state: setWidth(state, i, next), changed: true };
 }
 
-/** Swap the column holding `id` with its neighbour on that side. */
-export function moveColumn(state: ScrollState, id: WindowId, dir: "left" | "right"): Outcome {
+/**
+ * Move the column holding `id` past its shown neighbour on that side (adjacent columns swap).
+ * Columns between them that show nothing keep their order relative to the others.
+ */
+export function moveColumn(state: ScrollState, id: WindowId, dir: "left" | "right", input: SolveInput): Outcome {
   const i = columnIndex(state, id);
   if (i < 0) return same(state, "window not in the strip");
-  const j = dir === "left" ? i - 1 : i + 1;
-  if (j < 0 || j >= state.columns.length) return same(state, `no column ${dir}`);
+  const j = shownNeighbour(state, i, dir === "left" ? -1 : 1, input.ids);
+  if (j < 0) return same(state, `no column ${dir}`);
   const columns = state.columns.slice();
-  columns[i] = state.columns[j];
-  columns[j] = state.columns[i];
+  const moved = columns.splice(i, 1)[0];
+  columns.splice(j, 0, moved); // right: after the neighbour, which shifted to j - 1; left: before it
   return { state: withColumns(state, columns), changed: true };
 }
 

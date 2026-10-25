@@ -162,6 +162,38 @@ test("consume, expel, width-cycle, center and swap are accepted and keep the mod
   assert.ok(inside(rect(0, 0, 1280, 800), h.windows.get(h.active!)!.frame));
 });
 
+test("swap and consume next to a column whose only window is minimized act on the visible neighbour", () => {
+  const ids = ["a", "b", "c"];
+  {
+    const { h, e } = setup(ids);
+    h.activate("a");
+    h.drain();
+    h.setStates("b", { minimized: true });
+    h.drain();
+    const c0 = h.windows.get("c")!.frame;
+    assert.equal(e.execute("plastile.swap.right").status, "accepted");
+    h.drain();
+    const a = h.windows.get("a")!.frame, c = h.windows.get("c")!.frame;
+    assert.ok(c.x < a.x, `the first press moves a right of c: a ${JSON.stringify(a)} c ${JSON.stringify(c)}`);
+    assert.notDeepEqual(c, c0);
+  }
+  {
+    const { h, e } = setup(ids);
+    h.setStates("b", { minimized: true });
+    h.drain();
+    h.activate("c");
+    h.drain();
+    assert.equal(e.execute("plastile.scroll.consume").status, "accepted");
+    h.drain();
+    const a = h.windows.get("a")!.frame, c = h.windows.get("c")!.frame;
+    assert.equal(a.x, c.x, "c joined a's column, the visible one");
+    // With its column-mate a minimized, c is alone as shown: expel has nothing to do.
+    h.setStates("a", { minimized: true });
+    h.drain();
+    assert.equal(e.execute("plastile.scroll.expel").status, "noop");
+  }
+});
+
 test("grow, shrink and width-cycle on a column held wide by a minimum: only changes that show are accepted", () => {
   const min900 = { minFrame: { width: 900, height: 1 }, maxFrame: { width: Infinity, height: Infinity }, fixed: false };
   const h = new MockHost();

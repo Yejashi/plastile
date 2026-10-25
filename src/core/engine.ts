@@ -2804,8 +2804,8 @@ export class Engine {
     if (!isValidArea(area)) return { status: "noop", reason: "no usable area", targets: [] };
     const input = this.solveInput(c, area);
     let o;
-    if (action === "consume") o = scrollConsume(state, r.id);
-    else if (action === "expel") o = scrollExpel(state, r.id);
+    if (action === "consume") o = scrollConsume(state, r.id, input);
+    else if (action === "expel") o = scrollExpel(state, r.id, input);
     else if (action === "width-cycle") o = cycleWidth(state, r.id, this.ctxSettings(c).scrolling.widthPresets, input);
     else o = scrollCentre(state, r.id, input);
     if (!o.changed) return { status: "noop", reason: o.reason ?? "no change", targets: [] };
@@ -2818,7 +2818,9 @@ export class Engine {
   private scrollMove(c: Ctx, r: Rec, action: string): { status: CommandStatus; reason?: string; targets: string[] } {
     const state = this.layoutState(c, "scrolling") as ScrollState;
     if (action === "left" || action === "right") {
-      const o = moveColumn(state, r.id, action);
+      const area = this.host.workArea(c.key.output, c.key.desktop);
+      if (!isValidArea(area)) return { status: "noop", reason: "no usable area", targets: [] };
+      const o = moveColumn(state, r.id, action, this.solveInput(c, area));
       if (!o.changed) return { status: "noop", reason: o.reason ?? `nothing ${action}`, targets: [] };
       c.states.scrolling = o.state;
       this.solveNow(c);
