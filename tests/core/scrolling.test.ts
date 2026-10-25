@@ -139,6 +139,25 @@ test("the viewport is clamped after the strip shrinks", () => {
   assert.equal(res.slots.get("a")!.x, 8);
 });
 
+test("the view is held by a column: columns leaving or joining left of it move nothing on screen", () => {
+  const ids = ["a", "b", "c", "d", "e"];
+  const st = scrolling.reveal!(build([["a"], ["b"], ["c"], ["d"], ["e"]]), "d", sin(ids, { focused: "d" }));
+  const xs = (s: ScrollState, part: string[], focused = "d") => {
+    const res = scrolling.solve(s, sin(part, { focused }));
+    return part.filter((id) => !res.parked!.includes(id)).map((id) => `${id}@${res.slots.get(id)!.x}`);
+  };
+  assert.deepEqual(xs(st, ids), ["c@8", "d@644"]);
+  assert.deepEqual(xs(scrolling.remove(st, "a"), ["b", "c", "d", "e"]), ["c@8", "d@644"], "a closed");
+  assert.deepEqual(xs(st, ["a", "c", "d", "e"]), ["c@8", "d@644"], "b suspended");
+  assert.deepEqual(xs(st, ["c", "d", "e"]), ["c@8", "d@644"], "a and b suspended");
+  // The column holding the view closes or is suspended: the next column takes its place.
+  assert.deepEqual(xs(scrolling.remove(st, "c"), ["a", "b", "d", "e"]), ["d@8", "e@644"]);
+  assert.deepEqual(xs(st, ["a", "b", "d", "e"]), ["d@8", "e@644"]);
+  // Rearranging columns keeps the view where it is in the strip: c moved right shows d, then c.
+  const moved = moveColumn(st, "c", "right", sin(ids, { focused: "c" })).state;
+  assert.deepEqual(xs(moved, ids, "c"), ["c@644", "d@8"]);
+});
+
 // ------------------------------------------------------------ projection
 
 test("projection: half columns, the third is parked; visible columns tile the area exactly", () => {

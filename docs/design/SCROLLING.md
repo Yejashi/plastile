@@ -36,6 +36,7 @@ One strip per context `(output, desktop, activity)`, as for every other layout (
 | `columns` | Ordered list; each column has a stable id, ordered window ids (stacked vertically), a width, and per-window height weights |
 | `width` | Column width as a fraction of the usable area width (presets cycle 1/3, 1/2, 2/3, 1), clamped to member minima |
 | `viewport` | x offset of the visible window into the strip, in strip coordinates |
+| `anchor` | The column holding the view (the leftmost column reaching into it, set whenever the view is set) and the viewport's offset from that column's left edge |
 | `policy` | `"centered"` (the focused column is centred when it fits) or `"lazy"` (scroll just enough to show it). Default `lazy` |
 
 Strip coordinates are logical pixels starting at 0 at the left edge of the first column. Columns are laid
@@ -45,6 +46,14 @@ shared-edge rounding like the other layouts.
 The layout keeps window order across focus changes. Insertion puts a new window in a new column after
 the focused column, or at the end when nothing is focused. Removing a window removes it from its
 column; an empty column is dropped and the viewport is clamped.
+
+The viewport is resolved from its anchor at every solve, so a column that leaves or joins the strip left
+of the view (a parked window closed, minimized, made fullscreen or restored) does not move the columns on
+screen; only their strip coordinates change. When the anchor column itself closes or shows nothing, the
+next column takes its place and holds the view, which closes the gap as before. Commands that rearrange
+columns (swap/move left and right, consume, expel) keep the viewport's strip offset from just before the
+command (an anchor kept through a reorder would scroll with its column), and the next solve anchors it
+again.
 
 ## 3. Projection and parking
 

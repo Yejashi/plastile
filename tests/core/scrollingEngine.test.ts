@@ -162,6 +162,38 @@ test("consume, expel, width-cycle, center and swap are accepted and keep the mod
   assert.ok(inside(rect(0, 0, 1280, 800), h.windows.get(h.active!)!.frame));
 });
 
+test("a parked column left of the view closing, minimized or restored does not move the columns on screen", () => {
+  const ids = ["a", "b", "c", "d", "e"];
+  const { h, e } = setup(ids);
+  e.execute("plastile.focus.left");
+  e.execute("plastile.focus.left");
+  e.execute("plastile.focus.right");
+  h.drain();
+  const shown = () => ids.filter((id) => h.windows.get(id)!.alive && !h.windows.get(id)!.states.minimized
+    && inside(rect(0, 0, 1280, 800), h.windows.get(id)!.frame)).map((id) => `${id}@${h.windows.get(id)!.frame.x}`);
+  assert.equal(h.active, "d");
+  assert.deepEqual(shown(), ["c@8", "d@644"]);
+  const writesTo = (from: number, id: string) => h.writes.slice(from).filter((w) => w.id === id).length;
+  const w0 = h.writes.length;
+  h.setStates("b", { minimized: true });
+  h.drain();
+  assert.deepEqual(shown(), ["c@8", "d@644"], "b minimized");
+  h.setStates("b", { minimized: false });
+  h.drain();
+  assert.deepEqual(shown(), ["c@8", "d@644"], "b restored");
+  h.close("a");
+  h.drain();
+  h.advance(1000);
+  assert.deepEqual(shown(), ["c@8", "d@644"], "a closed");
+  assert.equal(h.active, "d");
+  assert.equal(writesTo(w0, "c") + writesTo(w0, "d"), 0, "no write to a window on screen");
+  // Closing a column on screen still closes the gap: d takes c's place.
+  h.close("c");
+  h.drain();
+  assert.deepEqual(shown(), ["d@8", "e@644"]);
+  assert.deepEqual(e.check(), []);
+});
+
 test("swap and consume next to a column whose only window is minimized act on the visible neighbour", () => {
   const ids = ["a", "b", "c"];
   {

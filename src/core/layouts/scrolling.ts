@@ -2,7 +2,8 @@
 //
 // One strip per context: columns laid out left to right in strip coordinates (0 at the
 // left edge of the first column), each holding windows stacked vertically by weight. A
-// viewport offset selects which part of the strip is projected into the work area.
+// viewport offset selects which part of the strip is projected into the work area; it is
+// held by a column, so columns leaving or joining off screen do not move what is shown.
 // Columns that lie entirely inside the area are visible; every other column is parked at
 // a rectangle that intersects no output, keeping its size so parking is a position-only
 // write. The focused column is always visible. Pure: no KWin access, no state mutation.
@@ -27,8 +28,21 @@ export interface ScrollColumn {
 export interface ScrollState {
   readonly columns: readonly ScrollColumn[];
   readonly nextId: number;
-  /** x offset of the visible window into the strip (strip coordinates, logical px). */
+  /** x offset of the visible window into the strip (strip coordinates, logical px), as last set. */
   readonly viewport: number;
+  /** The column holding the view, or null for `viewport` as stored (viewOf). */
+  readonly anchor: ScrollAnchor | null;
+}
+
+/**
+ * The view held by a column: its id and the viewport's offset from its left edge. A column
+ * that leaves or joins the strip left of the view (a parked window closed, minimized or
+ * restored) moves every column right of it in strip coordinates; the view moves with its
+ * anchor, so the columns on screen stay where they are.
+ */
+export interface ScrollAnchor {
+  readonly column: number;
+  readonly offset: number;
 }
 
 /** Distance between a parked column and its output (SCROLLING §3). */
@@ -129,6 +143,41 @@ export function viewportFor(st: Strip, viewport: number, focus: WindowId | null,
   return clamp(v, 0, maxVp);
 }
 
+/**
+ * The viewport in the strip as laid out now: the anchor column's left edge plus the offset.
+ * While the anchor column shows nothing (its windows suspended), the next column that shows
+ * one holds the view: it took the anchor's place in the strip.
+ */
+export function viewOf(state: ScrollState, st: Strip): number {
+  const a = state.anchor;
+  if (a === null) return state.viewport;
+  let k = -1;
+  for (let i = 0; i < state.columns.length; ++i) if (state.columns[i].id === a.column) { k = i; break; }
+  if (k < 0) return state.viewport;
+  for (let i = k; i < state.columns.length; ++i) {
+    const id = state.columns[i].id;
+    for (const c of st.columns) if (c.column.id === id) return c.x + a.offset;
+  }
+  return state.viewport;
+}
+
+/** The state with viewport `v`, held by the leftmost column that reaches into the view. */
+function viewAt(state: ScrollState, st: Strip, v: number): ScrollState {
+  let anchor: ScrollAnchor | null = null;
+  for (const c of st.columns) if (c.x + c.width > v) { anchor = { column: c.column.id, offset: v - c.x }; break; }
+  return { columns: state.columns, nextId: state.nextId, viewport: v, anchor };
+}
+
+/**
+ * The view resolved to a strip x and held by no column, for a command that rearranges columns:
+ * the view stays where it is in the strip (an anchor kept through a reorder would scroll with
+ * its column), and the next reveal holds it by a column again.
+ */
+function unanchored(state: ScrollState, input: SolveInput): ScrollState {
+  if (state.anchor === null) return state;
+  return { columns: state.columns, nextId: state.nextId, viewport: viewOf(state, strip(state, input, input.ids)), anchor: null };
+}
+
 /** State that holds every participant: a member missing from the columns gets its own column at the end. */
 function withMembers(state: ScrollState, ids: readonly WindowId[], settings: ContextSettings): ScrollState {
   let s = state;
@@ -142,11 +191,11 @@ function addColumn(state: ScrollState, id: WindowId, after: WindowId | null, set
   const at = ai < 0 ? state.columns.length : ai + 1;
   const columns = state.columns.slice();
   columns.splice(at, 0, col);
-  return { columns, nextId: state.nextId + 1, viewport: state.viewport };
+  return { columns, nextId: state.nextId + 1, viewport: state.viewport, anchor: state.anchor };
 }
 
 function withColumns(state: ScrollState, columns: readonly ScrollColumn[]): ScrollState {
-  return { columns, nextId: state.nextId, viewport: state.viewport };
+  return { columns, nextId: state.nextId, viewport: state.viewport, anchor: state.anchor };
 }
 
 function dropWeight(w: Readonly<Record<WindowId, number>>, id: WindowId): Record<WindowId, number> {
@@ -164,7 +213,7 @@ interface Projection extends Attempt {
 
 function project(state: ScrollState, input: SolveInput, ids: readonly WindowId[], focus: WindowId | null): Projection {
   const st = strip(state, input, ids);
-  const viewport = viewportFor(st, state.viewport, focus, input.settings.scrolling.policy);
+  const viewport = viewportFor(st, viewOf(state, st), focus, input.settings.scrolling.policy);
   const slots = new Map<WindowId, Rect>();
   const a = st.area;
   for (const c of st.columns) {
@@ -309,7 +358,7 @@ export function consume(state: ScrollState, id: WindowId, input: SolveInput): Ou
   const rest = src.windows.filter((w) => w !== id);
   if (rest.length === 0) columns.splice(i, 1);
   else columns[i] = { id: src.id, windows: rest, width: src.width, weights: dropWeight(src.weights, id) };
-  return { state: withColumns(state, columns), changed: true };
+  return { state: withColumns(unanchored(state, input), columns), changed: true };
 }
 
 /** Move `id` out of a shared column into its own column just right of it, with the same width. */
@@ -324,7 +373,7 @@ export function expel(state: ScrollState, id: WindowId, input: SolveInput): Outc
   const columns = state.columns.slice();
   columns[i] = { id: src.id, windows: src.windows.filter((w) => w !== id), width: src.width, weights: dropWeight(src.weights, id) };
   columns.splice(i + 1, 0, { id: state.nextId, windows: [id], width: src.width, weights: {} });
-  return { state: { columns, nextId: state.nextId + 1, viewport: state.viewport }, changed: true };
+  return { state: { columns, nextId: state.nextId + 1, viewport: unanchored(state, input).viewport, anchor: null }, changed: true };
 }
 
 function setWidth(state: ScrollState, i: number, width: number): ScrollState {
@@ -395,7 +444,7 @@ export function moveColumn(state: ScrollState, id: WindowId, dir: "left" | "righ
   const columns = state.columns.slice();
   const moved = columns.splice(i, 1)[0];
   columns.splice(j, 0, moved); // right: after the neighbour, which shifted to j - 1; left: before it
-  return { state: withColumns(state, columns), changed: true };
+  return { state: withColumns(unanchored(state, input), columns), changed: true };
 }
 
 /** Neighbour of `id` within its column among participants, or null at the column's end. */
@@ -432,8 +481,8 @@ export function centre(state: ScrollState, focus: WindowId, input: SolveInput): 
   if (f === null) return same(state, "window not in the strip");
   let v = f.width >= st.span ? f.x : Math.round(f.x + f.width / 2 - st.span / 2);
   if (input.settings.scrolling.policy === "lazy") v = clamp(v, 0, Math.max(0, st.total - st.span));
-  if (v === state.viewport) return same(state, "already centred");
-  return { state: { columns: state.columns, nextId: state.nextId, viewport: v }, changed: true };
+  if (v === viewOf(state, st)) return same(state, "already centred");
+  return { state: viewAt(state, st, v), changed: true };
 }
 
 /** Interactive resize of a column edge (width) or a row boundary inside a column (weights). */
@@ -478,7 +527,7 @@ export const scrolling: Layout<ScrollState> = {
   kind: "scrolling",
 
   initial(): ScrollState {
-    return { columns: [], nextId: 1, viewport: 0 };
+    return { columns: [], nextId: 1, viewport: 0, anchor: null };
   },
 
   /** A new window gets a new column right of the focused column (`after`), or at the end. */
@@ -493,9 +542,16 @@ export const scrolling: Layout<ScrollState> = {
     const c = state.columns[i];
     const columns = state.columns.slice();
     const rest = c.windows.filter((w) => w !== id);
-    if (rest.length === 0) columns.splice(i, 1); // an empty column is dropped; the viewport is clamped at the next solve
-    else columns[i] = { id: c.id, windows: rest, width: c.width, weights: dropWeight(c.weights, id) };
-    return withColumns(state, columns);
+    if (rest.length > 0) {
+      columns[i] = { id: c.id, windows: rest, width: c.width, weights: dropWeight(c.weights, id) };
+      return withColumns(state, columns);
+    }
+    columns.splice(i, 1); // an empty column is dropped; the viewport is clamped at the next solve
+    const a = state.anchor;
+    if (a === null || a.column !== c.id) return withColumns(state, columns);
+    // It held the view: the column after it takes its place in the strip, and the view.
+    const next = i < columns.length ? { column: columns[i].id, offset: a.offset } : null;
+    return { columns, nextId: state.nextId, viewport: state.viewport, anchor: next };
   },
 
   rebuild(state, members, input) {
@@ -510,8 +566,10 @@ export const scrolling: Layout<ScrollState> = {
 
   reveal(state, focus, input) {
     const st = strip(state, input, input.ids);
-    const v = viewportFor(st, state.viewport, focus, input.settings.scrolling.policy);
-    return v === state.viewport ? state : { columns: state.columns, nextId: state.nextId, viewport: v };
+    const next = viewAt(state, st, viewportFor(st, viewOf(state, st), focus, input.settings.scrolling.policy));
+    const a = state.anchor, b = next.anchor;
+    const held = a === b || (a !== null && b !== null && a.column === b.column && a.offset === b.offset);
+    return next.viewport === state.viewport && held ? state : next;
   },
 
   solve,
