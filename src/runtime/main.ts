@@ -265,7 +265,11 @@ export function createRuntime(env: RuntimeEnv): Runtime {
   };
   const explainWindow = (): void => {
     const a = adapter.activeWindow();
-    const x = a ? engine.explain(a) : null;
+    const e = a ? engine.explain(a) : null;
+    // `context.output` is the output's identity key (E16); `outputName` is its connector name, which
+    // overrides and rules match.
+    const key = e && e.context ? (e.context as ContextKey) : null;
+    const x = e && key ? { ...e, context: { ...key, outputName: adapter.outputNameOf(key.output) } } : e;
     const conflicts = shortcuts && shortcuts.conflicts.length > 0 ? shortcuts.conflicts : null;
     // Asked for by the user: a notice, so the default log level shows it.
     log("notice", "explain", x ? (conflicts ? { ...x, shortcutConflicts: conflicts } : x) : { error: "no active window" });
@@ -274,7 +278,8 @@ export function createRuntime(env: RuntimeEnv): Runtime {
     const ins = env.inspector;
     if (!ins) return;
     if (ins.isOpen()) ins.close();
-    else ins.open(describeWindow(x, { desktopNameOf: (id) => adapter.desktopNameOf(id), shortcuts, area: activeArea() }));
+    else ins.open(describeWindow(x, { desktopNameOf: (id) => adapter.desktopNameOf(id), outputNameOf: (k) => adapter.outputNameOf(k),
+      shortcuts, area: activeArea() }));
   };
   // ---- end T26/T28/D9 ----
 

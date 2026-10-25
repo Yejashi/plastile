@@ -175,7 +175,7 @@ A rule changes how a window is treated:
 - **`title`:** a string matcher against the window caption. Plastile watches captions only while at least one rule uses `title`, including title rules activated later by a reconfigure (the current captions are read at that moment). With no title rules it never re-evaluates on caption changes. A caption change re-tests only the rules that use `title`; the other matchers' results for that window are reused.
 - **`windowType`:** one value, or a list, from `normal`, `dialog`, `utility`, `toolbar`, `menu`, `splash`, `dock`, `desktop`, `notification`, `tooltip`, `popup`, `osd`, `applet-popup`, `dnd-icon`, `other`.
 - **`transient`:** a boolean. `true` matches windows that have a parent window.
-- **`outputName`, `desktopName`, `desktopId`, `activityId`:** string matchers against the window's context, with the same meaning as in [overrides](#overrides). `outputName` is the connector name, which is also the output's identity in this version. These fields match only a window that belongs to exactly one context; a window on all desktops, on several desktops or activities, or without an output is never matched by them. When the window moves to another desktop, output or activity, only these matchers are re-tested (once per context; the other matchers' results for that window are reused), and renaming a desktop re-tests `desktopName`.
+- **`outputName`, `desktopName`, `desktopId`, `activityId`:** string matchers against the window's context, with the same meaning as in [overrides](#overrides). `outputName` is the connector name. Plastile keys a monitor that reports its EDID manufacturer, model and serial by those, so its layouts follow it to another connector, but matchers always compare the connector name (*Explain active window* shows both: `context.output` and `context.outputName`). These fields match only a window that belongs to exactly one context; a window on all desktops, on several desktops or activities, or without an output is never matched by them. When the window moves to another desktop, output or activity, only these matchers are re-tested (once per context; the other matchers' results for that window are reused), and renaming a desktop re-tests `desktopName`.
 
 **`actions`** (required; empty is a warning):
 
@@ -363,7 +363,7 @@ The line is `plastile notice explain {...}` with these fields:
 | `userMode` | Your *Toggle floating* choice, if any. |
 | `decision` | `mode`, `source`, `reason` and `ruleIds` (the rules that decided the mode). |
 | `rules` | `null` when no rule matches; otherwise `ids` (every matched rule, in evaluation order), the final `actions` (`mode`, `border`, `insert`, `minSize` as `WxH`) and `reasons` (which rule set each action). |
-| `context` | Output name, desktop id and activity. |
+| `context` | `output`, the output's identity key (`edid:<manufacturer>/<model>/<serial>` for a monitor that reports them, otherwise the connector name); `outputName`, its connector name, which `outputName` matchers compare; `desktop` (the desktop id) and `activity`. |
 | `layout` | The context's current layout. |
 | `suspensions` | Any of `minimized`, `fullscreen`, `maximized`, `interactive`, `hidden`. |
 | `suspended` | For a tiled window that KWin owns for the moment (maximized, full screen, minimized or hidden), a plain statement such as `tiling of this window is suspended while it is maximized; it resumes, in the same place, when the window is restored`; otherwise `null`. The policy itself does not change: the window stays a member of its context. |

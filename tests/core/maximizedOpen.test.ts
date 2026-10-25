@@ -66,7 +66,7 @@ test("ADR-021: a Wayland window that opens maximized is un-maximized and tiled w
   const tr = h.engine.trace.snapshot().filter((r) => r.id === "b" && r.kind === "open-maximized");
   assert.deepEqual(tr.map((r) => r.data), [{ action: "unmaximized" }], "the trace records why");
   assert.ok(kinds(h, "b").indexOf("unmaximized") > kinds(h, "b").indexOf("open-maximized"), "then KWin's report");
-  const v = describeWindow(x, { desktopNameOf: () => "Desktop 1", shortcuts: null, area: null });
+  const v = describeWindow(x, { desktopNameOf: () => "Desktop 1", outputNameOf: (k) => k, shortcuts: null, area: null });
   assert.ok(v.rows.some((r) => r.label === "On open" && /^Unmaximized on open/.test(r.text)), "the inspector says so");
   assert.deepEqual(h.engine.check(), []);
 });

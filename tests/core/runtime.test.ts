@@ -222,6 +222,28 @@ test("T28: explain opens the inspector, a second explain closes it, shutdown clo
   assert.equal(f.lines.length, lines, "a reply after shutdown does nothing");
 });
 
+test("T28: explain names a monitor's output by its connector, as overrides match it; the EDID key stays in details", () => {
+  const ws = new FakeWorkspace([{ ...output("DP-1", { x: 0, y: 0, width: 1280, height: 800 }),
+    manufacturer: "Dell Inc.", model: "DELL U2720Q", serialNumber: "ABC123" }], [desktop("D1")]);
+  const qt = new FakeQt();
+  const w = ws.window({ caption: "w1", resourceClass: "app1" });
+  ws.windows.push(w);
+  const f = fakeEnv(ws, qt);
+  const opened: InspectorView[] = [];
+  f.env.inspector = { open: (v: InspectorView) => { opened.push(v); }, close: () => {}, isOpen: () => false };
+  const rt = createRuntime(f.env);
+  qt.drain();
+  ws.activeWindow = w;
+  rt.dispatch("plastile.inspect.explain-window");
+  const rows = Object.fromEntries(opened[0].rows.map((r) => [r.label, r.text]));
+  assert.equal(rows.Where, "Output DP-1, desktop “D1”.");
+  assert.match(opened[0].details.find((d) => d.label === "Context")!.text, /^DP-1 \(key edid:Dell Inc\.\/DELL U2720Q\/ABC123\) \//);
+  const ex = JSON.parse(f.lines.find((l) => l.startsWith("plastile notice explain "))!.slice("plastile notice explain ".length));
+  assert.equal(ex.context.output, "edid:Dell Inc./DELL U2720Q/ABC123", "the identity key");
+  assert.equal(ex.context.outputName, "DP-1", "the connector name");
+  rt.shutdown();
+});
+
 test("T28: own-UI detection needs the caption and no client identity", () => {
   const ws = new FakeWorkspace([output("O1", { x: 0, y: 0, width: 1280, height: 800 })], [desktop("D1")]);
   const internal = ws.window({ caption: INSPECTOR_TITLE, resourceClass: "", desktopFileName: "", pid: -1, popupWindow: true });
@@ -238,7 +260,7 @@ const EXPLAIN = {
   id: "{1234-abcd}", appId: "org.kde.kate", kind: "normal", mode: "floating", userMode: null,
   decision: { mode: "tiled", source: "default", reason: "normal resizable window", ruleIds: [] },
   rules: { ids: ["kate-min"], actions: { minSize: "900x0" }, reasons: { minSize: "rule kate-min" } },
-  context: { output: "DP-1", desktop: "5c2a-uuid", activity: "act-uuid" }, layout: "master-stack",
+  context: { output: "edid:Dell Inc./DELL U2720Q/ABC123", desktop: "5c2a-uuid", activity: "act-uuid" }, layout: "master-stack",
   suspensions: ["minimized"], constraints: { minFrame: { width: 900, height: 200 }, maxFrame: { width: Infinity, height: Infinity }, fixed: false },
   learnedMin: { width: 549, height: 242 }, learnedMax: null,
   ledger: { status: "idle", outstanding: false, desired: null, corrections: 0 }, slot: null,
@@ -246,7 +268,8 @@ const EXPLAIN = {
 };
 
 test("T28: the view speaks behaviour; internal ids appear only in details", () => {
-  const v = describeWindow(EXPLAIN, { desktopNameOf: (id) => (id === "5c2a-uuid" ? "Writing" : ""), shortcuts: null, area: null });
+  const v = describeWindow(EXPLAIN, { desktopNameOf: (id) => (id === "5c2a-uuid" ? "Writing" : ""),
+    outputNameOf: (k) => (k === "edid:Dell Inc./DELL U2720Q/ABC123" ? "DP-1" : k), shortcuts: null, area: null });
   const rows = Object.fromEntries(v.rows.map((r) => [r.label, r.text]));
   assert.match(rows.Placement, /^Floating/);
   assert.match(rows.Rules, /Matching: kate-min\. Applied: tile at least 900 px wide \(from kate-min\)/);
@@ -256,12 +279,14 @@ test("T28: the view speaks behaviour; internal ids appear only in details", () =
   assert.match(rows.Size, /at least 900×200.*no less than 549×242/);
   assert.match(rows.Problem, /Not enough room/);
   const text = JSON.stringify(v.rows);
-  for (const id of ["{1234-abcd}", "5c2a-uuid", "act-uuid"]) assert.ok(!text.includes(id), `rows mention ${id}`);
+  for (const id of ["{1234-abcd}", "5c2a-uuid", "act-uuid", "edid:"]) assert.ok(!text.includes(id), `rows mention ${id}`);
   const details = JSON.stringify(v.details);
   for (const id of ["{1234-abcd}", "5c2a-uuid", "act-uuid", "overflow: kate"]) assert.ok(details.includes(id), `details lack ${id}`);
-  const none = describeWindow(null, { desktopNameOf: () => "", shortcuts: null, area: null });
+  assert.equal(v.details.find((d) => d.label === "Context")!.text,
+    "DP-1 (key edid:Dell Inc./DELL U2720Q/ABC123) / 5c2a-uuid / act-uuid", "the connector name, with the identity key");
+  const none = describeWindow(null, { desktopNameOf: () => "", outputNameOf: (k) => k, shortcuts: null, area: null });
   assert.match(none.rows[0].text, /No active window/);
-  const conflicts = describeWindow(null, { desktopNameOf: () => "", area: null, shortcuts: { state: "done", components: 1, actions: 1,
+  const conflicts = describeWindow(null, { desktopNameOf: () => "", outputNameOf: (k) => k, area: null, shortcuts: { state: "done", components: 1, actions: 1,
     conflicts: [{ key: "Meta+Shift+H", command: "plastile.focus.left", commandText: "Plastile: Focus left",
                   others: [{ component: "KWin", action: "Window Maximize", text: "Maximize Window" }] }] } });
   assert.match(conflicts.rows[1].text, /Meta\+Shift\+H runs “Focus left” and also “Maximize Window” \(KWin\)/);

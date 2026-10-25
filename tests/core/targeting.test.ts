@@ -140,7 +140,7 @@ test("explain says plainly that a maximized tiled window's tiling is suspended; 
   assert.equal(x.mode, "tiled", "the policy is unchanged: still a member");
   assert.equal(x.suspended, "tiling of this window is suspended while it is maximized; it resumes, in the same place, when the window is restored");
   assert.deepEqual(h.engine.contextSummary().map((c) => [c.members, c.tiled, c.suspended]), [[2, 1, 1]]);
-  const v = describeWindow(x, { desktopNameOf: () => "Desktop 1", shortcuts: null, area: null });
+  const v = describeWindow(x, { desktopNameOf: () => "Desktop 1", outputNameOf: (k) => k, shortcuts: null, area: null });
   assert.match(v.rows[0].text, /^Tiling of this window is suspended while it is maximized; it resumes, in the same place, when the window is restored\. Until then KWin owns/);
   assert.ok(v.rows.some((r) => r.label === "Layout" && /master and stack/.test(r.text)));
   h.setStates("a", { maximized: false, fullscreen: true });
@@ -151,6 +151,6 @@ test("explain says plainly that a maximized tiled window's tiling is suspended; 
   assert.deepEqual(h.engine.contextSummary().map((c) => [c.members, c.tiled, c.suspended]), [[2, 2, 0]]);
   h.engine.execute("plastile.runtime.toggle-suspend");
   assert.equal(h.engine.explain("a")!.paused, true);
-  assert.ok(describeWindow(h.engine.explain("a"), { desktopNameOf: () => "", shortcuts: null, area: null })
+  assert.ok(describeWindow(h.engine.explain("a"), { desktopNameOf: () => "", outputNameOf: (k) => k, shortcuts: null, area: null })
     .rows.some((r) => r.label === "Tiling paused"));
 });
