@@ -57,8 +57,8 @@ HELPER_FILES = ("CMakeLists.txt", "README.md", "main.cpp", "org.kde.plastile.Sta
 REQUIRED = (
     "metadata.json",
     "contents/ui/main.qml",
-    # Loaded by main.qml at runtime (Loader.setSource / the persistence item): a zip without
-    # them installs and starts, then fails only when the inspector, persistence or overlay is used.
+    # Compiled with main.qml (the inspector and overlay components, the persistence item): a zip
+    # without them installs, then fails to start.
     "contents/ui/Inspector.qml",
     "contents/ui/Persistence.qml",
     "contents/ui/ZoneOverlay.qml",

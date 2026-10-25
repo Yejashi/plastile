@@ -137,7 +137,8 @@ Refinements and deviations, each with its reason:
     (that press is consumed) or when a window is activated. Measured in nested KWin 6.7.5 (`zones-overlay-M9`): both
     windows exist only after `zone.show`, both are excluded as Plastile's own UI, Escape pressed through libei hides
     them, and unload destroys them. Pointer pass-through was not measured.
-12. **Overlay lifecycle.** The QML component is created on the first `zone.show`, hidden and shown again afterwards
+12. **Overlay lifecycle.** The QML component is compiled with `main.qml` at load (ADR-016 addendum), created on the
+    first `zone.show`, hidden and shown again afterwards
     (KWin destroys the internal windows while hidden, so nothing is mapped), and destroyed on unload. It holds no timer
     or connection. While shown it is refreshed after every accepted Plastile command (a context reset or layout change
     that leaves zones hides it; a float updates the counts), and only then; other changes appear the next time it is
