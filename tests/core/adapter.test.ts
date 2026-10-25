@@ -4,7 +4,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createRuntime } from "../../src/runtime/main.ts";
-import { constraintsOf, KwinAdapter } from "../../src/adapters/kwin/adapter.ts";
+import { constraintsOf, KwinAdapter, maybeBar, metaOf } from "../../src/adapters/kwin/adapter.ts";
 import { desktop, fakeEnv, FakeQt, FakeWorkspace, output, Sig, type FakeWindow, type R } from "./fakeKwin.ts";
 
 const GAP = 8;
@@ -161,6 +161,43 @@ test("O07: a panel's own frame change without an area change writes nothing", ()
   ws.kwinSetFrame(left, { x: 0, y: 0, width: 48, height: 760 });
   qt.drain();
   assert.equal(ws.writes.length, before);
+  rt.shutdown();
+});
+
+test("O07: a layer-shell bar KWin types as a normal window (namespace not \"dock\") re-solves on add, resize and removal", () => {
+  const { ws, qt, wins, rt } = setup();
+  const lowest = () => Math.max(...wins.map((w) => bottomOf(w.frameGeometry)));
+  // KWin types a layer surface by its namespace: "waybar" is a normal window with a strut, never
+  // movable or resizable, skipping the taskbar (as measured in nested 6.8.1).
+  const bar = ws.window({ normalWindow: true, caption: "", resourceClass: "waybar", desktopFileName: "", resourceName: "waybar",
+    pid: 4242, resizeable: false, moveable: false, skipTaskbar: true, frameGeometry: { x: 0, y: 760, width: 1280, height: 40 } }, false);
+  ws.areas.set("O1", { x: 0, y: 0, width: 1280, height: 760 });
+  ws.add(bar);
+  qt.drain();
+  assertTiles(wins, { x: 0, y: 0, width: 1280, height: 760 });
+  assert.equal(lowest(), 760 - GAP, "the tiles left the bar");
+  assert.ok(!ws.writes.some((w) => w.caption === ""), "the bar itself is never written");
+  // A taller exclusive zone resizes the surface; KWin's rearrange lands after the first deferred turn.
+  ws.kwinSetFrame(bar, { x: 0, y: 740, width: 1280, height: 60 });
+  qt.turn();
+  ws.areas.set("O1", { x: 0, y: 0, width: 1280, height: 740 });
+  qt.drain();
+  assert.equal(lowest(), 740 - GAP, "the tiles follow the resized bar");
+  // Its repaints queue nothing (an unlisted namespace may be an animated wallpaper).
+  bar.damaged.emit();
+  assert.equal(qt.later.length, 0, "a repaint queued no area check");
+  // Only such surfaces: not an ordinary fixed-size application window, a dock (watched as a panel)
+  // or a layer-shell notification.
+  assert.ok(maybeBar(metaOf(bar)));
+  assert.ok(!maybeBar(metaOf(ws.window({ resizeable: false }))), "a fixed-size application window");
+  assert.ok(!maybeBar(metaOf(ws.panel({ moveable: false, skipTaskbar: true }))), "a dock");
+  assert.ok(!maybeBar(metaOf(ws.window({ normalWindow: false, notification: true, resizeable: false, moveable: false, skipTaskbar: true }))));
+  ws.remove(bar);
+  qt.turn();
+  ws.areas.delete("O1");
+  qt.drain();
+  assertTiles(wins, { x: 0, y: 0, width: 1280, height: 800 });
+  assert.equal(lowest(), 800 - GAP, "the freed space is used again");
   rt.shutdown();
 });
 

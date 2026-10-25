@@ -38,8 +38,10 @@ def tiles(s: Session, output: str | None = None) -> list[dict]:
     return [f for f in s.frames_list() if f["caption"] and (output is None or f["output"] == output)]
 
 
-def spawn_panel(s: Session, name: str, edge: str, size: int, output: str | None = None) -> subprocess.Popen:
-    args = [str(FIXTURE), "--panel", f"{edge}:{size}"] + (["--output", output] if output else [])
+def spawn_panel(s: Session, name: str, edge: str, size: int, output: str | None = None,
+                scope: str | None = None) -> subprocess.Popen:
+    args = ([str(FIXTURE), "--panel", f"{edge}:{size}"] + (["--output", output] if output else [])
+            + (["--panel-scope", scope] if scope else []))
     return s.kw.spawn(args, stdout=open(s.out / f"panel-{name}.jsonl", "w"), stdin=subprocess.PIPE)
 
 
@@ -149,6 +151,53 @@ def panel_add_remove(out: Path, c: Checks):
             retile_checks(c, "b", s, a2, c1b, c2, trace_since(s, t1))
             c("model invariants: no errors", c2["counters"]["errors"] == 0, c2["counters"]["errors"])
             (out / "panel-info.json").write_text(json.dumps(info, indent=1))
+        finally:
+            quit_panel(p)
+
+
+BAR_INFO = (
+    "emit(workspace.windowList().filter(w => !w.caption).map(w => ({dock: w.dock, windowType: w.windowType,"
+    " normalWindow: w.normalWindow, managed: w.managed, moveable: w.moveable, resizeable: w.resizeable,"
+    " skipTaskbar: w.skipTaskbar,"
+    " frame: {x: w.frameGeometry.x, y: w.frameGeometry.y, width: w.frameGeometry.width, height: w.frameGeometry.height}})));")
+
+
+@scenario("workarea-bar-namespace-O07")
+def bar_namespace(out: Path, c: Checks):
+    """A layer-shell bar whose namespace is not "dock" (waybar, AGS, eww): KWin types it as a normal window,
+    and its exclusive zone still reserves space. (a) it appears under 3 tiles; (b) it exits."""
+    with Session(out) as s:
+        three(s)
+        s.load()
+        s.settle()
+        a0 = s.area()
+        c0 = s.counters()
+        t0 = last_t(s)
+        p = spawn_panel(s, "waybar", "bottom", 40, scope="waybar")
+        try:
+            shrunk = until(lambda: s.area()["height"] == a0["height"] - 40)
+            a1 = s.area()
+            c("a: work area shrinks by exactly 40 px at the bottom", shrunk, {"before": a0, "after": a1})
+            info = json.loads(s.js(BAR_INFO)[0])
+            # What the adapter's maybeBar relies on: a normal window, never movable or resizable, off the taskbar.
+            c("a: KWin reports the bar as a normal window, not a dock (not movable, not resizable, skips the taskbar)",
+              len(info) == 1 and not info[0]["dock"] and info[0]["normalWindow"] and info[0]["windowType"] == 0
+              and not info[0]["moveable"] and not info[0]["resizeable"] and info[0]["skipTaskbar"], info)
+            until(lambda: abs(max(bottom(x["frame"]) for x in tiles(s)) - (a1["y"] + a1["height"] - GAP)) <= 0.5, 4.0)
+            time.sleep(0.5)
+            c1 = s.settle()
+            retile_checks(c, "a", s, a1, c0, c1, trace_since(s, t0))
+            t1 = last_t(s)
+            quit_panel(p)
+            restored = until(lambda: s.area() == a0)
+            a2 = s.area()
+            c("b: work area restored after the bar exits", restored, {"expected": a0, "got": a2})
+            until(lambda: abs(max(bottom(x["frame"]) for x in tiles(s)) - (a2["y"] + a2["height"] - GAP)) <= 0.5, 4.0)
+            time.sleep(0.5)
+            c2 = s.settle()
+            retile_checks(c, "b", s, a2, c1, c2, trace_since(s, t1))
+            c("model invariants: no errors", c2["counters"]["errors"] == 0, c2["counters"]["errors"])
+            (out / "bar-info.json").write_text(json.dumps(info, indent=1))
         finally:
             quit_panel(p)
 

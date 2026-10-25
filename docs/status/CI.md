@@ -173,6 +173,7 @@ facing tiles (>= the configured gap; one device pixel of tolerance at fractional
 | `desktops-rename-reorder-remove-O10` | O10 (stable desktop ids, reorder, removal migration, and a name-matched override re-resolved after a rename, which failed before fd0ae38) |
 | `all-desktops-L16` | L16 (all-desktop and two-desktop windows float, no geometry targets; tile again on one desktop) |
 | `workarea-panel-add-remove-O07`, `workarea-panel-before-load-O07`, `workarea-two-panels-O07`, `workarea-panel-one-output-O07` | O07 (layer-shell panels; auto-hide and floating panels need plasmashell) |
+| `workarea-bar-namespace-O07` | O07 with a layer-shell bar whose namespace is not `dock` (fixture `--panel-scope waybar`): KWin types it as a normal window, and the tiles still leave and reclaim its exclusive zone (failed before the fix: lowest tile bottom 792, expected 752) |
 | `workarea-hidden-desktop-O07` | O07 with the tiles' desktop hidden: KWin confines them to the new area itself; Plastile writes nothing, spends no correction and diverges nothing while hidden, and tiles them into the new area when shown (three cases: KWin moves, KWin resizes, a client slower than the deadline; the last reproduced the physical divergence before the fix) |
 | `xwayland-tile-close-G10`, `xwayland-min-G10`, `xwayland-inc-G10`, `xwayland-fixed-G10`, `xwayland-dialog-G10`, `xwayland-aspect-G10` | G10 |
 | `realapps-<app>` | matrix section 4 "representative real applications" sweep (nested half) |
