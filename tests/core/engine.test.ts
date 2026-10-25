@@ -973,6 +973,27 @@ test("C12: in monocle a focus change selects and raises once, with no deferred s
   assert.deepEqual(h.raises.slice(raises), ["b"], "no extra raise");
 });
 
+test("SHORTCUTS: in monocle directional swap and move are no-ops; swap next/previous/master reorder", () => {
+  const { h, e } = setup(["a", "b", "c"]);
+  const K = { output: "O1", desktop: "D1", activity: "default" };
+  h.active = "b";
+  e.execute("plastile.layout.monocle");
+  h.drain();
+  const writes = h.writes.length;
+  for (const fam of ["swap", "move"]) {
+    for (const dir of ["left", "right", "up", "down"]) {
+      assert.equal(e.execute(`plastile.${fam}.${dir}`).status, "noop", `${fam}.${dir}`);
+    }
+  }
+  h.drain();
+  assert.deepEqual(e.membersOf(K), ["a", "b", "c"]);
+  assert.equal(h.writes.length, writes, "nothing written");
+  assert.equal(e.execute("plastile.swap.next").status, "accepted");
+  assert.deepEqual(e.membersOf(K), ["a", "c", "b"]);
+  assert.equal(e.execute("plastile.swap.master").status, "accepted");
+  assert.deepEqual(e.membersOf(K), ["b", "c", "a"]);
+});
+
 test("C08: an exception while solving one context does not drop the other dirty contexts", () => {
   const h = new MockHost();
   h.outs.push({ id: "O2", name: "O2", geometry: rect(1280, 0, 1280, 800), scale: 1 });
