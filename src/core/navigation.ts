@@ -14,6 +14,8 @@ export type Direction = "left" | "right" | "up" | "down";
 
 const SLOP = 1; // px: tiles separated by gaps still count as "beyond"
 
+const OPPOSITE: Record<Direction, Direction> = { left: "right", right: "left", up: "down", down: "up" };
+
 interface Scored { id: WindowId; overlap: number; distance: number; order: number }
 
 function overlapLen(a0: number, a1: number, b0: number, b1: number): number {
@@ -88,7 +90,10 @@ export function wrapNeighbour(from: WindowId, dir: Direction, rects: ReadonlyMap
   const c = rects.get(id)!;
   const horizontal = dir === "left" || dir === "right";
   const overlap = horizontal ? overlapLen(cur.y, bottom(cur), c.y, bottom(c)) : overlapLen(cur.x, right(cur), c.x, right(c));
-  return overlap > 0 ? id : null;
+  // The opposite end lies the other way from the current rectangle. Tiles sharing its slot
+  // (monocle, one zone) have no row or column to wrap along.
+  const back = score(OPPOSITE[dir], cur, c);
+  return overlap > 0 && (back.beyond || back.partly) ? id : null;
 }
 
 /** An output for cross-output navigation: identity and logical geometry. */

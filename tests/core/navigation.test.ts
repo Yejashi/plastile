@@ -148,6 +148,17 @@ test("focusWrap: ties at the far end break by overlap, then stable order", () =>
   wrapTable(swapped, [["cur", "right", "q"]]);
 });
 
+test("focusWrap: tiles sharing one slot (monocle, one zone) have no row or column to wrap along", () => {
+  const R = rect(0, 0, 1920, 1080);
+  const stacked = new Map([["a", R], ["b", R], ["c", R], ["d", R]]);
+  for (const from of ["a", "b", "d"]) {
+    for (const dir of ["left", "right", "up", "down"] as const) wrapTable(stacked, [[from, dir, null]]);
+  }
+  // Two tiles in one zone beside a third: wrap along the row still reaches the other end, never the slot-mate.
+  const zone = new Map([["a", rect(0, 0, 100, 100)], ["b", rect(0, 0, 100, 100)], ["c", rect(110, 0, 100, 100)]]);
+  wrapTable(zone, [["c", "right", "a"], ["a", "left", "c"], ["b", "left", "c"], ["a", "up", null], ["a", "down", null]]);
+});
+
 test("cross-output order follows topology, not enumeration order", () => {
   const o = (id: string, x: number, y: number) => ({ id, geometry: rect(x, y, 1280, 800) });
   // Enumerated right, left, middle: topology is left, middle, right.
