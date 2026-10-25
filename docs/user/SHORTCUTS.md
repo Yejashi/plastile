@@ -106,7 +106,7 @@ KGlobalAccel stores your choice in `~/.config/kglobalshortcutsrc`, and your bind
 
 Unbound commands (*unbound* in the table) appear in the same list and only need a binding.
 
-**Shift with a digit or punctuation:** register the character the keys type. Measured in nested KWin 6.8.1 with real key presses (libei, US layout): a binding stored as `Meta+Shift+1` never fired when `Meta+Shift+1` was pressed, and neither did `Meta+Shift+!`; a binding stored as `Meta+!` did. System Settings records what the keyboard sends when you press the keys, so this matters mostly when you set bindings by script or by editing `kglobalshortcutsrc`. Letters are not affected: `Meta+Shift+H` works as written. For example, i3-style "move window to desktop N" on a US layout is KWin's *Window to Desktop N* bound to `Meta+!`, `Meta+@`, `Meta+#` and so on.
+**Shift with a digit or punctuation:** register the character the keys type. Measured in nested KWin 6.8.1 with real key presses (libei, US layout): a binding stored as `Meta+Shift+1` never fired when `Meta+Shift+1` was pressed, and neither did `Meta+Shift+!`; a binding stored as `Meta+!` did. Not checked: which form System Settings stores when you press the keys there; if a Shift+digit binding set there does nothing, set it again as the character. Letters are not affected: `Meta+Shift+H` works as written. For example, i3-style "move window to desktop N" on a US layout is KWin's *Window to Desktop N* bound to `Meta+!`, `Meta+@`, `Meta+#` and so on.
 
 You can also trigger any command without a key. The test harness does this throughout (measured in nested KWin 6.7.5):
 
