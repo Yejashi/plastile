@@ -183,6 +183,7 @@ def zones_overlay(out: Path, c: Checks):
 
         f0 = frames(s)
         c0 = s.counters()
+        off = s.kw.mark()
         s.cmd("zone.show")
         try:
             s.wait_for(lambda: len(own_windows(s)) == 2, 5, "overlay windows")
@@ -203,9 +204,15 @@ def zones_overlay(out: Path, c: Checks):
         c("showing the overlay solved nothing and wrote no geometry (counters)", d.get("solves", 0) == 0 and d.get("writes", 0) == 0, d)
         c("tiles unchanged while the overlay is shown (oracle)",
           all(near(f0[k]["frame"], frames(s)[k]["frame"], 0.5) for k in f0), {k: v["frame"] for k, v in frames(s).items()})
+        shown = overlay_log(s, off)
+        off = s.kw.mark()
         s.cmd("zone.unassign")  # fixture 2 is active: released, the shown overlay is refreshed
-        time.sleep(0.4)
-        c("a zone command while shown keeps the overlay (refreshed, no new windows)", len(own_windows(s)) == 2, own_windows(s))
+        until(lambda: overlay_log(s, off) is not None, 3)
+        refreshed = overlay_log(s, off)
+        counts = lambda m: {z["n"]: z["windows"] for z in m["zones"]} if m else None  # noqa: E731
+        c("a zone command while shown refreshes the overlay: zone 2 is drawn empty after the unassign (log), "
+          "and no new windows", counts(shown) == {1: 1, 2: 1} and counts(refreshed) == {1: 1, 2: 0}
+          and len(own_windows(s)) == 2, {"shown": counts(shown), "refreshed": counts(refreshed), "own": own_windows(s)})
 
         escape_note = ""
         try:

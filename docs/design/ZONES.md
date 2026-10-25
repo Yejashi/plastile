@@ -86,7 +86,9 @@ the pointer only during an active drag, as ARCHITECTURE requires.
 - Replay: assign issues one write; repeated assign is a no-op; float toggle restores the floating
   rectangle; layout switch and stop release ownership without moving windows.
 - Nested KWin: keyboard assign on two outputs with different work areas (oracle frames equal the
-  model's rectangles); overlay created only on show and destroyed on unload; no timers while hidden.
+  model's rectangles); overlay created only on show and destroyed on unload; no timers while hidden; a zone
+  command while it is shown redraws it (the `zones overlay` info line, which lists each zone's rectangle and
+  window count, shows the unassigned zone empty).
 - Physical session (open gate): overlay rendering, numbers legible at mixed scales.
 
 ## 6. Implementation notes and deviations

@@ -29,7 +29,7 @@ Status of the workflow itself (2026-10-17):
 
 | Job | Runner | Fatal? | Steps |
 |---|---|---|---|
-| `core` | `ubuntu-latest` (Ubuntu 24.04 per runner-images on 2026-10-17) | yes | `actions/setup-node@v7` (Node 26) and `actions/setup-python@v7` (3.14), Node major guard, `npm ci`, `npm run typecheck`, `npm test`, `npm run build` + bundle sanity grep, `python3 tools/check_docs.py`, `python3 tools/release.py --check --out dist`, `python3 tests/integration/run.py --list` (import check only), `make -C fixtures/client` (`libwayland-dev wayland-protocols pkg-config`), `make -C fixtures/xclient` (`libxcb1-dev libxcb-icccm4-dev`) |
+| `core` | `ubuntu-latest` (Ubuntu 24.04 per runner-images on 2026-10-17) | yes | `actions/setup-node@v7` (Node 26) and `actions/setup-python@v7` (3.14), Node major guard, `npm ci`, `npm run typecheck`, `npm test`, `npm run build` + bundle sanity grep, `python3 tools/check_docs.py`, `python3 tools/release.py --check --out dist`, `python3 tests/integration/run.py --list` (import check only), `python3 -m unittest discover -s tests/integration -p 'test_*.py'` (the harness's own oracles, offline: check-name collisions, the Motion log parser, provenance), `make -C fixtures/client` (`libwayland-dev wayland-protocols pkg-config`), `make -C fixtures/xclient` (`libxcb1-dev libxcb-icccm4-dev`) |
 | `core`, input injector | same | yes (seen green 2026-10-18) | `apt-get install libei-dev` (1.2.1 on 24.04) then `make -C tools/input` |
 | `native-tools` | `ubuntu-26.04` | yes (seen green 2026-10-18) | `tools/measure` (needs Qt >= 6.5; 24.04 has Qt 6.4.2) and `tools/settings-check` (needs Qt6 UiTools and KF6Config/KF6ConfigWidgets; 24.04 has no KF6). Ubuntu 26.04 has Qt 6.10 and KF 6.24 (`libkf6configwidgets-dev` 6.24.0, `qt6-tools-dev` ships `Qt6UiToolsConfig.cmake`). Build only: `plastile-settings-check` needs a display to run |
 | `native-tools`, persistence helper | same | yes (green on hosted runners, e.g. run 39300522170) | `cmake -S helper -B build/helper` (Qt 6 Core + DBus, `-Werror`; ADR-020). Built only; the nested jobs build and run their own |
@@ -57,6 +57,7 @@ npm ci && npm run typecheck && npm test && npm run build
 npm run check:docs            # python3 tools/check_docs.py
 npm run release:check         # python3 tools/release.py --check --out dist
 npm run integration:list      # python3 tests/integration/run.py --list
+python3 -m unittest discover -s tests/integration -p 'test_*.py'   # harness oracles, no KWin
 make -C fixtures/client && make -C fixtures/xclient && make -C tools/input
 cmake -S helper -B build/helper && cmake --build build/helper     # also needed by the nested suite
 cmake -S tools/measure -B build/measure && cmake --build build/measure
@@ -106,6 +107,11 @@ python3 tests/integration/run.py --only a,b      # a subset
 python3 tests/integration/run.py --list          # names (authoritative; CI runs this import check)
 ```
 
+`report.json` names the commit and `implementationDirty`: true when anything the run executes or is built from
+differs from that commit (`src`, `package`, `effect`, `helper`, `fixtures`, `tests`, `tools`, `probes` and the
+build configuration; `provenance()` in `tests/integration/harness.py`, also used by the replay capture and the
+settings scenario). Gitignored build outputs are not covered: a stale `build/` or fixture binary is not detected.
+
 The table follows `run.py --list` on 2026-10-18 (69 names in the Ubuntu 26.10 sandbox; the `realapps-*`
 set depends on the host). The ID column says what the scenario's checks actually exercise; "partial"
 names the part of the matrix row that is not asserted. Geometry is judged by the oracle (one-shot KWin
@@ -131,11 +137,11 @@ facing tiles (>= the configured gap; one device pixel of tolerance at fractional
 | `outputs-O01` | O01 partial: send-to-output with both origins at y = 0 (offset origins: `output-offset-origin-G02`) |
 | `desktops-L15` | L15, send-to-desktop without follow (the source context reflows) |
 | `reload-Q09` | Q09: 100 cycles with pending work; independent checks (KWin script objects, kglobalaccel names, one-step effect size, KWin idle CPU and RSS) |
-| `config-Q01` | Q01 (Q04 rapid reload is not exercised) |
+| `config-Q01` | Q01: a live reload applies both gaps (outer at the edges, inner between tiles); a rejected edit leaves every tile where the previous revision put it and writes nothing (Q04 rapid reload is not exercised) |
 | `suspend-idle-C14` | C14; suspend/resume (resume returns a moved window to its slot) |
 | `fractional-scale-G03` | G03 nested half |
-| `rotation-portrait-O02` | O02 partial: portrait logical placement only (no mixed scale or refresh) |
-| `unplug-O04` | O04; O05 partial: placement validity after replug (KWin decides where windows return; preference recovery not asserted) |
+| `rotation-portrait-O02` | O02 partial: portrait logical placement only (no mixed scale or refresh). On the way back to landscape KWin itself restores the earlier tiles, so a valid tiling there proves nothing about Plastile: the scenario also requires a `topology` trace record and a solve, then a grow and shrink that must re-solve into the same landscape tiles (a model that kept the portrait area fails) |
+| `unplug-O04` | O04; O05 partial: placement validity after replug (KWin decides where windows return, and puts them back at their earlier tiles; preference recovery not asserted). As for O02, Plastile's reaction is checked separately: a `topology` record and a solve after the replug, then a grow and shrink on each output with two windows |
 | `reconcile` | diagnostic reconcile, no ID |
 | `resume-missed-events-T19` | T19 resume: a close, an open, a desktop move, an output move and two external resizes (one leaving the slot unchanged) while suspended; resume adopts the live state (closed window not revived, one solve per visible context, one write per window out of its slot including the one that drifted in place, none for the window already in it); a reconcile afterwards writes nothing |
 | `reenable-missed-events-T19` | T19: the same changes while disabled (unloaded), adopted on enable; 10 suspend/resume and 10 disable/enable cycles leave one engine (KWin script objects, kglobalaccel names, steady connections, one command record and one ratio step per press) |

@@ -47,7 +47,11 @@ test("zone.show creates the overlay on first use, toggles it, and unload destroy
   assert.deepEqual(v.rects.map((r) => r.label), ["1", "2"]);
   assert.deepEqual(v.rects[1].rect, { x: g.x, y: g.y, width: g.width, height: g.height }, "zone 2 is where the window went");
   assert.equal(v.rects[1].detail, "1 window");
-  assert.ok(f.lines.some((l) => l.startsWith("plastile info zones overlay ")), "the drawn rectangles are logged at info");
+  const logged = f.lines.filter((l) => l.startsWith("plastile info zones overlay "));
+  assert.equal(logged.length, 1, "the drawn rectangles are logged at info");
+  // With the window counts: the nested scenario tells a refreshed overlay from a stale one by them.
+  assert.deepEqual(JSON.parse(logged[0].slice("plastile info zones overlay ".length)).zones.map((z: { n: number; windows: number }) =>
+    [z.n, z.windows]), [[1, 0], [2, 1]]);
   rt.dispatch("plastile.zone.layout-next");
   assert.deepEqual(calls, ["show", "show"], "a zone command refreshes a shown overlay");
   assert.equal(shown[1].heading.indexOf("Zones: thirds"), 0);

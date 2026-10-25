@@ -309,7 +309,8 @@ export function createRuntime(env: RuntimeEnv): Runtime {
       return;
     }
     const view = zoneOverlayView(m);
-    log("info", "zones overlay", { output: m.output, layout: m.layout, zones: view.rects.map((z) => ({ n: z.n, rect: z.rect })) });
+    log("info", "zones overlay", { output: m.output, layout: m.layout,
+      zones: view.rects.map((z) => ({ n: z.n, rect: z.rect, windows: z.windows })) });
     if (host) host.show(view);
   };
   // ---- end zones overlay ----

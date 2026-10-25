@@ -8,7 +8,8 @@ from pathlib import Path
 import os
 import re
 
-from harness import Session, delta, explain, fixture_events, near, tiling_errors, trace, steady_connections
+from harness import (Session, delta, explain, fixture_events, last_trace_t, near, tiling_errors, trace, trace_since,
+                     steady_connections)
 
 SCENARIOS = {}
 
@@ -33,7 +34,13 @@ class Checks:
         self.items: dict[str, dict] = {}
 
     def __call__(self, name: str, ok: bool, detail=None):
-        self.items[name] = {"pass": bool(ok), "detail": detail}
+        # A repeated name never replaces the earlier result (a failure would vanish behind a later pass):
+        # the repeat is recorded beside it as "<name> (#2)", "(#3)", ...
+        key, n = name, 1
+        while key in self.items:
+            n += 1
+            key = f"{name} (#{n})"
+        self.items[key] = {"pass": bool(ok), "detail": detail}
         return ok
 
 
@@ -565,15 +572,23 @@ def config(out: Path, c: Checks):
         s.kw.call("/KWin", "org.kde.KWin", "reconfigure")
         time.sleep(0.8); s.settle()
         f = s.frames()
-        c("config: live reload applies gaps 4", f["plastile-fixture 1"]["frame"]["x"] == 4, f["plastile-fixture 1"]["frame"])
+        m, top, low = (f[f"plastile-fixture {i}"]["frame"] for i in (1, 2, 3))
+        c("config: live reload applies gaps 4", m["x"] == 4, m)
+        # The master's x shows only the outer gap; the inner gap is the space between neighbouring tiles.
+        c("config: live reload applies the inner gap 4 (master to stack, and within the stack)",
+          top["x"] == m["x"] + m["width"] + 4 and low["y"] == top["y"] + top["height"] + 4, [m, top, low])
+        reloaded = {k: v["frame"] for k, v in f.items()}
         rc.write_text(rc.read_text().replace("gapInner=4", "gapInner=-3"))
         off = s.kw.mark()
+        a = s.counters()
         s.kw.call("/KWin", "org.kde.KWin", "reconfigure")
-        time.sleep(0.8); s.settle()
+        time.sleep(0.8); b = s.settle()
         f = s.frames()
         rejected = s.log_lines(r"configuration rejected", off)
         c("Q01: invalid config rejected with a message", bool(rejected), rejected[:1])
-        c("Q01: previous revision retained", f["plastile-fixture 1"]["frame"]["x"] == 4, f["plastile-fixture 1"]["frame"])
+        c("Q01: previous revision retained: every tile where the 4/4 revision put it, nothing written",
+          all(near(f[k]["frame"], reloaded[k], 0.5) for k in reloaded) and delta(a, b).get("writes", 0) == 0,
+          {"now": {k: v["frame"] for k, v in f.items()}, "revision 4/4": reloaded, "counters": delta(a, b)})
 
 
 @scenario("suspend-idle-C14")
@@ -620,6 +635,33 @@ def on_output(s: Session, name: str) -> list[dict]:
     return [f for f in s.frames_list() if f["output"] == name]
 
 
+# When an output returns to an earlier configuration (rotation back, an output enabled again), KWin itself
+# puts each window back where it was in that configuration: Plastile's old tiles. A valid tiling after the
+# return is therefore no evidence that Plastile reacted; these two checks are.
+def reacted(s: Session, c: Checks, tag: str, a: dict, b: dict, t0: float) -> None:
+    """Plastile saw the change (a topology record after `t0`) and re-solved (counters a -> b)."""
+    kinds = [r["kind"] for r in trace_since(trace(s), t0)]
+    c(f"{tag}: Plastile handled the change (trace 'topology', solves >= 1)",
+      "topology" in kinds and delta(a, b).get("solves", 0) >= 1, {"trace": sorted(set(kinds)), "counters": delta(a, b)})
+
+
+def forced_solve(s: Session, c: Checks, tag: str, caption: str, output_index: int) -> None:
+    """resize.grow then resize.shrink on `caption`: two solves from Plastile's own model of the output. A model
+    that kept the earlier area writes tiles of the wrong size, outside the area or away from the tiles before."""
+    name = output_name(s, output_index)
+    before = {f["caption"]: f["frame"] for f in on_output(s, name)}
+    s.act(caption, "workspace.activeWindow = w")
+    s.cmd("resize.grow"); s.settle()
+    grown = {f["caption"]: f["frame"] for f in on_output(s, name)}
+    s.cmd("resize.shrink"); s.settle()
+    f = on_output(s, name)
+    area = s.area(output_index)
+    c(f"{tag}: grow and shrink re-solve the output into the same tiles (oracle, gaps>=8)",
+      not near(grown[caption], before[caption], 1.0) and not tiling_errors(f, area, 8)
+      and {x["caption"] for x in f} == set(before) and all(near(x["frame"], before[x["caption"]], 1.0) for x in f),
+      {"before": before, "grown": grown, "after": {x["caption"]: x["frame"] for x in f}, "area": area})
+
+
 @scenario("fractional-scale-G03")
 def fractional_scale(out: Path, c: Checks):
     with Session(out, outputs=2) as s:
@@ -661,10 +703,13 @@ def rotation(out: Path, c: Checks):
         f = s.frames_list()
         c("O02 portrait: area rotated", area["height"] > area["width"], area)
         c("O02 portrait: retiled inside the rotated area", not tiling_errors(f, area, 8), tiling_errors(f, area, 8))
+        a, t0 = s.counters(), last_trace_t(s)
         kscreen(s, f"output.{first}.rotation.normal")
-        time.sleep(0.8); s.settle()
+        time.sleep(0.8); b = s.settle()
         area = s.area(0)
         c("O02 back to landscape: retiled", not tiling_errors(s.frames_list(), area, 8))
+        reacted(s, c, "O02 back to landscape", a, b, t0)
+        forced_solve(s, c, "O02 back to landscape", "plastile-fixture 1", 0)
 
 
 @scenario("unplug-O04")
@@ -690,17 +735,24 @@ def unplug(out: Path, c: Checks):
         c("O04: retiled without overlap", not tiling_errors(f, area, 8), tiling_errors(f, area, 8))
         errs = s.log_lines(r"plastile (error|warn)|TypeError|ReferenceError", off)
         c("O04: no errors from stale output callbacks", not errs, errs[:3])
+        a, t0 = s.counters(), last_trace_t(s)
         kscreen(s, "output.Virtual-1.enable")
-        time.sleep(1.0); s.settle()
+        time.sleep(1.0); b = s.settle()
         f = s.frames_list()
         live = {"Virtual-0", "Virtual-1"}
         per = {name: on_output(s, name) for name in sorted(live)}
         errs = {name: tiling_errors(ws, s.area(0 if name == "Virtual-0" else 1), 8) for name, ws in per.items() if ws}
-        # Placement validity only: which output a window returns to is KWin's decision; Plastile's own
-        # preference recovery (O05 "deterministic preference recovery") is not asserted here.
+        # Placement validity only: which output a window returns to is KWin's decision, and KWin also puts the
+        # windows back at their earlier tiles; Plastile's own preference recovery (O05 "deterministic preference
+        # recovery") is not asserted here. That Plastile reacted is checked separately below.
         c("O05 replug (partial): all four windows on live outputs and each output's windows tiled (oracle, gaps>=8)",
           len(f) == 4 and all(x["output"] in live for x in f) and not any(errs.values()),
           {"placement": {x["caption"]: x["output"] for x in f}, "errors": errs})
+        reacted(s, c, "O05 replug", a, b, t0)
+        pairs = [(i, ws[0]["caption"]) for i, ws in enumerate(per.values()) if len(ws) >= 2]
+        c("O05 replug: an output holds two windows to re-solve", bool(pairs), {k: len(v) for k, v in per.items()})
+        for i, caption in pairs:
+            forced_solve(s, c, f"O05 replug, {output_name(s, i)}", caption, i)
         c("O05 replug: no errors", not s.log_lines(r"plastile (error|warn)|TypeError", off))
 
 
@@ -743,8 +795,10 @@ def replug_identity(out: Path, c: Checks):
           and not tiling_errors(f, area_of(s, "Virtual-0"), 8), [(x["caption"], x["output"]) for x in f])
         ids = [x["id"] for x in cnt["contexts"]]
         c("T30: the unplugged output's emptied context is dropped", not any(i.startswith("Virtual-1␟") for i in ids), ids)
+        a, t0 = s.counters(), last_trace_t(s)
         kscreen(s, "output.Virtual-1.enable")
-        time.sleep(1.0); s.settle()
+        time.sleep(1.0); b = s.settle()
+        reacted(s, c, "O05 replug", a, b, t0)
         moved_back = sorted(x["caption"] for x in on_output(s, "Virtual-1"))
         for cap in ("plastile-fixture 3", "plastile-fixture 4"):
             if not any(x["caption"] == cap for x in on_output(s, "Virtual-1")):
