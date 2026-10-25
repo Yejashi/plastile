@@ -37,6 +37,7 @@ import perfcommon as common  # noqa: E402
 
 B = 4000
 SLOW_MS = 0.5
+KWIN_SEEN: list[str] = []  # kwin_wayland --version of every campaign read, for the evidence's layer label
 RNG = np.random.default_rng(20261019)
 
 
@@ -112,8 +113,15 @@ def busy_self(machine: dict) -> list[dict]:
 
 
 # --------------------------------------------------------------------------- ab_bundles campaigns
-def ab_campaign(d: Path, ref: str, rows: list[dict], label: str) -> dict:
+def campaign_meta(d: Path) -> dict:
     meta = json.loads((d / "campaign.json").read_text())
+    if (meta.get("versions") or {}).get("kwin"):
+        KWIN_SEEN.append(meta["versions"]["kwin"])
+    return meta
+
+
+def ab_campaign(d: Path, ref: str, rows: list[dict], label: str) -> dict:
+    meta = campaign_meta(d)
     units = [json.loads(p.read_text()) | {"dir": p.parent.name} for p in sorted(d.glob("u*/unit.json"))]
     contaminated = [u["dir"] for u in units if busy_self(u["machineStart"])]
     for u in units:
@@ -156,7 +164,7 @@ def ab_campaign(d: Path, ref: str, rows: list[dict], label: str) -> dict:
 
 # --------------------------------------------------------------------------- ab_qualify campaigns
 def qualify_campaign(d: Path, rows: list[dict], label: str, ref: str) -> dict:
-    meta = json.loads((d / "campaign.json").read_text())
+    meta = campaign_meta(d)
     out = {"mode": meta["mode"], "diag": meta["diag"], "n": meta["n"], "seed": meta["seed"], "order": meta["order"],
            "implementationCommit": meta["implementationCommit"], "implementationDirty": meta["implementationDirty"],
            "variants": [{k: x for k, x in v.items() if k != "qml"} for v in meta["variants"]], "units": [], "cells": {}}
@@ -256,7 +264,7 @@ def gc_attrib(d: Path, v: dict) -> list[dict]:
 
 
 def qv4solve_campaign(d: Path) -> dict:
-    meta = json.loads((d / "campaign.json").read_text())
+    meta = campaign_meta(d)
     units = [json.loads(p.read_text()) | {"dir": p.parent.name} for p in sorted(d.glob("u*/unit.json"))]
     out = {"layer": meta["layer"], "args": {k: v for k, v in meta["args"].items() if k != "out"}, "order": meta["order"],
            "implementationCommit": meta["implementationCommit"], "implementationDirty": meta["implementationDirty"],
@@ -289,7 +297,7 @@ def main() -> int:
     rows: list[dict] = []
     ev = {
         "purpose": "G2 report §16: the two open G2 performance items (command-path median slowdown since b60e618; pure-solve p99 at 32 windows)",
-        "layer": "nested KWin 6.7.5 virtual backend on the reference host; kglobalaccel D-Bus command API, not input; not physical",
+        "layer": None,  # set below, from the versions the campaigns recorded
         "generatedBy": "probes/perf/g2_followup.py", **{k: v for k, v in common.git_meta().items() if k != "dirtyPaths"},
         "versions": common.versions(),
         "statistics": "nearest-rank quantiles; p99 only from >= 5000 samples; 95 % intervals: bootstrap over whole units (runs), "
@@ -308,6 +316,8 @@ def main() -> int:
         ev["qualifyUninstrumented"] = qualify_campaign(args.uninstr, rows, "qualify-uninstrumented", args.before)
     ev["gcstats"] = [qualify_campaign(g, [], "gcstats", args.before) for g in args.gcstats]
     ev["qv4solve"] = [qv4solve_campaign(q) for q in args.qv4solve]
+    ev["layer"] = (f"{common.nested_kwin(KWIN_SEEN)} virtual backend on the reference host; kglobalaccel D-Bus command "
+                   "API, not input; not physical")
     ev["samplesFile"] = {"path": "g2-followup-samples.csv.xz", "rows": len(rows),
                          "fields": "campaign, unit, variant, commit, round, workload, k, warmup, innerNs, outerNs, solveNs, applyNs, writes, status"}
     args.out.mkdir(parents=True, exist_ok=True)

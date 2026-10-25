@@ -67,7 +67,10 @@ None of these was a nested session, and none belonged to this campaign.
 
 ## 2. What was run
 
-All of it comes from committed probes and a clean tree. Every unit recorded `implementationDirty: false`.
+All of it comes from committed probes and a clean tree. Every unit recorded `implementationDirty: false`. That
+check did not cover `helper/`, the persistence helper every nested session ran, and no unit hashed the helper binary;
+both were added after G2 (`perfcommon.TRACKED`, `unit.json` `root.helperSha256`), so for this campaign the helper's
+state rests on the commit alone.
 
 | Campaign | Commit | Units | Content |
 |---|---|---|---|
@@ -107,7 +110,11 @@ those units dirty, and P14 kept work pending at unload in only 7 of 100 cycles. 
   store with the `plastile-state` helper. It has no inspector or zones hooks, and neither runs on a measured command.
 - Statistics:
   - Nearest-rank quantiles. p99 is reported only from ≥ 5000 samples and withheld below that, as
-    `tools/physical/summarize.py` does.
+    `tools/physical/summarize.py` does. Correction after G2: P05 `configuresPerWindow` and P07 in
+    [g2-lifecycle.json](evidence/g2-lifecycle.json) came from `workloads.py`'s own quantile (`s[int(p·(n−1))]`: p95 one
+    rank below nearest-rank; p50 agrees at these sample counts) and published p99 from 8 to 50 samples. Those p99 values are
+    now withheld in the file (`quantileCorrection`); its p50/p95 stay as recorded, since the raw samples are gone
+    (§14). No budget verdict in this report uses those p95 or p99 values.
   - 95 % intervals are bootstraps over whole runs.
   - Every sample is kept.
 - Per sample, the fixtures' own logs give: first and last xdg configure received, last commit answering a configure,
