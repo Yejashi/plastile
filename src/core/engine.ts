@@ -1176,9 +1176,24 @@ export class Engine {
   private layoutState(c: Ctx, kind: LayoutKind): any {
     if (c.states[kind] === undefined) {
       const lay = LAYOUTS[kind];
-      c.states[kind] = lay.rebuild(lay.initial(this.ctxSettings(c)), c.members, this.solveInput(c, null));
+      c.states[kind] = lay.rebuild(lay.initial(this.ctxSettings(c)), c.members, this.structureInput(c, kind === "bsp"));
     }
     return c.states[kind];
+  }
+
+  /**
+   * Input for a structural edit (insert, rebuild). A BSP split chosen from a slot's shape
+   * (bsp.axis "longest") needs the context's real work area, not solve's placeholder; no
+   * other edit reads the area, so only that case asks KWin. The placeholder stays while the
+   * work area is invalid (O06).
+   */
+  private structureInput(c: Ctx, bsp: boolean): SolveInput {
+    let area: Rect | null = null;
+    if (bsp && this.ctxSettings(c).bsp.axis === "longest") {
+      const a = this.host.workArea(c.key.output, c.key.desktop);
+      if (isValidArea(a)) area = a;
+    }
+    return this.solveInput(c, area);
   }
 
   private joinContext(r: Rec): void {
@@ -1192,7 +1207,7 @@ export class Engine {
     else if (insert === "after-focus" && focus !== null) at = c.members.indexOf(focus) + 1;
     c.members.splice(at, 0, r.id);
     const anchor = at > 0 ? c.members[at - 1] : null;
-    const input = this.solveInput(c, null);
+    const input = this.structureInput(c, c.states.bsp !== undefined);
     // Scrolling: a new column right of the focused one, or at the end (SCROLLING §2).
     const scrollAnchor = insert === "after-focus" ? focus : null;
     for (const kind of Object.keys(c.states) as LayoutKind[]) {
@@ -2185,13 +2200,17 @@ export class Engine {
       if (action === "toggle-float") return this.toggleFloat(r);
       if (action === "adopt-native") {
         if (r.mode !== "native") return noop("window is not natively tiled");
+        // As toggle-float: a window that cannot tile keeps KWin's tile and gets no sticky tile request.
+        const why = this.whyNotTileable(r, this.singleContextKey(r.membership));
+        if (why !== null) return noop("cannot tile: " + why);
         r.releasingTile = true;
         if (!this.host.releaseNativeTile(r.id, r.gen)) r.releasingTile = false;
         r.nativeTile = false;
         r.nativeYield = false;
         r.userMode = "tiled";
         this.reclassify(r, "adopt-native");
-        if (r.ctx) this.solveNow(this.ctxFor(r.ctx));
+        if ((r.mode as PlacementMode) !== "tiled") return noop("cannot tile: " + r.decision.reason);
+        this.solveNow(this.ctxFor(r.ctx!));
         return ok([r.id]);
       }
     }
@@ -2214,6 +2233,7 @@ export class Engine {
         if (cur === "zones") this.releaseZones(c); // zoned windows keep their frames (ZONES §2)
         c.layoutOverride = next;
         if (next === "floating") this.restoreFloatRects(c);
+        this.retryOverflow(c.id); // layout parameters changed (BEHAVIOR §11)
         this.solveNow(c);
         this.persistChanged({ context: c.key });
         this.layoutChanged(c, cur);
@@ -2251,6 +2271,7 @@ export class Engine {
       c.layoutOverride = null;
       c.states = {};
       if (cur !== "floating" && this.layoutKind(c) === "floating") this.restoreFloatRects(c); // as a switch to floating
+      this.retryOverflow(c.id);
       this.solveNow(c);
       this.persistChanged({ context: c.key });
       this.layoutChanged(c, cur);
@@ -2923,16 +2944,19 @@ export class Engine {
   private scrollCommand(c: Ctx, r: Rec | null, action: string): { status: CommandStatus; reason?: string; targets: string[] } {
     if (this.layoutKind(c) !== "scrolling") return { status: "noop", reason: "the layout here is not scrolling", targets: [] };
     if (!r || !this.participates(r) || !sameContext(r.ctx, c.key)) return { status: "noop", reason: "active window is not tiled here", targets: [] };
+    if (action !== "consume" && action !== "expel" && action !== "width-cycle" && action !== "center") {
+      return { status: "rejected", reason: "unsupported command", targets: [] };
+    }
     const state = this.layoutState(c, "scrolling") as ScrollState;
+    // Widths and the view are measured on the strip as shown.
+    const area = this.host.workArea(c.key.output, c.key.desktop);
+    if (!isValidArea(area)) return { status: "noop", reason: "no usable area", targets: [] };
+    const input = this.solveInput(c, area);
     let o;
-    if (action === "consume") o = scrollConsume(state, r.id);
-    else if (action === "expel") o = scrollExpel(state, r.id);
-    else if (action === "width-cycle") o = cycleWidth(state, r.id, this.ctxSettings(c).scrolling.widthPresets);
-    else if (action === "center") {
-      const area = this.host.workArea(c.key.output, c.key.desktop);
-      if (!isValidArea(area)) return { status: "noop", reason: "no usable area", targets: [] };
-      o = scrollCentre(state, r.id, this.solveInput(c, area));
-    } else return { status: "rejected", reason: "unsupported command", targets: [] };
+    if (action === "consume") o = scrollConsume(state, r.id, input);
+    else if (action === "expel") o = scrollExpel(state, r.id, input);
+    else if (action === "width-cycle") o = cycleWidth(state, r.id, this.ctxSettings(c).scrolling.widthPresets, input);
+    else o = scrollCentre(state, r.id, input);
     if (!o.changed) return { status: "noop", reason: o.reason ?? "no change", targets: [] };
     c.states.scrolling = o.state;
     this.solveNow(c);
@@ -2943,7 +2967,9 @@ export class Engine {
   private scrollMove(c: Ctx, r: Rec, action: string): { status: CommandStatus; reason?: string; targets: string[] } {
     const state = this.layoutState(c, "scrolling") as ScrollState;
     if (action === "left" || action === "right") {
-      const o = moveColumn(state, r.id, action);
+      const area = this.host.workArea(c.key.output, c.key.desktop);
+      if (!isValidArea(area)) return { status: "noop", reason: "no usable area", targets: [] };
+      const o = moveColumn(state, r.id, action, this.solveInput(c, area));
       if (!o.changed) return { status: "noop", reason: o.reason ?? `nothing ${action}`, targets: [] };
       c.states.scrolling = o.state;
       this.solveNow(c);
@@ -3274,9 +3300,11 @@ export class Engine {
     if (!this.alive) return;
     const c = this.contexts.get(contextId(key));
     if (!c) { this.retain(key, prefs); return; }
-    const was = this.layoutKind(c);
+    const kind = this.layoutKind(c), ms = c.states["master-stack"];
     this.applyPrefs(c, prefs);
-    if (was !== "floating" && this.layoutKind(c) === "floating") this.floatLayouts.add(c);
+    if (kind !== "floating" && this.layoutKind(c) === "floating") this.floatLayouts.add(c);
+    // A restored layout or master/stack ratio and count are new layout parameters (BEHAVIOR §11).
+    if (this.layoutKind(c) !== kind || !sameValue(ms, c.states["master-stack"])) this.retryOverflow(c.id);
     c.revision++;
     this.markDirty(c.key);
     this.ensureFlush();

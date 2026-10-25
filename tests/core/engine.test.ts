@@ -999,6 +999,35 @@ test("L08/L13: toggle-float on a window that cannot tile is a no-op without side
   assert.equal(e2.explain("y")!.userMode, null);
 });
 
+test("L08/L13: adopt-native on a natively tiled window that cannot tile is a no-op that keeps KWin's tile", () => {
+  const fixed = { minFrame: { width: 400, height: 300 }, maxFrame: { width: 400, height: 300 }, fixed: true };
+  const allDesktops = { output: "O1", desktops: [], onAllDesktops: true, activities: [] };
+  const { h, e } = setup(["a", "x", "pin"], { x: { constraints: fixed }, pin: { membership: allDesktops } });
+  for (const id of ["x", "pin"]) {
+    const w = h.windows.get(id)!;
+    w.nativeTile = true;
+    e.nativeTileChanged(id, w.gen, true);
+    h.userSetFrame(id, rect(0, 0, 640, 800));
+    h.drain();
+    assert.equal(e.modeOf(id), "native");
+    const writes = h.writes.filter((x) => x.id === id).length;
+    h.active = id;
+    const r = e.execute("plastile.window.adopt-native");
+    h.drain();
+    assert.equal(r.status, "noop", id);
+    assert.match(String(r.reason), /^cannot tile: /, id);
+    assert.equal(w.nativeTile, true, `${id}: native tile not released`);
+    assert.equal(e.modeOf(id), "native", id);
+    assert.equal(e.explain(id)!.userMode, null, `${id}: no sticky tile request`);
+    assert.equal(h.writes.filter((x) => x.id === id).length, writes, `${id}: no write`);
+  }
+  // The window that was on all desktops moves to one: still KWin's (no tile request was left behind).
+  const pin = h.windows.get("pin")!;
+  e.membershipChanged("pin", pin.gen, { output: "O1", desktops: ["D1"], onAllDesktops: false, activities: [] });
+  h.drain();
+  assert.equal(e.modeOf("pin"), "native");
+});
+
 test("Q10/T16: explain lists every matched rule and the rule behind each action, not only the mode rule", () => {
   const h = new MockHost();
   const e = h.start({ rulesFor: (m) => (m.appId === "a"
@@ -1070,6 +1099,27 @@ test("C12: in monocle a focus change selects and raises once, with no deferred s
   assert.equal(e.counters.solves, solves);
   assert.equal(h.writes.length, writes);
   assert.deepEqual(h.raises.slice(raises), ["b"], "no extra raise");
+});
+
+test("SHORTCUTS: in monocle directional swap and move are no-ops; swap next/previous/master reorder", () => {
+  const { h, e } = setup(["a", "b", "c"]);
+  const K = { output: "O1", desktop: "D1", activity: "default" };
+  h.active = "b";
+  e.execute("plastile.layout.monocle");
+  h.drain();
+  const writes = h.writes.length;
+  for (const fam of ["swap", "move"]) {
+    for (const dir of ["left", "right", "up", "down"]) {
+      assert.equal(e.execute(`plastile.${fam}.${dir}`).status, "noop", `${fam}.${dir}`);
+    }
+  }
+  h.drain();
+  assert.deepEqual(e.membersOf(K), ["a", "b", "c"]);
+  assert.equal(h.writes.length, writes, "nothing written");
+  assert.equal(e.execute("plastile.swap.next").status, "accepted");
+  assert.deepEqual(e.membersOf(K), ["a", "c", "b"]);
+  assert.equal(e.execute("plastile.swap.master").status, "accepted");
+  assert.deepEqual(e.membersOf(K), ["b", "c", "a"]);
 });
 
 test("C08: an exception while solving one context does not drop the other dirty contexts", () => {
@@ -1272,6 +1322,80 @@ test("G08/BEHAVIOR §11: an overflow float is reconsidered when the area, constr
     e.configure({ settingsFor: () => ({ ...DEFAULT_SETTINGS, layout: "monocle" }) });
     h.drain();
     assert.deepEqual(["a", "b", "c"].map((id) => e.modeOf(id)), ["tiled", "tiled", "tiled"], "configuration activation");
+  }
+});
+
+test("G08/BEHAVIOR §11: a layout changed by command, reset or restored preferences reconsiders overflow floats", () => {
+  const min700 = { minFrame: { width: 700, height: 0 }, maxFrame: { width: Infinity, height: Infinity }, fixed: false };
+  const ids = ["a", "b", "c"];
+  const patch = { a: { constraints: min700 }, b: { constraints: min700 }, c: { constraints: min700 } };
+  const K1 = { output: "O1", desktop: "D1", activity: "default" };
+  for (const cmd of ["plastile.layout.monocle", "plastile.layout.scrolling"]) {
+    const { h, e } = setup(ids, patch);
+    assert.deepEqual(ids.map((id) => e.modeOf(id)), ["tiled", "floating", "floating"]);
+    h.active = "a";
+    assert.equal(e.execute(cmd).status, "accepted");
+    h.drain();
+    assert.deepEqual(ids.map((id) => e.modeOf(id)), ["tiled", "tiled", "tiled"], cmd);
+    assert.equal(e.explain("c")!.exception, null, cmd);
+  }
+  {
+    // Reset to a configured monocle from a master/stack chosen by command.
+    const h = new MockHost();
+    const e = h.start({ settingsFor: () => ({ ...DEFAULT_SETTINGS, layout: "monocle" }) });
+    for (const id of ids) h.open(id, patch[id as keyof typeof patch]);
+    h.drain();
+    h.active = "a";
+    e.execute("plastile.layout.master-stack");
+    h.drain();
+    assert.deepEqual(ids.map((id) => e.modeOf(id)), ["tiled", "floating", "floating"]);
+    assert.equal(e.execute("plastile.context.reset").status, "accepted");
+    h.drain();
+    assert.deepEqual(ids.map((id) => e.modeOf(id)), ["tiled", "tiled", "tiled"], "context.reset");
+  }
+  {
+    // A saved monocle layout that arrives after the windows overflowed (persistence restore).
+    const { h, e } = setup(ids, patch);
+    e.setContextPreferences(K1, { layout: "monocle", masterStack: null });
+    h.drain();
+    assert.deepEqual(ids.map((id) => e.modeOf(id)), ["tiled", "tiled", "tiled"], "restored preferences");
+  }
+});
+
+test("BSP axis longest: a split follows the shape of the slot on the real output, not a 16:9 placeholder", () => {
+  const longest = (insert: "last" | "focused", layout: "bsp" | "master-stack" = "bsp") =>
+    ({ ...DEFAULT_SETTINGS, layout, bsp: { ...DEFAULT_SETTINGS.bsp, axis: "longest" as const, insert } });
+  const run = (w: number, ht: number, ids: string[], s: typeof DEFAULT_SETTINGS) => {
+    const h = new MockHost();
+    h.outs = [{ id: "O1", name: "O1", geometry: rect(0, 0, w, ht), scale: 1 }];
+    const e = h.start({ settingsFor: () => s });
+    for (const id of ids) { h.open(id); h.drain(); h.advance(5); }
+    return { h, e };
+  };
+  {
+    // Portrait: the only slot is taller than wide, so b goes below a.
+    const { h } = run(1080, 1920, ["a", "b"], longest("last"));
+    const f = h.framesOf(["a", "b"]);
+    assert.equal(f.a.x, f.b.x, JSON.stringify(f));
+    assert.ok(f.b.y > f.a.y + f.a.height - 1, JSON.stringify(f));
+    assertTiling(tiledFrames(h, ["a", "b"]), rect(0, 0, 1080, 1920));
+  }
+  {
+    // Ultrawide: b's half (1708x1424) is still wider than tall, so c goes beside b.
+    const { h } = run(3440, 1440, ["a", "b", "c"], longest("last"));
+    const f = h.framesOf(["a", "b", "c"]);
+    assert.equal(f.b.y, f.c.y, JSON.stringify(f));
+    assert.equal(f.b.height, f.c.height, JSON.stringify(f));
+    assertTiling(tiledFrames(h, ["a", "b", "c"]), rect(0, 0, 3440, 1440));
+  }
+  {
+    // The first switch to BSP builds the tree from the members on the same real area.
+    const { h, e } = run(1080, 1920, ["a", "b"], longest("last", "master-stack"));
+    h.active = "a";
+    assert.equal(e.execute("plastile.layout.bsp").status, "accepted");
+    h.drain();
+    const f = h.framesOf(["a", "b"]);
+    assert.ok(f.b.y > f.a.y + f.a.height - 1, JSON.stringify(f));
   }
 });
 

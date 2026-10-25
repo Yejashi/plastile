@@ -19,14 +19,14 @@ Every Plastile command is one KWin global shortcut. All of them are registered u
 | `plastile.focus.master` | Focus master | *unbound* | Activates the first window in the order (the master in master/stack). |
 | `plastile.focus.output-next` | Focus next output | *unbound* | Activates a window on the next screen. Screens are ordered by position (left edge, then top edge), not by how KWin enumerates them, and the order wraps around. On that screen it activates the window focused there most recently (tiled or floating, not minimized, on the desktop that screen shows), else that screen's first tile. No-op with one screen or when the next screen shows no window. No geometry change. |
 | `plastile.focus.output-previous` | Focus previous output | *unbound* | Same as *Focus next output*, towards the previous screen. |
-| `plastile.swap.left` | Swap with window to the left | `Meta+Ctrl+H` | Exchanges the focused tile with its left neighbour: their order positions in master/stack and monocle, their leaves in BSP. One re-solve. No-op when nothing lies in that direction or the active window is not tiled here. |
+| `plastile.swap.left` | Swap with window to the left | `Meta+Ctrl+H` | Exchanges the focused tile with its left neighbour: their order positions in master/stack, their leaves in BSP. One re-solve. No-op when nothing lies in that direction or the active window is not tiled here. In monocle every tile has the same rectangle, so nothing lies in any direction and directional swap is a no-op; *Swap with next/previous window* and *Swap with master* reorder monocle windows. |
 | `plastile.swap.down` | Swap with window below | `Meta+Ctrl+J` | Same as *Swap with window to the left*, downwards. |
 | `plastile.swap.up` | Swap with window above | `Meta+Ctrl+K` | Same as *Swap with window to the left*, upwards. |
 | `plastile.swap.right` | Swap with window to the right | `Meta+Ctrl+L` | Same as *Swap with window to the left*, to the right. |
 | `plastile.swap.next` | Swap with next window | *unbound* | Exchanges positions with the next window in stable order (wraps). |
 | `plastile.swap.previous` | Swap with previous window | *unbound* | Exchanges positions with the previous window in stable order (wraps). |
 | `plastile.swap.master` | Swap with master | `Meta+Shift+Return` | Exchanges positions with the first window in the order. From the master slot, it swaps with the second window. |
-| `plastile.move.left` | Move tile left (reinsert) | *unbound* | Structural reinsert. In BSP, it splits the left neighbour's tile and places the focused window on its left side. In master/stack and monocle, it moves the window to just before that neighbour in the order. Unlike *Swap*, the neighbour keeps its slot shape. |
+| `plastile.move.left` | Move tile left (reinsert) | *unbound* | Structural reinsert. In BSP, it splits the left neighbour's tile and places the focused window on its left side. In master/stack, it moves the window to just before that neighbour in the order. Unlike *Swap*, the neighbour keeps its slot shape. A no-op in monocle, where no tile lies in any direction (see *Swap with window to the left*). |
 | `plastile.move.down` | Move tile down (reinsert) | *unbound* | Same as *Move tile left*, downwards (BSP: below the neighbour; order layouts: just after it). |
 | `plastile.move.up` | Move tile up (reinsert) | *unbound* | Same as *Move tile left*, upwards (BSP: above; order layouts: just before). |
 | `plastile.move.right` | Move tile right (reinsert) | *unbound* | Same as *Move tile left*, to the right (BSP: right side; order layouts: just after). |
@@ -51,9 +51,9 @@ Every Plastile command is one KWin global shortcut. All of them are registered u
 | `plastile.layout.rotate-counterclockwise` | Rotate layout counterclockwise | *unbound* | BSP only: rotates every split counterclockwise. |
 | `plastile.layout.mirror-horizontal` | Mirror layout horizontally | *unbound* | BSP only: flips every side-by-side split (the children exchange places and the ratio is inverted). |
 | `plastile.layout.mirror-vertical` | Mirror layout vertically | *unbound* | BSP only: flips every stacked split. |
-| `plastile.scroll.consume` | Scrolling: move window into the column on the left | *unbound* | Scrolling layout only: the focused window leaves its column and joins the bottom of the column on its left. An emptied column is removed. No-op in the first column or in other layouts. |
-| `plastile.scroll.expel` | Scrolling: move window out into its own column | *unbound* | Scrolling layout only: the focused window leaves a shared column and gets its own column just right of it, with the same width. No-op when it is already alone. |
-| `plastile.scroll.width-cycle` | Scrolling: cycle column width | *unbound* | Scrolling layout only: the focused column steps to the next wider width preset (default ⅓, ½, ⅔, full), wrapping to the narrowest. A column is never narrower than the minimum width of a window in it. |
+| `plastile.scroll.consume` | Scrolling: move window into the column on the left | *unbound* | Scrolling layout only: the focused window leaves its column and joins the bottom of the nearest column on its left that shows a window (a column whose windows are all minimized, fullscreen or maximized is skipped). An emptied column is removed. No-op in the first column or in other layouts. |
+| `plastile.scroll.expel` | Scrolling: move window out into its own column | *unbound* | Scrolling layout only: the focused window leaves a shared column and gets its own column just right of it, with the same width. No-op when it is already alone, or alone on screen (its column-mates are minimized, fullscreen or maximized). |
+| `plastile.scroll.width-cycle` | Scrolling: cycle column width | *unbound* | Scrolling layout only: the focused column steps to the next preset wider than it is shown (default ⅓, ½, ⅔, full), wrapping to the narrowest. A column is never narrower than the minimum width of a window in it, so it can be shown wider than its preset; a step that would not change its width on screen is a no-op. |
 | `plastile.scroll.center` | Scrolling: centre focused column | *unbound* | Scrolling layout only: scrolls so the focused column is centred. With the default `lazy` policy the strip does not scroll past its first or last column, so an end column is centred only as far as that allows. |
 | `plastile.zone.assign-1` … `plastile.zone.assign-9` | Zones: assign window to zone 1 … 9 | *unbound* | Zones layout only: places the active window in that zone of the context's zone layout (one write). No-op when it is already there or the zone layout has fewer zones. |
 | `plastile.zone.next` | Zones: move window to the next zone | *unbound* | Zones layout only: moves the active window to the next zone, wrapping to zone 1. A window in no zone goes to zone 1. |
@@ -179,13 +179,13 @@ In a context using the experimental scrolling layout ([README](README.md#scrolli
 
 | Command | In a scrolling context |
 |---|---|
-| *Focus left/right* | Focuses the nearest window in the previous or next column, even when that column is off screen, and scrolls it into view. No wrap-around. |
-| *Focus up/down* | Moves within the focused column only; never scrolls. |
+| *Focus left/right* | Focuses the nearest window in the previous or next column, even when that column is off screen, and scrolls it into view. No wrap-around by default; with `focusWrap` ([CONFIGURATION](CONFIGURATION.md#settings-patch)), right from the last column focuses the first column and left from the first focuses the last, scrolling the strip there. |
+| *Focus up/down* | Moves within the focused column only; never scrolls and never wraps, even with `focusWrap`. |
 | *Focus next/previous* | Steps through the strip's order (columns left to right, windows top to bottom), scrolling as needed. |
-| *Swap left/right*, *Move tile left/right* | Moves the focused column one place left or right. |
+| *Swap left/right*, *Move tile left/right* | Moves the focused column one place left or right, past the next column that shows a window. |
 | *Swap up/down*, *Move tile up/down* | Moves the focused window up or down within its column. |
 | *Swap next/previous/master* | Exchanges the focused window with the next or previous window in strip order, or with the first one. |
-| *Grow/Shrink focused tile* | Widens or narrows the focused column by `ratioStep` (as a fraction of the usable width, between 0.1 and 1). |
+| *Grow/Shrink focused tile* | Widens or narrows the focused column by `ratioStep` (as a fraction of the usable width, between 0.1 and 1), starting from its width as shown. A no-op when a window's minimum width keeps the column where it is. |
 | *Equalize sizes* | Resets the row heights inside every column; column widths stay. |
 | *Rotate*, *Mirror*, *More/Fewer master windows* | No-op. |
 
