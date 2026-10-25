@@ -162,6 +162,25 @@ test("consume, expel, width-cycle, center and swap are accepted and keep the mod
   assert.ok(inside(rect(0, 0, 1280, 800), h.windows.get(h.active!)!.frame));
 });
 
+test("focus left/right: no wrap by default; with focusWrap the strip wraps to its other end; up/down never wrap", () => {
+  const ids = ["a", "b", "c", "d"];
+  {
+    const { h, e } = setup(ids);
+    assert.equal(h.active, "d");
+    assert.equal(e.execute("plastile.focus.right").status, "noop");
+    assert.equal(h.active, "d");
+  }
+  const { h, e } = setup(ids, { ...SCROLL, focusWrap: true });
+  assert.equal(e.execute("plastile.focus.right").status, "accepted");
+  assert.equal(h.active, "a");
+  h.drain();
+  assert.ok(inside(rect(0, 0, 1280, 800), h.windows.get("a")!.frame), "the first column scrolled into view");
+  assert.equal(e.execute("plastile.focus.left").status, "accepted");
+  assert.equal(h.active, "d", "left from the first column wraps to the last");
+  h.drain();
+  for (const dir of ["up", "down"]) assert.equal(e.execute("plastile.focus." + dir).status, "noop", dir);
+});
+
 test("scroll commands outside a scrolling context are no-ops", () => {
   const h = new MockHost();
   const e = h.start();

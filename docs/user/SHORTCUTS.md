@@ -179,8 +179,8 @@ In a context using the experimental scrolling layout ([README](README.md#scrolli
 
 | Command | In a scrolling context |
 |---|---|
-| *Focus left/right* | Focuses the nearest window in the previous or next column, even when that column is off screen, and scrolls it into view. No wrap-around. |
-| *Focus up/down* | Moves within the focused column only; never scrolls. |
+| *Focus left/right* | Focuses the nearest window in the previous or next column, even when that column is off screen, and scrolls it into view. No wrap-around by default; with `focusWrap` ([CONFIGURATION](CONFIGURATION.md#settings-patch)), right from the last column focuses the first column and left from the first focuses the last, scrolling the strip there. |
+| *Focus up/down* | Moves within the focused column only; never scrolls and never wraps, even with `focusWrap`. |
 | *Focus next/previous* | Steps through the strip's order (columns left to right, windows top to bottom), scrolling as needed. |
 | *Swap left/right*, *Move tile left/right* | Moves the focused column one place left or right. |
 | *Swap up/down*, *Move tile up/down* | Moves the focused window up or down within its column. |
