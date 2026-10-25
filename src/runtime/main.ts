@@ -95,7 +95,15 @@ export function createRuntime(env: RuntimeEnv): Runtime {
     for (const k of FLAT_KEYS) flat[k] = env.kwin.readConfig(k, "");
     return flat;
   };
-  /** Validate and compile; on failure keep the previous revision (Q01). */
+  const adopt = (snap: ConfigSnapshot): void => {
+    snapshot = snap;
+    level = LEVELS[snap.diagnostics] ?? LEVELS.warn;
+    osd.setEnabled(snap.osd);
+  };
+  /**
+   * Validate and compile; on failure keep the previous revision (Q01). At start there is none:
+   * the flat keys alone when only the JSON document is invalid, else the built-in defaults.
+   */
   let lastInput: string | null = null;
   const loadConfig = (): boolean => {
     const flat = readFlat();
@@ -106,17 +114,20 @@ export function createRuntime(env: RuntimeEnv): Runtime {
     lastInput = key;
     const r = compileConfig(flat, ++revision);
     if (!r.ok) {
-      log("error", "configuration rejected; keeping previous revision", r.errors.slice(0, 20).map(formatError));
-      if (snapshot === null) {
-        const fallback = compileConfig({}, revision);
-        if (fallback.ok) snapshot = fallback.snapshot;
+      const errors = r.errors.slice(0, 20).map(formatError);
+      if (snapshot !== null) {
+        log("error", "configuration rejected; keeping previous revision", errors);
+        return false;
       }
+      const flatOnly = compileConfig({ ...flat, configJson: "" }, revision);
+      log("error", `configuration rejected; no previous revision, using ${flatOnly.ok ? "the settings without configJson"
+        : "the built-in defaults"}`, errors);
+      const fallback = flatOnly.ok ? flatOnly : compileConfig({}, revision);
+      if (fallback.ok) adopt(fallback.snapshot);
       return false;
     }
     for (const w of r.warnings) log("warn", "configuration: " + formatError(w));
-    snapshot = r.snapshot;
-    level = LEVELS[snapshot.diagnostics] ?? LEVELS.warn;
-    osd.setEnabled(snapshot.osd);
+    adopt(r.snapshot);
     return true;
   };
   loadConfig();
@@ -265,7 +276,11 @@ export function createRuntime(env: RuntimeEnv): Runtime {
   };
   const explainWindow = (): void => {
     const a = adapter.activeWindow();
-    const x = a ? engine.explain(a) : null;
+    const e = a ? engine.explain(a) : null;
+    // `context.output` is the output's identity key (E16); `outputName` is its connector name, which
+    // overrides and rules match.
+    const key = e && e.context ? (e.context as ContextKey) : null;
+    const x = e && key ? { ...e, context: { ...key, outputName: adapter.outputNameOf(key.output) } } : e;
     const conflicts = shortcuts && shortcuts.conflicts.length > 0 ? shortcuts.conflicts : null;
     // Asked for by the user: a notice, so the default log level shows it.
     log("notice", "explain", x ? (conflicts ? { ...x, shortcutConflicts: conflicts } : x) : { error: "no active window" });
@@ -274,7 +289,8 @@ export function createRuntime(env: RuntimeEnv): Runtime {
     const ins = env.inspector;
     if (!ins) return;
     if (ins.isOpen()) ins.close();
-    else ins.open(describeWindow(x, { desktopNameOf: (id) => adapter.desktopNameOf(id), shortcuts, area: activeArea() }));
+    else ins.open(describeWindow(x, { desktopNameOf: (id) => adapter.desktopNameOf(id), outputNameOf: (k) => adapter.outputNameOf(k),
+      shortcuts, area: activeArea() }));
   };
   // ---- end T26/T28/D9 ----
 
@@ -307,7 +323,8 @@ export function createRuntime(env: RuntimeEnv): Runtime {
         connections: adapter.connectionCount(), transientConnections: adapter.transientConnectionCount(),
         windows: adapter.windowCount(), contexts: engine.contextSummary(),
         configRevision: snapshot?.revision ?? null,
-        shortcuts: shortcuts ? { state: shortcuts.state, conflicts: shortcuts.conflicts.length } : null,
+        // The check's current report ("pending" until its first run finishes); none runs without a bus.
+        shortcuts: audit ? { state: audit.report.state, conflicts: audit.report.conflicts.length } : { state: "unavailable", conflicts: 0 },
         inspectorOpen: env.inspector ? env.inspector.isOpen() : null, zoneOverlay: env.zones ? env.zones.state() : null,
         osd: { state: osd.state(), sent: osd.sent, failures: osd.failures }, suspended: engine.isSuspended(),
         persistence: persister.summary() }));
@@ -336,7 +353,9 @@ export function createRuntime(env: RuntimeEnv): Runtime {
         timing: engine.lastTiming, activateNs: engine.lastActivateNs, writes: r.requested }));
     }
     log("debug", "command", r);
-    if (r.status === "accepted" && (id.indexOf("plastile.zone.") === 0 || id.indexOf("plastile.layout.") === 0)) zoneOverlay(true);
+    // Any accepted command may change what a shown overlay draws (a reset leaves zones, a float
+    // releases a zoned window); a hidden or absent overlay costs one state query.
+    if (r.status === "accepted") zoneOverlay(true);
     return r;
   };
 

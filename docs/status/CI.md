@@ -160,6 +160,7 @@ facing tiles (>= the configured gap; one device pixel of tolerance at fractional
 | `native-tree-edit-L14`, `native-manage-L14`, `native-unmanage-config-L14` | L14 |
 | `native-editor-toggle-L14` | L14 editor toggle; SKIP without OpenGL compositing (the tile editor effect is GL-only) |
 | `package-install-autoload-T32`, `package-post-start-discovery-T32` | Q11 partial: install, autoload, disable, upgrade, remove within one KWin version |
+| `package-files-replaced-T32` | A loaded Plastile's inspector and zones overlay stay the loaded version's when the package files change while it runs (`Inspector.qml` replaced, `ZoneOverlay.qml` deleted, both then opened for the first time); failed before the ADR-016 addendum (the replaced caption, no overlay while the counters said `shown`) |
 | `package-upgrade-bindings-T26-T32` | Q08 update half, Q11 version-to-version: a package built from `34204e2` (relabelled 0.0.1; the current tree relabelled where git history or Node is missing) configured and rebound, upgraded with `install.sh upgrade`, script and KWin restarted (the profile, QML disk cache included, kept across the restart); config, rebinding and unbinding kept (KGlobalAccel, kglobalshortcutsrc, libei key presses), one dispatch per press, the rebound focus keys move KWin's active window, Meta+T untouched; removal leaves no live Plastile action. Needs the full history (`fetch-depth: 0`) |
 | `fixed-size-G07` | G07 (Wayland min == max: floats by policy, also when a rule asks to tile it; never written) |
 | `max-size-G09` | G09 (held at its maximum, centred in its cell, never configured beyond it, converged) |
@@ -173,6 +174,7 @@ facing tiles (>= the configured gap; one device pixel of tolerance at fractional
 | `desktops-rename-reorder-remove-O10` | O10 (stable desktop ids, reorder, removal migration, and a name-matched override re-resolved after a rename, which failed before fd0ae38) |
 | `all-desktops-L16` | L16 (all-desktop and two-desktop windows float, no geometry targets; tile again on one desktop) |
 | `workarea-panel-add-remove-O07`, `workarea-panel-before-load-O07`, `workarea-two-panels-O07`, `workarea-panel-one-output-O07` | O07 (layer-shell panels; auto-hide and floating panels need plasmashell) |
+| `workarea-bar-namespace-O07` | O07 with a layer-shell bar whose namespace is not `dock` (fixture `--panel-scope waybar`): KWin types it as a normal window, and the tiles still leave and reclaim its exclusive zone (failed before the fix: lowest tile bottom 792, expected 752) |
 | `workarea-hidden-desktop-O07` | O07 with the tiles' desktop hidden: KWin confines them to the new area itself; Plastile writes nothing, spends no correction and diverges nothing while hidden, and tiles them into the new area when shown (three cases: KWin moves, KWin resizes, a client slower than the deadline; the last reproduced the physical divergence before the fix) |
 | `xwayland-tile-close-G10`, `xwayland-min-G10`, `xwayland-inc-G10`, `xwayland-fixed-G10`, `xwayland-dialog-G10`, `xwayland-aspect-G10` | G10 |
 | `realapps-<app>` | matrix section 4 "representative real applications" sweep (nested half) |

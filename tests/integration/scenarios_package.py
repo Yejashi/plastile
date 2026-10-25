@@ -439,3 +439,62 @@ def package_helper_install(out: Path, c: Checks):
         c("remove-helper again: refuses with rc 2 (nothing installed)", again["rc"] == 2, again)
         leftovers = sorted(str(p.relative_to(prefix)) for p in prefix.rglob("*") if p.is_file()) if prefix.exists() else []
         c("nothing else was installed into the prefix", leftovers == [], leftovers)
+
+
+OWN_UI = ("Plastile inspector", "Replaced inspector", "Plastile zones")  # adapter.ts OWN_UI_TITLE, ZONES_UI_TITLE
+
+
+def own_captions(s: Session) -> list[str]:
+    return json.loads(s.js(f"emit(workspace.windowList().map(w => w.caption).filter(t => {json.dumps(OWN_UI)}.includes(t)));")[0])
+
+
+def until(pred, timeout: float) -> bool:
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        if pred():
+            return True
+        time.sleep(0.05)
+    return False
+
+
+@scenario("package-files-replaced-T32")
+def files_replaced(out: Path, c: Checks):
+    """A loaded Plastile keeps the inspector and the zones overlay of the version it loaded, as it keeps main.qml
+    and the bundle, when an upgrade or a removal changes the package files while it runs. The package is a copy in
+    the output directory: after load, Inspector.qml is replaced by a variant with another caption (an upgrade to a
+    version whose inspector differs) and ZoneOverlay.qml is deleted (a removal); both are then opened for the first
+    time. Before main.qml compiled them with itself, the first use read the files on disk."""
+    pkg = out / "package"
+    if pkg.exists():
+        shutil.rmtree(pkg)
+    shutil.copytree(ROOT / "package", pkg)
+    ui = pkg / "contents/ui"
+    with Session(out / "session", config={"layout": "zones"}, qml=ui / "main.qml") as s:
+        s.spawn(1)
+        s.load()
+        s.settle()
+        inspector = ui / "Inspector.qml"
+        text = inspector.read_text()
+        c("setup: the inspector's caption comes from its view", "title: view.windowTitle" in text)
+        inspector.write_text(text.replace("title: view.windowTitle", 'title: "Replaced inspector"'))
+        (ui / "ZoneOverlay.qml").unlink()
+        s.act("plastile-fixture 1", "workspace.activeWindow = w")
+        s.cmd("inspect.explain-window")
+        until(lambda: own_captions(s) != [], 5.0)
+        time.sleep(0.3)
+        got = own_captions(s)
+        c("the inspector opened is the loaded version's, not the replaced file (oracle: KWin's window list)",
+          got == ["Plastile inspector"], got)
+        s.cmd("inspect.explain-window")
+        until(lambda: own_captions(s) == [], 3.0)
+        s.cmd("zone.show")
+        until(lambda: len(own_captions(s)) == 2, 5.0)
+        time.sleep(0.3)
+        got = own_captions(s)
+        state = s.counters().get("zoneOverlay")
+        c("the zones overlay and its legend appear although ZoneOverlay.qml was removed (oracle)",
+          got == ["Plastile zones", "Plastile zones"] and state == "shown", {"windows": got, "state": state})
+        s.cmd("zone.show")
+        s.unload()
+        errs = s.log_lines(r"Inspector\.qml|ZoneOverlay\.qml|No such file|TypeError|ReferenceError")
+        c("no QML load errors or JS exceptions", not errs, errs[:5])

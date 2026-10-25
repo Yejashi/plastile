@@ -29,6 +29,8 @@ export interface InspectorView {
 
 export interface InspectContext {
   desktopNameOf(id: string): string;
+  /** Connector name of an output identity key (E16: an EDID key for a monitor that reports one). */
+  outputNameOf(key: string): string;
   readonly shortcuts: ShortcutReport | null;
   readonly area: InspectorView["area"];
 }
@@ -194,9 +196,12 @@ export function describeWindow(x: Obj | null, ctx: InspectContext): InspectorVie
   } else if (zone && zone.note) rows.push({ label: "Zone", text: s(zone.note) + "." });
   if (x.userMode) rows.push({ label: "Your choice", text: `You chose ${s(x.userMode)} with “Toggle floating”; that lasts until the window closes.` });
   rows.push({ label: "Rules", text: ruleText(obj(x.rules)) });
+  // The connector name, as overrides and rules match it (outputName); the identity key only in details.
+  const outputKey = context ? s(context.output) : "";
+  const outputName = context ? ctx.outputNameOf(outputKey) : "";
   if (context) {
     const name = ctx.desktopNameOf(s(context.desktop));
-    rows.push({ label: "Where", text: `Output ${s(context.output)}, desktop “${name || "unnamed"}”.` });
+    rows.push({ label: "Where", text: `Output ${outputName}, desktop “${name || "unnamed"}”.` });
   }
   const sus = Array.isArray(x.suspensions) ? (x.suspensions as unknown[]).map((v) => SUSPENSIONS[s(v)] ?? s(v)) : [];
   if (suspended) rows.push({ label: "Layout", text: placement(mode, layout) });
@@ -217,7 +222,8 @@ export function describeWindow(x: Obj | null, ctx: InspectContext): InspectorVie
     { label: "Window id", text: s(x.id) },
     { label: "Application id, type", text: `${s(x.appId) || "(none)"}, ${s(x.kind)}` },
     { label: "Decision", text: decision ? `${s(decision.mode)} · source ${s(decision.source)} · ${s(decision.reason)}` : "" },
-    { label: "Context", text: context ? `${s(context.output)} / ${s(context.desktop)} / ${s(context.activity)}` : "none" },
+    { label: "Context", text: context ? `${outputName === outputKey ? outputKey : `${outputName} (key ${outputKey})`} / `
+      + `${s(context.desktop)} / ${s(context.activity)}` : "none" },
     { label: "Planned tile", text: rectText(x.slot) },
     { label: "Requested", text: ledger ? `${rectText(ledger.desired)}; outstanding ${ledger.outstanding ? "yes" : "no"}; corrections ${s(ledger.corrections)}` : "" },
   ];

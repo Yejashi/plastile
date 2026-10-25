@@ -240,6 +240,7 @@ static struct {
 	enum panel_edge panel_edge; /* PANEL_NONE: ordinary xdg_toplevel client */
 	int32_t panel_size;
 	const char *panel_output; /* wl_output name to anchor the panel to, or NULL */
+	const char *panel_scope; /* layer-surface namespace; KWin types the window by it */
 
 	/* wayland */
 	struct wl_display *display;
@@ -1068,8 +1069,8 @@ static bool window_create(struct window *w, const char *name, bool is_child, con
 	return true;
 }
 
-/* Panel mode: a zwlr_layer_surface_v1 on the top layer, scope "dock", anchored to
- * `edge` plus both perpendicular edges, with exclusive_zone == size. */
+/* Panel mode: a zwlr_layer_surface_v1 on the top layer, scope g.panel_scope ("dock" by
+ * default), anchored to `edge` plus both perpendicular edges, with exclusive_zone == size. */
 static bool panel_create(struct window *w, enum panel_edge edge, int32_t size, const char *output_name)
 {
 	memset(w, 0, sizeof(*w));
@@ -1127,7 +1128,7 @@ static bool panel_create(struct window *w, enum panel_edge edge, int32_t size, c
 	}
 	w->surface = wl_compositor_create_surface(g.compositor);
 	w->layer = zwlr_layer_shell_v1_get_layer_surface(g.layer_shell, w->surface, out,
-							 ZWLR_LAYER_SHELL_V1_LAYER_TOP, "dock");
+							 ZWLR_LAYER_SHELL_V1_LAYER_TOP, g.panel_scope);
 	zwlr_layer_surface_v1_add_listener(w->layer, &layer_listener, w);
 	zwlr_layer_surface_v1_set_anchor(w->layer, anchor);
 	zwlr_layer_surface_v1_set_size(w->layer, (uint32_t)req_w, (uint32_t)req_h);
@@ -1139,7 +1140,7 @@ static bool panel_create(struct window *w, enum panel_edge edge, int32_t size, c
 	lstr("win", w->name);
 	lstr("shell", "layer");
 	lstr("layer", "top");
-	lstr("scope", "dock");
+	lstr("scope", g.panel_scope);
 	lstr("edge", panel_edge_name(edge));
 	lint("exclusive_zone", size);
 	lint("width", req_w);
@@ -1596,6 +1597,8 @@ static void usage(FILE *f)
 		"                           layer top, scope dock, anchored to EDGE (top|bottom|left|right)\n"
 		"                           plus both perpendicular edges, exclusive_zone SIZE\n"
 		"  --output NAME            panel mode: wl_output name to anchor to (default: compositor's choice)\n"
+		"  --panel-scope NAME       panel mode: layer-surface namespace instead of dock (KWin types\n"
+		"                           an unlisted namespace, e.g. waybar, as a normal window)\n"
 		"stdin commands: resize W H | min W H | max W H | maximize | unmaximize | child |\n"
 		"                close-child | close-main | title STR | quit\n"
 		"                (panel mode accepts only quit)\n");
@@ -1664,7 +1667,7 @@ static int parse_args(int argc, char **argv)
 	enum {
 		O_APPID = 256, O_TITLE, O_ID, O_SIZE, O_MIN, O_MAX, O_DELAY, O_DMODE, O_IGNORE,
 		O_FIXED, O_PARENT, O_EXIT, O_SSD, O_CSD, O_CLAMP, O_PANEL, O_OUTPUT, O_HELP, O_EXITMAP,
-		O_LATEMIN, O_EXITAFTERMAP, O_STARTMAX, O_REMAX, O_MAXAFTERMAP
+		O_LATEMIN, O_EXITAFTERMAP, O_STARTMAX, O_REMAX, O_MAXAFTERMAP, O_PANELSCOPE
 	};
 	static const struct option opts[] = {
 		{"app-id", required_argument, NULL, O_APPID},
@@ -1690,6 +1693,7 @@ static int parse_args(int argc, char **argv)
 		{"csd", no_argument, NULL, O_CSD},
 		{"panel", required_argument, NULL, O_PANEL},
 		{"output", required_argument, NULL, O_OUTPUT},
+		{"panel-scope", required_argument, NULL, O_PANELSCOPE},
 		{"help", no_argument, NULL, O_HELP},
 		{0, 0, 0, 0},
 	};
@@ -1753,6 +1757,7 @@ static int parse_args(int argc, char **argv)
 			if (!parse_panel(optarg, &g.panel_edge, &g.panel_size)) goto bad;
 			break;
 		case O_OUTPUT: g.panel_output = optarg; break;
+		case O_PANELSCOPE: g.panel_scope = optarg; break;
 		case 'h':
 		case O_HELP: usage(stdout); exit(0);
 		default: goto bad;
@@ -1760,8 +1765,10 @@ static int parse_args(int argc, char **argv)
 	}
 	if (optind != argc)
 		goto bad;
-	if (g.panel_output && g.panel_edge == PANEL_NONE)
-		goto bad; /* --output only means something for a panel */
+	if ((g.panel_output || g.panel_scope) && g.panel_edge == PANEL_NONE)
+		goto bad; /* --output and --panel-scope only mean something for a panel */
+	if (!g.panel_scope)
+		g.panel_scope = "dock";
 	if (g.panel_edge != PANEL_NONE && (g.exit_on_map || g.have_late_min || g.exit_after_map_ms >= 0 ||
 					   g.start_maximized || g.remaximize_once || g.maximize_after_map))
 		goto bad; /* toplevel-only options */
@@ -1824,6 +1831,7 @@ static void log_start(int argc, char **argv)
 		lstr("panel_edge", panel_edge_name(g.panel_edge));
 		lint("panel_size", g.panel_size);
 		lstr("panel_output", g.panel_output);
+		lstr("panel_scope", g.panel_scope);
 	}
 	lstr("log_clock", "CLOCK_MONOTONIC");
 	lend();

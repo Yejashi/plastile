@@ -64,7 +64,7 @@ kpackagetool6 --type KWin/Script --remove plastile
 
 This copies the package to `~/.local/share/kwin/scripts/plastile/` (or `$XDG_DATA_HOME/kwin/scripts/plastile/`).
 
-**`tools/install.sh`** wraps exactly these commands (`install`, `upgrade`, `remove`, `status`) and adds `install-helper` and `remove-helper` for the [persistence helper](#persistence-helper). `install`, `upgrade` and `remove` also install, replace and remove the optional [Plastile Motion effect](#8-window-motion-optional), which stays disabled until you turn it on. It refuses to install a package without the built bundle. It never enables, reloads or restarts anything and never writes `kwinrc`. `python3 tools/release.py --out dist` builds a `dist/plastile-<version>.kwinscript` archive, and both `kpackagetool6` and `install.sh` accept that archive instead of the `package` directory. The physical runs installed with `tools/install.sh install` and `install-helper`.
+**`tools/install.sh`** wraps exactly these commands (`install`, `upgrade`, `remove`, `status`) and adds `install-helper` and `remove-helper` for the [persistence helper](#persistence-helper). `install`, `upgrade` and `remove` also install, replace and remove the optional [Plastile Motion effect](#8-window-motion-optional), which stays disabled until you turn it on. It refuses to install a package without the built bundle, and so does `tools/release.py`; a failed `npm run build` removes the bundle, so neither ships one the build rejected or one built from older sources. It never enables, reloads or restarts anything and never writes `kwinrc`. `python3 tools/release.py --out dist` builds a `dist/plastile-<version>.kwinscript` archive, and both `kpackagetool6` and `install.sh` accept that archive instead of the `package` directory. The physical runs installed with `tools/install.sh install` and `install-helper`.
 
 What was measured (nested KWin 6.7.5, kpackagetool6 2.0, package installed into the session's private data directory):
 
@@ -142,12 +142,13 @@ The configure button next to Plastile in KWin Scripts opens KWin's generic scrip
 
 The dialog writes values to `~/.config/kwinrc` under `[Script-plastile]`, using the key names in [CONFIGURATION](CONFIGURATION.md#flat-keys). Choices are stored by name (`layout=bsp`).
 
-The dialog was verified headlessly with `tools/settings-check`, which loads the same schema and form the way KWin's dialog does. It confirmed four things:
+The dialog was verified headlessly with `tools/settings-check`, which loads the same schema and form the way KWin's dialog does. It confirmed five things:
 
 - every schema entry is bound to a widget
 - defaults reach the widgets
 - edits are saved in the vocabulary the runtime expects
 - hand-edited values load back
+- hand-set values the form shows exactly (`layout=scrolling`, `masterRatio=0.555`, `ratioStep=0.025`) survive an Apply that changes another field, and choosing *Master and stack* over `layout=scrolling` saves it
 
 It has been opened and applied in KWin's real dialog in a nested session (`kcmshell6 kcm_kwin_scripts`, driven with real input; scenario `settings-dialog-T28`), but **not** clicked through in a physical session.
 

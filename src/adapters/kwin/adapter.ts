@@ -29,6 +29,8 @@ interface Entry {
   meta: WindowMeta;
   /** Geometry/state signals connected (managed kinds; not panels or passive surfaces). */
   hooked: boolean;
+  /** Possibly a layer-shell bar KWin did not type as a dock (maybeBar, at registration): its area is compared too. */
+  bar: boolean;
   /** captionChanged connection, present only while title rules are active. */
   caption: Conn | null;
   /** Sizes around the last frame request until the client answers it (constraint refresh on deviation). */
@@ -56,6 +58,20 @@ function sameRect(a: Rect, b: Rect): boolean {
 const PASSIVE_KINDS: ReadonlySet<WindowKind> = new Set<WindowKind>([
   "tooltip", "popup", "menu", "dnd-icon", "osd", "notification", "applet-popup", "splash",
 ]);
+
+/**
+ * Possibly a layer-shell bar that KWin did not type as a dock. KWin types a wlr-layer-shell surface
+ * by its namespace, and every namespace it does not list ("waybar", "bar") gives a normal window
+ * whose exclusive zone still reserves space (observed source: kwin v6.8.1 src/layershellv1window.cpp,
+ * scopeToType and hasStrut). No script-visible property names layer shell; such a surface is never
+ * movable or resizable and skips the taskbar (measured, nested 6.8.1). An application window
+ * matches only while it requests full screen or with interactive moves turned off in KWin, and
+ * then costs area comparisons and nothing else.
+ */
+export function maybeBar(m: WindowMeta): boolean {
+  if (m.kind === "dock" || m.kind === "desktop" || PASSIVE_KINDS.has(m.kind)) return false;
+  return !m.own && !m.moveable && !m.resizeable && m.skipTaskbar;
+}
 
 export function kindOf(w: KWindow): WindowKind {
   if (w.desktopWindow) return "desktop";
@@ -492,7 +508,8 @@ export class KwinAdapter implements HostPort {
     const id = this.idOf(w);
     if (this.entries.has(id)) return this.snapshot(this.entries.get(id)!);
     const gen = ++this.lastGen;
-    const e: Entry = { w, id, gen, conns: [], meta: metaOf(w), hooked: false, caption: null, req: null, margin: null };
+    const meta = metaOf(w);
+    const e: Entry = { w, id, gen, conns: [], meta, hooked: false, bar: maybeBar(meta), caption: null, req: null, margin: null };
     this.entries.set(id, e);
     if (e.meta.kind === "dock") {
       // Panels change the usable area; KWin has no script-visible work-area signal. A panel
@@ -507,6 +524,13 @@ export class KwinAdapter implements HostPort {
       if (w.damaged) this.own(w.damaged, changed, e.conns);
     } else if (!PASSIVE_KINDS.has(e.meta.kind) && e.meta.kind !== "desktop") {
       this.hook(e);
+      if (e.bar) {
+        // A bar's exclusive zone changes the area too; its repaints are not watched, since an
+        // unlisted namespace may as well be an animated wallpaper.
+        const changed = () => this.panelChanged(false);
+        this.own(w.frameGeometryChanged, changed, e.conns);
+        this.own(w.hiddenChanged, changed, e.conns);
+      }
     }
     return this.snapshot(e);
   }
@@ -648,8 +672,9 @@ export class KwinAdapter implements HostPort {
     if (!this.alive || !this.engine) return;
     const s = this.register(w);
     if (!s) return;
+    const bar = this.entries.get(s.id)!.bar;
     this.engine.windowAdded(s);
-    if (s.meta.kind === "dock") this.panelChanged(true);
+    if (s.meta.kind === "dock" || bar) this.panelChanged(true);
   }
 
   private onRemoved(w: KWindow): void {
@@ -663,7 +688,7 @@ export class KwinAdapter implements HostPort {
     e.req = null;
     if (this.alive && this.engine) {
       this.engine.windowRemoved(id, e.gen);
-      if (e.meta.kind === "dock") this.panelChanged(false);
+      if (e.meta.kind === "dock" || e.bar) this.panelChanged(false);
     }
   }
 

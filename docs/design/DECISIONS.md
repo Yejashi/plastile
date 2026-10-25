@@ -323,6 +323,18 @@ or geometry writes. While it is open it takes the keyboard like a menu; global s
 id and no process, which ordinary Wayland and X11 clients do not have. Further own windows (a zones overlay)
 must reuse the marker or extend `isOwnUi`.
 
+### Addendum: compiled with main.qml, created on use (2026-10-25)
+
+`Loader.setSource("Inspector.qml")` read the file at the first use. KWin keeps the files a script loaded with until
+KWin restarts ([INSTALL, Updating](../user/INSTALL.md#updating)), so an upgrade or a removal while Plastile ran
+made that first use read the new or missing file. Measured in nested KWin 6.8.1 (scenario
+`package-files-replaced-T32`): a replaced `Inspector.qml` opened with the replacement's caption, and a deleted
+`ZoneOverlay.qml` left no overlay while the counters said `shown`. **Change:** `main.qml` declares both as
+inline components (`Inspector { view: root.inspectorView }`, `ZoneOverlay { view: root.zonesView }`), so they are
+compiled and cached with `main.qml`, and the asynchronous `Loader`s take them as `sourceComponent`. The objects are
+still created only on use and off the command's call; reading and compiling the two files moves to script load
+(not measured). A package missing either file no longer starts; `tools/release.py` already requires both.
+
 ## ADR-017: Defer the drag drop preview; live peer resize is opt-in
 
 **Status:** accepted (2026-10-18); task T29.

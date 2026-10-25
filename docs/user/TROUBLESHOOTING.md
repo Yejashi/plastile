@@ -68,7 +68,7 @@ qdbus6 org.kde.kglobalaccel /component/kwin org.kde.kglobalaccel.Component.invok
 | `windows` | Windows the adapter tracks. |
 | `contexts` | One entry per screen, desktop and activity: `layout`, `members`, `tiled` (members the layout places now) and `suspended` (members KWin owns for the moment: maximized, full screen, minimized or hidden; `members` = `tiled` + `suspended`), model `revision` and `applied` revision. A desktop whose only window is maximized shows `tiled: 0`. |
 | `configRevision` | Increases with every configuration attempt that differs from the previous input. |
-| `shortcuts` | The startup shortcut check: `state` (`pending`, `done` or `unavailable`) and the number of `conflicts` ([details](SHORTCUTS.md#conflict-report)). |
+| `shortcuts` | The startup shortcut check: `state` (`pending` until the check has finished, `done`, or `unavailable` when KGlobalAccel could not be reached or Plastile has no D-Bus access) and the number of `conflicts` ([details](SHORTCUTS.md#conflict-report)). |
 | `inspectorOpen` | Whether the *Explain active window* inspector is open. |
 | `suspended` | `true` while *Suspend/resume tiling* has suspended all tiling. |
 | `osd` | The on-screen display: `state` (`idle`; `off` by the `osd` setting or without D-Bus; `failed` when the last request failed, so messages are dropped for 30 s and the next command after that tries again; `stopped`), the number of messages `sent` and of `failures`. |
@@ -106,7 +106,7 @@ Try it if a window seems stuck outside the layout after an unusual sequence. If 
 ## Configuration does not change
 
 1. **Make KWin re-read the file.** Apply in the settings dialog does not notify the script (observed source and measured, [details](INSTALL.md#applying-settings-changes)). Press *Reload configuration*, which asks KWin to re-read `kwinrc`, or run `qdbus6 org.kde.KWin /KWin reconfigure`. At `info`, `configuration reload requested` confirms the request was made; `KWin reconfigure request failed` (a warning) means KWin could not be asked, and only its cached copy was re-read.
-2. **Look for a rejection.** Search the log for `plastile error configuration rejected; keeping previous revision [...]`. The list gives each problem with its path. Fix all of them: one error rejects the whole revision.
+2. **Look for a rejection.** Search the log for `plastile error configuration rejected; keeping previous revision [...]`, or, when the rejection happened as Plastile started, `configuration rejected; no previous revision, using the settings without configJson [...]` (an invalid JSON document; the flat keys are in use) or `... using the built-in defaults [...]`. The list gives each problem with its path. Fix all of them: one error rejects the whole revision.
 3. **Check for typos.** A mistyped flat key in `[Script-plastile]` is ignored without any message: KWin lets a script read keys only by name, so Plastile cannot see keys it does not know. Compare the names with the table in [CONFIGURATION](CONFIGURATION.md#flat-keys). Unknown keys inside the JSON are errors, logged with their path.
 4. **Confirm activation.** At `info`, `configuration activated {"revision": N}` confirms a change was taken. An unchanged configuration deliberately produces no new revision and no log line.
 
