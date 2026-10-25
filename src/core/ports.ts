@@ -74,7 +74,7 @@ export interface HostPort {
 
 /** Scheduling, time and logging services. */
 export interface RuntimeServices {
-  /** Monotonic-ish milliseconds (Date.now() in KWin: 1 ms resolution). */
+  /** Milliseconds (Date.now() in KWin: 1 ms resolution). The wall clock: not monotonic, it can step (NTP, a manual change). */
   now(): number;
   /** Defer a stable zero-argument function to the next event-loop turn (coalesces by identity). */
   callLater(fn: () => void): void;

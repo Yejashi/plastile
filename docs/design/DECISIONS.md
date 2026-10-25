@@ -177,8 +177,9 @@ location, `StandardPaths.GenericStateLocation` + `/plastile/state-0.ini` and `st
 `[plastile] snapshot`. The snapshot (`src/persist/snapshot.ts`) is `{schemaVersion, generation, savedAt,
 contexts: [{outputKey, desktopId, activity, layout, masterStack}], floats: [{appId, resourceName, role, rect,
 outputKey, area}]}`, at most 64 entries of each. Contexts come from `Engine.contextPreferences()`. Floats are
-recorded only when the user floats a window with *Toggle floating*, and are forgotten when the user tiles it again.
-Any invalid field rejects the whole snapshot. Migrations (`src/persist/migrate.ts`) are pure per-version steps.
+recorded only when the user floats a window with *Toggle floating*, and are forgotten when the user tiles it again
+(or quick-tiles it with KWin). Any invalid field rejects the whole snapshot, so the save leaves out any entry the
+load would refuse (an over-long identity from a client, a second entry for one key). Migrations (`src/persist/migrate.ts`) are pure per-version steps.
 Version 1 is the first schema, so the chain is still empty, and a newer schema is rejected. *(Schema 2 adds each
 float's `windowHint`, with the first migration; see the [ADR-020
 addendum](#addendum-same-window-float-hint-and-a-bounded-start-up-hold-2026-10-18).)*
@@ -187,7 +188,9 @@ At load the runtime reads both slots before the first solve and applies the vali
 It logs one line if any slot was rejected. If a slot holds a newer schema, nothing is written that session, which
 keeps that file intact for the newer Plastile. A saved float is given to a window only when exactly one live window
 has its `appId`/`resourceName`/`role` (Q06, `src/persist/match.ts`). Otherwise the window gets ordinary insertion
-and the saved float waits.
+and the saved float waits. It is matched against windows being adopted (those live at the load reply, and each
+window when it is first classified), never against a window already in use when a float starts waiting, such as
+the sibling of a floated window that closed.
 
 A change only marks the state dirty. A one-shot timer writes the snapshot 2 s after the last change: it is re-armed
 on later changes, never periodic, and also re-armed while a window is being moved or resized. A clean unload writes
@@ -441,14 +444,18 @@ asynchronous versioned messages".
   re-solve in the engine's next flush; the reply callback writes no geometry, and the single writer is unchanged.
   A float restored to a window whose tile request is still in flight now waits for that request to settle: KWin
   drops a write back to the committed size while a configure is outstanding (the ledger's E04 rule), so writing at
-  once left the window on its tile (found by `persist-reload-restart-T27`; unit test added).
+  once left the window on its tile (found by `persist-reload-restart-T27`; unit test added). *Toggle floating* and a
+  switch to the floating layout wait the same way for a tile configure still in flight (a second toggle before a
+  slow client committed the first; unit test in `tests/core/floats.test.ts`).
 - **Saves.** Nothing is written before the load reply, or its failure, arrives; changes made meanwhile are saved a
   quiet period after it. One `Write` is in flight at a time; changes made while it waits are saved after its reply.
   Nothing is retried by itself: what a failed `Write` carried is saved with the next change or at unload, with one
   diagnostic per run of failures. A failed or absent helper at load (`ServiceUnknown`, an error reply, a malformed
   reply) gives state `memory`, one diagnostic and no further request. A clean unload sends one final `Write` if
   dirty, after a `Write` still in flight and into the other slot. An unload while the load is pending writes
-  nothing: the slots' generations are not known yet.
+  nothing: the slots' generations are not known yet. The quiet period is measured with `Date.now()`, the wall
+  clock: a step back (NTP, a manual change) restarts it, so a save waits at most one more period, never the length
+  of the step.
 - **The interaction postponement is dropped.** ADR-013 postponed a save due during an interactive move or resize
   because the save blocked the compositor thread for milliseconds, and capped the postponement at 30 s for a move
   that never ends. Issuing a save now costs about as much as one command handler (below), so the postponement and

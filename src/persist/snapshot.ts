@@ -72,21 +72,67 @@ export type Parsed =
 /**
  * The snapshot of the engine's preferences. Both lists are taken in the engine's order, most
  * important first (live contexts, then the most recently collected; the newest floats), and cut
- * at MAX_CONTEXTS and MAX_FLOATS.
+ * at MAX_CONTEXTS and MAX_FLOATS. An entry the load would refuse (an over-long identity from a
+ * client, a second entry for one key) is left out first, since one of them would reject the whole
+ * file; a window hint over MAX_HINT is written as none.
  */
 export function buildSnapshot(contexts: readonly ContextPrefsIn[], floats: readonly FloatPrefIn[], generation: number,
   savedAt: string): Snapshot {
-  return {
-    schemaVersion: SCHEMA_VERSION, generation, savedAt,
-    contexts: contexts.slice(0, MAX_CONTEXTS).map((c) => ({
+  const cs: ContextEntry[] = [], ckeys = new Set<string>();
+  for (let i = 0; i < contexts.length && cs.length < MAX_CONTEXTS; ++i) {
+    const c = contexts[i], ms = c.prefs.masterStack;
+    const e: ContextEntry = {
       outputKey: c.key.output, desktopId: c.key.desktop, activity: c.key.activity, layout: c.prefs.layout,
-      masterStack: c.prefs.masterStack ? { ratio: c.prefs.masterStack.ratio, masterCount: c.prefs.masterStack.masterCount } : null,
-    })),
-    floats: floats.slice(0, MAX_FLOATS).map((f) => ({
+      masterStack: ms ? { ratio: ms.ratio, masterCount: ms.masterCount } : null,
+    };
+    const k = contextKeyOf(e);
+    if (!validContext(e) || ckeys.has(k)) continue;
+    ckeys.add(k);
+    cs.push(e);
+  }
+  const fs: FloatEntry[] = [], fkeys = new Set<string>();
+  for (let i = 0; i < floats.length && fs.length < MAX_FLOATS; ++i) {
+    const f = floats[i];
+    const e: FloatEntry = {
       appId: f.app.appId, resourceName: f.app.resourceName, role: f.app.role, rect: plainRect(f.float.rect),
-      outputKey: f.float.output, area: plainRect(f.float.area), windowHint: f.window,
-    })),
-  };
+      outputKey: f.float.output, area: plainRect(f.float.area), windowHint: f.window.length > MAX_HINT ? "" : f.window,
+    };
+    const k = floatKeyOf(e);
+    if (!validFloat(e) || fkeys.has(k)) continue;
+    fkeys.add(k);
+    fs.push(e);
+  }
+  return { schemaVersion: SCHEMA_VERSION, generation, savedAt, contexts: cs, floats: fs };
+}
+
+// What validate() accepts, as predicates the save side shares (validate() itself uses all but isRect, whose
+// bounds are those of rectField), so the two cannot drift apart.
+function isId(v: unknown): v is string { return typeof v === "string" && v.length > 0 && v.length <= MAX_ID; }
+function isText(v: unknown): v is string { return typeof v === "string" && v.length <= MAX_ID; }
+function isCoord(v: unknown, lo: number): boolean { return typeof v === "number" && Number.isFinite(v) && v >= lo && v <= MAX_COORD; }
+function isRect(r: Rect): boolean {
+  return isCoord(r.x, -MAX_COORD) && isCoord(r.y, -MAX_COORD) && isCoord(r.width, 1) && isCoord(r.height, 1);
+}
+function isRatio(v: unknown): boolean { return typeof v === "number" && v > 0 && v < 1; }
+function isMasterCount(v: unknown): boolean { return typeof v === "number" && Number.isInteger(v) && v >= 0 && v <= MAX_MASTER_COUNT; }
+
+function validContext(e: ContextEntry): boolean {
+  return isId(e.outputKey) && isId(e.desktopId) && isId(e.activity) && (e.layout === null || LAYOUTS.indexOf(e.layout) >= 0)
+    && (e.masterStack === null || (isRatio(e.masterStack.ratio) && isMasterCount(e.masterStack.masterCount)));
+}
+
+function validFloat(e: FloatEntry): boolean {
+  return isId(e.appId) && isText(e.resourceName) && isText(e.role) && isId(e.outputKey) && isRect(e.rect) && isRect(e.area)
+    && e.windowHint.length <= MAX_HINT;
+}
+
+function contextKeyOf(e: { readonly outputKey: string; readonly desktopId: string; readonly activity: string }): string {
+  return e.outputKey + "␟" + e.desktopId + "␟" + e.activity;
+}
+
+/** Length-prefixed, so distinct identities never share a key. */
+function floatKeyOf(e: { readonly appId: string; readonly resourceName: string; readonly role: string }): string {
+  return e.appId.length + ":" + e.appId + e.resourceName.length + ":" + e.resourceName + e.role;
 }
 
 function plainRect(r: Rect): Rect {
@@ -174,16 +220,16 @@ export function validate(raw: unknown): Parsed {
         const ms = record(e.masterStack, "contexts", i, ".masterStack", MASTER_KEYS, errs);
         if (ms) {
           const ratio = ms.ratio, count = ms.masterCount;
-          if (typeof ratio !== "number" || !(ratio > 0 && ratio < 1)) {
+          if (!isRatio(ratio)) {
             errs.push(`${at("contexts", i, ".masterStack.ratio")}: must be strictly between 0 and 1`);
           }
-          if (typeof count !== "number" || !Number.isInteger(count) || count < 0 || count > MAX_MASTER_COUNT) {
+          if (!isMasterCount(count)) {
             errs.push(`${at("contexts", i, ".masterStack.masterCount")}: must be an integer from 0 to ${MAX_MASTER_COUNT}`);
           }
           if (typeof ratio === "number" && typeof count === "number") masterStack = { ratio, masterCount: count };
         }
       }
-      const k = outputKey + "␟" + desktopId + "␟" + activity;
+      const k = contextKeyOf({ outputKey, desktopId, activity });
       if (keys.has(k)) errs.push(`${at("contexts", i, "")}: duplicate context`);
       keys.add(k);
       contexts.push({ outputKey, desktopId, activity, layout, masterStack });
@@ -204,8 +250,7 @@ export function validate(raw: unknown): Parsed {
       if (typeof windowHint !== "string" || windowHint.length > MAX_HINT) {
         errs.push(`${at("floats", i, ".windowHint")}: must be a string of at most ${MAX_HINT} characters`);
       }
-      // Length-prefixed, so distinct identities never share a key.
-      const k = appId.length + ":" + appId + resourceName.length + ":" + resourceName + role;
+      const k = floatKeyOf({ appId, resourceName, role });
       if (keys.has(k)) errs.push(`${at("floats", i, "")}: duplicate application identity`);
       keys.add(k);
       if (r && area && typeof windowHint === "string") floats.push({ appId, resourceName, role, rect: r, outputKey, area, windowHint });
@@ -244,7 +289,7 @@ function record(v: unknown, list: string, i: number, field: string, keys: readon
 }
 
 function id(v: unknown, list: string, i: number, field: string, errs: string[]): string {
-  if (typeof v !== "string" || v.length === 0 || v.length > MAX_ID) {
+  if (!isId(v)) {
     errs.push(`${at(list, i, field)}: must be a non-empty string of at most ${MAX_ID} characters`);
     return "";
   }
@@ -252,7 +297,7 @@ function id(v: unknown, list: string, i: number, field: string, errs: string[]):
 }
 
 function text(v: unknown, list: string, i: number, field: string, errs: string[]): string {
-  if (typeof v !== "string" || v.length > MAX_ID) { errs.push(`${at(list, i, field)}: must be a string of at most ${MAX_ID} characters`); return ""; }
+  if (!isText(v)) { errs.push(`${at(list, i, field)}: must be a string of at most ${MAX_ID} characters`); return ""; }
   return v;
 }
 

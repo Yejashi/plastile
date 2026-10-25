@@ -13,6 +13,7 @@ import {
 import { MIGRATIONS, migrate, type RawSnapshot } from "../../src/persist/migrate.ts";
 import { identityKey, matchFloat } from "../../src/persist/match.ts";
 import { DEBOUNCE_MS, LOAD_HOLD_MS, Persister, type StateStore } from "../../src/runtime/persistence.ts";
+import { DEFAULT_SETTINGS } from "../../src/core/defaults.ts";
 import { createRuntime } from "../../src/runtime/main.ts";
 import { Engine } from "../../src/core/engine.ts";
 import { MockHost, meta } from "./mockHost.ts";
@@ -130,6 +131,29 @@ test("T27: the snapshot is bounded: at most MAX_CONTEXTS contexts, the first (mo
   assert.equal(s.contexts.length, MAX_CONTEXTS);
   assert.equal(s.contexts[0].desktopId, "D0");
   assert.ok(parse(serialize(s)).ok);
+});
+
+test("T27: the save never writes what the load rejects: over-long identities and duplicate keys are left out, the rest is kept", () => {
+  // KWin passes resourceClass, resourceName and windowRole through unbounded; one such window's float must not make
+  // every later snapshot unreadable (any invalid field rejects the whole file at load).
+  const area = rect(0, 0, 1280, 800);
+  const fl = (appId: string, role = "", window = "") =>
+    ({ app: { appId, resourceName: appId, role }, float: { rect: rect(10, 10, 300, 200), output: "O1", area }, window });
+  const ctx = (output: string, layout: "bsp" | "monocle") => ({ key: { output, desktop: "D1", activity: "a" }, prefs: { layout, masterStack: null } });
+  const s = buildSnapshot(
+    [ctx("O1", "bsp"), ctx("O".repeat(513), "bsp"), ctx("O1", "monocle"), ctx("O2", "monocle")],
+    [fl("kate", "r".repeat(600)), fl("a".repeat(513)), fl("long-hint", "", "x".repeat(MAX_HINT + 1)), fl("ok"), fl("ok")],
+    1, "t");
+  const p = parse(serialize(s));
+  assert.ok(p.ok, p.ok ? "" : p.reason);
+  assert.deepEqual(p.snapshot.contexts.map((c) => [c.outputKey, c.layout]), [["O1", "bsp"], ["O2", "monocle"]],
+    "the over-long key and the second entry for O1 are dropped; the first (most important) is kept");
+  assert.deepEqual(p.snapshot.floats.map((f) => [f.appId, f.windowHint]), [["long-hint", ""], ["ok", ""]],
+    "over-long identities and the duplicate are dropped; an over-long window hint is written as none");
+  // Filtered before the cut: MAX_CONTEXTS valid entries survive behind invalid ones.
+  const many = [ctx("O".repeat(513), "bsp"), ...Array.from({ length: MAX_CONTEXTS }, (_, i) =>
+    ({ key: { output: "O", desktop: `D${i}`, activity: "a" }, prefs: { layout: "bsp" as const, masterStack: null } }))];
+  assert.equal(buildSnapshot(many, [], 1, "t").contexts.length, MAX_CONTEXTS);
 });
 
 test("T27/Q07: invalid, partial, empty and oversized texts are rejected as a whole", () => {
@@ -315,6 +339,99 @@ test("T27: a floated window closed and opened again in the same session floats w
   h.open("solo3", { meta: meta("solo") });
   h.drain();
   assert.equal(e.modeOf("solo3"), "tiled");
+});
+
+test("T27: a closed window's float waits for a new window of its application; an open sibling never floated stays tiled", () => {
+  const h = new MockHost();
+  const e = h.start();
+  h.open("x"); h.open("a", { meta: meta("kate") }); h.open("b", { meta: meta("kate") });
+  h.drain();
+  h.active = "a";
+  e.execute("plastile.window.toggle-float");
+  h.drain();
+  h.userSetFrame("a", rect(300, 200, 500, 400));
+  h.close("a");
+  h.drain();
+  assert.equal(e.modeOf("b"), "tiled");
+  // An unrelated later event reclassifies b (sent to another desktop): it is not a new window of the application.
+  const b = h.windows.get("b")!;
+  b.membership = { ...b.membership, desktops: ["D2"] };
+  e.membershipChanged("b", b.gen, b.membership);
+  h.drain();
+  assert.equal(e.modeOf("b"), "tiled", "the user never floated b");
+  assert.ok(!rectNear(b.frame, rect(300, 200, 500, 400)), JSON.stringify(b.frame));
+  assert.deepEqual(e.floatPreferences().map((p) => p.window), ["a"], "the closed window's preference still waits");
+  // A new window of the application, the only one open, still gets it.
+  h.close("b");
+  h.open("c", { meta: meta("kate") });
+  h.drain();
+  assert.equal(e.modeOf("c"), "floating");
+  assert.ok(rectNear(h.windows.get("c")!.frame, rect(300, 200, 500, 400)), JSON.stringify(h.windows.get("c")!.frame));
+});
+
+test("T27: the snapshot keeps this session's float decisions ahead of saved ones not yet matched", () => {
+  const h = new MockHost();
+  const e = h.start();
+  e.restoreFloats(Array.from({ length: 64 }, (_, i) => savedFloat("old" + i)));
+  h.open("a"); h.open("newapp");
+  h.drain();
+  h.active = "newapp";
+  e.execute("plastile.window.toggle-float");
+  h.drain();
+  h.userSetFrame("newapp", rect(100, 120, 400, 300));
+  const saved = (): string[] => buildSnapshot(e.contextPreferences(), e.floatPreferences(), 1, "t").floats.map((f) => f.appId);
+  assert.equal(saved()[0], "newapp", "the live decision first");
+  assert.equal(saved().length, 64);
+  assert.equal(saved()[1], "old63", "then the saved ones, newest first");
+  // Closed, it waits with the saved ones, as their newest.
+  h.close("newapp");
+  h.drain();
+  assert.deepEqual(saved().slice(0, 2), ["newapp", "old63"]);
+  // Closed floats are bounded like restored ones.
+  for (let i = 0; i < 70; ++i) {
+    h.open("w" + i);
+    h.drain();
+    h.active = "w" + i;
+    e.execute("plastile.window.toggle-float");
+    h.drain();
+    h.close("w" + i);
+    h.drain();
+  }
+  const all = e.floatPreferences();
+  assert.equal(all.length, 64, "at most 64 kept");
+  assert.equal(all[0].app.appId, "w69", "the newest kept");
+});
+
+test("T27: a native quick tile replaces the user's float decision, in this session and after a restart", () => {
+  const h = new MockHost();
+  const e = h.start();
+  let changes = 0;
+  e.onPersistChange = () => { changes++; };
+  h.open("a"); h.open("kate", { meta: meta("kate") });
+  h.drain();
+  h.active = "kate";
+  e.execute("plastile.window.toggle-float");
+  h.drain();
+  h.userSetFrame("kate", rect(100, 120, 400, 300));
+  assert.equal(e.floatPreferences().length, 1);
+  const before = changes;
+  h.windows.get("kate")!.nativeTile = true;
+  e.nativeTileChanged("kate", h.windows.get("kate")!.gen, true); // Meta+Left
+  h.drain();
+  assert.equal(e.modeOf("kate"), "native");
+  assert.deepEqual(e.floatPreferences(), [], "the float decision is forgotten");
+  assert.ok(changes > before, "and that is a change to save");
+  h.close("kate");
+  h.drain();
+  h.open("kate2", { meta: meta("kate") });
+  h.drain();
+  assert.equal(e.modeOf("kate2"), "tiled", "same session");
+  const h2 = new MockHost();
+  const e2 = h2.start();
+  e2.restoreFloats(e.floatPreferences());
+  h2.open("kate9", { meta: meta("kate") });
+  h2.drain();
+  assert.equal(e2.modeOf("kate9"), "tiled", "after a restart: the same answer");
 });
 
 test("T27: floating a window records its application's preference; tiling it again forgets it", () => {
@@ -822,6 +939,112 @@ test("T27: saves are debounced maintenance work: one per quiet period, re-armed,
   assert.equal(store.timer, null, "nothing after shutdown");
   store.answerWrite();
   assert.equal(p.summary().writes, 1, "a reply after unload changes nothing");
+});
+
+test("T27: a wall clock stepped back delays a save by at most one more quiet period, not by the step", () => {
+  const { e } = model();
+  const store = new FakeStore();
+  let wall = 1_700_000_000_000;
+  const p = new Persister(store, e, { now: () => wall, log: () => {}, stamp: () => "t" });
+  p.load();
+  store.answerRead();
+  e.setContextPreferences(K1, { layout: "bsp", masterStack: null });
+  p.markDirty({ context: K1 });
+  assert.equal(store.timer?.ms, DEBOUNCE_MS);
+  wall -= 3_600_000; // the timer ran its 2 s while NTP stepped the clock back an hour
+  store.fire();
+  assert.ok(store.timer !== null && store.timer.ms <= DEBOUNCE_MS, `re-armed for at most a quiet period (${store.timer?.ms})`);
+  wall += DEBOUNCE_MS;
+  store.fire();
+  assert.equal(store.issued.length, 1, "saved");
+  // A step back while a write is in flight: the re-arm after its reply is bounded too.
+  e.setContextPreferences(K1, { layout: "monocle", masterStack: null });
+  p.markDirty({ context: K1 });
+  wall -= 3_600_000;
+  store.answerWrite();
+  assert.ok(store.timer === null || store.timer.ms <= DEBOUNCE_MS, `bounded (${store.timer?.ms})`);
+});
+
+test("T27: a configuration change that changes what a context holds beyond it is saved", () => {
+  // masterCount configured 1; the user adds a master (saved as 2); the configuration then goes to 2 and back to 1. The
+  // session ends with one master and no preference: the slot must not keep the old 2 for the next start.
+  const conf = (n: number) => ({ ...DEFAULT_SETTINGS, masterStack: { ...DEFAULT_SETTINGS.masterStack, masterCount: n } });
+  let cur = conf(1);
+  const h = new MockHost();
+  const e = h.start({ settingsFor: () => cur });
+  const store = new FakeStore();
+  const p = loaded(h, e, store);
+  e.onPersistChange = (s) => p.markDirty(s);
+  for (const id of ["a", "b", "c"]) h.open(id);
+  h.drain();
+  h.advance(5);
+  h.activate("a");
+  assert.equal(e.execute("plastile.master.increase").status, "accepted");
+  h.t += DEBOUNCE_MS;
+  store.fire();
+  store.answerAll();
+  const savedMasters = (): unknown => {
+    const s = parse(store.slots[store.writes[store.writes.length - 1].slot]);
+    return s.ok ? s.snapshot.contexts.map((c) => c.masterStack?.masterCount ?? null) : s.reason;
+  };
+  assert.deepEqual(savedMasters(), [2]);
+  cur = conf(2);
+  e.configure({ settingsFor: () => cur, changes: { rules: false, settings: true } });
+  h.drain();
+  cur = conf(1);
+  e.configure({ settingsFor: () => cur, changes: { rules: false, settings: true } });
+  h.drain();
+  assert.deepEqual(e.contextPreferences(), [], "one master, as configured: nothing beyond the configuration");
+  p.shutdown();
+  store.answerAll();
+  assert.deepEqual(savedMasters(), [], "the slot the next start loads holds no master count");
+});
+
+test("T27: an output re-keyed onto a key with retained preferences keeps one entry per context; the save stays loadable", () => {
+  const h = new MockHost();
+  const A = "edid:LG/27UL/@DP-1", B = "edid:LG/27UL/@DP-2", P = "edid:LG/27UL/";
+  h.outs = [{ id: A, name: "DP-1", geometry: rect(0, 0, 1280, 800), scale: 1 },
+            { id: B, name: "DP-2", geometry: rect(1280, 0, 1280, 800), scale: 1 }];
+  h.visible = new Map([[A, "D1"], [B, "D1"]]);
+  const e = h.start();
+  const on = (output: string) => ({ output, desktops: ["D1"], onAllDesktops: false, activities: [] });
+  // Saved in a session with one such monitor (the plain key): not live now, so retained.
+  e.setContextPreferences({ output: P, desktop: "D1", activity: "default" }, { layout: "bsp", masterStack: null });
+  e.setContextPreferences({ output: P, desktop: "D2", activity: "default" }, { layout: "bsp", masterStack: null });
+  h.open("x", { membership: on(A) });
+  h.drain();
+  h.active = "x";
+  assert.equal(e.execute("plastile.layout.monocle").status, "accepted");
+  // A retained entry of the moving output as well (its D2 was visited this session).
+  e.setContextPreferences({ output: A, desktop: "D2", activity: "default" }, { layout: "zones", masterStack: null });
+  // DP-2 unplugged: DP-1 is unique again and takes the plain key.
+  h.outs = [{ id: P, name: "DP-1", geometry: rect(0, 0, 1280, 800), scale: 1 }];
+  h.visible = new Map([[P, "D1"]]);
+  h.windows.get("x")!.membership = on(P);
+  e.outputsRekeyed(new Map([[A, P]]));
+  e.topologyChanged();
+  h.drain();
+  const prefs = e.contextPreferences();
+  assert.deepEqual(prefs.map((c) => [c.key.output, c.key.desktop, c.prefs.layout]).sort(),
+    [[P, "D1", "monocle"], [P, "D2", "zones"]], "the live context wins over the older retained entry; the moved one replaces it");
+  const s = parse(serialize(buildSnapshot(prefs, e.floatPreferences(), 2, "t")));
+  assert.ok(s.ok, s.ok ? "" : s.reason);
+  {
+    // The mirror case: a retained entry renamed onto a key a live context holds; the live one is current.
+    const h = new MockHost();
+    h.outs = [{ id: P, name: "DP-3", geometry: rect(0, 0, 1280, 800), scale: 1 },
+              { id: A, name: "DP-1", geometry: rect(1280, 0, 1280, 800), scale: 1 }];
+    h.visible = new Map([[P, "D1"], [A, "D1"]]);
+    const e = h.start();
+    h.open("y", { membership: on(P) });
+    h.drain();
+    h.active = "y";
+    assert.equal(e.execute("plastile.layout.monocle").status, "accepted");
+    e.setContextPreferences({ output: A, desktop: "D1", activity: "default" }, { layout: "bsp", masterStack: null });
+    e.outputsRekeyed(new Map([[A, P]]));
+    h.drain();
+    assert.deepEqual(e.contextPreferences().map((c) => [c.key.output, c.key.desktop, c.prefs.layout]), [[P, "D1", "monocle"]]);
+  }
 });
 
 test("T27: one write in flight: changes during it are saved after its reply, into the other slot with the next generation", () => {
