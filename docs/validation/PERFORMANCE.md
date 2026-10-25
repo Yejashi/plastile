@@ -170,6 +170,12 @@ compares input-to-visible times:
 
   Never fold the duration into an engine or request metric. A result is labelled "motion on, Duration=…, speed
   factor …".
+
+  The physical kit records the effect's state and settings with every block and labels every record and summary
+  group with it. It cannot observe the final settle with the effect on: no client protocol reports the animation's
+  end, and the fixture's last commit is presented on the first animated frame. Its `inputToSettledNs` is then null
+  with a reason, and `inputToFinalCommitPresentNs` (that first presentation) is reported instead
+  ([PHYSICAL_RUNBOOK P6](PHYSICAL_RUNBOOK.md#p6-input-to-visible-latency-p00-p03)).
 - **The P6 default is the effect off**, as shipped. A "motion on" block is an extra block, not a replacement.
 
 ## 7. Attribution and optimization order

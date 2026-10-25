@@ -141,6 +141,32 @@ class CorrelateTests(unittest.TestCase):
         [r] = latency.correlate([tap(1, t0)], windows(a), expect="resize", timeout_ns=2_000 * MS)
         self.assertEqual(r["affectedWindowCount"], 0)
 
+    def test_a_late_response_is_not_taken_for_the_next_taps(self):
+        # Tap 1's configure comes 700 ms late, after tap 2 (sent 690 ms after tap 1, as the old 600 ms
+        # effect timeout plus the gap allowed). It must not become a falsely fast tap-2 sample.
+        t0, t1 = 2_000 * MS, 2_690 * MS
+        a = FakeFixture("a")
+        a.configure(t0 + 700 * MS, 600, 300)
+        a.configure(t1 + 23 * MS, 400, 300)
+        r0, r1 = latency.correlate([tap(1, t0), tap(2, t1)], windows(a), expect="resize")
+        self.assertFalse(r0["success"])
+        self.assertIn("slower than the sample timeout", r0["failureReason"])
+        self.assertFalse(r1["success"], r1)
+        self.assertIn("previous input's response did not complete", r1["failureReason"])
+
+    def test_incomplete_pacing_fails_the_following_tap(self):
+        t0, t1, t2 = 2_000 * MS, 4_100 * MS, 4_200 * MS
+        a = FakeFixture("a")
+        a.configure(t0 + 2 * MS, 600, 300)
+        a.configure(t1 + 2 * MS, 400, 300)
+        a.configure(t2 + 2 * MS, 600, 300)
+        taps = [dict(tap(1, t0), pacing="timeout"), dict(tap(2, t1), pacing="settled"), dict(tap(3, t2))]
+        r0, r1, r2 = latency.correlate(taps, windows(a), expect="resize")
+        self.assertTrue(r0["success"])
+        self.assertFalse(r1["success"])
+        self.assertIn("previous input's response", r1["failureReason"])
+        self.assertTrue(r2["success"], r2)
+
     def test_present_grid(self):
         a = FakeFixture("a")
         base = 3_000 * MS
@@ -168,6 +194,24 @@ class RecordSchemaTests(unittest.TestCase):
             self.assertEqual(rec["presentedNs"], rec["inputToFirstPresentNs"])
             self.assertIsNone(rec["dispatchNs"])
             self.assertTrue(rec["unavailableReasons"]["dispatchNs"])
+
+    def test_motion_on_has_no_settle_and_says_why(self):
+        # Under Plastile Motion the final commit is presented on the first animated frame: reporting it as
+        # t9_settled would end the settle about one duration early.
+        res = self._result(True)
+        rec = latency.to_record(res, {**CTX, "motion": "on, Duration=180 ms, speed factor 1", "motionOn": True})
+        self.assertEqual(latency.validate_record(rec), [], rec)
+        self.assertTrue(rec["success"])
+        self.assertIsNone(rec["inputToSettledNs"])
+        self.assertIsNone(rec["settledNs"])
+        self.assertIn("not observable with Plastile Motion on", rec["settledUnavailableReason"])
+        self.assertEqual(rec["inputToFinalCommitPresentNs"], res["inputToSettledNs"])
+        self.assertEqual(rec["motion"], "on, Duration=180 ms, speed factor 1")
+        off = latency.to_record(res, {**CTX, "motion": "off", "motionOn": False})
+        self.assertEqual(off["inputToSettledNs"], off["inputToFinalCommitPresentNs"])
+        self.assertIsNone(off["settledUnavailableReason"])
+        bad = dict(rec, settledUnavailableReason=None)
+        self.assertTrue(any("both latencies" in e for e in latency.validate_record(bad)))
 
     def test_validator_rejects_bad_records(self):
         rec = latency.to_record(self._result(True), CTX)

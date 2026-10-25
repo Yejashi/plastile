@@ -16,7 +16,9 @@ Outputs (docs/status/evidence/, no window titles, no user paths):
 
 Statistics: nearest-rank quantiles (tools/physical/summarize); p99 is withheld below 5000 samples;
 95 % confidence intervals are percentile bootstraps over whole runs. Every sample is kept: warm-up
-samples (declared before the run) are summarized separately, failures are counted by reason.
+samples (declared before the run) are summarized separately, failures are counted by reason and
+kept out of the latency statistics (PERFORMANCE §6.8: a fast failure is not a latency sample); their
+own timing is reported as failedOuter.
 
 Usage: python3 probes/perf/g2_aggregate.py artifacts/g2/<campaign> [--evidence docs/status/evidence]
          [--churn-campaign DIR --superseded TEXT] [--gc-campaign DIR] [--rss-campaign DIR] [--p04 pure.json]
@@ -452,22 +454,41 @@ def gc_rate(cdirs: list[Path]) -> dict | None:
             "pooledCyclesPer1000Commands": {m: round(1000 * c / max(1, n), 2) for m, (c, n) in by_mode.items()}}
 
 
+def withhold_small_p99(st: dict | None) -> dict | None:
+    """A copied summary with its p99 withheld below 5000 samples (PERFORMANCE §6.5), whatever produced it."""
+    if not st or st.get("p99") is None or st.get("n", 0) >= pc.P99_MIN_SAMPLES:
+        return st
+    return {**st, "p99": None, "p99WithheldReason": f"n={st['n']} < {pc.P99_MIN_SAMPLES} (PERFORMANCE §6.5)"}
+
+
+def campaign_kwin(cdir: Path) -> str:
+    """The nested KWin a campaign measured, from the versions its plan recorded."""
+    plan = json.loads((cdir / "plan.json").read_text()) if (cdir / "plan.json").exists() else {}
+    return pc.nested_kwin([v for v in [(plan.get("environment") or {}).get("kwin")] if v])
+
+
 def p03(cdir: Path, ev: Path, rows: list[dict], units: dict[str, dict]) -> dict:
     main = [r for r in rows if not r.get("diag")]
+    # Latency statistics are over successful samples only (PERFORMANCE §6.8); failures are counted next to them.
     meas = [r for r in main if not r["warmup"]]
+    meas_ok = [r for r in meas if r["success"]]
     cells = {}
     counts = sorted({r["n"] for r in main})
     for n in counts:
         for wl in WORKLOADS:
             for mode in ("uninstrumented", "instrumented"):
-                cr = [r for r in meas if r["n"] == n and r["workload"] == f"P03-{wl}" and r["mode"] == mode]
-                if not cr:
+                every = [r for r in meas if r["n"] == n and r["workload"] == f"P03-{wl}" and r["mode"] == mode]
+                if not every:
                     continue
+                cr = [r for r in every if r["success"]]
                 warm = [r for r in main if r["warmup"] and r["n"] == n and r["workload"] == f"P03-{wl}" and r["mode"] == mode]
-                fails = Counter(r["failureReason"] for r in cr if not r["success"])
+                fails = Counter(r["failureReason"] for r in every if not r["success"])
                 cell = {
-                    "samples": len(cr), "runs": len({r["runId"] for r in cr}), "failures": dict(fails),
+                    "samples": len(every), "successes": len(cr), "successRate": round(len(cr) / len(every), 6),
+                    "runs": len({r["runId"] for r in every}), "failures": dict(fails),
                     "dispatchToLastRequestOuter": metric(cr, "outerNs"),
+                    "failedOuter": stat_ms(pc.stats([r["outerNs"] for r in every if not r["success"]
+                                                     and r.get("outerNs") is not None])),
                     "warmupOuter": stat_ms(pc.stats([r["outerNs"] for r in warm if r.get("outerNs") is not None])),
                     # Alternating workloads mix two commands (no-op: context.reset re-solves, layout.master-stack
                     # does not), so the pooled median can sit between two modes.
@@ -502,8 +523,8 @@ def p03(cdir: Path, ev: Path, rows: list[dict], units: dict[str, dict]) -> dict:
     overhead = {}
     for n in counts:
         for wl in WORKLOADS:
-            a = [r for r in meas if r["n"] == n and r["workload"] == f"P03-{wl}" and r["mode"] == "instrumented"]
-            b = [r for r in meas if r["n"] == n and r["workload"] == f"P03-{wl}" and r["mode"] == "uninstrumented"]
+            a = [r for r in meas_ok if r["n"] == n and r["workload"] == f"P03-{wl}" and r["mode"] == "instrumented"]
+            b = [r for r in meas_ok if r["n"] == n and r["workload"] == f"P03-{wl}" and r["mode"] == "uninstrumented"]
             if not a or not b:
                 continue
             ra, rb = list(by_run(a, "outerNs").values()), list(by_run(b, "outerNs").values())
@@ -540,7 +561,9 @@ def p03(cdir: Path, ev: Path, rows: list[dict], units: dict[str, dict]) -> dict:
                     "corrections": wk["totals"].get("corrections", 0), "stale": wk["totals"].get("stale", 0),
                     "planWrites": wk["totals"].get("writes", 0) - wk["totals"].get("corrections", 0)}
     for g in gates["focusOnly"].values():
-        g["pass"] = g["commands"] > 0 and g["solves"] == 0 and g["writes"] == 0
+        # Every focus.next over n >= 2 visible windows activates one: a no-op focus does nothing and passes
+        # the zero-work gates trivially.
+        g["pass"] = g["commands"] > 0 and g["solves"] == 0 and g["writes"] == 0 and g["activations"] == g["commands"]
     for g in gates["noop"].values():
         g["pass"] = g["commands"] > 0 and g["writes"] == 0 and g["clientConfiguresDuringNoopCommands"] == 0
     for g in gates["oneRequestPerChangedWindow"].values():
@@ -563,7 +586,7 @@ def p03(cdir: Path, ev: Path, rows: list[dict], units: dict[str, dict]) -> dict:
     tails = {}
     for mode, key in (("uninstrumented", "outerNs"), ("instrumented", "outerNs"), ("instrumented", "solveNs")):
         for wl in ORDINARY:
-            cr = [r for r in meas if r["n"] == 32 and r["workload"] == f"P03-{wl}" and r["mode"] == mode]
+            cr = [r for r in meas_ok if r["n"] == 32 and r["workload"] == f"P03-{wl}" and r["mode"] == mode]
             if cr:
                 tails[f"n32/{wl}/{mode}/{key}"] = {"slowest": tail(cr, key, 6), "firstOfBlockEffect": first_in_block_effect(cr, key)}
     unit_view = {name: {k: u.get(k) for k in ("n", "mode", "diag", "run", "unitSeed", "blockOrder", "calibration", "setupOk",
@@ -577,7 +600,8 @@ def p03(cdir: Path, ev: Path, rows: list[dict], units: dict[str, dict]) -> dict:
     size = write_csv_xz(ev / "g2-p03-samples.csv.xz", P03_COLUMNS, rows)
     calib = [u["calibration"] for u in units.values() if u.get("calibration")]
     return {
-        "layer": "nested KWin 6.7.5, virtual backend (not physical); commands via kglobalaccel invokeShortcut (D-Bus command API, not input)",
+        "layer": f"{pc.nested_kwin((u.get('versions') or {}).get('kwin') for u in units.values())}, virtual backend "
+                 "(not physical); commands via kglobalaccel invokeShortcut (D-Bus command API, not input)",
         "clock": "CLOCK_MONOTONIC via Plastile.Measure (tools/measure) inside KWin's QV4; fixture logs and the harness use the same clock",
         "clockCalibration": {"units": len(calib), "readCostNsP50": sorted(c["p50"] for c in calib)[len(calib) // 2] if calib else None,
                              "readCostNsMin": min(c["min"] for c in calib) if calib else None,
@@ -624,7 +648,8 @@ def baselines(cdir: Path, ev: Path) -> dict:
             r["runId"] = d.name
             r["sample"] = r.pop("seq")
             rows.append(r)
-    out = {"P01-P02": {"layer": "nested KWin 6.7.5 virtual backend; probes/timing (no tiler loaded): one placement per activation",
+    out = {"P01-P02": {"layer": f"{campaign_kwin(cdir)} virtual backend; probes/timing (no tiler loaded): one placement per "
+                                "activation",
                        "definitions": "durations from the probe's request (frameGeometry write start), except dispatchNs = harness "
                                       "send -> handler entry; presentedNs on the virtual backend's software timeline",
                        "workloads": {}}}
@@ -666,8 +691,8 @@ def upstream_rows(cdir: Path) -> list[dict]:
 
 
 def upstream(cdir: Path) -> dict:
-    out = {"layer": "nested KWin 6.7.5 virtual backend, kactivitymanagerd on the private bus for both tilers; 3 fixtures; "
-                     "kglobalaccel D-Bus command API (not input)",
+    out = {"layer": f"{campaign_kwin(cdir)} virtual backend, kactivitymanagerd on the private bus for both tilers; "
+                     "3 fixtures; kglobalaccel D-Bus command API (not input)",
            "metric": "harness send -> first fixture xdg configure in [send, next send) (independent of both tilers)",
            "package": None, "tilers": {}}
     rows = upstream_rows(cdir)
@@ -710,7 +735,8 @@ def lifecycle(cdir: Path) -> dict:
                            "closeSolvesPerFlush": row["closeSolvesPerFlush"], "feasibility": row.get("feasibility"),
                            "mappedSpanMs": row["mappedSpanMs"], "lastMappedToLastClientCommitMs": row["lastMappedToLastClientCommitMs"],
                            "lastMappedToOracleTiledBoundsMs": row["lastMappedToOracleTiledBoundsMs"],
-                           "configuresPerWindow": row["configuresPerWindow"], "finalTilingErrors": row["finalTilingErrors"]})
+                           "configuresPerWindow": withhold_small_p99(row["configuresPerWindow"]),
+                           "finalTilingErrors": row["finalTilingErrors"]})
         for k, v in sm["checks"].items():
             checks[k].append(v["pass"])
     out = {"P05": {"perN": dict(p05), "checks": {k: {"pass": sum(v), "of": len(v)} for k, v in sorted(checks.items())}}}
@@ -726,7 +752,8 @@ def lifecycle(cdir: Path) -> dict:
         sm = json.loads(w.read_text())
         out["P07-P12-P13-teardown"] = {"checks": {k: v["pass"] for k, v in sm["checks"].items()},
                                        "exceptions": sm.get("exceptions"),
-                                       "p07": {n: {"burst": v["burst"]["dispatchToReturnNs"], "paced": v["paced"]["dispatchToReturnNs"],
+                                       "p07": {n: {"burst": withhold_small_p99(v["burst"]["dispatchToReturnNs"]),
+                                                   "paced": withhold_small_p99(v["paced"]["dispatchToReturnNs"]),
                                                    "commandsQueued": v["commandsQueued"], "counters": v["counters"]}
                                                for n, v in (sm.get("p07") or {}).items()},
                                        "p12": {k: (sm.get("p12") or {}).get(k) for k in ("commandDelta", "switchDelta", "desktops")},

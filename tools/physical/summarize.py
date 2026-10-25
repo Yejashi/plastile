@@ -5,10 +5,14 @@
         [--warmup artifacts/physical/<stamp>/warmup.jsonl] [--json summary.json]
         [--publish summary-redacted.json] [--bootstrap 2000] [--seed 1]
 
-Groups: (layer, workload, condition, output, declared refresh, window count). A "run" is one
-block (runId). For inputToFirstPresentNs and inputToSettledNs it reports, per run and pooled:
-n, median, p95, p99, max. Quantiles use the nearest-rank definition (the smallest sample with
-at least p*n samples at or below it; the median is the lower median for even n).
+Groups: (layer, workload, condition, output, declared refresh, window count, environment,
+implementation commit, installed bundle, Plastile Motion state). Records measured on different
+builds, KWin versions or motion settings are never pooled, and a comparison pairs only groups
+that agree on everything but workload and condition; a summary over such mixed inputs carries
+a "mixedProvenance" warning. A "run" is one block (runId). For inputToFirstPresentNs,
+inputToFinalCommitPresentNs and inputToSettledNs it reports, per run and pooled: n, median,
+p95, p99, max. Quantiles use the nearest-rank definition (the smallest sample with at least
+p*n samples at or below it; the median is the lower median for even n).
 
 Rules this script enforces rather than leaves to the reader:
 - p99 is withheld (null, with the reason) whenever its sample count is below 5000
@@ -20,8 +24,11 @@ Rules this script enforces rather than leaves to the reader:
   run-to-run drift is part of the interval. They need at least 2 runs.
 - A comparison verdict against the matched baseline (PERFORMANCE section 4, "physical
   input-to-first-visible": no additional full frame interval at the median, p95 within one
-  output interval) is "pass" only with >= 5 runs and >= 5000 pooled samples per side.
-  Otherwise it is "fail" (marked indicative) or "inconclusive".
+  output interval) is "pass" only with >= 5 runs that contributed successful samples and
+  >= 5000 pooled samples per side, and only when the candidate's success rate is not more than
+  1 percentage point below the baseline's (failed samples are excluded from the latencies, so a
+  lower success rate could hide slow responses). Otherwise it is "fail" (marked indicative) or
+  "inconclusive". A candidate whose matched baseline was not measured gets a "missing" entry.
 """
 from __future__ import annotations
 
@@ -39,8 +46,13 @@ from common import read_jsonl  # noqa: E402
 
 P99_MIN_SAMPLES = 5000
 MIN_RUNS = 5
-METRICS = ("inputToFirstPresentNs", "inputToSettledNs")
-GROUP_KEYS = ("layer", "workload", "condition", "outputName", "refreshHzDeclared", "windowCount")
+SUCCESS_RATE_TOLERANCE = 0.01
+METRICS = ("inputToFirstPresentNs", "inputToFinalCommitPresentNs", "inputToSettledNs")
+GROUP_KEYS = ("layer", "workload", "condition", "outputName", "refreshHzDeclared", "windowCount", "environmentId",
+              "implementationCommit", "installedBundleSha256", "motion")
+# Keys a candidate and its baseline must share (everything but what is being compared).
+PAIR_KEYS = tuple(k for k in GROUP_KEYS if k not in ("workload", "condition"))
+PROVENANCE_KEYS = ("environmentId", "implementationCommit", "implementationDirty", "installedBundleSha256", "motion")
 
 
 def quantile(sorted_xs: list[int], p: float) -> int | None:
@@ -127,9 +139,12 @@ def summarize_group(recs: list[dict], *, b: int, rng: random.Random) -> dict:
             "pooled": pooled, "ci95ByRun": ci,
             "perRun": {run: stats(xs) for run, xs in per_run.items()},
         }
+    # Only runs with successful samples reach the bootstrap and the verdict; a block whose samples all
+    # failed stays visible in `runs` but does not count toward the protocol.
+    contributing = sum(1 for rs in by_run.values() if any(r.get("success") for r in rs))
     out["protocol"] = {
-        "runs": len(by_run), "minRuns": MIN_RUNS, "pooledSuccesses": len(ok), "minSamplesForP99": P99_MIN_SAMPLES,
-        "met": len(by_run) >= MIN_RUNS and len(ok) >= P99_MIN_SAMPLES,
+        "runs": len(by_run), "contributingRuns": contributing, "minRuns": MIN_RUNS, "pooledSuccesses": len(ok),
+        "minSamplesForP99": P99_MIN_SAMPLES, "met": contributing >= MIN_RUNS and len(ok) >= P99_MIN_SAMPLES,
     }
     return out
 
@@ -162,6 +177,8 @@ def compare(cand: list[dict], base: list[dict], cand_sum: dict, base_sum: dict, 
     out.update({"medianDiffNs": d_med, "medianDiffCi95": ci_med, "p95DiffNs": d_p95, "p95DiffCi95": ci_p95})
     met = cand_sum["protocol"]["met"] and base_sum["protocol"]["met"]
     out["protocolMet"] = met
+    out["successRate"] = {"candidate": cand_sum["successRate"], "baseline": base_sum["successRate"]}
+    rate_low = cand_sum["successRate"] < base_sum["successRate"] - SUCCESS_RATE_TOLERANCE
     if interval is None:
         out["verdict"] = "inconclusive"
         out["reason"] = "no observed refresh interval"
@@ -182,12 +199,15 @@ def compare(cand: list[dict], base: list[dict], cand_sum: dict, base_sum: dict, 
         out["verdict"] = "fail"
         if not met:
             out["indicative"] = True
-    elif med_rule == p95_rule == "pass" and met:
+    elif med_rule == p95_rule == "pass" and met and not rate_low:
         out["verdict"] = "pass"
     else:
         out["verdict"] = "inconclusive"
         if not met:
             out["reason"] = f"protocol not met (needs >= {MIN_RUNS} runs and >= {P99_MIN_SAMPLES} samples per side)"
+        elif rate_low:
+            out["reason"] = (f"candidate success rate {cand_sum['successRate']:.4f} is below the baseline's "
+                             f"{base_sum['successRate']:.4f}: its failures may hide slow responses")
     return out
 
 
@@ -217,18 +237,31 @@ def summarize(records: list[dict], *, warmup: list[dict] | None = None, matched:
     matched = matched or {}
     controls = controls or {}
     for key in groups:
-        layer, workload, condition, output, hz, n = key
-        if condition == "none":
+        g = dict(zip(GROUP_KEYS, key))
+        if g["condition"] == "none":
             continue
+        workload = g["workload"]
+        pair = {k: g[k] for k in PAIR_KEYS}
+        found_matched = False
         for bkey in groups:
-            if bkey == key or (bkey[2] != "none" and bkey[1] not in controls.get(workload, ())):
+            bg = dict(zip(GROUP_KEYS, bkey))
+            if bkey == key or (bg["condition"] != "none" and bg["workload"] not in controls.get(workload, ())):
                 continue
-            if bkey[0] != layer or bkey[3] != output or bkey[4] != hz or bkey[5] != n:
+            if any(bg[k] != pair[k] for k in PAIR_KEYS):
                 continue
-            is_matched = matched.get(workload) == bkey[1]
+            is_matched = matched.get(workload) == bg["workload"]
+            found_matched = found_matched or is_matched
             c = compare(groups[key], groups[bkey], sums[key], sums[bkey], b=b, rng=rng, matched=is_matched)
-            out["comparisons"].append({"candidate": workload, "baseline": bkey[1], "layer": layer, "outputName": output,
-                                       "refreshHzDeclared": hz, "windowCount": n, **c})
+            out["comparisons"].append({"candidate": workload, "baseline": bg["workload"], **pair, **c})
+        if matched.get(workload) and not found_matched:
+            out["comparisons"].append({"candidate": workload, "baseline": matched[workload], **pair,
+                                       "matchedBaseline": True, "verdict": "missing",
+                                       "reason": "matched baseline not measured with the same output, window count, "
+                                                 "build and motion state: no verdict"})
+    prov = {k: sorted({str(r.get(k)) for r in measured}) for k in PROVENANCE_KEYS}
+    mixed = {k: v for k, v in prov.items() if len(v) > 1}
+    if mixed:
+        out["mixedProvenance"] = mixed
     return out
 
 
@@ -246,8 +279,11 @@ def redact(summary: dict) -> dict:
         for m in g.get("metrics", {}).values():
             m["perRun"] = {f"run{i + 1}": v for i, v in enumerate(m["perRun"].values())}
         return g
-    return {"definitions": summary["definitions"], "groups": [clean_group(g) for g in summary["groups"]],
-            "comparisons": summary["comparisons"], "warmup": summary["warmup"]}
+    red = {"definitions": summary["definitions"], "groups": [clean_group(g) for g in summary["groups"]],
+           "comparisons": summary["comparisons"], "warmup": summary["warmup"]}
+    if "mixedProvenance" in summary:
+        red["mixedProvenance"] = summary["mixedProvenance"]
+    return red
 
 
 def fmt_ms(ns) -> str:
@@ -256,12 +292,19 @@ def fmt_ms(ns) -> str:
 
 def render(summary: dict) -> str:
     lines = []
+    for k, v in (summary.get("mixedProvenance") or {}).items():
+        lines.append(f"WARNING: the inputs mix {k} values {', '.join(v)}; groups and comparisons keep them apart")
     for g in summary["groups"]:
+        build = (g.get("implementationCommit") or "?")[:12]
         lines.append(f"{g['workload']} [{g['condition']}] layer={g['layer']} output={g['outputName']} "
-                     f"{g['refreshHzDeclared']} Hz, {g['windowCount']} windows: {g['successes']}/{g['samples']} ok "
+                     f"{g['refreshHzDeclared']} Hz, {g['windowCount']} windows, env={g.get('environmentId')} "
+                     f"build={build} motion={g.get('motion')}: {g['successes']}/{g['samples']} ok "
                      f"in {g['runs']} runs" + ("" if g["protocol"]["met"] else "  (protocol NOT met)"))
         for m, v in g["metrics"].items():
             p = v["pooled"]
+            if not p["n"]:
+                lines.append(f"    {m}: no samples")
+                continue
             p99 = f"{fmt_ms(p['p99'])} ms" if p["p99"] is not None else f"withheld (n={p['n']}<{P99_MIN_SAMPLES})"
             ci = v["ci95ByRun"].get("median")
             ci_s = f" median CI95 [{fmt_ms(ci[0])}, {fmt_ms(ci[1])}]" if ci else ""

@@ -61,9 +61,12 @@ class FakeDriver(orchestrate.Driver):
     layer = "synthetic"
     input_source = "dry keytap (no device)"
 
-    def __init__(self, script: Path, period_ms: float, mode: str):
-        self.script, self.period_ms, self.mode = script, period_ms, mode
+    def __init__(self, script: Path, period_ms: float, mode: str, motion: dict | None = None):
+        self.script, self.period_ms, self.mode, self._motion = script, period_ms, mode, motion
         self.conditions = []
+
+    def motion(self):
+        return self._motion
 
     def ensure_condition(self, condition):
         self.conditions.append(condition)
@@ -97,6 +100,10 @@ class PlanTests(unittest.TestCase):
     def test_default_selection_skips_optional(self):
         wl = orchestrate.load_workloads()
         self.assertNotIn("P00-switch", orchestrate.select_workloads(wl, None))
+        # ... which leaves P03-focus without its matched baseline: the plan says so.
+        [note] = orchestrate.missing_baselines(wl, orchestrate.select_workloads(wl, None))
+        self.assertIn("P03-focus: matched baseline P00-switch is not selected", note)
+        self.assertEqual(orchestrate.missing_baselines(wl, ["P03-focus", "P00-switch"]), [])
         self.assertEqual(orchestrate.select_workloads(wl, "P00-switch"), ["P00-switch"])
         with self.assertRaises(SystemExit):
             orchestrate.select_workloads(wl, "P99-nope")
@@ -151,17 +158,17 @@ class BlockEngineTests(unittest.TestCase):
     def tearDownClass(cls):
         cls.tmp.cleanup()
 
-    def _run(self, mode: str, period_ms: float, samples=6, warmup=2, max_misses=10, windows=2):
-        out = Path(tempfile.mkdtemp(dir=self.tmp.name))
+    def _run(self, mode: str, period_ms: float, samples=6, warmup=2, max_misses=10, windows=2, out=None, motion=None):
+        out = out or Path(tempfile.mkdtemp(dir=self.tmp.name))
         mon = orchestrate.Monitor()
         kt = orchestrate.KeyTap([str(self.keytap), "--backend", "dry", "--min-interval-ms", "0", "--hold-ms", "1",
                                  "--gap-ms", "0"], mon, out / "keytap.jsonl")
         kt.wait_ready()
         wl = {"condition": "plastile", "expect": "resize", "setup": ["setup.action"], "cycle": ["a.one", "a.two"]}
         bindings = {a: {"sequence": "Meta+X", "mods": [125], "key": 45} for a in ("setup.action", "a.one", "a.two")}
-        params = orchestrate.Params(samples=samples, warmup=warmup, gap_min_ms=1, gap_max_ms=3, effect_timeout_ms=150,
+        params = orchestrate.Params(samples=samples, warmup=warmup, gap_min_ms=1, gap_max_ms=3,
                                     sample_timeout_ms=400, max_misses=max_misses, refresh_hz=60)
-        driver = FakeDriver(self.script, period_ms, mode)
+        driver = FakeDriver(self.script, period_ms, mode, motion)
         block = {"index": 0, "round": 0, "workload": "P03-ratio", "windowCount": windows}
         try:
             meta = orchestrate.run_block(driver, kt, mon, block, wl, bindings, params, random.Random(1), out)
@@ -170,7 +177,7 @@ class BlockEngineTests(unittest.TestCase):
         return out, meta, driver
 
     def test_completed_block_files_and_records(self):
-        out, meta, driver = self._run("active", 40)
+        out, meta, driver = self._run("active", 100)
         self.assertEqual(meta["outcome"], "completed")
         self.assertEqual(driver.conditions, ["plastile"])
         self.assertEqual(meta["taps"], 1 + 2 + 6)
@@ -181,6 +188,7 @@ class BlockEngineTests(unittest.TestCase):
         self.assertEqual([t["action"] for t in taps[1:5]], ["a.one", "a.two", "a.one", "a.two"])
         self.assertEqual(sorted(p.name for p in bdir.glob("fixture-*.jsonl")), ["fixture-1.jsonl", "fixture-2.jsonl"])
         self.assertTrue(json.loads((bdir / "block.json").read_text())["endedNs"] > 0)
+        self.assertEqual({t["pacing"] for t in taps}, {"settled"})
         ctx = {"stamp": "s", "layer": "synthetic", "inputSource": "dry", "environmentId": "synthetic",
                "refreshHzDeclared": 60}
         samples, warmups, problems = orchestrate.correlate_dir(out, ctx, {"P03-ratio": {"expect": "resize"}})
@@ -189,10 +197,46 @@ class BlockEngineTests(unittest.TestCase):
         self.assertEqual(len(warmups), 2)
         self.assertTrue(all(r["warmup"] for r in warmups))
         self.assertEqual([r["sample"] for r in samples], list(range(6)))
-        # the fake fixtures change size every 40 ms on their own, so every window sees a resize
+        # the fake fixtures change size every 100 ms on their own, so every window sees a resize
         self.assertGreaterEqual(sum(r["success"] for r in samples), 5)
         for p in (bdir / "fixture-1.jsonl", bdir / "fixture-2.jsonl"):
             self.assertTrue(any(json.loads(l).get("ev") == "exit" for l in p.read_text().splitlines()))
+
+    def test_a_tap_waits_the_whole_sample_timeout_for_a_response(self):
+        # Pacing and attribution share one timeout: after a tap without a configure, the next tap is
+        # sent only once the 400 ms sample timeout passed, so a configure up to then is the first tap's.
+        out = Path(tempfile.mkdtemp(dir=self.tmp.name))
+        with self.assertRaises(orchestrate.Abort):
+            self._run("idle", 100000, samples=20, warmup=0, max_misses=3, out=out)
+        [bdir] = (out / "blocks").iterdir()
+        taps = [t for t in common.read_jsonl(bdir / "taps.jsonl") if t["phase"] == "measure"]
+        self.assertEqual([t["pacing"] for t in taps], ["no-effect"] * 3)
+        gaps = [b["t_input_ns"] - a["t_input_ns"] for a, b in zip(taps, taps[1:])]
+        self.assertTrue(all(g >= 400_000_000 for g in gaps), gaps)
+
+    def test_a_response_still_running_fails_the_next_sample(self):
+        # Fixtures that reconfigure every 40 ms never settle within the sample timeout: no sample of
+        # theirs can be attributed to one tap.
+        out, meta, _ = self._run("active", 40, samples=4, warmup=0)
+        bdir = out / meta["dir"]
+        self.assertIn("timeout", {t["pacing"] for t in common.read_jsonl(bdir / "taps.jsonl")})
+        ctx = {"stamp": "s", "layer": "synthetic", "inputSource": "dry", "environmentId": "synthetic",
+               "refreshHzDeclared": 60}
+        samples, _w, problems = orchestrate.correlate_dir(out, ctx, {"P03-ratio": {"expect": "resize"}})
+        self.assertEqual(problems, [])
+        self.assertTrue(all(not r["success"] and "previous input's response" in r["failureReason"]
+                            for r in samples), [r["failureReason"] for r in samples])
+
+    def test_motion_state_is_recorded_per_block_and_labels_every_record(self):
+        on = {"loaded": True, "on": True, "label": "on, Duration=180 ms, speed factor 1", "effectiveDurationMs": 180}
+        out, meta, _ = self._run("active", 100, samples=3, warmup=0, motion=on)
+        self.assertEqual(meta["motion"], on)
+        ctx = {"stamp": "s", "layer": "synthetic", "inputSource": "dry", "environmentId": "synthetic",
+               "refreshHzDeclared": 60}
+        samples, _w, problems = orchestrate.correlate_dir(out, ctx, {"P03-ratio": {"expect": "resize"}})
+        self.assertEqual(problems, [])
+        self.assertTrue(all(r["motion"] == on["label"] and r["inputToSettledNs"] is None for r in samples))
+        self.assertTrue(any(r["success"] and r["inputToFinalCommitPresentNs"] for r in samples))
 
     def test_safety_stop_after_consecutive_misses(self):
         with self.assertRaises(orchestrate.Abort) as cm:

@@ -26,19 +26,13 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 sys.path.insert(0, str(ROOT / "tests/integration"))
+sys.path.insert(0, str(HERE))
 from harness import Session  # noqa: E402
-from workloads import measure_env, stack_output_height  # noqa: E402
+from workloads import measure_env, q, stack_output_height  # noqa: E402
+import perfcommon  # noqa: E402
 
 PERF = re.compile(r"plastile perf (\{.*\})$")
 WORKLOADS = ("ratio", "swap", "focus")
-
-
-def q(xs):
-    s = sorted(xs)
-    if not s:
-        return None
-    p = lambda f: s[min(len(s) - 1, int(f * (len(s) - 1)))]  # noqa: E731
-    return {"n": len(s), "p50": p(0.5), "p95": p(0.95), "p99": p(0.99), "max": s[-1], "min": s[0]}
 
 
 def main() -> int:
@@ -52,8 +46,11 @@ def main() -> int:
     rev = subprocess.run(["git", "-C", str(ROOT), "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip()
     dirty = bool(subprocess.run(["git", "-C", str(ROOT), "status", "--porcelain", "--", "src", "package", "probes"],
                                 capture_output=True, text=True).stdout.strip())
-    result = {"implementationCommit": rev, "implementationDirty": dirty, "layer": "nested KWin 6.7.5 virtual backend",
-              "clock": "CLOCK_MONOTONIC via measurement module", "samplesPerWorkload": args.samples, "counts": {}}
+    versions = perfcommon.versions()
+    result = {"implementationCommit": rev, "implementationDirty": dirty,
+              "layer": f"{perfcommon.nested_kwin([versions['kwin']] if versions['kwin'] else [])} virtual backend",
+              "versions": versions, "clock": "CLOCK_MONOTONIC via measurement module", "samplesPerWorkload": args.samples,
+              "counts": {}}
     rng = random.Random(args.seed)
     for n in [int(x) for x in args.counts.split(",")]:
         height = stack_output_height(n)
@@ -98,8 +95,8 @@ def main() -> int:
             result["counts"][str(n)] = {"workloads": summary, "corrections": end["counters"]["corrections"],
                                         "errors": end["counters"]["errors"], "outstandingAtEnd": end["outstanding"]}
             (out / f"n{n}" / "samples.json").write_text(json.dumps(recs))
-            print(f"n={n}: " + ", ".join(f"{wl} p50/p99 {v['dispatchToReturnNs']['p50']/1e3:.0f}/{v['dispatchToReturnNs']['p99']/1e3:.0f} us"
-                                         f" solve p99 {v['solveNs']['p99']/1e3 if v['solveNs'] else 0:.0f} us"
+            print(f"n={n}: " + ", ".join(f"{wl} p50/p95 {v['dispatchToReturnNs']['p50']/1e3:.0f}/{v['dispatchToReturnNs']['p95']/1e3:.0f} us"
+                                         f" solve p95 {v['solveNs']['p95']/1e3 if v['solveNs'] else 0:.0f} us"
                                          for wl, v in summary.items()), flush=True)
     out.mkdir(parents=True, exist_ok=True)
     (out / "summary.json").write_text(json.dumps(result, indent=1))

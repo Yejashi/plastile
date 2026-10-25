@@ -36,7 +36,9 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 sys.path.insert(0, str(ROOT / "tests/integration"))
+sys.path.insert(0, str(HERE))
 from harness import PLUGIN, Session, delta, near, overlaps, tiling_errors  # noqa: E402
+import perfcommon  # noqa: E402
 
 PERF = re.compile(r"plastile perf (\{.*\})$")
 LOG_TS = re.compile(r"^\s*(\d+\.\d+) ")
@@ -55,18 +57,20 @@ def measure_env() -> dict:
 
 
 def q(xs):
-    s = sorted(xs)
-    if not s:
+    """Nearest-rank summary (perfcommon.stats, tools/physical/summarize); p99 is null with a reason below 5000 samples."""
+    st = perfcommon.stats(list(xs))
+    if st is None:
         return None
-    p = lambda f: s[min(len(s) - 1, int(f * (len(s) - 1)))]  # noqa: E731
-    return {"n": len(s), "p50": p(0.5), "p95": p(0.95), "p99": p(0.99), "max": s[-1], "min": s[0]}
+    return {k: st[k] for k in ("n", "p50", "p95", "p99", "max", "min")} | (
+        {"p99WithheldReason": st["p99WithheldReason"]} if "p99WithheldReason" in st else {})
 
 
 def us(t):
     """Percentile dict in ns -> compact microsecond string for the console."""
     if not t:
         return "-"
-    return f"p50/p95/p99 {t['p50']/1e3:.0f}/{t['p95']/1e3:.0f}/{t['p99']/1e3:.0f} us (n={t['n']})"
+    p99 = "-" if t["p99"] is None else f"{t['p99']/1e3:.0f}"
+    return f"p50/p95/p99 {t['p50']/1e3:.0f}/{t['p95']/1e3:.0f}/{p99} us (n={t['n']})"
 
 
 def log_ts_ns(line: str) -> int | None:
@@ -606,7 +610,7 @@ def instrumentation(res: Results, out: Path, rng: random.Random, samples=200, n=
             if level == "off":
                 unload_quiet(s)
     off_, dbg = table["off"]["ratio"]["dispatchToReturnNs"], table["debug"]["ratio"]["dispatchToReturnNs"]
-    table["debugOverOff"] = {k: dbg[k] / off_[k] for k in ("p50", "p95", "p99")}
+    table["debugOverOff"] = {k: dbg[k] / off_[k] for k in ("p50", "p95", "p99") if dbg[k] is not None and off_[k]}
     res.data["instrumentation"] = table
 
 
@@ -651,8 +655,6 @@ def main() -> int:
     stamp = time.strftime("%Y%m%dT%H%M%S")
     out = args.out or ROOT / "artifacts/perf/workloads" / stamp
     out.mkdir(parents=True, exist_ok=True)
-    sys.path.insert(0, str(HERE))
-    import perfcommon
     meta = perfcommon.git_meta()
     rev = meta["implementationCommit"]
     machine0 = perfcommon.machine_state()

@@ -6,7 +6,7 @@ None of these tools has run in a physical session yet. What was validated in the
 
 ## Safety contract
 
-- Every live-session entry point refuses to run unless `XDG_SESSION_TYPE=wayland`, the `WAYLAND_DISPLAY` socket is served by a non-nested `kwin_wayland` (or `kwin_wayland_wrapper`) of the same user, and `org.kde.KWin` on the session bus belongs to that same process (`common.guard_live_session`). The C injector repeats the socket and command-line checks itself before it opens `/dev/uinput`.
+- Every live-session entry point refuses to run unless `XDG_SESSION_TYPE=wayland`, the `WAYLAND_DISPLAY` socket is served by a non-nested `kwin_wayland` (or `kwin_wayland_wrapper`) of the same user, `org.kde.KWin` on the session bus belongs to that same process, and that KWin reports the DRM output backend in `supportInformation` (`common.guard_live_session`). The backend check catches a nested KWin started without a backend flag (a nested Plasma, or `kwin_wayland --socket X` from a terminal), whose command line looks physical. The C injector repeats all of these checks itself (the bus ones through `busctl`) before it opens `/dev/uinput`, and holds off `SIGINT`, `SIGTERM`, `SIGHUP` and job-control stops (Ctrl-Z) until a chord's key releases are sent.
 - Nothing here writes `kwinrc` or `kglobalshortcutsrc`, and nothing restarts or replaces the compositor. Configuration files are only read.
 - Python standard library only, plus the system's `busctl`, `kscreen-doctor` and `journalctl` (read-only use). The injector has no dependencies beyond the kernel headers.
 
@@ -15,8 +15,8 @@ None of these tools has run in a physical session yet. What was validated in the
 | File | Role |
 |---|---|
 | [`keytap.c`](keytap.c), [`Makefile`](Makefile) | `plastile-keytap`: timestamped Meta-chord injector. `--backend uinput` (virtual keyboard, physical sessions), `--backend dry` (no device, tests). `make ei` builds `plastile-keytap-ei` with a libei backend for nested dry runs |
-| [`latency.py`](latency.py) | Correlates injector taps with fixture `configure`/`commit`/`presented` logs on `CLOCK_MONOTONIC`; builds and validates PERFORMANCE §8 records |
-| [`summarize.py`](summarize.py) | Per-run and pooled median/p95/p99/max, bootstrap-by-run CIs, p99 withheld below 5000 samples, verdicts against the matched baseline |
+| [`latency.py`](latency.py) | Correlates injector taps with fixture `configure`/`commit`/`presented` logs on `CLOCK_MONOTONIC`; builds and validates PERFORMANCE §8 records (with the block's Plastile Motion state; no t9_settled when motion is on) |
+| [`summarize.py`](summarize.py) | Per-run and pooled median/p95/p99/max, bootstrap-by-run CIs, p99 withheld below 5000 samples, verdicts against the matched baseline (or `missing`); groups never mix builds, KWin versions or motion states |
 | [`orchestrate.py`](orchestrate.py) | `plan`, `run` (randomized blocks of P00/P02/P03 workloads in the live session), `correlate` (recompute from raw logs), `keys` (does every bound chord reach Plastile on the real keymap) |
 | [`workloads.json`](workloads.json) | Workload definitions: condition, KWin/Plastile actions, expected effect, matched baseline |
 | [`session_check.py`](session_check.py) | Read-only pre-flight report of the live session |

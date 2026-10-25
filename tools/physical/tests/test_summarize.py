@@ -111,6 +111,42 @@ class GroupTests(unittest.TestCase):
         s = summarize.summarize(recs, b=20)
         self.assertEqual(len(s["groups"]), 3)
 
+    def test_runs_whose_samples_all_failed_do_not_count_toward_the_protocol(self):
+        # 2 blocks x 2500 successes + 3 blocks with only failures, per side: 5 runs, 5000 successes,
+        # but the bootstrap and the verdict rest on 2 runs.
+        def side(workload, condition, base_ms, seed):
+            recs = runs(workload, condition, 2, 2500, base_ms, 3, seed)
+            recs += [record(f"{workload}-empty{i}", 0, workload=workload, condition=condition, success=False)
+                     for i in range(3)]
+            return recs
+        recs = side("P03-ratio", "plastile", 10.5, 1) + side("P02-quicktile", "none", 10.0, 2)
+        s = summarize.summarize(recs, matched={"P03-ratio": "P02-quicktile"}, b=50, seed=1)
+        for g in s["groups"]:
+            self.assertEqual((g["protocol"]["runs"], g["protocol"]["contributingRuns"]), (5, 2))
+            self.assertFalse(g["protocol"]["met"])
+        [c] = s["comparisons"]
+        self.assertNotEqual(c["verdict"], "pass", c)
+
+    def test_builds_environments_and_motion_states_never_pool(self):
+        recs = runs("P03-ratio", "plastile", 3, 20, 10, 1, 1, implementationCommit="a" * 40,
+                    environmentId="physical-arch-kwin-6.7.5")
+        recs += runs("P03-ratio", "plastile", 3, 20, 30, 1, 2, implementationCommit="b" * 40,
+                     environmentId="physical-arch-kwin-6.8.1")
+        recs += runs("P03-ratio", "plastile", 3, 20, 30, 1, 3, implementationCommit="b" * 40,
+                     environmentId="physical-arch-kwin-6.8.1", motion="on, Duration=180 ms, speed factor 1")
+        s = summarize.summarize(recs, b=20)
+        self.assertEqual(sorted(g["runs"] for g in s["groups"]), [3, 3, 3])
+        self.assertEqual(sorted(s["mixedProvenance"]), ["environmentId", "implementationCommit", "motion"])
+        self.assertIn("WARNING: the inputs mix environmentId", summarize.render(s))
+        self.assertIn("mixedProvenance", summarize.redact(s))
+
+    def test_comparisons_pair_only_the_same_build_and_motion_state(self):
+        recs = runs("P03-ratio", "plastile", 2, 20, 10, 1, 1, motion="on, Duration=180 ms, speed factor 1")
+        recs += runs("P02-quicktile", "none", 2, 20, 10, 1, 2, motion="off")
+        s = summarize.summarize(recs, matched={"P03-ratio": "P02-quicktile"}, b=20)
+        [c] = s["comparisons"]
+        self.assertEqual(c["verdict"], "missing")
+
 
 class VerdictTests(unittest.TestCase):
     def _compare(self, cand_ms, base_ms, n_runs=5, per_run=1000, spread=3.0):
@@ -151,8 +187,32 @@ class VerdictTests(unittest.TestCase):
     def test_unmatched_baselines_are_controls(self):
         recs = runs("P03-ratio", "plastile", 2, 20, 10, 1, 1) + runs("P00-maximize", "none", 2, 20, 10, 1, 2)
         s = summarize.summarize(recs, matched={"P03-ratio": "P02-quicktile"}, b=20)
+        control, missing = s["comparisons"]
+        self.assertFalse(control["matchedBaseline"])
+        self.assertEqual(control["baseline"], "P00-maximize")
+        self.assertEqual((missing["baseline"], missing["verdict"]), ("P02-quicktile", "missing"))
+
+    def test_a_missing_matched_baseline_is_reported(self):
+        # The default run selects no optional workload, so P03-focus has no P00-switch: its only
+        # comparisons are resize controls, and the missing verdict must say so.
+        recs = runs("P03-focus", "plastile", 2, 20, 10, 1, 1) + runs("P00-maximize", "none", 2, 20, 10, 1, 2)
+        s = summarize.summarize(recs, matched={"P03-focus": "P00-switch"}, b=20)
+        missing = [c for c in s["comparisons"] if c["matchedBaseline"]]
+        self.assertEqual([(c["baseline"], c["verdict"]) for c in missing], [("P00-switch", "missing")])
+        self.assertIn("P03-focus vs P00-switch (matched baseline", summarize.render(s))
+        self.assertIn("-> missing - matched baseline not measured", summarize.render(s))
+
+    def test_a_lower_success_rate_withholds_the_pass(self):
+        # Failed samples are excluded from the latencies, so a candidate that fails half its taps (for
+        # example its slowest responses) must not pass on the fast half.
+        recs = runs("P03-ratio", "plastile", 5, 1000, 10.5, 3.0, 11)
+        recs += [record(f"P03-ratio-run{i % 5}", 0, success=False, sample=1000 + i) for i in range(5000)]
+        recs += runs("P02-quicktile", "none", 5, 1000, 10.0, 3.0, 12)
+        s = summarize.summarize(recs, matched={"P03-ratio": "P02-quicktile"}, b=100, seed=1)
         [c] = s["comparisons"]
-        self.assertFalse(c["matchedBaseline"])
+        self.assertEqual(c["successRate"], {"candidate": 0.5, "baseline": 1.0})
+        self.assertEqual(c["verdict"], "inconclusive", c)
+        self.assertIn("success rate", c["reason"])
 
     def test_named_controls_of_either_condition(self):
         recs = runs("P03-focus", "plastile", 2, 20, 10, 1, 1) + runs("P00-switch", "none", 2, 20, 5, 1, 2)

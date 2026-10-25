@@ -5,8 +5,11 @@
 //   --backend uinput   Create a virtual keyboard through /dev/uinput (linux/uinput.h). Its events
 //                      enter the kernel input stack and reach the compositor of the active seat,
 //                      exactly like a USB keyboard. Before opening /dev/uinput it refuses to run
-//                      unless XDG_SESSION_TYPE=wayland and the WAYLAND_DISPLAY socket is served by
-//                      a non-nested kwin_wayland (or its kwin_wayland_wrapper) of the same user.
+//                      unless XDG_SESSION_TYPE=wayland, the WAYLAND_DISPLAY socket is served by a
+//                      kwin_wayland (or its kwin_wayland_wrapper) of the same user without a nested
+//                      backend flag, org.kde.KWin on the session bus is that process, and it reports
+//                      the DRM output backend (busctl, read-only): a nested KWin started without a
+//                      backend flag picks the Wayland backend itself and looks physical otherwise.
 //   --backend dry      No device at all: exercises the protocol and timing path only (tests).
 //   --backend libei --ei-fd N
 //                      Only in the plastile-keytap-ei build (make ei; needs libei). Emits through
@@ -21,7 +24,8 @@
 //   ping               Print a pong record with the current CLOCK_MONOTONIC time.
 //   quit               Release everything, destroy the device and exit.
 // End of input, SIGINT, SIGTERM and SIGHUP behave like quit. A tap in progress is completed (its
-// key releases are always sent) before a signal is acted on.
+// key releases are always sent) before one of those signals or a job-control stop (SIGTSTP,
+// SIGTTIN, SIGTTOU: Ctrl-Z on the terminal) is acted on. SIGKILL and SIGSTOP cannot be held off.
 //
 // Output: JSON Lines on stdout, flushed per line: ready, tap, pong, error, exit.
 //   t_input_ns      CLOCK_MONOTONIC read immediately before the write() carrying KEY's press and its
@@ -47,10 +51,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <sys/un.h>
+#include <sys/wait.h>
 #include <time.h>
 #include <unistd.h>
 #ifdef KEYTAP_LIBEI
@@ -213,6 +219,145 @@ static pid_t find_child_named(pid_t parent, const char *name)
     return found;
 }
 
+// Run argv (no shell; stdin and stderr on /dev/null) and capture its stdout. Returns its exit status, or -1.
+static int run_capture(char *const argv[], char *buf, size_t cap)
+{
+    int fds[2];
+    if (pipe2(fds, O_CLOEXEC) != 0) return -1;
+    pid_t pid = fork();
+    if (pid < 0) {
+        close(fds[0]);
+        close(fds[1]);
+        return -1;
+    }
+    if (pid == 0) {
+        int null = open("/dev/null", O_RDWR);
+        if (null >= 0) {
+            dup2(null, STDIN_FILENO);
+            dup2(null, STDERR_FILENO);
+        }
+        dup2(fds[1], STDOUT_FILENO);
+        execvp(argv[0], argv);
+        _exit(127);
+    }
+    close(fds[1]);
+    size_t len = 0;
+    for (;;) {
+        ssize_t n = read(fds[0], buf + len, cap - 1 - len);
+        if (n < 0 && errno == EINTR) continue;
+        if (n <= 0 || (len += (size_t)n) + 1 >= cap) break;
+    }
+    close(fds[0]);
+    buf[len] = '\0';
+    int status;
+    while (waitpid(pid, &status, 0) < 0) {
+        if (errno != EINTR) return -1;
+    }
+    return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
+}
+
+// The first element of a busctl --json=short reply ({"type":"u","data":[...]}), or NULL.
+static char *json_data(char *buf)
+{
+    char *p = strstr(buf, "\"data\"");
+    if (!p) return NULL;
+    p += strlen("\"data\"");
+    while (isspace((unsigned char)*p)) ++p;
+    if (*p++ != ':') return NULL;
+    while (isspace((unsigned char)*p)) ++p;
+    if (*p++ != '[') return NULL;
+    while (isspace((unsigned char)*p)) ++p;
+    return p;
+}
+
+// The first string of a busctl --json=short reply ({"type":"s","data":["..."]}), unescaped in place.
+// \uXXXX escapes become '?': only ASCII lines are matched afterwards.
+static char *json_first_string(char *buf)
+{
+    char *p = json_data(buf);
+    if (!p || *p++ != '"') return NULL;
+    char *o = p, *start = p;
+    for (; *p && *p != '"'; ++p) {
+        if (*p != '\\') {
+            *o++ = *p;
+            continue;
+        }
+        ++p;
+        switch (*p) {
+        case 'n': *o++ = '\n'; break;
+        case 't': *o++ = '\t'; break;
+        case 'r': *o++ = '\r'; break;
+        case 'u':
+            for (int i = 0; i < 4 && p[1]; ++i) ++p;
+            *o++ = '?';
+            break;
+        case '\0': *o = '\0'; return start;
+        default: *o++ = *p; break;
+        }
+    }
+    *o = '\0';
+    return start;
+}
+
+// KWin's output backend name from supportInformation: the "Name: " line under the "... backend"
+// heading ("Output backend" in 6.7, "LogicalOutput backend" in 6.8) and its '=' underline.
+static int output_backend(char *info, char *out, size_t cap)
+{
+    char *prev = NULL, *line = info;
+    bool in_section = false;
+    while (line && *line) {
+        char *nl = strchr(line, '\n');
+        if (nl) *nl = '\0';
+        if (in_section) {
+            if (!*line) return -1;
+            if (strncmp(line, "Name: ", 6) == 0) {
+                snprintf(out, cap, "%s", line + 6);
+                return 0;
+            }
+        } else if (prev && line[0] == '=') {
+            size_t n = strlen(prev);
+            in_section = n >= 7 && strcasecmp(prev + n - 7, "backend") == 0;
+        }
+        prev = line;
+        line = nl ? nl + 1 : NULL;
+    }
+    return -1;
+}
+
+// org.kde.KWin on the session bus must belong to `kwin`, and that KWin must drive outputs through DRM.
+static int guard_backend(pid_t kwin, char *why, size_t cap)
+{
+    static char reply[1 << 17];
+    char *owner_argv[] = { "busctl", "--user", "--json=short", "call", "org.freedesktop.DBus", "/org/freedesktop/DBus",
+                           "org.freedesktop.DBus", "GetConnectionUnixProcessID", "s", "org.kde.KWin", NULL };
+    const char *data;
+    if (run_capture(owner_argv, reply, sizeof reply) != 0 || !(data = json_data(reply))) {
+        snprintf(why, cap, "org.kde.KWin is not on the session bus (or busctl failed)");
+        return -1;
+    }
+    long owner = strtol(data, NULL, 10);
+    if (owner != (long)kwin) {
+        snprintf(why, cap, "org.kde.KWin on the session bus is pid %ld, but WAYLAND_DISPLAY is served by kwin_wayland "
+                 "pid %d: the bus and the display belong to different sessions", owner, (int)kwin);
+        return -1;
+    }
+    char *info_argv[] = { "busctl", "--user", "--json=short", "--timeout=10", "call", "org.kde.KWin", "/KWin",
+                          "org.kde.KWin", "supportInformation", NULL };
+    char *info, backend[128];
+    if (run_capture(info_argv, reply, sizeof reply) != 0 || !(info = json_first_string(reply)) ||
+        output_backend(info, backend, sizeof backend) != 0) {
+        snprintf(why, cap, "cannot read the output backend of kwin_wayland (pid %d) from org.kde.KWin supportInformation",
+                 (int)kwin);
+        return -1;
+    }
+    if (strcmp(backend, "DRM") != 0) {
+        snprintf(why, cap, "kwin_wayland (pid %d) uses the '%.64s' output backend, not DRM: it runs nested (or headless), "
+                 "and uinput would reach the host session instead", (int)kwin, backend);
+        return -1;
+    }
+    return 0;
+}
+
 static int guard_session(char *why, size_t cap, pid_t *kwin_out)
 {
     const char *st = getenv("XDG_SESSION_TYPE");
@@ -296,6 +441,9 @@ static int guard_session(char *why, size_t cap, pid_t *kwin_out)
             }
         }
     }
+    // A nested KWin without a backend flag (a nested Plasma, or kwin_wayland --socket X from a terminal)
+    // has the physical command line and owns org.kde.KWin on its session's bus: only its backend differs.
+    if (guard_backend(kwin, why, cap) != 0) return -1;
     *kwin_out = kwin;
     return 0;
 }
@@ -535,12 +683,17 @@ static void do_tap(char *id, char *mods_s, char *key_s)
         return;
     }
 
-    // The press/release sequence is never interrupted by a signal: keys must not stay down.
+    // The press/release sequence is never interrupted by a signal: keys must not stay down. That
+    // includes a job-control stop (Ctrl-Z on the orchestrator's terminal), which would otherwise
+    // freeze this process with Meta held until the job is resumed.
     sigset_t block, old;
     sigemptyset(&block);
     sigaddset(&block, SIGINT);
     sigaddset(&block, SIGTERM);
     sigaddset(&block, SIGHUP);
+    sigaddset(&block, SIGTSTP);
+    sigaddset(&block, SIGTTIN);
+    sigaddset(&block, SIGTTOU);
     sigprocmask(SIG_BLOCK, &block, &old);
     uint64_t t_input = 0, t_end = 0, t_rel = 0;
     bool ok = true;
@@ -580,7 +733,6 @@ static void do_tap(char *id, char *mods_s, char *key_s)
         g_stop = SIGHUP;
         return;
     }
-    sigprocmask(SIG_SETMASK, &old, NULL);
     g_last_tap_ns = t_input;
     ++g_taps;
     char modlist[64] = "";
@@ -590,6 +742,7 @@ static void do_tap(char *id, char *mods_s, char *key_s)
         "\"t_write_end_ns\":%llu,\"t_release_ns\":%llu,\"n\":%lu}",
         id, backend_name(), modlist, key, (unsigned long long)t_input, (unsigned long long)t_end,
         (unsigned long long)t_rel, g_taps);
+    sigprocmask(SIG_SETMASK, &old, NULL); // a deferred stop or quit takes effect after the tap's record
 }
 
 static void handle_line(char *line)

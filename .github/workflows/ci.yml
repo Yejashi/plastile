@@ -154,11 +154,12 @@ jobs:
           make -C tools/input
           test -x build/input/plastile-input
 
-      - name: Physical-session kit (tools/physical) unit tests and build
-        # Offline tests only (synthetic and recorded fixture logs). The live tools
-        # refuse to run outside a real Plasma Wayland session.
+      - name: Physical-session kit (tools/physical) and perf-probe oracle unit tests, build
+        # Offline tests only (synthetic and recorded fixture logs, synthetic perf campaigns).
+        # The live tools refuse to run outside a real Plasma Wayland session.
         run: |
           python3 -m unittest discover -s tools/physical/tests -v
+          python3 -m unittest discover -s probes/perf/tests -v
           make -C tools/physical
 
       - name: Job summary
