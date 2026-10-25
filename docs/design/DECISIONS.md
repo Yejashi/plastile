@@ -965,18 +965,27 @@ that owns only the picture. A KWin script cannot transform how a window is drawn
     switch, read at every change.
   - `type`: windows that are not managed normal windows, popups, and internal windows such as Plastile's inspector.
   - `invalid`, `unchanged`: a rectangle under 1 px, or a change within 0.5 px.
+  - `offscreen` (added in review): either rectangle overlaps no output the window was on, or its centre has a
+    negative coordinate. The scrolling layout parks columns off every output (above the top output, so at negative
+    y); a column scrolled in or out appears or disappears, which is not a move. `AnimationEffect` also treats a
+    negative `Position` value as "unset" and leaves that axis unanimated (`animationeffect.cpp`, `case Position`,
+    `anim.from[0] >= 0.0 && anim.to[0] >= 0.0`), so such a change used to log `start` while one axis jumped. The
+    output a rectangle belongs to is the window's output when the effect saw that frame.
   - `maximize`: the next geometry change after `windowMaximizedStateAboutToChange`, within 1 s. KWin applies the
     frame before it updates the maximize state (`XdgToplevelWindow::handleRoleCommit` calls `updateGeometry` before
     `handleStatesAcknowledged`), so the effect marks the request instead. KWin's own maximize effect animates it.
   - `fullscreen`: the window is fullscreen, or either rectangle is its output's full geometry. This covers both
-    orders of state and geometry.
+    orders of state and geometry. Consequence: a tiled window that covers its whole output (no panel, all gaps 0,
+    one window) is treated as fullscreen, and its move out of that rectangle is not animated.
   - `interactive`: any window is in an interactive move or resize. Peers moved by a live resize follow the pointer.
     The resized window's late commits within 300 ms after the release are also left alone. The placement after a
     *move* (the drop) does animate.
   - `fullscreen-effect`: a fullscreen effect such as Overview is active.
   - `hidden`: the window is not visible (other desktop or activity, minimized, show-desktop).
   - `transition`: within 300 ms after a desktop, activity or output change, a show-desktop toggle, or the window's own
-    minimize, desktop-membership or hidden change. Such a change also stops every running animation.
+    minimize, desktop-membership or hidden change. Such a change also stops every running animation. An output
+    change is a screen added or removed, or (added in review) `virtualScreenGeometryChanged`: an output's scale, mode
+    or position changed the union of the outputs, after which KWin and Plastile re-fit every window.
   - `opening`: within 500 ms after the window appeared. Its first placement belongs to the open animation.
   - `grabbed`: another effect holds an add, close, minimize or unminimize grab on the window.
 - **Interruption and cleanup.**

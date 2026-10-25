@@ -10,9 +10,10 @@
     the visual state painted last, so rapid commands never queue behind an animation.
 
     Rules (motionDecide() below): only managed normal windows, both rectangles valid and different,
-    not while any window is in an interactive move/resize (nor the resized window's late commits
-    right after one), not a maximize or fullscreen transition, not the first placement of a newly
-    opened window, not while hidden or right after a desktop, activity, output or minimize change,
+    both on an output (not a scrolling layout's parked column), not while any window is in an
+    interactive move/resize (nor the resized window's late commits right after one), not a maximize
+    or fullscreen transition, not the first placement of a newly opened window, not while hidden or
+    right after a desktop, activity, output (hotplug, scale, mode or position) or minimize change,
     not while a fullscreen effect such as Overview runs, and never with the global animation speed
     at "instant" (animationTimeFactor 0). The effect cannot tell who changed the geometry: every
     qualifying programmatic change animates, Plastile's or not (ADR-023).
@@ -55,6 +56,10 @@ function motionSameRect(a, b, tol) {
         && Math.abs(a.width - b.width) <= t && Math.abs(a.height - b.height) <= t;
 }
 
+function motionIntersects(a, b) {
+    return a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+}
+
 function motionUnion(a, b) {
     var x = Math.min(a.x, b.x), y = Math.min(a.y, b.y);
     return {
@@ -89,6 +94,10 @@ function motionDecide(f) {
     if (!f.managed || !f.normal || f.popup || f.internal || f.deleted) return "type";
     if (!motionValidRect(f.old) || !motionValidRect(f.next)) return "invalid";
     if (motionSameRect(f.old, f.next)) return "unchanged";
+    // A rectangle on no output (a scrolling layout's parked column) was or will be invisible: the window appears or
+    // disappears, which is not a move. AnimationEffect also treats a negative Position coordinate as "unset" and would
+    // move that axis without animating it, so a centre left of or above the origin is not animated either.
+    if (!motionOnOutput(f.old, f.oldOutput, f.screen) || !motionOnOutput(f.next, f.screen, null)) return "offscreen";
     if (f.statePendingAt !== null && f.now - f.statePendingAt <= MOTION_STATE_GRACE_MS) return "maximize";
     if (f.fullScreen || (f.screen && (motionSameRect(f.next, f.screen) || motionSameRect(f.old, f.screen)))) {
         return "fullscreen";
@@ -100,6 +109,18 @@ function motionDecide(f) {
     if (f.addedAt !== null && f.now - f.addedAt < MOTION_OPEN_GRACE_MS) return "opening";
     if (f.grabbed) return "grabbed";
     return "";
+}
+
+/** Whether `r` overlaps the output it belonged to (`a`, or `b`; null when unknown) and its centre is not negative. */
+function motionOnOutput(r, a, b) {
+    var c = motionCentre(r);
+    if (c.value1 < 0 || c.value2 < 0) {
+        return false;
+    }
+    if (!a && !b) {
+        return true;
+    }
+    return (!!a && motionIntersects(r, a)) || (!!b && motionIntersects(r, b));
 }
 
 /** Position animates the frame centre in absolute coordinates; Size the frame size. */
@@ -131,6 +152,9 @@ function PlastileMotion() {
     effects.screenAdded.connect(transition);
     effects.screenRemoved.connect(transition);
     effects.showingDesktopChanged.connect(transition);
+    // An output's scale, mode or position changed (the union of the outputs changed): KWin and Plastile re-fit
+    // every window to the new logical geometry, which is not a move.
+    effects.virtualScreenGeometryChanged.connect(transition);
     var self = this;
     effects.stackingOrder.forEach(function (w) { self.manage(w, null); });
     if (this.debug) {
@@ -170,6 +194,7 @@ PlastileMotion.prototype.manage = function (w, addedAt) {
     var rec = {
         addedAt: addedAt, statePendingAt: null, suppressUntil: 0, ids: null, bound: null, target: null,
         moving: false, resizing: false,
+        output: w.screen ? motionRect(w.screen.geometry) : null,   // the output of the frame seen last
     };
     this.records.set(w, rec);
     var self = this;
@@ -307,7 +332,7 @@ PlastileMotion.prototype.onGeometry = function (w, oldGeometry) {
         duration: duration,
         managed: w.managed, normal: w.normalWindow, popup: w.popupWindow, internal: !!w.internalWindow,
         deleted: w.deleted,
-        old: old, next: next, screen: screen,
+        old: old, next: next, screen: screen, oldOutput: rec.output,
         statePendingAt: rec.statePendingAt,
         fullScreen: w.fullScreen,
         userMoveResize: w.move || w.resize, interactions: this.interactions,
@@ -318,6 +343,7 @@ PlastileMotion.prototype.onGeometry = function (w, oldGeometry) {
         grabbed: effect.isGrabbed(w, Effect.WindowAddedGrabRole) || effect.isGrabbed(w, Effect.WindowClosedGrabRole)
             || effect.isGrabbed(w, Effect.WindowMinimizedGrabRole) || effect.isGrabbed(w, Effect.WindowUnminimizedGrabRole),
     });
+    rec.output = screen;
     if (reason === "maximize") {
         rec.statePendingAt = null;   // a maximize request claims one geometry change
     }

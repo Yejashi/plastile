@@ -71,7 +71,7 @@ function host(opts: { config?: Record<string, unknown>; factor?: number; windows
     addRepaint: (...r: number[]) => calls.repaint.push(r),
   };
   for (const s of ["windowAdded", "windowClosed", "windowDeleted", "desktopChanged", "currentActivityChanged",
-    "screenAdded", "screenRemoved", "showingDesktopChanged"]) effectsObj[s] = new Signal();
+    "screenAdded", "screenRemoved", "showingDesktopChanged", "virtualScreenGeometryChanged"]) effectsObj[s] = new Signal();
   const effectObj = {
     readConfig: (k: string, d: unknown) => (k in config ? config[k] : d),
     configChanged: new Signal(), animationEnded: new Signal(),
@@ -188,6 +188,15 @@ test("decide: each rule names its reason", () => {
   assert.equal(decide({ internal: true }), "type");
   assert.equal(decide({ old: { x: 0, y: 0, width: 0, height: 10 } }), "invalid");
   assert.equal(decide({ next: { ...A, x: A.x + 0.4 } }), "unchanged");
+  const parked = { x: 0, y: -848, width: 628, height: 784 };   // the scrolling layout parks above the output
+  assert.equal(decide({ old: parked }), "offscreen", "a column scrolled in appears; it does not fly in");
+  assert.equal(decide({ next: parked }), "offscreen", "a column scrolled out disappears");
+  assert.equal(decide({ next: { x: 1344, y: 8, width: 600, height: 784 } }), "offscreen", "parked right of the output");
+  assert.equal(decide({ old: { x: -500, y: 8, width: 600, height: 784 } }), "offscreen",
+    "a negative centre is 'unset' to AnimationEffect's Position");
+  assert.equal(decide({ old: { x: -50, y: 8, width: 600, height: 784 } }), "", "partly off the left edge, centre on it");
+  assert.equal(decide({ old: { x: 1400, y: 8, width: 600, height: 700 }, oldOutput: { x: 1280, y: 0, width: 1280, height: 800 } }),
+    "", "from another output it was on (cross-output move)");
   assert.equal(decide({ statePendingAt: 9_500 }), "maximize");
   assert.equal(decide({ statePendingAt: 8_000 }), "", "a stale maximize request expires");
   assert.equal(decide({ fullScreen: true }), "fullscreen");
@@ -361,6 +370,33 @@ test("a window closing mid-animation is released at once and its interaction cou
   assert.equal(h.calls.cancel.length, 1, "the move animation does not keep the closed window alive");
   other.setFrame(A);
   assert.equal(h.calls.animate.length, 2, "the closed window's interaction no longer suppresses others");
+});
+
+test("scrolling: columns that stay visible slide; a parked column appears and disappears at once", () => {
+  const parkedAbove = (x: number) => ({ x, y: -848, width: 628, height: 784 });
+  const a = new FakeWindow("a", parkedAbove(0));
+  const b = new FakeWindow("b", { x: 8, y: 8, width: 628, height: 784 });
+  const c = new FakeWindow("c", { x: 644, y: 8, width: 628, height: 784 });
+  const h = host({ windows: [a, b, c], config: { Debug: true } });
+  a.setFrame({ x: 8, y: 8, width: 628, height: 784 });
+  b.setFrame({ x: 644, y: 8, width: 628, height: 784 });
+  c.setFrame(parkedAbove(652));
+  assert.deepEqual(h.calls.animate.map((batch) => batch[0].window.caption), ["b"], "only the column visible before and after");
+  assert.equal(h.calls.log.filter((l) => l.includes("reason=offscreen")).length, 2);
+});
+
+test("an output's scale or size change (virtual screen geometry) is a transition: the re-fit is not animated", () => {
+  const w = new FakeWindow("w", A);
+  const v = new FakeWindow("v", C);
+  const h = host({ windows: [w, v] });
+  w.setFrame(B);
+  h.effects.virtualScreenGeometryChanged.emit();
+  assert.equal(h.calls.cancel.length, 1, "the running animation stops");
+  v.setFrame({ x: 472, y: 8, width: 373, height: 517 });
+  assert.equal(h.calls.animate.length, 1, "the re-fit after a scale change is not animated");
+  h.advance(400);
+  v.setFrame(C);
+  assert.equal(h.calls.animate.length, 2, "positive control");
 });
 
 test("a desktop, activity or output change stops every running animation (with a repaint)", () => {

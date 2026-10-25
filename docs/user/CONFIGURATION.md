@@ -407,7 +407,10 @@ button edits these keys in `~/.config/kwinrc`, group `[Effect-plastile_motion]` 
   - windows you drag or resize with the mouse (and, during that, windows moved around them);
   - maximize and fullscreen changes (KWin's own *Maximize* effect handles maximize);
   - a window's first placement when it opens;
-  - switches of desktop, activity or screen layout, and show desktop;
+  - switches of desktop, activity or screen layout (screens added or removed, a scale, resolution or position
+    change), and show desktop;
+  - a scrolling-layout column that scrolls in from, or out to, its parked place off the screen: it appears or
+    disappears at once, while the columns that stay on screen slide;
   - minimized or hidden windows, and anything while Overview or another fullscreen effect is open;
   - dialogs, popups and Plastile's own windows.
 - **Rapid commands do not queue:** a new move redirects the running animation from where the window is drawn.

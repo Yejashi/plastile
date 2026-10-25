@@ -844,3 +844,132 @@ def motion_package(out: Path, c: Checks):
           rmall["rc"] == 0 and not target.exists() and not script_dir.exists() and rmall["kwinrcUnchanged"],
           {k: rmall.get(k) for k in ("rc", "stderr", "kwinrcUnchanged")})
         c("no errors in KWin's log", not s.log_lines(ERRORS), s.log_lines(ERRORS)[:5])
+
+
+# ------------------------------------------------------------------------------------------------ review edges
+def on_screen(frames: list[dict], width: int = 1280, height: int = 800) -> list[dict]:
+    """The fixtures a screenshot can show: not minimized and overlapping the (single) output."""
+    return [f for f in frames if not f["minimized"] and f["frame"]["x"] < width and f["frame"]["y"] < height
+            and f["frame"]["x"] + f["frame"]["width"] > 0 and f["frame"]["y"] + f["frame"]["height"] > 0]
+
+
+def brief(lines: list[dict]) -> list:
+    return [(x["kind"], x["caption"], x["rest"][:90]) for x in lines]
+
+
+@scenario("motion-edges-T31")
+def motion_edges(out: Path, c: Checks):
+    """Cases added in review: the scrolling layout's parked columns, an output scale change, minimize and restore,
+    a desktop switch, KWin's keyboard quick tile, suspend/resume, and a window closing mid-animation.
+    - Scrolling: a column scrolled in from, or out to, its parked place off every output is not animated (it was or
+      becomes invisible; AnimationEffect's Position also treats a negative coordinate as unset, so such a 'start'
+      animated one axis only); a column visible before and after slides.
+    - A scale change re-fits every window to the new logical size: an output change, not animated.
+    - Minimize/restore: the minimized and restored window is not animated; the windows that make room are.
+    - Desktop switch: nothing is animated while switching.
+    - Keyboard quick tile: animated (documented: the effect cannot tell KWin's programmatic moves from Plastile's).
+    - A window that closes mid-animation is released at once (cancel reason=closed); the others settle.
+    Steps end with the composited image showing every visible window at its real rectangle (ScreenShot2)."""
+    from scenarios import kscreen
+    with MotionSession(out, config={"layout": "scrolling"}) as s:
+        s.require_effect()
+        for i in (1, 2, 3, 4):
+            s.spawn(i)
+        s.load(); s.settle()
+        s.load_effect()
+        shots = {}
+        off = s.kw.mark()
+        for _ in range(2):
+            s.cmd("focus.left"); s.settle(); time.sleep(0.4)
+        lines = s.motion(off)
+        offscreen = [x for x in lines if x["kind"] == "skip" and "reason=offscreen" in x["rest"]]
+        starts = [x for x in lines if x["kind"] == "start"]
+        c("scrolling: the scroll steps park and unpark columns, none animated (skip reason=offscreen, one rectangle "
+          "off the output)", len(offscreen) >= 2 and all((rect_of(x["rest"], "from")[1] < 0) != (rect_of(x["rest"], "to")[1] < 0)
+                                                        for x in offscreen), brief(lines))
+        c("scrolling: a column visible before and after slides (start, both rectangles on the output)",
+          len(starts) >= 1 and all(rect_of(x["rest"], "from")[1] >= 0 and rect_of(x["rest"], "to")[1] >= 0 for x in starts),
+          brief(starts))
+        shots["scrolling"] = visual_errors(s.screenshot(), on_screen(s.frames_list()))
+        c("scrolling: then every visible window is drawn at its real rectangle", not shots["scrolling"], shots["scrolling"])
+        s.cmd("layout.master-stack"); s.settle(); time.sleep(0.4)
+        s.kill(4); s.settle(); time.sleep(0.4)
+
+        # Scale change: the re-fit is an output change.
+        off = s.kw.mark()
+        kscreen(s, "output.Virtual-0.scale.1.5")
+        time.sleep(0.8); s.settle(); time.sleep(0.4)
+        lines = s.motion(off)
+        c("scale 1.5: the re-fit of every window is not animated (skip reason=transition)",
+          not [x for x in lines if x["kind"] == "start"] and len([x for x in lines if "reason=transition" in x["rest"]]) >= 3,
+          brief(lines))
+        kscreen(s, "output.Virtual-0.scale.1")
+        time.sleep(0.8); s.settle(); time.sleep(0.4)
+        shots["scale"] = visual_errors(s.screenshot(), on_screen(s.frames_list()))
+        c("scale back to 1: every window drawn at its real rectangle", not shots["scale"], shots["scale"])
+
+        # Minimize and restore.
+        off = s.kw.mark()
+        s.act(fx(2), "w.minimized = true"); s.settle(); time.sleep(0.4)
+        s.act(fx(2), "w.minimized = false"); s.settle(); time.sleep(0.4)
+        c("minimize/restore: the minimized and restored window is not animated; a window that makes room is",
+          not s.motion(off, "start", fx(2)) and len(s.motion(off, "start")) >= 2, brief(s.motion(off)))
+
+        # Desktop switch (one desktop more, fixture 3 on it).
+        s.js("if (workspace.desktops.length < 2) workspace.createDesktop(1, 'Two'); emit(1);")
+        time.sleep(0.2)
+        s.act(fx(3), "w.desktops = [workspace.desktops[1]]"); s.settle(); time.sleep(0.4)
+        off = s.kw.mark()
+        s.js("workspace.currentDesktop = workspace.desktops[1]; emit(1);"); s.settle(); time.sleep(0.6)
+        s.js("workspace.currentDesktop = workspace.desktops[0]; emit(1);"); s.settle(); time.sleep(0.6)
+        c("desktop switch there and back: nothing animated", not s.motion(off, "start"), brief(s.motion(off)))
+        s.act(fx(3), "w.desktops = [workspace.desktops[0]]"); s.settle(); time.sleep(0.4)
+
+        # Suspend, a command, resume.
+        s.cmd("runtime.toggle-suspend"); s.settle(); time.sleep(0.2)
+        s.cmd("swap.next"); s.settle(); time.sleep(0.2)
+        s.cmd("runtime.toggle-suspend"); s.settle(); time.sleep(0.5)
+        shots["suspend"] = visual_errors(s.screenshot(), on_screen(s.frames_list()))
+        c("suspend/resume: no stuck transform, every window drawn at its real rectangle", not shots["suspend"], shots["suspend"])
+
+        # KWin's keyboard quick tile (documented as animated).
+        off = s.kw.mark()
+        s.act(fx(2), "workspace.activeWindow = w; workspace.slotWindowQuickTileLeft()"); s.settle(); time.sleep(0.4)
+        c("keyboard quick tile: animated like any programmatic change (documented)", bool(s.motion(off, "start", fx(2))),
+          brief(s.motion(off)))
+        a = s.screenshot()
+        time.sleep(0.5)
+        b = s.screenshot()
+        c("keyboard quick tile: the image is still afterwards (no stuck transform; the quick tile overlaps a tile, so "
+          "the per-window colour check does not apply)", image_diff(a, b) == 0.0, image_diff(a, b))
+        c("no errors in KWin's log", not s.log_lines(ERRORS), s.log_lines(ERRORS)[:5])
+
+    with MotionSession(out / "close", effect_config={"Duration": 2000}) as s:
+        s.require_effect()
+        for i in (1, 2, 3, 4):
+            s.spawn(i)
+        s.load(); s.settle()
+        s.load_effect()
+        off = s.kw.mark()
+        s.cmd("swap.next")
+        wait_motion(s, off, "start", 2)
+        time.sleep(0.3)
+        animated = sorted({x["caption"] for x in s.motion(off, "start")})
+        victim = animated[-1] if animated else fx(4)
+        s.kill(int(victim.split()[-1]))
+        s.settle()
+        ends = wait_motion(s, off, "end", 1, timeout=4)
+        time.sleep(0.4)
+        lines = s.motion(off)
+        c("close mid-animation: the closing window's animation is cancelled (reason=closed), never ended",
+          any(x["kind"] == "cancel" and x["caption"] == victim and "reason=closed" in x["rest"] for x in lines)
+          and not [x for x in lines if x["kind"] == "end" and x["caption"] == victim], brief(lines))
+        shot = s.screenshot()
+        frames = s.frames_list()
+        time.sleep(0.5)
+        ref = s.screenshot()
+        errs = visual_errors(shot, frames)
+        c("close mid-animation: the others settle; every window drawn at its real rectangle and still",
+          len(ends) >= 1 and not errs and image_diff(shot, ref) == 0.0, {"errors": errs, "diff": image_diff(shot, ref)})
+        c("no errors in KWin's log", not s.log_lines(ERRORS), s.log_lines(ERRORS)[:5])
+        record("motion-edges-T31", {"visualErrors": shots, "closeVictim": victim})

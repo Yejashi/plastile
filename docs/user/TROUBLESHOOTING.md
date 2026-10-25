@@ -162,14 +162,14 @@ That is the optional **Plastile Motion** effect, not Plastile: Plastile places w
 the picture for about 180 ms ([CONFIGURATION](CONFIGURATION.md#window-motion-the-plastile-motion-effect)).
 
 - **Turn it off:** *System Settings > Window Management > Desktop Effects*, untick *Plastile Motion*, Apply. Or run
-  `kwriteconfig6 --file kwinrc --group Plugins --key plastile_motionEnabled --notify true` with `false` instead of
-  `true`. Windows are drawn at their real place from the next frame, even mid-animation.
+  `kwriteconfig6 --file kwinrc --group Plugins --key plastile_motionEnabled --notify false`. Windows are drawn at
+  their real place from the next frame, even mid-animation.
 - **Reduced motion everywhere:** set *System Settings > General Behavior > Animation speed* to *Instant*; the effect
   then animates nothing.
 - **Is it loaded?** `qdbus6 org.kde.KWin /Effects org.kde.kwin.Effects.isEffectLoaded plastile_motion`.
 - **Why did something (not) animate?** Set `Debug=true` under `[Effect-plastile_motion]` in `~/.config/kwinrc`, turn
   the effect off and on, and read KWin's log ([reading the log](#reading-the-log)). Each change logs
-  `plastile_motion start`, `retarget`, `end`, `cancel` or `skip … reason=…`. The reasons are `instant`, `type`,
+  `plastile_motion start`, `retarget`, `end`, `cancel` or `skip … reason=…`. The reasons are `instant`, `type`, `invalid`, `offscreen`,
   `maximize`, `fullscreen`, `interactive`, `fullscreen-effect`, `hidden`, `transition`, `opening` and `grabbed`.
   Turn `Debug` off again: it writes a line per change.
 - **A click went to a window that was not drawn there yet:** input always uses a window's real place; the picture
