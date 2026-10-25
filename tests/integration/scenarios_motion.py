@@ -243,10 +243,11 @@ def frames_by_caption(s: Session) -> dict[str, dict]:
     return {f["caption"]: f["frame"] for f in s.frames_list()}
 
 
-def wait_motion(s: MotionSession, off: int, kind: str, count: int, timeout: float = 3.0) -> list[dict]:
+def wait_motion(s: MotionSession, off: int, kind: str, count: int, timeout: float = 3.0,
+                caption: str | None = None) -> list[dict]:
     deadline = time.monotonic() + timeout
     while True:
-        got = s.motion(off, kind)
+        got = s.motion(off, kind, caption)
         if len(got) >= count or time.monotonic() > deadline:
             return got
         time.sleep(0.03)
@@ -724,7 +725,8 @@ def motion_outputs(out: Path, c: Checks):
         before = frames_by_caption(s)
         off = s.kw.mark()
         s.cmd("move.output-next")
-        ends = wait_motion(s, off, "end", 1, timeout=4)
+        # Fixture 4's own end: the reflow on Virtual-0 starts earlier and ends first.
+        ends = wait_motion(s, off, "end", 1, timeout=4, caption=fx(4))
         time.sleep(0.3)
         s.settle()
         after = {f["caption"]: f for f in s.frames_list()}
