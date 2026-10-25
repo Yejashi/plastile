@@ -122,3 +122,82 @@ test("D6: KWin moving a floating window to another output re-anchors its float r
   h.drain();
   assert.ok(rectNear(frame(h, "b"), rect(1500, 100, 500, 400)), `same output: exact rectangle, ${JSON.stringify(frame(h, "b"))}`);
 });
+
+test("D6: an output that moved keeps its float rectangles at the same place on it (a neighbour's resolution changed)", () => {
+  const h = new MockHost();
+  h.outs = [{ id: "A", name: "A", geometry: rect(0, 0, 1920, 1080), scale: 1 }, { id: "B", name: "B", geometry: rect(1920, 0, 1920, 1080), scale: 1 }];
+  h.visible = new Map([["A", "D1"], ["B", "D1"]]);
+  const e = h.start();
+  const onB = { output: "B", desktops: ["D1"], onAllDesktops: false, activities: [] };
+  h.open("p", { membership: onB }); h.open("w", { membership: onB });
+  h.drain();
+  h.active = "w";
+  e.execute("plastile.window.toggle-float");
+  h.drain();
+  h.userSetFrame("w", rect(2000, 100, 800, 600));
+  e.execute("plastile.window.toggle-float"); // tiled on B: the float rectangle (2000,100) on B is remembered
+  h.drain();
+  // A becomes 2560x1440: KWin moves B to x=2560.
+  const moved = [{ id: "A", name: "A", geometry: rect(0, 0, 2560, 1440), scale: 1 }, { id: "B", name: "B", geometry: rect(2560, 0, 1920, 1080), scale: 1 }];
+  h.outs = moved;
+  e.topologyChanged();
+  h.drain();
+  e.execute("plastile.window.toggle-float");
+  h.drain();
+  assert.ok(rectNear(frame(h, "w"), rect(2640, 100, 800, 600)), `same place on B: ${JSON.stringify(frame(h, "w"))}`);
+  // A preference saved before the move is placed the same way.
+  const h2 = new MockHost();
+  h2.outs = moved;
+  h2.visible = new Map([["A", "D1"], ["B", "D1"]]);
+  const e2 = h2.start();
+  e2.restoreFloats([{ app: { appId: "w", resourceName: "w", role: "" },
+    float: { rect: rect(1940, 100, 800, 600), output: "B", area: rect(1920, 0, 1920, 1080) }, window: "" }]);
+  h2.open("w", { membership: onB });
+  h2.drain();
+  assert.equal(e2.modeOf("w"), "floating");
+  assert.ok(rectNear(h2.windows.get("w")!.frame, rect(2580, 100, 800, 600)), `same place on B: ${JSON.stringify(h2.windows.get("w")!.frame)}`);
+});
+
+test("D6/E04: floating a window again while its tile configure is in flight puts it back at its float rectangle", () => {
+  const F = rect(300, 200, 500, 400);
+  const toTileAndBack = (delay: number) => {
+    const { h, e } = twoOutputs();
+    h.windows.get("b")!.delay = delay;
+    e.execute("plastile.window.toggle-float");
+    h.drain();
+    h.advance(500);
+    h.userSetFrame("b", F);
+    e.execute("plastile.window.toggle-float"); // tiled: its configure is in flight for `delay` ms
+    h.drain();
+    h.advance(50);
+    e.execute("plastile.window.toggle-float"); // floating again before the client committed the tile
+    h.drain();
+    return { h, e };
+  };
+  for (const delay of [0, 200]) {
+    const { h, e } = toTileAndBack(delay);
+    h.advance(2000);
+    assert.equal(e.modeOf("b"), "floating");
+    assert.ok(rectNear(frame(h, "b"), F), `delay ${delay}: at its float rectangle, not its old tile: ${JSON.stringify(frame(h, "b"))}`);
+    assert.deepEqual(e.floatPreferences().map((p) => p.float.rect), [F], `delay ${delay}: the saved preference is unchanged`);
+  }
+  {
+    // Tiled again before the restore was written: the plan owns it, nothing is restored.
+    const { h, e } = toTileAndBack(200);
+    e.execute("plastile.window.toggle-float");
+    h.drain();
+    h.advance(2000);
+    assert.equal(e.modeOf("b"), "tiled");
+    assert.ok(rectNear(frame(h, "b"), rect(707, 8, 565, 784)), JSON.stringify(frame(h, "b")));
+    assert.equal(e.outstandingCount(), 0);
+  }
+  {
+    // A client that never commits the tile: the wait ends at the request's deadline, and the user's next placement
+    // is its float rectangle again.
+    const { h, e } = toTileAndBack(100_000);
+    h.advance(2000);
+    assert.equal(e.modeOf("b"), "floating");
+    h.userSetFrame("b", rect(400, 300, 500, 400));
+    assert.deepEqual(e.floatPreferences().map((p) => p.float.rect), [rect(400, 300, 500, 400)]);
+  }
+});

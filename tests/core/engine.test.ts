@@ -1000,6 +1000,112 @@ test("L06/L08: in the floating layout the user's latest placement is what a late
   assert.ok(rectNear(h.windows.get("b")!.frame, rect(900, 400, 300, 300)));
 });
 
+test("L06: every route back to the floating layout restores remembered float rectangles (reset, configuration, saved state)", () => {
+  // b was floated at (300,200,500,400) and tiled again; a was moved by the user while the context was floating.
+  const F = rect(300, 200, 500, 400);
+  const prep = (configured: "master-stack" | "floating") => {
+    let layout: "master-stack" | "floating" = configured;
+    const h = new MockHost();
+    const e = h.start({ settingsFor: () => ({ ...DEFAULT_SETTINGS, layout }) });
+    h.open("a"); h.open("b");
+    h.drain();
+    h.advance(5);
+    if (configured === "floating") assert.equal(e.execute("plastile.layout.master-stack").status, "accepted");
+    h.active = "b";
+    e.execute("plastile.window.toggle-float");
+    h.drain();
+    h.userSetFrame("b", F);
+    e.execute("plastile.window.toggle-float");
+    h.drain();
+    assert.equal(e.modeOf("b"), "tiled");
+    assert.ok(!rectNear(h.windows.get("b")!.frame, F), "precondition: b is on its tile");
+    return { h, e, set: (l: "master-stack" | "floating") => { layout = l; } };
+  };
+  const at = (h: MockHost) => JSON.stringify(h.windows.get("b")!.frame);
+  {
+    const { h, e } = prep("floating");
+    assert.equal(e.execute("plastile.context.reset").status, "accepted");
+    h.drain();
+    assert.equal(e.layoutAt({ output: "O1", desktop: "D1", activity: "default" }), "floating");
+    assert.ok(rectNear(h.windows.get("b")!.frame, F), `reset to the configured floating layout: ${at(h)}`);
+  }
+  {
+    const { h, e, set } = prep("master-stack");
+    set("floating");
+    const w0 = h.writes.length;
+    e.configure({ settingsFor: () => ({ ...DEFAULT_SETTINGS, layout: "floating" }) });
+    assert.equal(h.writes.length, w0, "configure itself writes nothing: the flush does");
+    h.drain();
+    assert.ok(rectNear(h.windows.get("b")!.frame, F), `configured layout became floating: ${at(h)}`);
+  }
+  {
+    const { h, e } = prep("master-stack");
+    const w0 = h.writes.length;
+    e.setContextPreferences({ output: "O1", desktop: "D1", activity: "default" }, { layout: "floating", masterStack: null });
+    assert.equal(h.writes.length, w0, "the load reply writes no geometry (ADR-020)");
+    h.drain();
+    assert.ok(rectNear(h.windows.get("b")!.frame, F), `saved floating layout: ${at(h)}`);
+  }
+  {
+    // A context not shown is restored once it is shown, never written while hidden.
+    const { h, e } = prep("master-stack");
+    h.showDesktop("O1", "D2");
+    h.drain();
+    const w0 = h.writes.length;
+    e.setContextPreferences({ output: "O1", desktop: "D1", activity: "default" }, { layout: "floating", masterStack: null });
+    h.drain();
+    assert.equal(h.writes.length, w0, "hidden: nothing written");
+    h.showDesktop("O1", "D1");
+    h.drain();
+    assert.ok(rectNear(h.windows.get("b")!.frame, F), `restored when shown: ${at(h)}`);
+  }
+});
+
+test("G08: Toggle floating on an overflow float that still does not fit reports why and changes nothing", () => {
+  const min700 = { minFrame: { width: 700, height: 0 }, maxFrame: { width: Infinity, height: Infinity }, fixed: false };
+  const { h, e } = setup(["a", "b"], { a: { constraints: min700 }, b: { constraints: min700 } });
+  assert.equal(e.modeOf("b"), "floating");
+  const exception = e.explain("b")!.exception;
+  assert.ok(String(exception).startsWith("overflow"));
+  h.activate("b");
+  h.drain();
+  const w0 = h.writes.length;
+  const res = e.execute("plastile.window.toggle-float");
+  h.drain();
+  assert.equal(res.status, "noop");
+  assert.match(String(res.reason), /^cannot tile: overflow: b: does not fit/);
+  assert.equal(e.modeOf("b"), "floating");
+  assert.equal(h.writes.length, w0, "no write");
+  assert.equal(e.explain("b")!.exception, exception);
+  assert.equal(e.explain("b")!.userMode, null, "the refused request left no user decision behind");
+  // Still an overflow float: tried again when a peer leaves.
+  h.close("a");
+  h.drain();
+  assert.equal(e.modeOf("b"), "tiled");
+  // A user float that does not fit when tiled stays the user's float, with its saved preference.
+  {
+    const { h, e } = setup(["a", "b"], { a: { constraints: min700 } });
+    h.activate("b");
+    e.execute("plastile.window.toggle-float");
+    h.drain();
+    h.userSetFrame("b", rect(200, 100, 750, 400)); // the user makes it wider than half the output
+    const b = h.windows.get("b")!;
+    b.constraints = min700;
+    e.constraintsChanged("b", b.gen, min700);
+    h.drain();
+    const prefs = e.floatPreferences().map((p) => p.float.rect);
+    const res = e.execute("plastile.window.toggle-float");
+    h.drain();
+    assert.equal(res.status, "noop");
+    assert.match(String(res.reason), /^cannot tile: overflow/);
+    assert.equal(e.modeOf("b"), "floating");
+    assert.equal(e.explain("b")!.userMode, "floating");
+    assert.equal(e.explain("b")!.exception, null, "a user float, not an overflow float");
+    assert.deepEqual(e.floatPreferences().map((p) => p.float.rect), prefs, "its preference kept");
+    assert.ok(rectNear(h.windows.get("b")!.frame, rect(200, 100, 750, 400)));
+  }
+});
+
 test("G08/BEHAVIOR §11: an overflow float is reconsidered when the area, constraints, peers or configuration change", () => {
   const min700 = { minFrame: { width: 700, height: 0 }, maxFrame: { width: Infinity, height: Infinity }, fixed: false };
   const free = { minFrame: { width: 0, height: 0 }, maxFrame: { width: Infinity, height: Infinity }, fixed: false };
