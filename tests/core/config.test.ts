@@ -189,6 +189,9 @@ test("JSON schema violations report precise paths (Q01)", () => {
   hasError(errors({ configJson: '{"schemaVersion":1,"defaults":{"gaps":{"inner":1e999}}}' }), "defaults.gaps.inner: must be a finite number");
   hasError(docErrors({ schemaVersion: 1, defaults: { followOnSend: "yes" } }), "defaults.followOnSend: must be a boolean");
   hasError(docErrors({ schemaVersion: 1, defaults: { animation: { durationMs: 150 } } }), "defaults.animation.durationMs: not supported");
+  const motion = docErrors({ schemaVersion: 1, defaults: { animation: { enabled: true } } });
+  assert.ok(motion.some((e) => e.startsWith("defaults.animation.enabled: not supported") && e.includes("Plastile Motion")),
+    `the inert animation key points at the effect (ADR-023): ${JSON.stringify(motion)}`);
   hasError(docErrors({ schemaVersion: 1, defaults: { multiContextWindows: "tile" } }), "defaults.multiContextWindows: not supported");
   hasError(docErrors({ schemaVersion: 1, overrides: [{ id: "o", match: { outputName: "a" }, set: {}, when: 1 }] }), "overrides[0].when: unknown key");
   hasError(docErrors({ schemaVersion: 1, overrides: [{ id: "x", match: { outputName: "a" }, set: {} }, { id: "x", match: { outputName: "b" }, set: {} }] }),

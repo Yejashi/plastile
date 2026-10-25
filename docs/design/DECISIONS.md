@@ -358,7 +358,7 @@ measurements show it is not perceived as lag or flicker.
 
 ## ADR-018: Close T31 (presentation) as deferred; animation stays disabled
 
-**Status:** accepted (2026-10-18); task T31.
+**Status:** superseded by [ADR-023](#adr-023-window-motion-is-an-optional-transform-only-kwin-effect-plastile-motion) (2026-10-25); accepted 2026-10-18; task T31.
 
 **Context.** T31 is conditional: "If animation is desired … Otherwise keep animation disabled and close as
 deferred." ADR-006 makes instantaneous geometry the default and forbids animating real window sizes. Its
@@ -927,3 +927,177 @@ reached (see `replug-identity-O05`).
 
 **Revisit if** a Qt release iterates Maps and Sets as ECMAScript does (the QV4 semantics test reports the count of
 deviations), or if TypeScript's checker API changes `isArrayType`/`isTupleType`.
+
+## ADR-023: Window motion is an optional transform-only KWin effect (Plastile Motion)
+
+**Status:** accepted (2026-10-25), branch `wf/motion`; task T31 reopened. Supersedes ADR-018. Refines ADR-006 without
+changing it: Plastile's geometry stays instantaneous.
+
+**Context.** The owner asked for an animation when windows move: the deliberate feature decision T31 and ADR-018
+required. G2 has passed (nested). ADR-006 forbids animating real window sizes, and
+[KWIN_INTERNALS §11](../research/KWIN_INTERNALS.md#11-effects-and-presentation) puts presentation in a KWin effect
+that owns only the picture. A KWin script cannot transform how a window is drawn; only an effect can.
+
+**Decision.**
+
+- **What ships.** A separate KPackage, `effect/`: a scripted (JavaScript) KWin effect with id `plastile_motion`,
+  `KPackageStructure` `KWin/Effect`, `X-Plasma-API` `javascript`, `EnabledByDefault` false. It is original code.
+  A scripted effect needs no binary built against an exact KWin ABI (a native effect would; KWIN_INTERNALS §11).
+  Every API it uses is the same in KWin 6.7.5 and 6.8.1 source (below).
+- **Plastile is unchanged.** It still issues one immediate frame request per window per command. Nothing in `src/`
+  animates, waits or knows whether the effect runs. The `animation` configuration key stays inert. The script has
+  no way to reach the effect, and Plastile never writes kwinrc. Its error message now names the effect.
+- **How it animates.** On `EffectWindow.windowFrameGeometryChanged(window, old)`, KWin has already applied the new
+  frame. The effect calls `animate()` with two attributes:
+  - `Effect.Position`: the frame centre, in absolute coordinates, from the old centre to the new one;
+  - `Effect.Size`: the frame size, absolute, from the old size to the new one.
+
+  With no anchor metadata, `AnimationEffect` scales about the centre and translates to the interpolated centre, so
+  the picture is the linear blend of the two rectangles, eased.
+- **Retargeting.** A change that arrives while the window animates calls `retarget()` on both animations, with the
+  new target and the full duration. KWin restarts each timeline from the value it painted last; both values are
+  absolute, so they stay valid after the real frame moved. Ten commands therefore make one animation that ends
+  one duration after the last. If KWin already ended it, a new animation starts from the frame it ended at.
+- **No timers.** Every decision is taken in a KWin signal handler. The grace periods below compare
+  `Date.now()` with a timestamp stored in an earlier handler; no timer is created.
+- **What is not animated** (`motionDecide`, with the reason it logs):
+  - `instant`: the global animation speed is "Instant" (`effects.animationTimeFactor` 0). This is the reduced-motion
+    switch, read at every change.
+  - `type`: windows that are not managed normal windows, popups, and internal windows such as Plastile's inspector.
+  - `invalid`, `unchanged`: a rectangle under 1 px, or a change within 0.5 px.
+  - `offscreen` (added in review): either rectangle overlaps no output the window was on, or its centre has a
+    negative coordinate. The scrolling layout parks columns off every output (above the top output, so at negative
+    y); a column scrolled in or out appears or disappears, which is not a move. `AnimationEffect` also treats a
+    negative `Position` value as "unset" and leaves that axis unanimated (`animationeffect.cpp`, `case Position`,
+    `anim.from[0] >= 0.0 && anim.to[0] >= 0.0`), so such a change used to log `start` while one axis jumped. The
+    output a rectangle belongs to is the window's output when the effect saw that frame.
+  - `maximize`: the next geometry change after `windowMaximizedStateAboutToChange`, within 1 s. KWin applies the
+    frame before it updates the maximize state (`XdgToplevelWindow::handleRoleCommit` calls `updateGeometry` before
+    `handleStatesAcknowledged`), so the effect marks the request instead. KWin's own maximize effect animates it.
+  - `fullscreen`: the window is fullscreen, or either rectangle is its output's full geometry. This covers both
+    orders of state and geometry. Consequence: a tiled window that covers its whole output (no panel, all gaps 0,
+    one window) is treated as fullscreen, and its move out of that rectangle is not animated.
+  - `interactive`: any window is in an interactive move or resize. Peers moved by a live resize follow the pointer.
+    The resized window's late commits within 300 ms after the release are also left alone. The placement after a
+    *move* (the drop) does animate.
+  - `fullscreen-effect`: a fullscreen effect such as Overview is active.
+  - `hidden`: the window is not visible (other desktop or activity, minimized, show-desktop).
+  - `transition`: within 300 ms after a desktop, activity or output change, a show-desktop toggle, or the window's own
+    minimize, desktop-membership or hidden change. Such a change also stops every running animation. An output
+    change is a screen added or removed, or (added in review) `virtualScreenGeometryChanged`: an output's scale, mode
+    or position changed the union of the outputs, after which KWin and Plastile re-fit every window.
+  - `opening`: within 500 ms after the window appeared. Its first placement belongs to the open animation.
+  - `grabbed`: another effect holds an add, close, minimize or unminimize grab on the window.
+- **Interruption and cleanup.**
+  - An excluded change, a maximize request, a closing window or a transition calls `cancel()`. `cancel()` does not
+    repaint (`AnimationEffect::cancel`), so the effect damages the area the animation covered, plus a shadow margin.
+  - A closing window is never kept alive by a move animation.
+  - Unloading destroys the effect's JavaScript engine with all its connections. `AnimationEffect`'s destructor
+    drops every animation, and `EffectsHandler::unloadEffect` repaints the whole scene.
+- **No channel to Plastile.** The effect cannot tell Plastile's writes from other programmatic changes:
+  - KWin scripts cannot set an effect window's data roles;
+  - the window `tag` is the client's;
+  - a scripted effect has no D-Bus or other input from scripts;
+  - timing correlation would need a shared clock and would guess.
+
+  So every qualifying programmatic change animates: Plastile's, another script's, KWin's keyboard quick tile, KWin
+  keeping a window on screen, and a normal window that resizes itself (a short scale of its new content).
+- **Settings.** `[Effect-plastile_motion]` holds three keys (KConfigXT, KWin's generic scripted-effect dialog):
+  - `Duration`: 0 means the 180 ms default; up to 2000. It is multiplied by the global animation speed.
+  - `Easing`: OutCubic (default), OutQuart, OutQuad, InOutCubic or Linear.
+  - `Debug`: logs every decision as `plastile_motion start|retarget|end|skip|cancel`. It is not in the dialog.
+- **Packaging.**
+  - `tools/install.sh install` and `upgrade` also install the effect; `remove` removes both.
+  - `install-effect` and `remove-effect` act on the effect alone, and `status` shows it and its kwinrc key.
+  - The installer never writes kwinrc. It prints how to enable the effect: System Settings > Desktop Effects, or
+    `kwriteconfig6 --notify`, which KWin's config watcher turns into a load (`EffectsHandler::configChanged`).
+  - `tools/release.py` builds `dist/plastile_motion-<version>.zip` reproducibly, with the script's version.
+
+**What the picture does.**
+
+- KWin applies an xdg window's new size when the client commits it. The texture being scaled is therefore already
+  the new content: during the animation it is stretched or squeezed when the aspect ratio changes.
+- An X11 window's frame changes first, so its old content is scaled until the client redraws.
+- There is no cross-fade. `CrossFadePrevious` renders the old window offscreen when each animation starts, with
+  the GL context, inside the commit handler.
+
+**Hit-testing.**
+
+- Input, focus and the client's size are at the real frame from the first moment. For up to one duration the
+  picture lags behind them: a click lands on the window's new rectangle even where its picture has not arrived yet.
+- Measured in `motion-hit-test-T31`: a click at a moved window's real centre, while the screen still showed something
+  else there, activated that window.
+
+**Where it loads.**
+
+- KWin loads scripted effects only when `EffectsHandler::animationsSupported()` is true: OpenGL on a hardware
+  renderer, unless `KWIN_EFFECTS_FORCE_ANIMATIONS` says otherwise.
+- QPainter compositing (the CI sandbox, KWin 6.7.5) and llvmpipe (CI Nix, KWin 6.8.0) do not load it. The motion
+  scenarios SKIP there with that reason, and a user on such a renderer gets no animation.
+
+**Upstream sources relied on** (read for API semantics, nothing copied). Each link pins the revision that was read:
+
+- KWin v6.8.1, `1b798c05`:
+  - [scriptedeffect.cpp](https://github.com/KDE/kwin/blob/1b798c05c19b1124edb1e16623191fcd2c128fd0/src/scripting/scriptedeffect.cpp)
+    and [scriptedeffect.h](https://github.com/KDE/kwin/blob/1b798c05c19b1124edb1e16623191fcd2c128fd0/src/scripting/scriptedeffect.h):
+    the script API, `animate`, `retarget`, `cancel`, `readConfig`, `animationTime`, and `animationEnded`, which
+    reports id 0;
+  - [animationeffect.cpp](https://github.com/KDE/kwin/blob/1b798c05c19b1124edb1e16623191fcd2c128fd0/src/effect/animationeffect.cpp):
+    the Position and Size paint maths, retarget from the interpolated value, cancel without repaint, destructor;
+  - [effectwindow.h](https://github.com/KDE/kwin/blob/1b798c05c19b1124edb1e16623191fcd2c128fd0/src/effect/effectwindow.h):
+    properties and per-window signals;
+  - [effecthandler.cpp](https://github.com/KDE/kwin/blob/1b798c05c19b1124edb1e16623191fcd2c128fd0/src/effect/effecthandler.cpp):
+    `animationsSupported`, `unloadEffect` repaint, `configChanged` load and unload;
+  - [workspacescene.cpp](https://github.com/KDE/kwin/blob/1b798c05c19b1124edb1e16623191fcd2c128fd0/src/scene/workspacescene.cpp);
+  - [xdgshellwindow.cpp](https://github.com/KDE/kwin/blob/1b798c05c19b1124edb1e16623191fcd2c128fd0/src/xdgshellwindow.cpp):
+    commit ordering;
+  - [effectsmodel.cpp](https://github.com/KDE/kwin/blob/1b798c05c19b1124edb1e16623191fcd2c128fd0/src/kcms/common/effectsmodel.cpp):
+    what System Settings writes.
+- KWin v6.7.5, `ab7df7cc`:
+  [workspacescene.cpp](https://github.com/KDE/kwin/blob/ab7df7ccb7c6af20f4b279cd6220f7cd3d2267d7/src/scene/workspacescene.cpp)
+  (no OpenGL context means no scripted effects) and
+  [effectwindow.h](https://github.com/KDE/kwin/blob/ab7df7ccb7c6af20f4b279cd6220f7cd3d2267d7/src/effect/effectwindow.h)
+  (the same signals).
+- The installed KWin 6.8.1 maximize effect, `/usr/share/kwin/effects/maximize/contents/code/main.js`
+  (GPL-2.0-or-later), was read as an example of the scripted API only.
+
+The licence remains the owner's decision (ADR-012). The effect's metadata says `Undecided`, as the script's does.
+
+**Evidence.**
+
+- **Unit:** [motion.test.ts](../../tests/core/motion.test.ts), 18 tests (2 added in review). They cover the metadata and settings
+  schema, the duration and easing rules, every `motionDecide` reason, and the shipped `main.js` run against a fake
+  scripted-effect host: start, retarget, end, cancel and repaint, the interaction rules, the transition cancel, and
+  closing.
+- **Nested:** [scenarios_motion.py](../../tests/integration/scenarios_motion.py). The setup: KWin 6.8.1, OpenGL ES
+  on the host GPU, virtual backend at 60 Hz. The effect is loaded through the nested bus's `/Effects` or the nested
+  kwinrc. The oracles are KWin's frames, the fixtures' protocol logs and ScreenShot2 images of the composited
+  output. The results and their numbers are in
+  [STATUS](../status/STATUS.md#window-motion-t31-adr-023-nested-kwin-681) and the evidence file
+  [motion-T31.json](../status/evidence/motion-T31.json).
+
+**Consequences.**
+
+- With the effect off, nothing changes. With it on:
+  - the client and engine work are unchanged (`motion-client-cost-T31`: the same configures, the same Plastile
+    counters, the same frames);
+  - the visual settle time grows by one duration;
+  - presentation work grows by one transformed window per animated window for that duration.
+- The latency protocol must run with identical effects on both sides
+  ([PERFORMANCE §6.1](../validation/PERFORMANCE.md#61-the-motion-effect-in-latency-measurements)).
+- Open, physical only:
+  - smoothness at 144, 100 and 60 Hz;
+  - perceived lag of the picture behind input;
+  - how the stretched content looks with real applications;
+  - the GPU cost per frame.
+
+  None of these can be judged in a nested session.
+- Known limitations: `offscreen` and `transition` make a scrolled-in column, and the re-fit after an output
+  change, appear at once; a window covering its whole output counts as fullscreen (above).
+
+**Review (2026-10-25, branch `wf/motion-review`).** An adversarial review added the `offscreen` rule and the
+`virtualScreenGeometryChanged` transition (both above), two unit tests, and the nested scenario `motion-edges-T31`.
+That scenario failed 3 of its checks on the previous effect: parked columns logged `start` while one axis jumped,
+and a scale change animated every window. It passes on the fixed effect. `virtualScreenGeometryChanged` is
+emitted from `Workspace::geometryChanged` in both KWin 6.7.5 and 6.8.1 (`effecthandler.cpp`). Results are in
+[STATUS](../status/STATUS.md#window-motion-t31-adr-023-nested-kwin-681).

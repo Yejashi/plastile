@@ -2,9 +2,12 @@
 # Plastile package installer: a thin, non-invasive wrapper around kpackagetool6, plus the
 # persistence helper (helper/, ADR-020), which is built from source with CMake.
 #
-#   tools/install.sh install [SOURCE]   install the package (default SOURCE: package/)
-#   tools/install.sh upgrade [SOURCE]   replace an installed package in place
-#   tools/install.sh remove             uninstall the package
+#   tools/install.sh install [SOURCE]   install the package (default SOURCE: package/) and
+#                                       the Plastile Motion effect, which stays disabled
+#   tools/install.sh upgrade [SOURCE]   replace an installed package (and the effect) in place
+#   tools/install.sh remove             uninstall the package and the effect
+#   tools/install.sh install-effect     install or replace only the effect
+#   tools/install.sh remove-effect      uninstall only the effect
 #   tools/install.sh install-helper     build and install the persistence helper and its
 #                                       D-Bus activation file (also replaces an older one)
 #   tools/install.sh remove-helper      uninstall the persistence helper
@@ -14,6 +17,12 @@
 # zip built by tools/release.py. install/upgrade refuse to run unless the runtime
 # bundle (contents/code/plastile.mjs) is present in SOURCE. Without the helper Plastile
 # works and keeps its layout preferences in memory only.
+#
+# The effect (effect/, a KWin/Effect package with id plastile_motion) animates how windows
+# look while they move to a new frame; Plastile itself never animates. It is installed
+# disabled: KWin loads it only after it is turned on in System Settings > Desktop Effects.
+# Its source is $PLASTILE_EFFECT_SOURCE (a directory or a dist/plastile_motion-<version>.zip),
+# default the repository's effect/ directory.
 #
 # The helper goes to $PLASTILE_HELPER_PREFIX/libexec/plastile-state (default ~/.local)
 # and its activation file to $XDG_DATA_HOME/dbus-1/services (default ~/.local/share),
@@ -41,9 +50,13 @@ HELPER_BUILD=${PLASTILE_HELPER_BUILD:-$ROOT/build/helper-install}
 SERVICE_NAME=org.kde.plastile.State
 SERVICE_FILE=$DATA_HOME/dbus-1/services/$SERVICE_NAME.service
 STATE_DIR=${XDG_STATE_HOME:-$HOME/.local/state}/plastile
+EFFECT=plastile_motion
+EFFECT_TYPE=KWin/Effect
+EFFECT_TARGET=$DATA_HOME/kwin/effects/$EFFECT
+EFFECT_SOURCE=${PLASTILE_EFFECT_SOURCE:-$ROOT/effect}
 
 usage() {
-    sed -n '2,27p' "$0" | sed 's/^# \{0,1\}//'
+    sed -n '2,36p' "$0" | sed 's/^# \{0,1\}//'
 }
 
 die() {
@@ -75,6 +88,70 @@ check_bundle() {
     else
         die "source $src does not exist"
     fi
+}
+
+# The entries of a zip archive, one per line.
+zip_listing() {
+    if command -v unzip >/dev/null 2>&1; then
+        unzip -Z1 "$1" 2>/dev/null
+    elif command -v python3 >/dev/null 2>&1; then
+        python3 -I -c 'import sys, zipfile; print("\n".join(zipfile.ZipFile(sys.argv[1]).namelist()))' "$1"
+    else
+        return 1
+    fi
+}
+
+# Whether $EFFECT_SOURCE holds the effect package (metadata.json and contents/code/main.js).
+check_effect_source() {
+    esrc=$EFFECT_SOURCE
+    if [ -d "$esrc" ]; then
+        [ -f "$esrc/metadata.json" ] && [ -f "$esrc/contents/code/main.js" ] \
+            || die "$esrc is not the Plastile Motion effect package (metadata.json, contents/code/main.js)"
+    elif [ -f "$esrc" ]; then
+        elisting=$(zip_listing "$esrc") || die "$esrc is not a readable zip archive"
+        printf '%s\n' "$elisting" | grep -qx 'metadata.json' || die "$esrc has no metadata.json at the zip root"
+        printf '%s\n' "$elisting" | grep -qx 'contents/code/main.js' || die "$esrc lacks contents/code/main.js"
+    else
+        die "effect source $esrc does not exist (set PLASTILE_EFFECT_SOURCE)"
+    fi
+}
+
+# Install the effect; an installed one is replaced ($1 = upgrade) or left as it is ($1 = keep).
+# $2 = optional (alongside the script): a kpackagetool6 failure is reported and the script install
+# still succeeds, since Plastile works without the effect; otherwise it is fatal.
+put_effect() {
+    check_effect_source
+    if [ -e "$EFFECT_TARGET" ]; then
+        if [ "$1" = keep ]; then
+            printf '\nEffect: %s is already installed and was left as it is (upgrade replaces it).\n' "$EFFECT_TARGET"
+            return 0
+        fi
+        action=--upgrade
+    else
+        action=--install
+    fi
+    if ! "$KPT" --type "$EFFECT_TYPE" "$action" "$EFFECT_SOURCE"; then
+        [ "${2:-}" = optional ] || die "kpackagetool6 $action of the effect failed"
+        printf 'install.sh: warning: kpackagetool6 %s of the Plastile Motion effect failed; Plastile is installed and works without it (retry with: tools/install.sh install-effect)\n' "$action" >&2
+        return 0
+    fi
+    cat <<EOF
+
+Effect installed to: $EFFECT_TARGET (disabled: nothing was enabled or loaded)
+Plastile Motion animates how a window looks while it slides or resizes to the place Plastile
+(or any program) gave it; the window itself is already there. To turn it on:
+
+  System Settings > Window Management > Desktop Effects > tick "Plastile Motion" > Apply
+
+or, from a terminal in the same session (KWin loads it when it sees the change):
+
+  kwriteconfig6 --file kwinrc --group Plugins --key ${EFFECT}Enabled --notify true
+
+To turn it off, untick it or run the same command with false. Animation speed "Instant"
+(System Settings > General Behavior) also turns it off. This script prints these commands;
+it does not execute them. A running KWin reads the effect's files when it loads it: after an
+upgrade, turn the effect off and on again (or log out and in) to run the new version.
+EOF
 }
 
 print_enable_help() {
@@ -167,17 +244,20 @@ cmd_install() {
     src=${1:-$DEFAULT_SOURCE}
     need_tool
     check_bundle "$src"
+    check_effect_source
     if [ -e "$TARGET" ]; then
         die "$TARGET already exists; use 'upgrade' to replace it" 4
     fi
     "$KPT" --type "$TYPE" --install "$src"
     print_enable_help
+    put_effect keep optional
 }
 
 cmd_upgrade() {
     src=${1:-$DEFAULT_SOURCE}
     need_tool
     check_bundle "$src"
+    check_effect_source
     "$KPT" --type "$TYPE" --upgrade "$src"
     cat <<EOF
 
@@ -188,21 +268,48 @@ Management > KWin Scripts, or kwriteconfig6 + Scripting.start) is not enough: KW
 starts the older version again from its QML cache (measured in a nested session).
 Settings in kwinrc and your shortcut bindings are kept. This script restarts nothing.
 EOF
+    put_effect upgrade optional
 }
 
 cmd_remove() {
     need_tool
-    if [ ! -e "$TARGET" ]; then
+    if [ ! -e "$TARGET" ] && [ ! -e "$EFFECT_TARGET" ]; then
         die "$TARGET is not installed" 2
     fi
-    "$KPT" --type "$TYPE" --remove "$PLUGIN"
-    cat <<EOF
+    if [ -e "$TARGET" ]; then
+        "$KPT" --type "$TYPE" --remove "$PLUGIN"
+        cat <<EOF
 
 Removed: $TARGET
 The kwinrc [Plugins] ${PLUGIN}Enabled key and the [Script-${PLUGIN}] settings group were left
 untouched (this script never writes kwinrc). A running KWin keeps the loaded script
 until the session ends or the script is disabled.
 EOF
+    fi
+    if [ -e "$EFFECT_TARGET" ]; then
+        remove_effect
+    fi
+}
+
+remove_effect() {
+    "$KPT" --type "$EFFECT_TYPE" --remove "$EFFECT"
+    cat <<EOF
+
+Removed: $EFFECT_TARGET
+The kwinrc [Plugins] ${EFFECT}Enabled key and the [Effect-${EFFECT}] group were left untouched.
+A running KWin keeps a loaded effect until it is turned off or the session ends.
+EOF
+}
+
+cmd_install_effect() {
+    need_tool
+    put_effect upgrade
+}
+
+cmd_remove_effect() {
+    need_tool
+    [ -e "$EFFECT_TARGET" ] || die "$EFFECT_TARGET is not installed" 2
+    remove_effect
 }
 
 cmd_status() {
@@ -241,6 +348,21 @@ cmd_status() {
         printf 'helper    : BROKEN (%s names %s, which is not an executable)\n' "$SERVICE_FILE" "$exe"
     fi
     printf 'state     : %s\n' "$STATE_DIR"
+    if [ -d "$EFFECT_TARGET" ]; then
+        eversion=$(sed -n 's/.*"Version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$EFFECT_TARGET/metadata.json" | head -n 1)
+        printf 'effect    : installed (%s, version %s)\n' "$EFFECT_TARGET" "${eversion:-unknown}"
+    else
+        printf 'effect    : not installed (%s)\n' "$EFFECT_TARGET"
+    fi
+    eenabled="unset (default: off)"
+    if [ -f "$kwinrc" ]; then
+        evalue=$(awk -v key="${EFFECT}Enabled" '
+            /^\[/ { in_plugins = ($0 == "[Plugins]") ; next }
+            in_plugins && index($0, key "=") == 1 { sub(/^[^=]*=/, ""); print; exit }
+        ' "$kwinrc")
+        [ -z "$evalue" ] || eenabled=$evalue
+    fi
+    printf 'effect on : %s (kwinrc [Plugins] %sEnabled)\n' "$eenabled" "$EFFECT"
     printf 'kpackagetool6 --type %s --show %s:\n' "$TYPE" "$PLUGIN"
     "$KPT" --type "$TYPE" --show "$PLUGIN" 2>&1 | sed 's/^/  /' || true
 }
@@ -250,9 +372,11 @@ case "${1:-}" in
     upgrade) shift; cmd_upgrade "$@" ;;
     remove)  shift; cmd_remove ;;
     status)  shift; cmd_status ;;
+    install-effect) shift; cmd_install_effect ;;
+    remove-effect)  shift; cmd_remove_effect ;;
     install-helper) shift; cmd_install_helper ;;
     remove-helper)  shift; cmd_remove_helper ;;
     -h|--help|help) usage ;;
     "") usage >&2; exit 64 ;;
-    *) die "unknown subcommand '$1' (install|upgrade|remove|install-helper|remove-helper|status)" 64 ;;
+    *) die "unknown subcommand '$1' (install|upgrade|remove|install-effect|remove-effect|install-helper|remove-helper|status)" 64 ;;
 esac

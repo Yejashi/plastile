@@ -95,7 +95,8 @@ jobs:
         run: python3 tools/check_docs.py
 
       - name: Release package is reproducible (tools/release.py --check)
-        # Builds dist/plastile-<version>.kwinscript (script-only) and the persistence
+        # Builds dist/plastile-<version>.kwinscript (script-only), the Plastile Motion effect
+        # dist/plastile_motion-<version>.zip and the persistence
         # helper's source tarball dist/plastile-state-<version>.tar.gz twice and compares
         # bytes. It does not install anything (installation is exercised only in nested
         # sessions).
@@ -184,6 +185,7 @@ jobs:
           path: |
             package/contents/code/plastile.mjs
             dist/*.kwinscript
+            dist/plastile_motion-*.zip
             dist/plastile-state-*.tar.gz
             fixtures/client/build/plastile-fixture
             fixtures/xclient/build/plastile-xclient
@@ -299,9 +301,10 @@ jobs:
           # Expected SKIPs only (any other SKIP fails the job): QPainter compositing cannot run the GL
           # tile-editor effect, KWin normalizes output origins so a negative origin cannot occur, and the
           # sandbox image has no plasmashell or kcmshell6 (the real-panel and settings-dialog scenarios run on
-          # the reference host).
+          # the reference host). KWin loads no scripted effect without hardware OpenGL, so the Plastile Motion
+          # scenarios (ADR-023) skip; motion-package-T31 runs (install.sh), without its load checks.
           sudo tools/sandbox/run.sh -- python3 tests/integration/run.py --markdown artifacts/integration-summary.md \
-            --expect-skips native-editor-toggle-L14,output-negative-origin-G02,plasmashell-panels-O07,settings-dialog-T28
+            --expect-skips native-editor-toggle-L14,output-negative-origin-G02,plasmashell-panels-O07,settings-dialog-T28,motion-swap-T31,motion-client-cost-T31,motion-rapid-retarget-T31,motion-unload-mid-T31,motion-excluded-T31,motion-hit-test-T31,motion-instant-T31,motion-outputs-T31,motion-edges-T31
 
       - name: Job summary
         if: always()
@@ -375,9 +378,10 @@ jobs:
           # real-panel scenario and the settings dialog (the Nix environment has no plasmashell or kcmshell6), and
           # the helper's install.sh build (no compiler in the environment). The environment builds the persistence
           # helper itself (env.nix plastileState; run.sh exports PLASTILE_STATE_HELPER). replay-capture-T10 records
-          # fixtures but cannot replay them without node, which the environment does not carry.
+          # fixtures but cannot replay them without node, which the environment does not carry. llvmpipe is a
+          # software renderer, on which KWin loads no scripted effect: the Plastile Motion scenarios skip (ADR-023).
           tools/sandbox/nix/run.sh -- python3 tests/integration/run.py --markdown artifacts/integration-kwin68-summary.md \
-            --expect-skips output-negative-origin-G02,plasmashell-panels-O07,settings-dialog-T28,package-helper-install-T32,replay-capture-T10
+            --expect-skips output-negative-origin-G02,plasmashell-panels-O07,settings-dialog-T28,package-helper-install-T32,replay-capture-T10,motion-swap-T31,motion-client-cost-T31,motion-rapid-retarget-T31,motion-unload-mid-T31,motion-excluded-T31,motion-hit-test-T31,motion-instant-T31,motion-outputs-T31,motion-edges-T31
 
       - name: Diagnostics on failure (device nodes, first KWin log)
         if: failure()

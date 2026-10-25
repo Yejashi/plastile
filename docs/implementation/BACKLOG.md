@@ -258,6 +258,8 @@ If animation is desired, implement transform-only presentation with retargeting,
 
 **Acceptance:** rapid commands never queue behind animation; visual changes do not generate intermediate real-client resize streams; hit-testing matches actual interaction; disable mid-animation restores a usable desktop. Otherwise keep animation disabled and close as deferred.
 
+**State (2026-10-25):** closed as deferred by ADR-018, then reopened at the owner's request. It is implemented as the optional scripted effect Plastile Motion ([ADR-023](../design/DECISIONS.md#adr-023-window-motion-is-an-optional-transform-only-kwin-effect-plastile-motion)): `effect/`, `tests/core/motion.test.ts`, `tests/integration/scenarios_motion.py`. The acceptance clauses pass in nested KWin 6.8.1. Smoothness and perceived lag on physical displays are open.
+
 ## T32 — Build/package/install/update/remove
 
 **Milestone:** M7. **Depends on:** T26, T30.

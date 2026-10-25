@@ -133,7 +133,7 @@ Plastile places nothing in a floating context, and windows keep ordinary KDE beh
 **Off unless you select it**: set `layout` to `scrolling` (flat key or JSON, globally or in an override), or run *Scrolling layout* in a context. It is experimental: tested with mock and nested-KWin scenarios only, and not yet checked on physical monitors (see below).
 
 - **Strip:** each screen and desktop has a horizontal strip of columns. A new window gets a new column right of the focused one. Windows can share a column, stacked vertically (*consume* / *expel*). A column's width is a fraction of the usable width: ½ by default; *width-cycle* steps through ⅓, ½, ⅔ and full width. A column is never narrower than the minimum width of a window in it.
-- **Scrolling follows focus:** focusing a window by command, click, Alt+Tab or an application activating it scrolls the strip so the window's column is fully visible. With `lazy` (default) the strip scrolls only as far as needed and never past its ends; with `centered` the focused column is centred. An activated dialog floats, and its parent's column is scrolled into view. Scrolling moves windows without resizing them and is instantaneous (no animation).
+- **Scrolling follows focus:** focusing a window by command, click, Alt+Tab or an application activating it scrolls the strip so the window's column is fully visible. With `lazy` (default) the strip scrolls only as far as needed and never past its ends; with `centered` the focused column is centred. An activated dialog floats, and its parent's column is scrolled into view. Scrolling moves windows without resizing them and is instantaneous; the optional [Plastile Motion effect](CONFIGURATION.md#window-motion-the-plastile-motion-effect) can animate the columns that stay on screen, while a column scrolled in or out appears or disappears at once.
 - **Columns off screen** (not fully visible) are moved outside every monitor: above their own screen, or below, left or right of it when that place is taken, always nearest their own screen so KWin keeps them there. They keep their size. Plastile never hides windows with transparency, minimizing or taskbar flags. If a screen is surrounded by other screens on all four sides, columns that do not fit are kept at the screen's edge, overlapping, and the explanation says so.
 - **Leaving:** suspending, unloading, switching the context to another layout, disabling tiling there, a rule floating a window, or *Reconcile* brings every off-screen window back inside its screen's usable area.
 
@@ -199,6 +199,22 @@ Plastile does not fight you or the application indefinitely:
 
 Plastile never sets a window maximized, minimized, fullscreen or kept-above to make a layout fit; the one maximize state it changes is that of a window that opened maximized, which it un-maximizes once (`maximizedOnOpen`). It never changes KWin's focus policy and never moves the cursor. The window state it writes is limited to: frame geometry, activation and raising (focus commands, monocle), the output and desktop (send commands), releasing a native quick tile (adopt), and the border, when a rule asks for `border` (measured in nested KWin). Its only window of its own is the inspector, which is never tiled.
 
+## Window motion (optional)
+
+Plastile itself moves and resizes windows at once; there is no animation setting in Plastile. If you want windows
+to visibly slide and resize into place, enable the separate **Plastile Motion** desktop effect, installed with
+Plastile and off by default ([INSTALL](INSTALL.md#8-window-motion-optional),
+[settings](CONFIGURATION.md#window-motion-the-plastile-motion-effect)).
+
+- It changes only how windows are drawn for about 180 ms. The window is already at its new place: clicks go there,
+  and the application has its new size.
+- Rapid commands redirect the running animation; they never wait for it.
+- The global animation speed scales it, and *Instant* turns it off.
+- Dragging, maximize, fullscreen, newly opened windows, desktop switches, screen changes (including a scale
+  change) and scrolling columns entering or leaving the screen are not animated.
+- It animates any program's moves, not only Plastile's, because it cannot tell them apart.
+- Measured in nested KWin 6.8.1 only: smoothness on real displays (60/100/144 Hz) is not yet judged.
+
 ## Saved layout preferences
 
 Plastile remembers some of what you change with its commands across script reloads, KWin restarts and logins:
@@ -254,4 +270,4 @@ Idle, physical: three 300 s periods each with Plastile loaded and not loaded; Pl
 
 ## Where this project is going
 
-The user-visible scope today is the automatic tiler described above, plus the experimental scrolling and zones layouts. Drag previews, a zone editor and animations are later milestones ([roadmap](../implementation/ROADMAP.md)). Nothing in this guide is a promise about them. Design intent beyond what is implemented lives in the [behaviour specification](../design/BEHAVIOR_SPEC.md). Where that document and this guide disagree, this guide describes the code.
+The user-visible scope today is the automatic tiler described above, plus the experimental scrolling and zones layouts, and the optional Plastile Motion effect. Drag previews and a zone editor are later milestones ([roadmap](../implementation/ROADMAP.md)). Nothing in this guide is a promise about them. Design intent beyond what is implemented lives in the [behaviour specification](../design/BEHAVIOR_SPEC.md). Where that document and this guide disagree, this guide describes the code.

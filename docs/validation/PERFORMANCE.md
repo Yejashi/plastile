@@ -145,6 +145,33 @@ The two physical workloads did not use the same geometry. P00-switch ran on KWin
 9. Inspect worst events and correlate with write/solve counts, GC, topology, rule activation, client delay, or scheduling. Preserve traces for representative outliers.
 10. Summarize median/p95/p99, max, spread/confidence, sample count, and exclusions with reasons. Compare changes against noise and run-to-run variation, not only percent improvements.
 
+### 6.1 The motion effect in latency measurements
+
+Plastile Motion ([ADR-023](../design/DECISIONS.md#adr-023-window-motion-is-an-optional-transform-only-kwin-effect-plastile-motion))
+is a separate KWin effect, disabled by default. It animates *every* qualifying programmatic geometry change, not
+only Plastile's: KWin's keyboard quick tile, which is P6's baseline, animates under it too. Rules for any run that
+compares input-to-visible times:
+
+- **Identical effects on both sides.** Record `[Plugins] plastile_motionEnabled`, `[Effect-plastile_motion]`
+  `Duration`/`Easing` and the global animation speed (`kdeglobals [KDE] AnimationDurationFactor`) with every P6
+  block. Plastile and its baseline run in the same session with the same set of loaded effects
+  (`qdbus6 org.kde.KWin /Effects org.kde.kwin.Effects.loadedEffects`). A block with the effect on is never compared
+  with a baseline block with it off.
+- **Engine time is unchanged by the effect, and is measured as before.** `t1_dispatch` to `t4_request` and `t5_configure`
+  do not involve the effect. Nested (`motion-client-cost-T31`): with the effect on, the clients received the same
+  configures and Plastile did the same work, with command-to-configure and command-to-`frameGeometryChanged`
+  medians within noise of the effect-off run.
+- **Animation adds visual settle time, never engine time.** With the effect on, report three things separately:
+  - command acknowledgement (`t4_request`/`t5_configure`);
+  - the first visual response: the first presented frame that differs, which the effect draws at the start of the
+    move;
+  - the final settle (`t9_settled`): the last animated frame, about one duration after the last command, because
+    each retarget restarts the duration.
+
+  Never fold the duration into an engine or request metric. A result is labelled "motion on, Duration=…, speed
+  factor …".
+- **The P6 default is the effect off**, as shipped. A "motion on" block is an extra block, not a replacement.
+
 ## 7. Attribution and optimization order
 
 Use counters to test hypotheses:

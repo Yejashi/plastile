@@ -42,7 +42,7 @@ Verdicts from a card-by-card audit against each acceptance text (2026-10-18), up
 |---|---|
 | Complete (nested evidence) | T00–T03, T05, T08, T10, T13–T16, T18, T19, T22–T25, T27 (helper, ADR-020), T28 (no live preview: ADR-019), T29, T30 |
 | Complete (unit/replay evidence) | T09, T11, T12, T17 (its ADR-021 addition, windows that open maximized, also nested: `maximized-open-*-T17`), T21 |
-| Closed as deferred | T31 (ADR-018) |
+| Reopened and complete (nested evidence), physical judgement open | T31: the optional Plastile Motion effect (ADR-023, supersedes ADR-018's deferral; [below](#window-motion-t31-adr-023-nested-kwin-681)) |
 | Superseded by G1 | T06, T07 (native spike; ADR-003) |
 | Partial | T04 (nested baselines committed with raw samples: no tiler, quick tile, Polonium 1.2.2; physical half open), T20 (G2 report: one budget not met, see Gates), T26 and T32 (no release-to-release upgrade yet: the old side is a past commit relabelled), T33 (6.8 job provisional: RSS noise), T34 (nested protocol run in the G2 report; physical soak and latency open; 6.8 RSS), T35 ([G3 checklist](G3_CHECKLIST.md) written: candidate, not a qualified release; user docs audited; licence and physical gates open), T36/T37 (experimental, ADR-014) |
 
@@ -70,6 +70,60 @@ trips at baseline (max 0.76 ms, against a 31.9 s stall with a held lock before)
 ([evidence](evidence/persistence-helper-cost.json)). The first solve waits for the saved state for at most
 250 ms (released 0–2 ms after load with the helper running, 6–11 ms when it is activated). A saved float names
 the window it came from (schema 2), so a window the user moved while Plastile was disabled keeps its place.
+
+## Window motion (T31, ADR-023), nested KWin 6.8.1
+
+At the owner's request T31 was reopened. Window motion ships as **Plastile Motion**, a separate scripted KWin effect
+(`effect/`, id `plastile_motion`). It is disabled by default, installed by `tools/install.sh`, and released as
+`dist/plastile_motion-<version>.zip`. It animates only the picture, a translate and scale of the window's current
+texture, from the old frame to the new one. Plastile is unchanged: one immediate frame request per window, and
+`animation` stays inert.
+
+Nested results: branch `wf/motion`, KWin 6.8.1, OpenGL ES on the reference host's GPU, virtual backend at 60 Hz
+([evidence](evidence/motion-T31.json); oracles: KWin frames, fixture configures, ScreenShot2 images).
+
+- **Unit:** 18/18 (`tests/core/motion.test.ts`; 2 added in review).
+- **Nested scenarios at `b1d4e03`:** `scenarios_motion.py`, 9/9 scenarios and 76/76 checks.
+  - Swap: starts for the two moved windows only. Both end at the real frame 214 ms after the command, against a
+    180 ms duration.
+  - Ten ratio steps 25 ms apart (231 ms in all): one start and eight retargets per window, one end 186 ms after the
+    last command.
+  - The same configures reached every client with the effect on and off, and Plastile did the same work (one solve
+    per command, 0 corrections).
+  - Latency, effect on against off: command to configure p50 1.22 against 1.29 ms; command to
+    `frameGeometryChanged` p50 2.6 against 3.1 ms.
+  - Unloading, or disabling through kwinrc with a notification, 0.5 s into a 2 s animation: every window is drawn
+    at its real rectangle 0.15 s later.
+  - Not animated: drag, resize, maximize, fullscreen, a new window's placement, and the speed *Instant*.
+  - A click lands on the real rectangle mid-animation.
+  - Removing an output stops the running animations.
+- **Full nested suite** at `209edcd` (the effect before the debug-formatting guard and the hit-test scenario):
+  1967/1967 checks, 149/149 scenarios, 1 expected SKIP (`output-negative-origin-G02`). At `b1d4e03` (the branch head's code): 1971/1971 checks,
+  150/150 scenarios, the same expected SKIP.
+- **Adversarial review** (branch `wf/motion-review`, code at `233fd4f`, nested KWin 6.8.1):
+  - Found and fixed: the scrolling layout's parked columns sit above the output (negative y). A column scrolled in
+    or out logged `start`, but `AnimationEffect` ignores a negative `Position` coordinate, so its y jumped while x
+    moved (on a lower output it would have flown in from below). Such changes now skip with `reason=offscreen`;
+    columns that stay visible still slide.
+  - Found and fixed: a scale change animated the re-fit of every window. `virtualScreenGeometryChanged` is now an
+    output change (`reason=transition`).
+  - New scenario `motion-edges-T31` (13 checks): scrolling, scale change, minimize/restore, desktop switch, keyboard
+    quick tile, suspend/resume, close mid-animation. On the previous effect it failed 3 checks (scrolling twice,
+    scale); it passes now.
+  - Full nested suite at `233fd4f`: 1984/1984 checks, 151/151 scenarios, 1 expected SKIP
+    (`output-negative-origin-G02`); the package and upgrade scenarios are included. `npm run check` 535/535.
+  - Unchanged: `src/` differs from `a0d66a0` only in the `animation` error message.
+- **CI:** KWin loads scripted effects only on hardware OpenGL. In both CI jobs (QPainter 6.7.5, llvmpipe 6.8.0) the
+  motion scenarios are expected SKIPs, except `motion-package-T31`, which runs without its load checks. Not yet
+  observed on a hosted run.
+- **Open, physical only:**
+  - smoothness at 144, 100 and 60 Hz;
+  - perceived lag of the picture behind input;
+  - stretched content with real applications;
+  - GPU cost.
+
+  P6 runs with the effect off unless a block is labelled "motion on"
+  ([PERFORMANCE §6.1](../validation/PERFORMANCE.md#61-the-motion-effect-in-latency-measurements)).
 
 ## Outstanding failures
 
@@ -101,7 +155,8 @@ Nested only; none is a physical input-to-photon measurement.
 
 1. Physical, now on KWin 6.8.1 (the reference desktop updated; build `0a0798c` installed and loaded after a re-login on 2026-10-25). Done: windows that open maximized (ADR-021): at login 5 restored windows were un-maximized and tiled and 1 kept (no free slot, by design); a new kitty tiled and settled with 0 corrections, but it did not open maximized this time, so the owner's usual launch path is not yet re-checked. P8a soak during normal use, 1 h (the owner shortened it from 4 h): connections grew by exactly 17 per tracked window and were flat at a constant window count, KWin RSS flat within 2.6 MiB at 10 windows, errors 0 ([evidence](evidence/physical-recheck-20261025.json)). Waiting for the owner to be away from the machine: the hidden-desktop panel case (P3, `a5642dd`) and P6 at 100 Hz with P00-switch-tiled. Raw results stay in `artifacts/physical/recheck-20261025/`.
 2. Done: QV4 `for...of` deletion audit (ADR-022). Five loops could skip an entry when a host read re-keyed an output mid-walk (identical second monitor); fixed, each fix proven to fail when reverted in QV4 (`qml` tool, not KWin), and `tools/itercheck.ts` now fails the build on `for...of`/`next()`/`yield*`/`Array.from(…, fn)` over a non-array in `src/`. Command-path A/B: no change beyond noop outer p50 0.346→0.359 ms (nested; [evidence](evidence/qv4-iteration-perf.json)). Open: whether KWin ever delivers that first key lookup inside a loop needs two identical monitors (physical). Optional: the adapter's per-write allocations (outer p99 1.1–1.6 ms). Done on `wf/rekey`: the adapter's queries no longer re-key the engine. New keys are staged and committed on the adapter's deferred turn or at `screensChanged`, with the same renames in the same order. The final state is the same as before in nine event orders and a two-stage re-key (unit; the review added the two-stage tests after a mutation check found staged-order bugs undetected) and in the QV4 scenarios ([evidence](evidence/output-rekey-convergence.json)). CI's `native-tools` job now runs the QV4 tests with `PLASTILE_REQUIRE_QV4=1` (hosted run 39300522170: 17/17, skipped 0).
-3. The open rows of the [G3 checklist](G3_CHECKLIST.md); owner decisions: licence (ADR-012), scrolling/zones (ADR-014), P2d/P2e.
+3. Physical, when the owner wants motion: enable Plastile Motion on the reference desktop and judge smoothness and lag at 144, 100 and 60 Hz (swap, grow/shrink bursts, scrolling); merge `wf/motion` only after that judgement.
+4. The open rows of the [G3 checklist](G3_CHECKLIST.md); owner decisions: licence (ADR-012), scrolling/zones (ADR-014), P2d/P2e.
 
 ## Conventions
 

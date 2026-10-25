@@ -87,7 +87,7 @@ A settings patch is used by `defaults` and by each override's `set`. Every field
 | `liveResize` | boolean | Default `false`: during a mouse resize of a tile, the neighbours stay put and follow once on release. When `true` (master/stack and BSP only), the neighbours follow the dragged edge while the mouse moves: at most one layout solve per update of the resized window (measured in nested KWin: 60 solves and 120 neighbour frame requests per second for two neighbours at 60 Hz), only neighbours whose frame changes are written, the resized window is never written, and the release commits the final ratio as before. A cancelled resize returns the neighbours to their slots. JSON only. |
 | `maximizedOnOpen` | `tile`, `keep` | As the flat key. The value of the context the window opens in decides. |
 | `multiContextWindows` | `"float"` only | As above: windows on several desktops or activities always float. |
-| `animation` | `{ "enabled": false, "durationMs": 0 }` only | As above: no animation exists. |
+| `animation` | `{ "enabled": false, "durationMs": 0 }` only | Plastile itself always moves windows at once. Window motion is the separate, optional [Plastile Motion effect](#window-motion-the-plastile-motion-effect), configured in its own group; any other value here is rejected with a message that says so. |
 
 ### Scrolling layout settings (experimental)
 
@@ -380,6 +380,41 @@ The line is `plastile notice explain {...}` with these fields:
 
 **Where the log goes.** In the nested tests, the line was read from the compositor's captured stderr. Without `QT_FORCE_STDERR_LOGGING`, Qt sends script log output to the user journal (observed during environment discovery, [ENVIRONMENT](../status/ENVIRONMENT.md)). In a physical Plasma session (the reference desktop, KWin 6.7.5) the explain line was read from the user journal with `journalctl --user` ([TROUBLESHOOTING](TROUBLESHOOTING.md#reading-the-log)).
 
+## Window motion: the Plastile Motion effect
+
+Plastile moves and resizes windows at once and has no animation setting of its own. The optional
+**Plastile Motion** desktop effect (installed by `tools/install.sh`, [INSTALL](INSTALL.md#8-window-motion-optional))
+animates how a window *looks* while it slides or resizes to its new place. The window itself is already there:
+clicks, focus and the application's size switch at once, and the picture catches up within the duration. During
+those few frames a click goes where the window now is, not where its picture still is. The animation scales the
+window's current picture, so content looks briefly stretched when a window changes shape.
+
+It is off until you enable it in *System Settings > Window Management > Desktop Effects*, where its *Configure*
+button edits these keys in `~/.config/kwinrc`, group `[Effect-plastile_motion]` (not `[Script-plastile]`):
+
+| Key | Values | Meaning |
+|---|---|---|
+| `Duration` | 0–2000 | Length in ms at normal animation speed. `0` (default) means 180 ms. |
+| `Easing` | 0–4 | 0 decelerate, cubic (default); 1 decelerate, quartic; 2 decelerate, quadratic; 3 accelerate then decelerate; 4 linear. |
+| `Debug` | `true`, `false` | Logs every decision (`plastile_motion start/retarget/end/skip/cancel`) to KWin's log. Default `false`; diagnostics only. |
+
+- **The global animation speed** (*System Settings > General Behavior > Animation speed*) scales the duration, and
+  **Instant** turns the effect off entirely. Use it for reduced motion.
+- **What is animated:** any change of a normal window's place or size made by a program while the window is
+  visible. That includes Plastile's commands and re-tiling, other scripts, KWin's keyboard quick tiling, and an
+  application resizing itself. The effect cannot tell who made the change.
+- **What is not animated:**
+  - windows you drag or resize with the mouse (and, during that, windows moved around them);
+  - maximize and fullscreen changes (KWin's own *Maximize* effect handles maximize);
+  - a window's first placement when it opens;
+  - switches of desktop, activity or screen layout (screens added or removed, a scale, resolution or position
+    change), and show desktop;
+  - a scrolling-layout column that scrolls in from, or out to, its parked place off the screen: it appears or
+    disappears at once, while the columns that stay on screen slide;
+  - minimized or hidden windows, and anything while Overview or another fullscreen effect is open;
+  - dialogs, popups and Plastile's own windows.
+- **Rapid commands do not queue:** a new move redirects the running animation from where the window is drawn.
+
 ## Validation reference
 
 **Rejected at activation** (the whole revision is dropped):
@@ -394,7 +429,7 @@ The line is `plastile notice explain {...}` with these fields:
 - `configJson` longer than 524,288 characters
 - matchers with none or several of `exact`, `glob` and `regex`
 - unsupported regex flags, or patterns that do not compile
-- `multiContextWindows` or `animation` at any non-inert value
+- `multiContextWindows` or `animation` at any non-inert value (animation lives in the [Plastile Motion effect](#window-motion-the-plastile-motion-effect))
 - a rule action this version does not support (`layout`, placement on an output, desktop or activity, `overflow`), each with the alternative in the message
 - a `minSize` with neither `width` nor `height`, or a value outside 1–8192
 - a scrolling `policy` other than `lazy` or `centered`, a width outside (0, 1], or `widthPresets` that is empty, longer than 8 or not strictly ascending

@@ -64,7 +64,7 @@ kpackagetool6 --type KWin/Script --remove plastile
 
 This copies the package to `~/.local/share/kwin/scripts/plastile/` (or `$XDG_DATA_HOME/kwin/scripts/plastile/`).
 
-**`tools/install.sh`** wraps exactly these commands (`install`, `upgrade`, `remove`, `status`) and adds `install-helper` and `remove-helper` for the [persistence helper](#persistence-helper). It refuses to install a package without the built bundle. It never enables, reloads or restarts anything and never writes `kwinrc`. `python3 tools/release.py --out dist` builds a `dist/plastile-<version>.kwinscript` archive, and both `kpackagetool6` and `install.sh` accept that archive instead of the `package` directory. The physical runs installed with `tools/install.sh install` and `install-helper`.
+**`tools/install.sh`** wraps exactly these commands (`install`, `upgrade`, `remove`, `status`) and adds `install-helper` and `remove-helper` for the [persistence helper](#persistence-helper). `install`, `upgrade` and `remove` also install, replace and remove the optional [Plastile Motion effect](#8-window-motion-optional), which stays disabled until you turn it on. It refuses to install a package without the built bundle. It never enables, reloads or restarts anything and never writes `kwinrc`. `python3 tools/release.py --out dist` builds a `dist/plastile-<version>.kwinscript` archive, and both `kpackagetool6` and `install.sh` accept that archive instead of the `package` directory. The physical runs installed with `tools/install.sh install` and `install-helper`.
 
 What was measured (nested KWin 6.7.5, kpackagetool6 2.0, package installed into the session's private data directory):
 
@@ -227,3 +227,39 @@ If tiling misbehaves and you need your desktop back at once, without logging out
 4. **Start it without your configuration:** turn it off, remove the `[Script-plastile]` group from `~/.config/kwinrc` (keep a copy), turn it on again.
 
 Never use `kwin_wayland --replace` to recover: on Wayland it ends your session. [TROUBLESHOOTING](TROUBLESHOOTING.md) has the diagnostics to collect first if you want to report the problem.
+
+## 8. Window motion (optional)
+
+Plastile moves windows at once. If you want to see them slide and resize into place, enable the separate
+**Plastile Motion** desktop effect (KWin effect id `plastile_motion`, package `effect/`). It only changes how
+windows are drawn for a moment; Plastile, the applications and the window positions behave exactly as without it
+([ADR-023](../design/DECISIONS.md#adr-023-window-motion-is-an-optional-transform-only-kwin-effect-plastile-motion)).
+
+```sh
+tools/install.sh install-effect   # also done by tools/install.sh install / upgrade
+tools/install.sh status           # "effect" and "effect on" lines
+tools/install.sh remove-effect    # also done by tools/install.sh remove
+```
+
+`install-effect` runs `kpackagetool6 --type KWin/Effect --install effect` (or `--upgrade`), copying it to
+`~/.local/share/kwin/effects/plastile_motion/`. `PLASTILE_EFFECT_SOURCE` selects another source, such as the
+`dist/plastile_motion-<version>.zip` that `tools/release.py` builds. Nothing is enabled, and `kwinrc` is not written.
+
+**Turn it on:** *System Settings > Window Management > Desktop Effects*, tick *Plastile Motion*, Apply. Its
+*Configure* button sets the duration and easing ([CONFIGURATION](CONFIGURATION.md#window-motion-the-plastile-motion-effect)).
+From a terminal in the same session:
+
+```sh
+kwriteconfig6 --file kwinrc --group Plugins --key plastile_motionEnabled --notify true
+```
+
+KWin loads it as soon as it sees the change (`--notify`; without it the change waits for the next login).
+Measured in nested KWin 6.8.1: both this command and an effect installed while KWin was running loaded at once.
+
+**Turn it off:** untick it, or run the same command with `false`; or set the global animation speed to *Instant*
+(*System Settings > General Behavior*), which turns off this and KWin's other animations. Windows are drawn at
+their real place from the next frame, even in the middle of an animation (measured in nested KWin 6.8.1).
+
+**Where it works:** KWin runs scripted effects only with OpenGL compositing on a hardware renderer. With software
+rendering (llvmpipe) or QPainter compositing it is not loaded and nothing is animated. It has not been run in a
+physical session yet; smoothness on real displays is unverified.
