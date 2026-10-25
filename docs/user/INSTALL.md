@@ -5,7 +5,7 @@ Plastile is a KWin script package (`KWin/Script`, plugin id `plastile`). Nothing
 **Supported target:** KWin 6.7 on Wayland (a Plasma 6 Wayland session; XWayland applications inside it are tiled, a Plasma X11 session is not supported). The package declares `X-Plasma-API-Minimum-Version: 6.7`. Versions exercised:
 
 - **KWin 6.7.5:** nested sessions on the reference host and in CI; a physical session on the reference desktop (build `97fec4a`; the physical runbook is not complete); and, by hand, a laptop at scale 1.35 (an earlier build).
-- **KWin 6.8.0:** only in a provisional CI job (nested). Its reload memory checks fail in some runs on KWin 6.8's own allocation, so 6.8 is not declared supported yet.
+- **KWin 6.8:** 6.8.1 in nested sessions on the reference host (the full suite passes, 2026-10-25); 6.8.0 in a provisional CI job, whose reload memory checks fail in some runs on KWin 6.8.0's own allocation. The physical checks on 6.8.1 are not finished, so 6.8 is not declared supported yet.
 - Any other version: untested.
 
 This is a release candidate, not a release ([status](README.md#status-read-this-first), [G3 checklist](../status/G3_CHECKLIST.md)). Plastile has no licence yet (`"License": "Undecided"` in `metadata.json`, [ADR-012](../design/DECISIONS.md#adr-012-license-and-upstream-reuse-are-deliberate)).

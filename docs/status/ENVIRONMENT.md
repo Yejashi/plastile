@@ -10,7 +10,7 @@ Collected 2026-10-17 with `python3 tools/collect_environment.py --publish docs/s
 | CPU / RAM | AMD Ryzen 5 5600X (12 logical CPUs), 31.2 GiB; governor `powersave`, EPP `balance_performance` |
 | GPU / driver | AMD Radeon RX 9070 XT (Navi 48, radeonsi gfx1201), Mesa 26.2.4, OpenGL 4.6 core, EGL |
 | Session | Plasma 6 **Wayland** (`XDG_SESSION_TYPE=wayland`), KWin compositing type OpenGL |
-| KWin / Plasma | `kwin 6.7.5-3`, `plasma-workspace 6.7.5-3`, `breeze 6.7.5-1`, `kdecoration 6.7.5-1` |
+| KWin / Plasma | `kwin 6.7.5-3`, `plasma-workspace 6.7.5-3`, `breeze 6.7.5-1`, `kdecoration 6.7.5-1`. **Updated 2026-10-25** to `kwin 6.8.1`, `plasma-workspace 6.8.1-1`, KF 6.31.0 (Qt 6.12.0): results from that date on are 6.8.1 and say so |
 | Qt / KF | Qt 6.12.0 (`qt6-base 6.12.0-2`, `qt6-declarative 6.12.0-1`, `qt6-wayland 6.12.0-1`); KF 6.30.0 |
 | XWayland | `xorg-xwayland 24.1.14-1` (live session runs KWin with `--xwayland`) |
 | Wayland | `wayland 1.26.0`, `wayland-protocols 1.49` |
