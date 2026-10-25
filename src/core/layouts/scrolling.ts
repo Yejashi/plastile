@@ -73,6 +73,12 @@ export function columnPixels(fraction: number, span: number, gap: number, minWid
   return Math.max(1, Math.floor(fraction * (span + gap) - gap + 1e-9), Math.ceil(minWidth - 1e-9));
 }
 
+function widestMin(ids: readonly WindowId[], input: SolveInput): number {
+  let minW = 0;
+  for (const id of ids) minW = Math.max(minW, (input.constraints.get(id)?.minFrame ?? NO_MIN).width);
+  return minW;
+}
+
 /** Lay out the columns that hold at least one of `ids` (participants). */
 export function strip(state: ScrollState, input: SolveInput, ids: readonly WindowId[]): Strip {
   const set = new Set(ids);
@@ -84,9 +90,7 @@ export function strip(state: ScrollState, input: SolveInput, ids: readonly Windo
   for (const column of state.columns) {
     const members = column.windows.filter((id) => set.has(id));
     if (members.length === 0) continue;
-    let minW = 0;
-    for (const id of members) minW = Math.max(minW, (input.constraints.get(id)?.minFrame ?? NO_MIN).width);
-    const width = columnPixels(column.width, span, gap, minW);
+    const width = columnPixels(column.width, span, gap, widestMin(members, input));
     columns.push({ column, ids: members, x, width });
     x += width + gap;
   }
@@ -313,25 +317,52 @@ function setWidth(state: ScrollState, i: number, width: number): ScrollState {
   return withColumns(state, columns);
 }
 
-/** Next preset strictly wider than the column's width, wrapping to the first. */
-export function cycleWidth(state: ScrollState, id: WindowId, presets: readonly number[]): Outcome {
+interface ShownWidth {
+  /** The fraction the column is shown at: the stored one, or more where a member's minimum holds it wider. */
+  readonly fraction: number;
+  readonly px: number;
+  /** Pixel width the column would be shown at with fraction `f`. */
+  readonly pixels: (f: number) => number;
+}
+
+/**
+ * The width of column `i` as shown. A member's minimum can hold a column wider than its stored
+ * fraction; stepping the stored value inside that hidden range would change nothing on screen
+ * (grow stuck below the minimum, a drag snapping back), so width changes start from the shown
+ * width and keep only results that move it (BEHAVIOR §4, §8; master-stack's moveDivider).
+ */
+function shownWidth(state: ScrollState, i: number, input: SolveInput): ShownWidth {
+  const col = state.columns[i];
+  const st = strip(state, input, input.ids);
+  let minW = 0;
+  for (const c of st.columns) if (c.column === col) { minW = widestMin(c.ids, input); break; }
+  const pixels = (f: number) => columnPixels(f, st.span, st.gap, minW);
+  const px = pixels(col.width);
+  return { fraction: Math.max(col.width, (px + st.gap) / (st.span + st.gap)), px, pixels };
+}
+
+/** Next preset strictly wider than the column's shown width, wrapping to the first. */
+export function cycleWidth(state: ScrollState, id: WindowId, presets: readonly number[], input: SolveInput): Outcome {
   const i = columnIndex(state, id);
   if (i < 0) return same(state, "window not in the strip");
   if (presets.length === 0) return same(state, "no width presets");
-  const cur = state.columns[i].width;
+  const shown = shownWidth(state, i, input);
+  const cur = shown.fraction;
   let next = presets[0];
   for (const p of presets) if (p > cur + 1e-6) { next = p; break; }
   if (Math.abs(next - cur) < 1e-9) return same(state, "only one width preset");
+  if (Math.abs(shown.pixels(next) - shown.px) < 0.5) return same(state, "width clamped by minimum size");
   return { state: setWidth(state, i, next), changed: true };
 }
 
-/** Change the column's width fraction by `delta` (grow/shrink). */
-export function resizeColumn(state: ScrollState, id: WindowId, delta: number): Outcome {
+/** Change the column's shown width fraction by `delta` (grow/shrink, a dragged column edge). */
+export function resizeColumn(state: ScrollState, id: WindowId, delta: number, input: SolveInput): Outcome {
   const i = columnIndex(state, id);
   if (i < 0) return same(state, "window not in the strip");
-  const cur = state.columns[i].width;
-  const next = clamp(cur + delta, WIDTH_MIN, WIDTH_MAX);
-  if (Math.abs(next - cur) < 1e-9) return same(state, "width at limit");
+  const shown = shownWidth(state, i, input);
+  const next = clamp(shown.fraction + delta, WIDTH_MIN, WIDTH_MAX);
+  if (Math.abs(next - shown.fraction) < 1e-9) return same(state, "width at limit");
+  if (Math.abs(shown.pixels(next) - shown.px) < 0.5) return same(state, "width clamped by minimum size");
   return { state: setWidth(state, i, next), changed: true };
 }
 
@@ -393,7 +424,7 @@ function resizeBoundary(state: ScrollState, cmd: Extract<LayoutCommand, { kind: 
   if (cmd.edge === "left" || cmd.edge === "right") {
     // Dragging the right edge right, or the left edge left, widens the column.
     const px = cmd.edge === "right" ? cmd.delta : -cmd.delta;
-    return resizeColumn(state, cmd.id, px / (st.span + st.gap));
+    return resizeColumn(state, cmd.id, px / (st.span + st.gap), input);
   }
   const col = state.columns[i];
   const set = new Set(input.ids);
@@ -469,7 +500,7 @@ export const scrolling: Layout<ScrollState> = {
     switch (cmd.kind) {
       case "ratio":
         if (input.focused === null) return same(state, "no focused column");
-        return resizeColumn(state, input.focused, cmd.delta);
+        return resizeColumn(state, input.focused, cmd.delta, input);
       case "equalize": {
         if (state.columns.every((c) => Object.keys(c.weights).length === 0)) return same(state, "already equal");
         return { state: withColumns(state, state.columns.map((c) => ({ id: c.id, windows: c.windows, width: c.width, weights: {} }))), changed: true };

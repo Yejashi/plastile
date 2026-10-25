@@ -2795,16 +2795,19 @@ export class Engine {
   private scrollCommand(c: Ctx, r: Rec | null, action: string): { status: CommandStatus; reason?: string; targets: string[] } {
     if (this.layoutKind(c) !== "scrolling") return { status: "noop", reason: "the layout here is not scrolling", targets: [] };
     if (!r || !this.participates(r) || !sameContext(r.ctx, c.key)) return { status: "noop", reason: "active window is not tiled here", targets: [] };
+    if (action !== "consume" && action !== "expel" && action !== "width-cycle" && action !== "center") {
+      return { status: "rejected", reason: "unsupported command", targets: [] };
+    }
     const state = this.layoutState(c, "scrolling") as ScrollState;
+    // Widths and the view are measured on the strip as shown.
+    const area = this.host.workArea(c.key.output, c.key.desktop);
+    if (!isValidArea(area)) return { status: "noop", reason: "no usable area", targets: [] };
+    const input = this.solveInput(c, area);
     let o;
     if (action === "consume") o = scrollConsume(state, r.id);
     else if (action === "expel") o = scrollExpel(state, r.id);
-    else if (action === "width-cycle") o = cycleWidth(state, r.id, this.ctxSettings(c).scrolling.widthPresets);
-    else if (action === "center") {
-      const area = this.host.workArea(c.key.output, c.key.desktop);
-      if (!isValidArea(area)) return { status: "noop", reason: "no usable area", targets: [] };
-      o = scrollCentre(state, r.id, this.solveInput(c, area));
-    } else return { status: "rejected", reason: "unsupported command", targets: [] };
+    else if (action === "width-cycle") o = cycleWidth(state, r.id, this.ctxSettings(c).scrolling.widthPresets, input);
+    else o = scrollCentre(state, r.id, input);
     if (!o.changed) return { status: "noop", reason: o.reason ?? "no change", targets: [] };
     c.states.scrolling = o.state;
     this.solveNow(c);

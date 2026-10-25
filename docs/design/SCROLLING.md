@@ -153,7 +153,9 @@ Refinements and deviations, each with its reason:
    column only as far as that clamp allows. `centered` always centres the focused column, also at the ends.
 5. **Column pixel width** is `floor(fraction × (usable + gap) − gap)`, at least the widest member's minimum.
    Fractions that sum to 1 then fill the usable width exactly with their gaps, and rounding never makes a
-   column cross the area edge and get parked.
+   column cross the area edge and get parked. Width changes (grow/shrink, width-cycle, a dragged column
+   edge) start from the width as shown, which a minimum can hold above the stored fraction, and a change
+   that leaves the shown width the same is a no-op ("width clamped by minimum size").
 6. **Visibility tolerance.** A column is visible when its projection lies inside the area within the
    ordinary ½ px tolerance; everything else, including a column crossing an edge by one pixel, is parked.
 7. **Commands not listed in §4.** `swap.up/down` and `move.up/down` move the window within its column;

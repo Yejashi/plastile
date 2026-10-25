@@ -162,6 +162,31 @@ test("consume, expel, width-cycle, center and swap are accepted and keep the mod
   assert.ok(inside(rect(0, 0, 1280, 800), h.windows.get(h.active!)!.frame));
 });
 
+test("grow, shrink and width-cycle on a column held wide by a minimum: only changes that show are accepted", () => {
+  const min900 = { minFrame: { width: 900, height: 1 }, maxFrame: { width: Infinity, height: Infinity }, fixed: false };
+  const h = new MockHost();
+  const e = h.start({ settingsFor: () => SCROLL });
+  h.open("a", { constraints: min900 });
+  h.activate("a");
+  h.open("b");
+  h.activate("b");
+  h.drain();
+  h.activate("a");
+  h.drain();
+  assert.equal(h.windows.get("a")!.frame.width, 900);
+  const writes = h.writes.length;
+  const r = e.execute("plastile.resize.shrink");
+  assert.equal(r.status, "noop");
+  assert.equal(r.reason, "width clamped by minimum size");
+  assert.equal(h.writes.length, writes);
+  assert.equal(e.execute("plastile.resize.grow").status, "accepted");
+  h.drain();
+  assert.ok(h.windows.get("a")!.frame.width > 900, "the first grow shows");
+  assert.equal(e.execute("plastile.scroll.width-cycle").status, "accepted");
+  h.drain();
+  assert.equal(h.windows.get("a")!.frame.width, 1264, "the next preset wider than shown: full width");
+});
+
 test("focus left/right: no wrap by default; with focusWrap the strip wraps to its other end; up/down never wrap", () => {
   const ids = ["a", "b", "c", "d"];
   {

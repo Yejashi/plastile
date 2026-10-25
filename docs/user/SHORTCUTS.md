@@ -53,7 +53,7 @@ Every Plastile command is one KWin global shortcut. All of them are registered u
 | `plastile.layout.mirror-vertical` | Mirror layout vertically | *unbound* | BSP only: flips every stacked split. |
 | `plastile.scroll.consume` | Scrolling: move window into the column on the left | *unbound* | Scrolling layout only: the focused window leaves its column and joins the bottom of the column on its left. An emptied column is removed. No-op in the first column or in other layouts. |
 | `plastile.scroll.expel` | Scrolling: move window out into its own column | *unbound* | Scrolling layout only: the focused window leaves a shared column and gets its own column just right of it, with the same width. No-op when it is already alone. |
-| `plastile.scroll.width-cycle` | Scrolling: cycle column width | *unbound* | Scrolling layout only: the focused column steps to the next wider width preset (default ⅓, ½, ⅔, full), wrapping to the narrowest. A column is never narrower than the minimum width of a window in it. |
+| `plastile.scroll.width-cycle` | Scrolling: cycle column width | *unbound* | Scrolling layout only: the focused column steps to the next preset wider than it is shown (default ⅓, ½, ⅔, full), wrapping to the narrowest. A column is never narrower than the minimum width of a window in it, so it can be shown wider than its preset; a step that would not change its width on screen is a no-op. |
 | `plastile.scroll.center` | Scrolling: centre focused column | *unbound* | Scrolling layout only: scrolls so the focused column is centred. With the default `lazy` policy the strip does not scroll past its first or last column, so an end column is centred only as far as that allows. |
 | `plastile.zone.assign-1` … `plastile.zone.assign-9` | Zones: assign window to zone 1 … 9 | *unbound* | Zones layout only: places the active window in that zone of the context's zone layout (one write). No-op when it is already there or the zone layout has fewer zones. |
 | `plastile.zone.next` | Zones: move window to the next zone | *unbound* | Zones layout only: moves the active window to the next zone, wrapping to zone 1. A window in no zone goes to zone 1. |
@@ -185,7 +185,7 @@ In a context using the experimental scrolling layout ([README](README.md#scrolli
 | *Swap left/right*, *Move tile left/right* | Moves the focused column one place left or right. |
 | *Swap up/down*, *Move tile up/down* | Moves the focused window up or down within its column. |
 | *Swap next/previous/master* | Exchanges the focused window with the next or previous window in strip order, or with the first one. |
-| *Grow/Shrink focused tile* | Widens or narrows the focused column by `ratioStep` (as a fraction of the usable width, between 0.1 and 1). |
+| *Grow/Shrink focused tile* | Widens or narrows the focused column by `ratioStep` (as a fraction of the usable width, between 0.1 and 1), starting from its width as shown. A no-op when a window's minimum width keeps the column where it is. |
 | *Equalize sizes* | Resets the row heights inside every column; column widths stay. |
 | *Rotate*, *Mirror*, *More/Fewer master windows* | No-op. |
 

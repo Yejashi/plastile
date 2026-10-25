@@ -159,8 +159,8 @@ test("thirds and two-thirds columns cover the inner width without crossing the e
     const area = rect(0, 0, width, 800);
     const res = assertStrip(st, sin(["a", "b", "c"], { settings: s, focused: "a", area, outputs: [area] }));
     assert.equal(res.parked!.length, 0, `three thirds fit in ${width}`);
-    const st2 = cycleWidth(build([["a"], ["b"]], s), "a", s.scrolling.widthPresets).state; // a: 1/2
-    const st3 = cycleWidth(st2, "a", s.scrolling.widthPresets).state; // a: 2/3, b: 1/3
+    const st2 = cycleWidth(build([["a"], ["b"]], s), "a", s.scrolling.widthPresets, sin(["a", "b"], { settings: s, area, outputs: [area] })).state; // a: 1/2
+    const st3 = cycleWidth(st2, "a", s.scrolling.widthPresets, sin(["a", "b"], { settings: s, area, outputs: [area] })).state; // a: 2/3, b: 1/3
     const r3 = assertStrip(st3, sin(["a", "b"], { settings: s, focused: "a", area, outputs: [area] }));
     assert.equal(r3.parked!.length, 0, `2/3 + 1/3 fit in ${width}`);
   }
@@ -317,11 +317,40 @@ test("width-cycle steps through the presets and wraps; resize changes the fracti
   const presets = [1 / 3, 1 / 2, 2 / 3, 1];
   let st = build([["a"]]);
   const seen: number[] = [];
-  for (let i = 0; i < 5; ++i) { st = cycleWidth(st, "a", presets).state; seen.push(st.columns[0].width); }
+  for (let i = 0; i < 5; ++i) { st = cycleWidth(st, "a", presets, sin(["a"])).state; seen.push(st.columns[0].width); }
   assert.deepEqual(seen, [2 / 3, 1, 1 / 3, 1 / 2, 2 / 3]);
-  st = resizeColumn(st, "a", 0.5).state;
+  st = resizeColumn(st, "a", 0.5, sin(["a"])).state;
   assert.equal(st.columns[0].width, 1);
-  assert.equal(resizeColumn(st, "a", 0.05).changed, false, "width at limit");
+  assert.equal(resizeColumn(st, "a", 0.05, sin(["a"])).changed, false, "width at limit");
+});
+
+test("width commands start from the width a minimum holds the column at; nothing hidden changes", () => {
+  // a is shown 900 px wide (its minimum) although its stored fraction is 1/2 (628 px).
+  const st = build([["a"], ["b"]]);
+  const inp = sin(["a", "b"], { focused: "a", constraints: new Map([["a", minC(900, 1)]]) });
+  const width = (s: ScrollState) => scrolling.solve(s, inp).virtual!.get("a")!.width;
+  assert.equal(width(st), 900);
+  const shrink = resizeColumn(st, "a", -0.05, inp);
+  assert.equal(shrink.changed, false);
+  assert.equal(shrink.reason, "width clamped by minimum size");
+  const grow = resizeColumn(st, "a", 0.05, inp);
+  assert.ok(grow.changed);
+  assert.ok(width(grow.state) > 900, "the first grow widens the column on screen");
+  // A 100 px drag of the right edge makes the column 100 px wider, so the release does not snap back.
+  const drag = scrolling.command(st, { kind: "resize-boundary", id: "a", edge: "right", delta: 100 }, inp);
+  assert.ok(drag.changed);
+  assert.equal(width(drag.state), 1000);
+  // Width cycle: the next preset wider than the shown 900 px (0.71) is full width, then back to the minimum.
+  const presets = [1 / 3, 1 / 2, 2 / 3, 1];
+  const c1 = cycleWidth(st, "a", presets, inp);
+  assert.equal(c1.state.columns[0].width, 1);
+  assert.equal(width(c1.state), 1264);
+  const c2 = cycleWidth(c1.state, "a", presets, inp);
+  assert.equal(width(c2.state), 900);
+  // A minimum wider than the area: no width change shows, so every width command is a no-op.
+  const huge = sin(["a", "b"], { focused: "a", constraints: new Map([["a", minC(1400, 1)]]) });
+  assert.equal(resizeColumn(st, "a", 0.05, huge).changed, false);
+  assert.equal(cycleWidth(st, "a", presets, huge).changed, false);
 });
 
 test("swap moves the focused column; swapping windows keeps column structure", () => {
@@ -378,7 +407,7 @@ test("property: random strips, outputs, focus and policies satisfy the strip ora
       const after = st.columns.length && rnd() < 0.5 ? st.columns[Math.floor(rnd() * st.columns.length)].windows[0] : null;
       st = scrolling.insert(st, id, after, sin([id], { settings: s }));
       if (rnd() < 0.3) st = consume(st, id).state;
-      if (rnd() < 0.3) st = cycleWidth(st, id, s.scrolling.widthPresets).state;
+      if (rnd() < 0.3) st = cycleWidth(st, id, s.scrolling.widthPresets, sin(ids, { settings: s })).state;
     }
     const constraints = new Map<WindowId, ReturnType<typeof minC>>();
     for (const id of ids) if (rnd() < 0.2) constraints.set(id, minC(Math.floor(rnd() * 900), Math.floor(rnd() * 200)));
