@@ -452,9 +452,10 @@ def motion_rapid(out: Path, c: Checks):
 
 
 # ------------------------------------------------------------------------------------------------ (5)
-def mid_animation(s: MotionSession, c: Checks, tag: str, stop) -> None:
+def mid_animation(s: MotionSession, c: Checks, tag: str, stop, unloads: bool = True) -> None:
     """Swap with a 2 s animation, prove it is mid-flight on screen, `stop()` the effect, prove every window is
-    drawn at its real rectangle long before the animation would have ended."""
+    drawn at its real rectangle long before the animation would have ended. `unloads`: whether `stop()` unloads
+    the effect (otherwise it must stay loaded)."""
     before = frames_by_caption(s)
     off = s.kw.mark()
     s.cmd("swap.next")
@@ -476,9 +477,9 @@ def mid_animation(s: MotionSession, c: Checks, tag: str, stop) -> None:
     errs = visual_errors(shot, frames)
     time.sleep(0.8)
     ref = s.screenshot()
-    c(f"(5) {tag}: the effect is unloaded", gone)
-    c(f"(5) {tag}: {round(shot_at, 2)} s after unloading (1.4 s before the animation's end) every window is drawn at its "
-      "real rectangle, and the image equals a later reference", not errs and image_diff(shot, ref) == 0.0,
+    c(f"(5) {tag}: the effect is {'unloaded' if unloads else 'still loaded'}", gone == unloads)
+    c(f"(5) {tag}: {round(shot_at, 2)} s after stopping it (about a second before the animation's end) every window is "
+      "drawn at its real rectangle, and the image equals a later reference", not errs and image_diff(shot, ref) == 0.0,
       {"errors": errs, "diff": image_diff(shot, ref)})
 
 
@@ -491,11 +492,22 @@ def set_enabled(s: MotionSession, on: bool) -> None:
         raise RuntimeError(f"kwriteconfig6 failed: {r.stderr.strip()}")
 
 
+def set_speed(s: MotionSession, factor: float) -> None:
+    """What System Settings > General Behavior > Animation speed writes: kdeglobals [KDE] AnimationDurationFactor
+    with KConfig::Notify, which KWin's Options reloads before it reconfigures every effect. Nested config and bus only."""
+    r = subprocess.run(["kwriteconfig6", "--file", "kdeglobals", "--group", "KDE", "--key", "AnimationDurationFactor",
+                        "--notify", str(factor)], env=s.kw.env(), capture_output=True, text=True, timeout=10)
+    if r.returncode != 0:
+        raise RuntimeError(f"kwriteconfig6 failed: {r.stderr.strip()}")
+
+
 @scenario("motion-unload-mid-T31")
 def motion_unload(out: Path, c: Checks):
     """(5) Unloading the effect mid-animation (D-Bus unloadEffect, and the System Settings path: kwinrc
     [Plugins] plastile_motionEnabled=false written with a change notification) leaves every window drawn at its real geometry at
-    once. Plastile is not involved and keeps working; the effect loads and animates again afterwards."""
+    once. So does switching the global animation speed to Instant mid-animation (kdeglobals [KDE]
+    AnimationDurationFactor=0 with a change notification), which leaves the effect loaded. Plastile is not involved
+    and keeps working; the effect loads and animates again afterwards."""
     with MotionSession(out, effect_config={"Duration": 2000}) as s:
         s.require_effect()
         three_loaded(s)
@@ -511,6 +523,24 @@ def motion_unload(out: Path, c: Checks):
             set_enabled(s, False)
             Session.wait_for(lambda: not s.effect_loaded(), 5, "effect disabled through kwinrc with a change notification")
         mid_animation(s, c, "kwinrc Enabled=false with a change notification", disable)
+        set_enabled(s, True)
+        Session.wait_for(s.effect_loaded, 5, "effect enabled again through kwinrc with a change notification")
+        time.sleep(0.3)
+        off = s.kw.mark()
+
+        def instant():
+            set_speed(s, 0)
+            # Pacing only (the screenshot is the oracle): KWin's config watcher delivers the change asynchronously.
+            wait_motion(s, off, "cancel", 2, timeout=0.4)
+        mid_animation(s, c, "global animation speed Instant", instant, unloads=False)
+        cancels = sorted(x["caption"] for x in s.motion(off, "cancel") if x["rest"] == "reason=instant")
+        c("(5) Instant: the effect cancelled both running animations (reason=instant)", len(cancels) == 2, cancels)
+        off = s.kw.mark()
+        s.cmd("swap.next")
+        s.settle()
+        time.sleep(0.2)
+        c("(5) Instant: a later swap starts no animation", not s.motion(off, "start"),
+          [(x["kind"], x["caption"], x["rest"]) for x in s.motion(off)])
         cnt = s.settle()
         c("Plastile kept tiling throughout (oracle) and recorded no error", not tiling_errors(s.frames_list(), s.area(), 8)
           and cnt["counters"]["errors"] == 0, tiling_errors(s.frames_list(), s.area(), 8))
