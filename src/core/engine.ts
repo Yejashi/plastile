@@ -1127,9 +1127,24 @@ export class Engine {
   private layoutState(c: Ctx, kind: LayoutKind): any {
     if (c.states[kind] === undefined) {
       const lay = LAYOUTS[kind];
-      c.states[kind] = lay.rebuild(lay.initial(this.ctxSettings(c)), c.members, this.solveInput(c, null));
+      c.states[kind] = lay.rebuild(lay.initial(this.ctxSettings(c)), c.members, this.structureInput(c, kind === "bsp"));
     }
     return c.states[kind];
+  }
+
+  /**
+   * Input for a structural edit (insert, rebuild). A BSP split chosen from a slot's shape
+   * (bsp.axis "longest") needs the context's real work area, not solve's placeholder; no
+   * other edit reads the area, so only that case asks KWin. The placeholder stays while the
+   * work area is invalid (O06).
+   */
+  private structureInput(c: Ctx, bsp: boolean): SolveInput {
+    let area: Rect | null = null;
+    if (bsp && this.ctxSettings(c).bsp.axis === "longest") {
+      const a = this.host.workArea(c.key.output, c.key.desktop);
+      if (isValidArea(a)) area = a;
+    }
+    return this.solveInput(c, area);
   }
 
   private joinContext(r: Rec): void {
@@ -1143,7 +1158,7 @@ export class Engine {
     else if (insert === "after-focus" && focus !== null) at = c.members.indexOf(focus) + 1;
     c.members.splice(at, 0, r.id);
     const anchor = at > 0 ? c.members[at - 1] : null;
-    const input = this.solveInput(c, null);
+    const input = this.structureInput(c, c.states.bsp !== undefined);
     // Scrolling: a new column right of the focused one, or at the end (SCROLLING §2).
     const scrollAnchor = insert === "after-focus" ? focus : null;
     for (const kind of Object.keys(c.states) as LayoutKind[]) {

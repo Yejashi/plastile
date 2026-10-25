@@ -1070,6 +1070,43 @@ test("G08/BEHAVIOR §11: an overflow float is reconsidered when the area, constr
   }
 });
 
+test("BSP axis longest: a split follows the shape of the slot on the real output, not a 16:9 placeholder", () => {
+  const longest = (insert: "last" | "focused", layout: "bsp" | "master-stack" = "bsp") =>
+    ({ ...DEFAULT_SETTINGS, layout, bsp: { ...DEFAULT_SETTINGS.bsp, axis: "longest" as const, insert } });
+  const run = (w: number, ht: number, ids: string[], s: typeof DEFAULT_SETTINGS) => {
+    const h = new MockHost();
+    h.outs = [{ id: "O1", name: "O1", geometry: rect(0, 0, w, ht), scale: 1 }];
+    const e = h.start({ settingsFor: () => s });
+    for (const id of ids) { h.open(id); h.drain(); h.advance(5); }
+    return { h, e };
+  };
+  {
+    // Portrait: the only slot is taller than wide, so b goes below a.
+    const { h } = run(1080, 1920, ["a", "b"], longest("last"));
+    const f = h.framesOf(["a", "b"]);
+    assert.equal(f.a.x, f.b.x, JSON.stringify(f));
+    assert.ok(f.b.y > f.a.y + f.a.height - 1, JSON.stringify(f));
+    assertTiling(tiledFrames(h, ["a", "b"]), rect(0, 0, 1080, 1920));
+  }
+  {
+    // Ultrawide: b's half (1708x1424) is still wider than tall, so c goes beside b.
+    const { h } = run(3440, 1440, ["a", "b", "c"], longest("last"));
+    const f = h.framesOf(["a", "b", "c"]);
+    assert.equal(f.b.y, f.c.y, JSON.stringify(f));
+    assert.equal(f.b.height, f.c.height, JSON.stringify(f));
+    assertTiling(tiledFrames(h, ["a", "b", "c"]), rect(0, 0, 3440, 1440));
+  }
+  {
+    // The first switch to BSP builds the tree from the members on the same real area.
+    const { h, e } = run(1080, 1920, ["a", "b"], longest("last", "master-stack"));
+    h.active = "a";
+    assert.equal(e.execute("plastile.layout.bsp").status, "accepted");
+    h.drain();
+    const f = h.framesOf(["a", "b"]);
+    assert.ok(f.b.y > f.a.y + f.a.height - 1, JSON.stringify(f));
+  }
+});
+
 test("BEHAVIOR §12: a configured master ratio/count reaches live contexts; values the user set by command are kept", () => {
   const conf = (ratio: number, masterCount: number) => ({ ...DEFAULT_SETTINGS, masterStack: { ...DEFAULT_SETTINGS.masterStack, ratio, masterCount } });
   {
