@@ -1,0 +1,251 @@
+{
+ "kwin": "kwin 6.8.1",
+ "layer": "nested KWin virtual backend, OpenGL compositing (not physical)",
+ "scenarios": {
+  "motion-client-cost-T31": {
+   "configures": [
+    {
+     "plastile-fixture 1": [
+      [
+       565,
+       360
+      ]
+     ],
+     "plastile-fixture 2": [],
+     "plastile-fixture 3": [
+      [
+       691,
+       756
+      ]
+     ]
+    },
+    {
+     "plastile-fixture 1": [
+      [
+       502,
+       360
+      ]
+     ],
+     "plastile-fixture 2": [
+      [
+       502,
+       360
+      ]
+     ],
+     "plastile-fixture 3": [
+      [
+       754,
+       756
+      ]
+     ]
+    },
+    {
+     "plastile-fixture 1": [
+      [
+       440,
+       360
+      ]
+     ],
+     "plastile-fixture 2": [
+      [
+       440,
+       360
+      ]
+     ],
+     "plastile-fixture 3": [
+      [
+       816,
+       756
+      ]
+     ]
+    },
+    {
+     "plastile-fixture 1": [],
+     "plastile-fixture 2": [
+      [
+       816,
+       756
+      ]
+     ],
+     "plastile-fixture 3": [
+      [
+       440,
+       360
+      ]
+     ]
+    },
+    {
+     "plastile-fixture 1": [
+      [
+       377,
+       360
+      ]
+     ],
+     "plastile-fixture 2": [
+      [
+       879,
+       756
+      ]
+     ],
+     "plastile-fixture 3": [
+      [
+       377,
+       360
+      ]
+     ]
+    },
+    {
+     "plastile-fixture 1": [
+      [
+       628,
+       360
+      ]
+     ],
+     "plastile-fixture 2": [
+      [
+       628,
+       756
+      ]
+     ],
+     "plastile-fixture 3": [
+      [
+       628,
+       360
+      ]
+     ]
+    },
+    {
+     "plastile-fixture 1": [
+      [
+       377,
+       360
+      ]
+     ],
+     "plastile-fixture 2": [
+      [
+       879,
+       756
+      ]
+     ],
+     "plastile-fixture 3": [
+      [
+       377,
+       360
+      ]
+     ]
+    }
+   ],
+   "latency": {
+    "configureMs": {
+     "off": {
+      "max": 1.79,
+      "n": 19,
+      "p50": 1.29
+     },
+     "on": {
+      "max": 1.45,
+      "n": 19,
+      "p50": 1.22
+     }
+    },
+    "frameChangedMs": {
+     "off": {
+      "max": 5.1,
+      "n": 19,
+      "p50": 3.1
+     },
+     "on": {
+      "max": 5.1,
+      "n": 19,
+      "p50": 2.6
+     }
+    }
+   },
+   "sequence": [
+    "swap.next",
+    "resize.grow",
+    "resize.grow",
+    "swap.next",
+    "resize.shrink",
+    "layout.bsp",
+    "layout.master-stack"
+   ],
+   "work": [
+    {
+     "commands": 1,
+     "corrections": 0,
+     "solves": 1,
+     "writes": 2
+    },
+    {
+     "commands": 1,
+     "corrections": 0,
+     "solves": 1,
+     "writes": 3
+    },
+    {
+     "commands": 1,
+     "corrections": 0,
+     "solves": 1,
+     "writes": 3
+    },
+    {
+     "commands": 1,
+     "corrections": 0,
+     "solves": 1,
+     "writes": 2
+    },
+    {
+     "commands": 1,
+     "corrections": 0,
+     "solves": 1,
+     "writes": 3
+    },
+    {
+     "commands": 1,
+     "corrections": 0,
+     "solves": 1,
+     "writes": 3
+    },
+    {
+     "commands": 1,
+     "corrections": 0,
+     "solves": 1,
+     "writes": 3
+    }
+   ]
+  },
+  "motion-rapid-retarget-T31": {
+   "commandSpanMs": 231,
+   "endMsAfterLastCommand": [
+    186,
+    186,
+    186
+   ],
+   "perWindow": {
+    "plastile-fixture 1": {
+     "ends": 1,
+     "retargets": 8,
+     "starts": 1
+    },
+    "plastile-fixture 2": {
+     "ends": 1,
+     "retargets": 8,
+     "starts": 1
+    },
+    "plastile-fixture 3": {
+     "ends": 1,
+     "retargets": 8,
+     "starts": 1
+    }
+   }
+  },
+  "motion-swap-T31": {
+   "endMsAfterCommand": [
+    214,
+    214
+   ],
+   "visualErrors": []
+  }
+ }
+}

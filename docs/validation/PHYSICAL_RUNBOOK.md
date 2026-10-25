@@ -284,7 +284,7 @@ Consent: C2 (if you rebind), C3, and C4 only if you choose `--toggle dbus`.
 
 It excludes keyboard hardware and USB polling before the write, and the panel's response after KWin's reported presentation time; a photodiode or high-speed camera would be needed for those. VRR is not covered: the reference machine reports VRR as incapable.
 
-Keep your desktop effects as they are, identical for every workload ([PERFORMANCE §6](PERFORMANCE.md#6-experimental-protocol): do not disable features for one side only). KWin effects that animate maximize or tiling transitions (the reference machine loads `maximize`, among others) can delay the *visual* end of a P00/P02 transition after the first presentation; the session report lists the loaded effects so the comparison can be interpreted.
+Keep your desktop effects as they are, identical for every workload ([PERFORMANCE §6](PERFORMANCE.md#6-experimental-protocol): do not disable features for one side only). KWin effects that animate maximize or tiling transitions (the reference machine loads `maximize`, among others) can delay the *visual* end of a P00/P02 transition after the first presentation; the session report lists the loaded effects so the comparison can be interpreted. Plastile Motion (`plastile_motion`, off by default) animates Plastile's moves *and* KWin's quick tile alike: run P6 with it off unless a block is explicitly labelled "motion on", and then for every workload, baseline included ([PERFORMANCE §6.1](PERFORMANCE.md#61-the-motion-effect-in-latency-measurements)).
 
 **Workloads** ([`tools/physical/workloads.json`](../../tools/physical/workloads.json)), all on the same N fixture windows:
 

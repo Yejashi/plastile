@@ -156,6 +156,28 @@ Check KWin's Window Rules and disable other tiling scripts. Then compare two cou
 - **Start over:** disable Plastile, delete `~/.local/state/plastile/`, enable it again.
 - **Files `state-0.ini`, `state-1.ini` or `*.lock` in `~/.local/state/plastile/`:** left by an earlier development build, which saved inside KWin. They are not read any more and can be deleted.
 
+## Windows slide, stretch or lag behind the pointer
+
+That is the optional **Plastile Motion** effect, not Plastile: Plastile places windows at once, and the effect animates
+the picture for about 180 ms ([CONFIGURATION](CONFIGURATION.md#window-motion-the-plastile-motion-effect)).
+
+- **Turn it off:** *System Settings > Window Management > Desktop Effects*, untick *Plastile Motion*, Apply. Or run
+  `kwriteconfig6 --file kwinrc --group Plugins --key plastile_motionEnabled --notify true` with `false` instead of
+  `true`. Windows are drawn at their real place from the next frame, even mid-animation.
+- **Reduced motion everywhere:** set *System Settings > General Behavior > Animation speed* to *Instant*; the effect
+  then animates nothing.
+- **Is it loaded?** `qdbus6 org.kde.KWin /Effects org.kde.kwin.Effects.isEffectLoaded plastile_motion`.
+- **Why did something (not) animate?** Set `Debug=true` under `[Effect-plastile_motion]` in `~/.config/kwinrc`, turn
+  the effect off and on, and read KWin's log ([reading the log](#reading-the-log)). Each change logs
+  `plastile_motion start`, `retarget`, `end`, `cancel` or `skip … reason=…`. The reasons are `instant`, `type`,
+  `maximize`, `fullscreen`, `interactive`, `fullscreen-effect`, `hidden`, `transition`, `opening` and `grabbed`.
+  Turn `Debug` off again: it writes a line per change.
+- **A click went to a window that was not drawn there yet:** input always uses a window's real place; the picture
+  catches up within the duration. Shorten `Duration` or turn the effect off if this bothers you.
+- **Nothing animates at all:** KWin runs the effect only with OpenGL compositing on a hardware renderer. With
+  software rendering or QPainter it does not load. It also does not animate dragging, maximize, fullscreen, newly
+  opened windows or desktop switches, by design.
+
 ## Known limitations
 
 | Limitation | Detail | Status |
@@ -179,6 +201,7 @@ Check KWin's Window Rules and disable other tiling scripts. Then compare two cou
 | Three or more outputs | Nested scenarios use two virtual outputs. The physical runbook used three (60, 100 and 144 Hz); send-to-output, scale changes and output priority passed there. Unplugging one of them was not checked. | Measured (nested: 2 outputs; physical: 3) |
 | Unplug and suspend in a physical session | Unplugging and replugging an output works in nested KWin (`unplug-O04`, `replug-identity-O05`); a system suspend has no nested equivalent. Both were skipped in the physical runbook. | Untested physically |
 | Package discovery after install | A package installed while KWin was running was found by `Scripting.start` only after about 20 s (one nested run). Retry, or log out and in, if Plastile does not appear. | Measured (n=1) |
+| Window motion is visual only and physically unverified | The Plastile Motion effect (off by default) scales and moves a window's current picture for about 180 ms after a programmatic move, so content looks briefly stretched when a window changes shape, and clicks during that time go to the window's real place. It animates every program's moves, not only Plastile's. Smoothness at 144/100/60 Hz has not been judged on a physical display. | Measured (nested KWin 6.8.1); ADR-023 |
 | Shortcut entries outlive the script | `kglobalshortcutsrc` keeps the `plastile.*` entries after unload or removal. | Measured; KWin behaviour |
 
 ## Reporting a problem

@@ -3,7 +3,9 @@
 A fast, predictable, configurable tiling layer for KDE Plasma 6 that keeps KWin as the window manager. It is
 a KWin declarative script with a TypeScript core: master/stack, BSP, monocle and floating layouts; validated
 configuration and rules; keyboard commands; session persistence; an explain view. Scrolling and manual zones
-exist as experimental opt-in layouts (ADR-014).
+exist as experimental opt-in layouts (ADR-014). Plastile places windows at once; an optional, separate KWin
+effect, Plastile Motion (`effect/`, off by default, ADR-023), can animate how windows slide into place, drawing
+only: tested in nested KWin 6.8.1, not yet on a physical display.
 
 **Status: release candidate, not a qualified release.** It is tested by unit/replay tests and in disposable
 nested KWin sessions (KWin 6.7.5 on the reference machine and in CI; KWin 6.8.0 only in a provisional CI job
