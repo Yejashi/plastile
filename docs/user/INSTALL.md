@@ -257,8 +257,9 @@ KWin loads it as soon as it sees the change (`--notify`; without it the change w
 Measured in nested KWin 6.8.1: both this command and an effect installed while KWin was running loaded at once.
 
 **Turn it off:** untick it, or run the same command with `false`; or set the global animation speed to *Instant*
-(*System Settings > General Behavior*), which turns off this and KWin's other animations. Windows are drawn at
-their real place from the next frame, even in the middle of an animation (measured in nested KWin 6.8.1).
+(*System Settings > General Behavior*), which turns off this and KWin's other animations. With each of the three,
+windows are drawn at their real place from the next frame, even in the middle of an animation (measured in nested
+KWin 6.8.1).
 
 **Where it works:** KWin runs scripted effects only with OpenGL compositing on a hardware renderer. With software
 rendering (llvmpipe) or QPainter compositing it is not loaded and nothing is animated. It has not been run in a

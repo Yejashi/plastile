@@ -958,13 +958,24 @@ that owns only the picture. A KWin script cannot transform how a window is drawn
   new target and the full duration. KWin restarts each timeline from the value it painted last; both values are
   absolute, so they stay valid after the real frame moved. Ten commands therefore make one animation that ends
   one duration after the last. If KWin already ended it, a new animation starts from the frame it ended at.
+  A change within 0.5 px (added after a bug hunt) leaves a running animation as it is: KWin re-snaps a frame to the
+  device-pixel grid when the client commits at a new output's scale (`XdgToplevelWindow::handleRoleCommit`,
+  `snapToPixels`), for example a fraction of a pixel just after a move to an output with another scale. Such
+  changes retarget it only once they add up to more than 0.5 px from its target.
 - **No timers.** Every decision is taken in a KWin signal handler. The grace periods below compare
-  `Date.now()` with a timestamp stored in an earlier handler; no timer is created.
+  `Date.now()` with a timestamp stored in an earlier handler; no timer is created. `Date.now()` is wall-clock time
+  (QV4 reads `QDateTime::currentMSecsSinceEpoch`), so it can step back (an NTP correction, a manual time change).
+  A stamp ahead of the current time counts as expired (added after a bug hunt): a step back can shorten a grace
+  period, never lengthen it.
 - **What is not animated** (`motionDecide`, with the reason it logs):
   - `instant`: the global animation speed is "Instant" (`effects.animationTimeFactor` 0). This is the reduced-motion
-    switch, read at every change.
+    switch, read at every change. A switch to it also stops running animations (added after a bug hunt): KWin
+    reconfigures every effect when the speed changes (`Options::animationSpeedChanged` ->
+    `EffectsHandler::reconfigureEffects`, which emits the script's `configChanged`), and the effect then cancels
+    every animation it runs.
   - `type`: windows that are not managed normal windows, popups, and internal windows such as Plastile's inspector.
-  - `invalid`, `unchanged`: a rectangle under 1 px, or a change within 0.5 px.
+  - `invalid`, `unchanged`: a rectangle under 1 px, or a change within 0.5 px (which does not stop a running
+    animation; see Retargeting).
   - `offscreen` (added in review): either rectangle overlaps no output the window was on, or its centre has a
     negative coordinate. The scrolling layout parks columns off every output (above the top output, so at negative
     y); a column scrolled in or out appears or disappears, which is not a move. `AnimationEffect` also treats a
@@ -989,8 +1000,9 @@ that owns only the picture. A KWin script cannot transform how a window is drawn
   - `opening`: within 500 ms after the window appeared. Its first placement belongs to the open animation.
   - `grabbed`: another effect holds an add, close, minimize or unminimize grab on the window.
 - **Interruption and cleanup.**
-  - An excluded change, a maximize request, a closing window or a transition calls `cancel()`. `cancel()` does not
-    repaint (`AnimationEffect::cancel`), so the effect damages the area the animation covered, plus a shadow margin.
+  - An excluded change (other than one within 0.5 px), a maximize request, a closing window, a transition or a
+    switch of the global speed to "Instant" calls `cancel()`. `cancel()` does not repaint (`AnimationEffect::cancel`),
+    so the effect damages the area the animation covered, plus a shadow margin.
   - A closing window is never kept alive by a move animation.
   - Unloading destroys the effect's JavaScript engine with all its connections. `AnimationEffect`'s destructor
     drops every animation, and `EffectsHandler::unloadEffect` repaints the whole scene.
@@ -1065,10 +1077,10 @@ The licence remains the owner's decision (ADR-012). The effect's metadata says `
 
 **Evidence.**
 
-- **Unit:** [motion.test.ts](../../tests/core/motion.test.ts), 18 tests (2 added in review). They cover the metadata and settings
-  schema, the duration and easing rules, every `motionDecide` reason, and the shipped `main.js` run against a fake
-  scripted-effect host: start, retarget, end, cancel and repaint, the interaction rules, the transition cancel, and
-  closing.
+- **Unit:** [motion.test.ts](../../tests/core/motion.test.ts), 21 tests (2 added in review, 3 after a bug hunt). They cover the
+  metadata and settings schema, the duration and easing rules, every `motionDecide` reason, and the shipped `main.js` run
+  against a fake scripted-effect host: start, retarget, end, cancel and repaint, the interaction rules, the transition
+  cancel, closing, a backward clock step, a sub-pixel change mid-animation and a switch to "Instant" mid-animation.
 - **Nested:** [scenarios_motion.py](../../tests/integration/scenarios_motion.py). The setup: KWin 6.8.1, OpenGL ES
   on the host GPU, virtual backend at 60 Hz. The effect is loaded through the nested bus's `/Effects` or the nested
   kwinrc. The oracles are KWin's frames, the fixtures' protocol logs and ScreenShot2 images of the composited

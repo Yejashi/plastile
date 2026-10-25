@@ -165,7 +165,7 @@ the picture for about 180 ms ([CONFIGURATION](CONFIGURATION.md#window-motion-the
   `kwriteconfig6 --file kwinrc --group Plugins --key plastile_motionEnabled --notify false`. Windows are drawn at
   their real place from the next frame, even mid-animation.
 - **Reduced motion everywhere:** set *System Settings > General Behavior > Animation speed* to *Instant*; the effect
-  then animates nothing.
+  then animates nothing, and an animation already running stops at once.
 - **Is it loaded?** `qdbus6 org.kde.KWin /Effects org.kde.kwin.Effects.isEffectLoaded plastile_motion`.
 - **Why did something (not) animate?** Set `Debug=true` under `[Effect-plastile_motion]` in `~/.config/kwinrc`, turn
   the effect off and on, and read KWin's log ([reading the log](#reading-the-log)). Each change logs

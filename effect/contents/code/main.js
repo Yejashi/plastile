@@ -7,7 +7,8 @@
     about it. The effect only paints the window's current texture translated and scaled from the
     rectangle it was last drawn at to the new frame (AnimationEffect Size + Position), over a short,
     configurable duration. A change that arrives mid-animation retargets the running animation from
-    the visual state painted last, so rapid commands never queue behind an animation.
+    the visual state painted last, so rapid commands never queue behind an animation; one within half
+    a pixel of where it heads (a re-snap to the pixel grid) leaves it alone.
 
     Rules (motionDecide() below): only managed normal windows, both rectangles valid and different,
     both on an output (not a scrolling layout's parked column), not while any window is in an
@@ -86,6 +87,21 @@ function motionEasingName(index) {
 }
 
 /**
+ * Whether `now` lies less than `grace` ms after `stamp`. Both are Date.now(), which is wall-clock time: a stamp
+ * ahead of `now` means the clock stepped back since it was taken, and counts as expired, so a step back cannot
+ * stretch a grace period.
+ */
+function motionWithin(now, stamp, grace) {
+    var dt = now - stamp;
+    return dt >= 0 && dt < grace;
+}
+
+/** Whether a transition grace that ends at `until` is still running at `now`. */
+function motionSuppressed(now, until) {
+    return motionWithin(now, until - MOTION_TRANSITION_GRACE_MS, MOTION_TRANSITION_GRACE_MS);
+}
+
+/**
  * Whether one geometry change is animated: "" to animate, otherwise the reason it is not.
  * `f` holds plain facts read from KWin by the caller, so this is testable without KWin.
  */
@@ -98,15 +114,15 @@ function motionDecide(f) {
     // disappears, which is not a move. AnimationEffect also treats a negative Position coordinate as "unset" and would
     // move that axis without animating it, so a centre left of or above the origin is not animated either.
     if (!motionOnOutput(f.old, f.oldOutput, f.screen) || !motionOnOutput(f.next, f.screen, null)) return "offscreen";
-    if (f.statePendingAt !== null && f.now - f.statePendingAt <= MOTION_STATE_GRACE_MS) return "maximize";
+    if (f.statePendingAt !== null && motionWithin(f.now, f.statePendingAt, MOTION_STATE_GRACE_MS)) return "maximize";
     if (f.fullScreen || (f.screen && (motionSameRect(f.next, f.screen) || motionSameRect(f.old, f.screen)))) {
         return "fullscreen";
     }
     if (f.userMoveResize || f.interactions > 0) return "interactive";
     if (f.fullScreenEffect) return "fullscreen-effect";
     if (!f.visible || f.minimized) return "hidden";
-    if (f.now < f.suppressUntil) return "transition";
-    if (f.addedAt !== null && f.now - f.addedAt < MOTION_OPEN_GRACE_MS) return "opening";
+    if (motionSuppressed(f.now, f.suppressUntil) || motionSuppressed(f.now, f.windowSuppressUntil)) return "transition";
+    if (f.addedAt !== null && motionWithin(f.now, f.addedAt, MOTION_OPEN_GRACE_MS)) return "opening";
     if (f.grabbed) return "grabbed";
     return "";
 }
@@ -141,7 +157,7 @@ function PlastileMotion() {
     this.interactions = 0;        // windows in an interactive move/resize
     this.suppressUntil = 0;       // global transition grace (desktop/activity/output change)
     this.loadConfig();
-    effect.configChanged.connect(this.loadConfig.bind(this));
+    effect.configChanged.connect(this.onConfigChanged.bind(this));
     effect.animationEnded.connect(this.onAnimationEnded.bind(this));
     effects.windowAdded.connect(this.onWindowAdded.bind(this));
     effects.windowClosed.connect(this.forget.bind(this, "closed"));
@@ -162,6 +178,14 @@ function PlastileMotion() {
     }
 }
 
+PlastileMotion.prototype.onConfigChanged = function () {
+    this.loadConfig();
+    // The global speed switched to "instant" (reduced motion): stop what runs, not only what would start.
+    if (this.duration() === 0) {
+        this.interruptAll("instant");
+    }
+};
+
 PlastileMotion.prototype.loadConfig = function () {
     this.configuredMs = Number(effect.readConfig("Duration", 0)) || 0;
     this.easingName = motionEasingName(effect.readConfig("Easing", 0));
@@ -169,7 +193,8 @@ PlastileMotion.prototype.loadConfig = function () {
     this.debug = !!effect.readConfig("Debug", false);
 };
 
-// Read the global animation speed at each start: System Settings changes it without reconfiguring effects.
+// The global animation speed is read at each change. Changing it in System Settings also reconfigures every
+// effect (Options::animationSpeedChanged -> EffectsHandler::reconfigureEffects), which emits configChanged.
 PlastileMotion.prototype.duration = function () {
     return motionDuration(this.configuredMs, effects.animationTimeFactor);
 };
@@ -232,6 +257,10 @@ PlastileMotion.prototype.onTransition = function () {
     this.suppressUntil = Date.now() + MOTION_TRANSITION_GRACE_MS;
     // A running animation may point into an output that is going away, or onto a desktop that is no longer
     // shown: stop them all (rare events; the switch's own effect, if any, takes over).
+    this.interruptAll("transition");
+};
+
+PlastileMotion.prototype.interruptAll = function (why) {
     var self = this;
     var animated = [];
     this.records.forEach(function (rec, w) {
@@ -239,7 +268,7 @@ PlastileMotion.prototype.onTransition = function () {
             animated.push(w);
         }
     });
-    animated.forEach(function (w) { self.interrupt(w, "transition"); });
+    animated.forEach(function (w) { self.interrupt(w, why); });
 };
 
 PlastileMotion.prototype.suppressWindow = function (w, why) {
@@ -338,7 +367,7 @@ PlastileMotion.prototype.onGeometry = function (w, oldGeometry) {
         userMoveResize: w.move || w.resize, interactions: this.interactions,
         fullScreenEffect: effects.hasActiveFullScreenEffect,
         visible: w.visible, minimized: w.minimized,
-        now: now, suppressUntil: Math.max(this.suppressUntil, rec.suppressUntil),
+        now: now, suppressUntil: this.suppressUntil, windowSuppressUntil: rec.suppressUntil,
         addedAt: rec.addedAt,
         grabbed: effect.isGrabbed(w, Effect.WindowAddedGrabRole) || effect.isGrabbed(w, Effect.WindowClosedGrabRole)
             || effect.isGrabbed(w, Effect.WindowMinimizedGrabRole) || effect.isGrabbed(w, Effect.WindowUnminimizedGrabRole),
@@ -346,6 +375,16 @@ PlastileMotion.prototype.onGeometry = function (w, oldGeometry) {
     rec.output = screen;
     if (reason === "maximize") {
         rec.statePendingAt = null;   // a maximize request claims one geometry change
+    }
+    if (reason === "unchanged" && rec.ids) {
+        // Within half a pixel of the frame before it, such as KWin re-snapping the frame to the device-pixel grid
+        // once the client commits at a new output's scale: not motion, so the running animation goes on. It is
+        // retargeted (below) only once such changes add up to more than half a pixel from where it heads.
+        rec.bound = motionUnion(rec.bound || old, next);
+        if (motionSameRect(rec.target, next)) {
+            return;
+        }
+        reason = "";
     }
     if (reason !== "") {
         if (rec.ids) {
@@ -375,6 +414,11 @@ PlastileMotion.prototype.onGeometry = function (w, oldGeometry) {
         // Not running any more (it ended in this frame): start afresh from the frame it ended at.
         cancel(rec.ids);
         rec.ids = null;
+        if (motionSameRect(old, next)) {
+            rec.bound = null;   // a sub-pixel change starts nothing
+            rec.target = null;
+            return;
+        }
     }
     var ids = animate({
         window: w,
