@@ -204,6 +204,32 @@ for (const [name, exit] of EXITS) {
   });
 }
 
+for (const [name, exit] of EXITS) {
+  test(`nothing stays parked after ${name}, also a column parked while its resize is still in flight`, () => {
+    const ids = ["a", "b", "c"];
+    const h = new MockHost();
+    const e = h.start({ settingsFor: () => SCROLL });
+    for (const id of ids) {
+      h.open(id, id === "a" ? { delay: 200 } : {});
+      h.activate(id);
+      h.advance(300);
+    }
+    h.activate("a");
+    h.advance(300);
+    assert.equal(e.execute("plastile.scroll.width-cycle").status, "accepted");
+    h.advance(20);
+    assert.equal(e.execute("plastile.focus.right").status, "accepted");
+    h.drain();
+    const a = h.windows.get("a")!;
+    assert.equal(e.explain("a")!.parked, true);
+    assert.ok(inside(rect(0, 0, 1280, 800), a.frame), "its committed frame is still visible: the parking configure is in flight");
+    exit(h, e);
+    h.drain();
+    h.advance(1000);
+    assertAllInside(h, ids, name);
+  });
+}
+
 test("reconcile unparks, then re-parks what its strip still hides", () => {
   const ids = ["a", "b", "c", "d"];
   const { h, e } = setup(ids);

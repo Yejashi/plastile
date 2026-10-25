@@ -5,7 +5,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { rect, rectNear } from "../../src/core/geometry.ts";
 import { DEFAULT_SETTINGS } from "../../src/core/defaults.ts";
-import { MockHost, meta } from "./mockHost.ts";
+import { FREE, MockHost, meta } from "./mockHost.ts";
 import { assertTiling } from "./helpers.ts";
 
 const AREA = rect(0, 0, 1280, 800);
@@ -530,6 +530,44 @@ test("late metadata: pending window classified at the readiness deadline", () =>
   assert.equal(e.modeOf("late"), "tiled");
 });
 
+test("late metadata: membership, constraint and configuration events do not end the readiness wait; its rule applies", () => {
+  const rulesFor = (m: { appId: string }) => (m.appId === "float-me" ? { mode: "floating" as const, ruleIds: ["f"] } : null);
+  const h = new MockHost();
+  const e = h.start({ rulesFor });
+  h.open("a");
+  h.drain();
+  h.advance(5);
+  const w = h.open("x", { meta: meta("", {}), frame: rect(100, 100, 400, 300) });
+  h.drain();
+  // KWin reports output, desktop or activity changes and constraint commits around mapping.
+  e.membershipChanged("x", w.gen, { ...w.membership });
+  e.constraintsChanged("x", w.gen, { ...FREE, minFrame: { width: 200, height: 100 } });
+  e.configure({ rulesFor });
+  h.drain();
+  assert.equal(e.modeOf("x"), "pending", "still waiting for its app id");
+  assert.equal(h.writesTo("x"), 0);
+  w.meta = meta("float-me");
+  e.metadataChanged("x", w.gen, w.meta);
+  h.drain();
+  assert.equal(e.modeOf("x"), "floating", "the rule matched the app id that arrived");
+  assert.equal(h.writesTo("x"), 0, "never tiled, so nothing to restore");
+  assert.deepEqual(w.frame, rect(100, 100, 400, 300));
+  const deadlines = e.counters.deadlines;
+  h.advance(60_000);
+  assert.equal(e.counters.deadlines, deadlines, "no readiness deadline left once the wait ended");
+});
+
+test("late metadata: a resync that finds the app id ends the readiness wait", () => {
+  const h = new MockHost();
+  const e = h.start();
+  const w = h.open("late", { meta: meta("", {}) });
+  h.drain();
+  w.meta = meta("late"); // the metadata signal was missed
+  e.reconcile([h.snapshot(w)]);
+  h.drain();
+  assert.equal(e.modeOf("late"), "tiled");
+});
+
 test("O06: an invalid work area keeps the last valid placement", () => {
   const { h, e } = setup(["a", "b"]);
   const before = tiledFrames(h, ["a", "b"]);
@@ -750,6 +788,43 @@ test("G04: a client slower than the deadline is not learned as a constraint and 
   assertTiling(tiledFrames(h, ["a", "b"]), AREA);
 });
 
+test("G04/D8: a lost configure is corrected when a peer's learned maximum re-solves the context at the same deadline", () => {
+  const slot = setup(["a", "b"]).h.windows.get("b")!.frame;
+  const h = new MockHost();
+  const e = h.start();
+  const a = h.open("a");
+  h.drain();
+  h.advance(5);
+  a.commitOffset = { width: -400, height: -100 }; // a hidden maximum: a commits less than it was asked
+  const b = h.open("b", { delay: 50 });
+  h.drain();
+  b.configures.splice(0); // b's configure is lost
+  h.advance(5000);
+  assert.equal(e.counters.learned, 1, "a's maximum learned at the deadline b shares");
+  assert.ok(rectNear(b.frame, slot), `b at ${JSON.stringify(b.frame)}`);
+  assert.equal(e.outstandingCount(), 0);
+});
+
+test("G04/D8: a request whose deadline came due while the layout placed nothing is written again when it does", () => {
+  const slot = setup(["a", "b"]).h.windows.get("b")!.frame;
+  const h = new MockHost();
+  const e = h.start();
+  h.open("a");
+  h.drain();
+  h.advance(5);
+  const b = h.open("b", { delay: 50 });
+  h.drain();
+  b.configures.splice(0); // b's configure is lost
+  e.execute("plastile.layout.floating");
+  h.drain();
+  h.advance(5000);
+  e.execute("plastile.layout.master-stack");
+  h.drain();
+  h.advance(5000);
+  assert.ok(rectNear(b.frame, slot), `b at ${JSON.stringify(b.frame)}`);
+  assert.equal(e.outstandingCount(), 0);
+});
+
 test("G12: a client that never answers is not learned as a constraint", () => {
   const { h, e } = setup(["a", "b"], { b: { ignore: true, delay: 10 } });
   h.advance(10_000);
@@ -801,6 +876,59 @@ test("G11 after I03: the window resized by the user is still corrected when the 
   h.advance(5000);
   assert.ok(rectNear(h.windows.get("a")!.frame, a1), `a back in its slot: ${JSON.stringify(h.windows.get("a")!.frame)}`);
   assert.ok(e.counters.corrections > corrections);
+});
+
+test("G11 after resume: re-tiling a window the user moved while suspended spends no correction", () => {
+  const { h, e } = setup(["a", "b"]);
+  const slot = h.windows.get("a")!.frame;
+  h.active = "a";
+  for (let i = 0; i < 2; ++i) {
+    e.execute("plastile.runtime.toggle-suspend");
+    h.userSetFrame("a", rect(50 + i, 50, 400, 400));
+    h.drain();
+    e.execute("plastile.runtime.toggle-suspend");
+    h.drain();
+    assert.ok(rectNear(h.windows.get("a")!.frame, slot), "re-tiled at resume");
+  }
+  assert.equal(e.counters.corrections, 0, "a resume places the window: a plan write, not a correction");
+  h.userSetFrame("a", rect(slot.x, slot.y, 300, 300)); // the application resizes itself once
+  h.advance(5000);
+  assert.ok(rectNear(h.windows.get("a")!.frame, slot), `a back in its slot: ${JSON.stringify(h.windows.get("a")!.frame)}`);
+  assert.equal(e.explain("a")!.exception, null);
+});
+
+test("G11 after a hidden desktop: re-tiling a window KWin moved while hidden spends no correction", () => {
+  const { h, e } = setup(["a", "b"]);
+  const slot = h.windows.get("a")!.frame;
+  for (let i = 0; i < 2; ++i) {
+    h.visible.set("O1", "D2"); e.visibilityChanged(); h.drain();
+    h.userSetFrame("a", rect(30 + i, 40, slot.width, slot.height)); // KWin's work-area check on the hidden desktop
+    h.drain();
+    h.visible.set("O1", "D1"); e.visibilityChanged(); h.drain();
+    assert.ok(rectNear(h.windows.get("a")!.frame, slot), "re-tiled when shown");
+  }
+  assert.equal(e.counters.corrections, 0, "no correction is spent for a move KWin made while hidden");
+  h.userSetFrame("a", rect(slot.x, slot.y, 300, 300));
+  h.advance(5000);
+  assert.ok(rectNear(h.windows.get("a")!.frame, slot), `a back in its slot: ${JSON.stringify(h.windows.get("a")!.frame)}`);
+  assert.equal(e.explain("a")!.exception, null);
+});
+
+test("G11: once a self-resizing window converges on a new target, its explanation is cleared", () => {
+  const { h, e } = setup(["a", "b"]);
+  for (let i = 0; i < 3; ++i) {
+    h.userSetFrame("a", rect(8, 8, 400 - 10 * i, 784));
+    h.drain();
+  }
+  h.advance(5000);
+  assert.match(String(e.explain("a")!.exception), /keeps changing its own size/);
+  h.active = "a";
+  e.activeChanged("a");
+  assert.equal(e.execute("plastile.resize.grow").status, "accepted");
+  h.drain();
+  h.advance(5000);
+  assert.equal((e.explain("a")!.ledger as { status: string }).status, "settled");
+  assert.equal(e.explain("a")!.exception, null, "converged: no stale explanation");
 });
 
 test("L13/L14: a native yield survives the tile being released and later reclassification", () => {

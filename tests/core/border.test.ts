@@ -37,3 +37,21 @@ test("Q10: a configuration change of the border rule still updates a border Plas
   h.drain();
   assert.equal(h.windows.get("a")!.noBorder, false);
 });
+
+test("Q10: a border:none window that floats as an overflow gets its decoration back", () => {
+  const h = new MockHost();
+  h.start({ rulesFor: () => ({ ...NONE, minSize: { width: 900, height: 0 } }) });
+  h.open("a");
+  h.drain();
+  assert.equal(h.windows.get("a")!.noBorder, true, "the rule applied while tiled");
+  h.open("b");
+  h.drain();
+  assert.equal(h.engine.modeOf("b"), "floating");
+  assert.match(String(h.engine.explain("b")!.exception), /^overflow/);
+  assert.equal(h.windows.get("b")!.noBorder, false, "restored when it left the layout");
+  assert.equal(h.windows.get("a")!.noBorder, true);
+  h.close("a");
+  h.drain();
+  assert.equal(h.engine.modeOf("b"), "tiled", "rejoined once there is room");
+  assert.equal(h.windows.get("b")!.noBorder, true, "removed again while tiled");
+});

@@ -370,6 +370,51 @@ test("ADR-021: a client that re-maximizes before acknowledging: honoured at the 
   assert.equal(h.writesTo("m"), 1);
 });
 
+test("ADR-021: suspended while the un-maximize is on its way, and the client re-maximizes: honoured at resume, never written", () => {
+  for (const resumeAfter of [100, 2000]) {
+    const h = new MockHost();
+    h.start();
+    h.open("a");
+    h.drain();
+    const w = openMaximized(h, "m", { delay: 20, remaximize: true });
+    h.drain();
+    assert.equal(h.writesTo("m"), 1, "the tile written with the un-maximize");
+    h.advance(5);
+    h.engine.execute("plastile.runtime.toggle-suspend");
+    h.drain();
+    h.advance(resumeAfter);                              // the client maximized itself again meanwhile
+    h.engine.execute("plastile.runtime.toggle-suspend");
+    h.drain();
+    h.advance(3000);
+    assert.equal(w.states.maximized, true);
+    assert.equal(h.writesTo("m"), 1, `resume after ${resumeAfter} ms writes no tile to a maximized window`);
+    assert.ok(rectNear(w.frame, FULL), `m at ${JSON.stringify(w.frame)}`);
+    assert.ok(rectNear(h.windows.get("a")!.frame, ALONE), "the peer tiles alone");
+    assert.match(String(h.engine.explain("m")!.suspended), /while it is maximized/);
+    assert.equal(h.engine.outstandingCount(), 0);
+  }
+});
+
+test("ADR-021: suspended while the un-maximize is on its way, and the client acknowledges it: tiled at resume", () => {
+  const h = new MockHost();
+  h.start();
+  h.open("a");
+  h.drain();
+  const w = openMaximized(h, "m", { delay: 20 });
+  h.drain();
+  h.advance(5);
+  h.engine.execute("plastile.runtime.toggle-suspend");
+  h.drain();
+  h.advance(100);
+  assert.equal(w.states.maximized, false, "acknowledged while suspended");
+  h.engine.execute("plastile.runtime.toggle-suspend");
+  h.drain();
+  h.advance(3000);
+  assert.equal(w.states.maximized, false);
+  assert.ok(rectNear(w.frame, rect(707, 8, 565, 784)), `m tiled at ${JSON.stringify(w.frame)}`);
+  assert.ok(rectNear(h.windows.get("a")!.frame, rect(8, 8, 691, 784)));
+});
+
 test("ADR-021: removal while the un-maximize is on its way leaves nothing behind", () => {
   const h = new MockHost();
   h.start();

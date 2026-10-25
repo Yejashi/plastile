@@ -123,11 +123,11 @@ Run *Explain active window* and read `mode`, `userMode`, `nativeTile`, `decision
 - **`mode: native` / `nativeTile: true`:** the window is in a KWin quick tile. *Adopt natively tiled window* or *Toggle floating* adopts it back.
 - **`userMode: floating`:** you floated it. Use *Toggle floating* again.
 - **`exception` not null:**
-  - **Gave up:** the window was tiled but did not reach its slot after two corrections. It stays where the client put it.
+  - **Gave up:** the window was tiled but did not reach its slot after two corrections, or the application kept changing its own size. It stays where the client put it. The exception clears once the window reaches a slot again, for example when a layout change gives it a new one.
   - **Overflow (`overflow: ...`):** the layout could not fit it, so it floats.
 
   The exception gets one new attempt when its inputs change: the usable area of the screen (outputs, panels), the configuration (layout parameters, gaps), the window's own constraints or desktop/screen membership, or a tile leaving its context. If it still does not fit, it floats again. Focus changes and layout shortcuts do not retry it (observed source, `src/core/engine.ts`). Toggling the window back to tiled with *Toggle floating* clears the exception and retries.
-- **`mode: pending`:** the window has not reported an application id yet. Plastile waits up to 300 ms before classifying it.
+- **`mode: pending`:** the window has not reported an application id yet. Plastile waits up to 300 ms before classifying it. A desktop, screen or size-limit change, or a configuration reload, during that wait does not end it early, so rules that match the application id still apply.
 
 ## A window keeps resizing or flickers
 

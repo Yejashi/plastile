@@ -652,7 +652,9 @@ client.
   it, KWin still reports `maximizeMode` 3, which is then not a suspension.
 - **Bounded.** At most one un-maximize per window. After it, any maximize is honoured as T17 specifies. If KWin
   still reports the window maximized when the wait ends (`deadlineMs`; the client asked to be maximized again
-  before acknowledging), it is honoured: the tile request is cancelled and nothing is corrected. Not maximizable:
+  before acknowledging), it is honoured: the tile request is cancelled and nothing is corrected. A suspend during
+  that wait ends it as well: a window KWin still reports maximized is suspended as for any maximize, so the
+  resume leaves it maximized unless the client acknowledged the un-maximize meanwhile. Not maximizable:
   it stays maximized, explained.
 - **Said.** Explain's `onOpen` (the inspector's *On open* row) and the trace (`open-maximized` with
   `action: unmaximized | kept`, `unmaximized` when KWin reports it, `remaximized`) record what happened. No new
