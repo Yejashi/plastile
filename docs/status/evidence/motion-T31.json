@@ -215,6 +215,14 @@
     }
    ]
   },
+  "motion-edges-T31": {
+   "closeVictim": "plastile-fixture 4",
+   "visualErrors": {
+    "scale": [],
+    "scrolling": [],
+    "suspend": []
+   }
+  },
   "motion-rapid-retarget-T31": {
    "commandSpanMs": 231,
    "endMsAfterLastCommand": [

@@ -1065,7 +1065,7 @@ The licence remains the owner's decision (ADR-012). The effect's metadata says `
 
 **Evidence.**
 
-- **Unit:** [motion.test.ts](../../tests/core/motion.test.ts), 16 tests. They cover the metadata and settings
+- **Unit:** [motion.test.ts](../../tests/core/motion.test.ts), 18 tests (2 added in review). They cover the metadata and settings
   schema, the duration and easing rules, every `motionDecide` reason, and the shipped `main.js` run against a fake
   scripted-effect host: start, retarget, end, cancel and repaint, the interaction rules, the transition cancel, and
   closing.
@@ -1092,3 +1092,12 @@ The licence remains the owner's decision (ADR-012). The effect's metadata says `
   - the GPU cost per frame.
 
   None of these can be judged in a nested session.
+- Known limitations: `offscreen` and `transition` make a scrolled-in column, and the re-fit after an output
+  change, appear at once; a window covering its whole output counts as fullscreen (above).
+
+**Review (2026-10-25, branch `wf/motion-review`).** An adversarial review added the `offscreen` rule and the
+`virtualScreenGeometryChanged` transition (both above), two unit tests, and the nested scenario `motion-edges-T31`.
+That scenario failed 3 of its checks on the previous effect: parked columns logged `start` while one axis jumped,
+and a scale change animated every window. It passes on the fixed effect. `virtualScreenGeometryChanged` is
+emitted from `Workspace::geometryChanged` in both KWin 6.7.5 and 6.8.1 (`effecthandler.cpp`). Results are in
+[STATUS](../status/STATUS.md#window-motion-t31-adr-023-nested-kwin-681).

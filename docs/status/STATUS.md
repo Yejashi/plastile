@@ -82,7 +82,7 @@ texture, from the old frame to the new one. Plastile is unchanged: one immediate
 Nested results: branch `wf/motion`, KWin 6.8.1, OpenGL ES on the reference host's GPU, virtual backend at 60 Hz
 ([evidence](evidence/motion-T31.json); oracles: KWin frames, fixture configures, ScreenShot2 images).
 
-- **Unit:** 16/16 (`tests/core/motion.test.ts`).
+- **Unit:** 18/18 (`tests/core/motion.test.ts`; 2 added in review).
 - **Nested scenarios at `b1d4e03`:** `scenarios_motion.py`, 9/9 scenarios and 76/76 checks.
   - Swap: starts for the two moved windows only. Both end at the real frame 214 ms after the command, against a
     180 ms duration.
@@ -100,6 +100,19 @@ Nested results: branch `wf/motion`, KWin 6.8.1, OpenGL ES on the reference host'
 - **Full nested suite** at `209edcd` (the effect before the debug-formatting guard and the hit-test scenario):
   1967/1967 checks, 149/149 scenarios, 1 expected SKIP (`output-negative-origin-G02`). At `b1d4e03` (the branch head's code): 1971/1971 checks,
   150/150 scenarios, the same expected SKIP.
+- **Adversarial review** (branch `wf/motion-review`, code at `233fd4f`, nested KWin 6.8.1):
+  - Found and fixed: the scrolling layout's parked columns sit above the output (negative y). A column scrolled in
+    or out logged `start`, but `AnimationEffect` ignores a negative `Position` coordinate, so its y jumped while x
+    moved (on a lower output it would have flown in from below). Such changes now skip with `reason=offscreen`;
+    columns that stay visible still slide.
+  - Found and fixed: a scale change animated the re-fit of every window. `virtualScreenGeometryChanged` is now an
+    output change (`reason=transition`).
+  - New scenario `motion-edges-T31` (13 checks): scrolling, scale change, minimize/restore, desktop switch, keyboard
+    quick tile, suspend/resume, close mid-animation. On the previous effect it failed 3 checks (scrolling twice,
+    scale); it passes now.
+  - Full nested suite at `233fd4f`: 1984/1984 checks, 151/151 scenarios, 1 expected SKIP
+    (`output-negative-origin-G02`); the package and upgrade scenarios are included. `npm run check` 535/535.
+  - Unchanged: `src/` differs from `a0d66a0` only in the `animation` error message.
 - **CI:** KWin loads scripted effects only on hardware OpenGL. In both CI jobs (QPainter 6.7.5, llvmpipe 6.8.0) the
   motion scenarios are expected SKIPs, except `motion-package-T31`, which runs without its load checks. Not yet
   observed on a hosted run.
