@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import os
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -239,6 +240,35 @@ class MotionStateTests(unittest.TestCase):
         self.assertFalse(m["on"])
         self.assertEqual(m["label"], "off")
         self.assertTrue(self._state("", effect=None)["label"].startswith("unknown"))
+
+    def test_effective_duration_rounds_like_the_effect(self):
+        # main.js motionDuration uses Math.round, which rounds a half up (Python's round() goes to even).
+        cases = {(5, 0.5): 3, (3, 0.5): 2, (1, 0.5): 1, (0, 1.0): 180, (0, 0.25): 45, (101, 0.5): 51, (200, 0.0): 0}
+        self.assertEqual({k: common.motion_duration_ms(*k) for k in cases}, cases)
+
+
+class GitRevisionTests(unittest.TestCase):
+    def test_every_installed_or_built_path_counts(self):
+        # The bundle's build configuration, Plastile Motion and the helper are installed into the session from
+        # the checkout too, not only src, package, the fixtures and this kit.
+        with tempfile.TemporaryDirectory() as d:
+            repo = Path(d)
+            env = {**os.environ, "GIT_CONFIG_GLOBAL": os.devnull, "GIT_CONFIG_SYSTEM": os.devnull}
+            git = lambda *a: subprocess.run(["git", "-C", d, *a], check=True, capture_output=True, env=env)  # noqa: E731
+            files = ("src/a.ts", "effect/contents/code/main.js", "helper/main.cpp", "tools/install.sh",
+                     "tools/physical/common.py", "package.json", "docs/x.md")
+            for rel in files:
+                (repo / rel).parent.mkdir(parents=True, exist_ok=True)
+                (repo / rel).write_text("1\n")
+            git("init", "-q")
+            git("add", "-A")
+            git("-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "init")
+            self.assertFalse(common.git_revision(repo)[1])
+            for rel in files:
+                (repo / rel).write_text("2\n")
+                with self.subTest(rel=rel):
+                    self.assertEqual(common.git_revision(repo)[1], rel != "docs/x.md")
+                git("checkout", "-q", "--", rel)
 
 
 class KscreenTests(unittest.TestCase):

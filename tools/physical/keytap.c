@@ -66,6 +66,11 @@
 #define MAX_MODS 4
 #define MAX_KEYCODE KEY_MICMUTE /* 248: end of the ordinary keyboard range */
 #define LINE_MAX_LEN 512
+// The device node. Only the test suite overrides it (with a path that does not exist), so that the guard's
+// accepting path can be exercised on a host with /dev/uinput without the real device ever being opened.
+#ifndef KEYTAP_UINPUT_PATH
+#define KEYTAP_UINPUT_PATH "/dev/uinput"
+#endif
 
 enum backend { BACKEND_NONE, BACKEND_DRY, BACKEND_UINPUT, BACKEND_LIBEI };
 
@@ -452,9 +457,9 @@ static int guard_session(char *why, size_t cap, pid_t *kwin_out)
 
 static int uinput_open(void)
 {
-    g_ufd = open("/dev/uinput", O_WRONLY | O_NONBLOCK | O_CLOEXEC);
+    g_ufd = open(KEYTAP_UINPUT_PATH, O_WRONLY | O_NONBLOCK | O_CLOEXEC);
     if (g_ufd < 0) {
-        out_error("cannot open /dev/uinput: %s (see PHYSICAL_RUNBOOK.md: uinput access)", strerror(errno));
+        out_error("cannot open %s: %s (see PHYSICAL_RUNBOOK.md: uinput access)", KEYTAP_UINPUT_PATH, strerror(errno));
         return -1;
     }
     if (ioctl(g_ufd, UI_SET_EVBIT, EV_KEY) < 0 || ioctl(g_ufd, UI_SET_EVBIT, EV_SYN) < 0) {

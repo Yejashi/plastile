@@ -387,7 +387,8 @@ def motion_duration_ms(configured_ms: int, factor: float) -> int:
     """Plastile Motion's effective duration (main.js motionDuration): 0 when the global speed is instant."""
     if not factor > 0 or not math.isfinite(factor):
         return 0
-    return max(1, round((configured_ms if configured_ms > 0 else MOTION_DEFAULT_MS) * factor))
+    # Math.round rounds halves up; Python's round() would round them to even (2.5 -> 2).
+    return max(1, math.floor((configured_ms if configured_ms > 0 else MOTION_DEFAULT_MS) * factor + 0.5))
 
 
 def motion_state(bus: Bus | None, cfg_home: Path | None = None) -> dict:
@@ -584,11 +585,18 @@ def sha256_file(path: Path) -> str | None:
         return None
 
 
-def git_revision() -> tuple[str | None, bool | None]:
+# What a physical run is built from or runs: the bundle's sources and build configuration (tools/build.mjs,
+# package.json, tsconfig), the QML package, Plastile Motion and the persistence helper (both installed into the
+# session from this checkout), the fixture client and this kit. The installed bundle is hashed separately.
+IMPLEMENTATION_PATHS = ("src", "package", "effect", "helper", "fixtures", "tools", "package.json", "package-lock.json",
+                        "tsconfig.json", "tsconfig.runtime.json")
+
+
+def git_revision(repo: Path = REPO) -> tuple[str | None, bool | None]:
     try:
-        rev = subprocess.run(["git", "-C", str(REPO), "rev-parse", "HEAD"], capture_output=True, text=True, timeout=10)
-        dirty = subprocess.run(["git", "-C", str(REPO), "status", "--porcelain", "--", "src", "package", "tools/physical",
-                                "fixtures"], capture_output=True, text=True, timeout=10)
+        rev = subprocess.run(["git", "-C", str(repo), "rev-parse", "HEAD"], capture_output=True, text=True, timeout=10)
+        dirty = subprocess.run(["git", "-C", str(repo), "status", "--porcelain", "--", *IMPLEMENTATION_PATHS],
+                               capture_output=True, text=True, timeout=10)
     except (OSError, subprocess.TimeoutExpired):
         return None, None
     if rev.returncode != 0:
