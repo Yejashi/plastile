@@ -2922,9 +2922,11 @@ export class Engine {
     if (!isValidArea(area)) area = this.host.outputs()[0]?.geometry ?? null;
     if (!isValidArea(area)) return;
     const tol = frameTolerance(this.scales.get(p.ctx.output) ?? 1);
-    // The newest request whose size the client never committed, also after a transition cancelled it.
+    // The newest request whose size the client never committed, also after a transition cancelled it
+    // or a hidden desktop dropped it as the ledger's request (deferHidden): the configure is still in
+    // flight either way, so the history is read, not the request.
     const hist = r.ledger.history, last = hist.length ? hist[hist.length - 1] : null;
-    const req = last && !last.seen && r.ledger.request && rectNear(last.rect, r.ledger.request.rect) ? last.rect : null;
+    const req = last && !last.seen ? last.rect : null;
     const inFlight = req !== null && !contains(area, req, tol);
     if (!inFlight && contains(area, now, tol)) return;
     const size = inFlight ? req : now;

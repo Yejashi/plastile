@@ -338,6 +338,36 @@ for (const [name, exit] of EXITS) {
   });
 }
 
+for (const [name, exit] of EXITS.filter(([n]) => n === "suspend" || n === "stop")) {
+  test(`nothing stays parked after ${name}, also a slow column whose parking deadline passed while its desktop was hidden`, () => {
+    // The deadline defers a hidden window (deferHidden drops its request); the configure is still in flight.
+    const ids = ["a", "b", "c"];
+    const h = new MockHost();
+    const e = h.start({ settingsFor: () => SCROLL });
+    for (const id of ids) {
+      h.open(id, id === "a" ? { delay: 3000 } : {});
+      h.activate(id);
+      h.advance(4000);
+    }
+    h.activate("a");
+    h.advance(4000);
+    assert.equal(e.execute("plastile.scroll.width-cycle").status, "accepted");
+    h.advance(20);
+    assert.equal(e.execute("plastile.focus.right").status, "accepted");
+    h.drain();
+    const a = h.windows.get("a")!;
+    assert.equal(e.explain("a")!.parked, true);
+    assert.ok(inside(rect(0, 0, 1280, 800), a.frame) && a.configures.length > 0, "the parking configure is in flight");
+    h.showDesktop("O1", "D2");
+    h.drain();
+    h.advance(1500); // its deadline passes while D1 is hidden
+    exit(h, e);
+    h.drain();
+    h.advance(10_000);
+    assertAllInside(h, ids, name);
+  });
+}
+
 const TO_FLOATING: Array<[string, (e: ReturnType<MockHost["start"]>) => void]> = [
   ["by command", (e) => { e.execute("plastile.layout.floating"); }],
   ["by configuration", (e) => { e.configure({ settingsFor: () => ({ ...SCROLL, layout: "floating" }) }); }],
