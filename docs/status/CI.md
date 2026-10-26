@@ -240,3 +240,13 @@ presentation) have no tests because the features do not exist.
   ([tools/sandbox/nix](../../tools/sandbox/nix/README.md)). It is `continue-on-error`: it was green on a hosted runner (39232013184) but the two `Q09` RSS bounds
   fail in some runs on KWin 6.8's own heap growth ([STATUS](STATUS.md)); its outcome is written to the job summary either way. The 6.7.5 job was green on
   its first hosted run (39094402153).
+- Timing flakes seen on hosted runners (the 6.7.5 job), each passing on a re-run of the same commit and in 12/12
+  local runs on 6.8.1:
+  - `persist-helper-delayed-Q05`: the start-up hold was released by its deadline only 88 ms after the load
+    request (runs 39171511919 and 40269141050). The QML Timer fired before the check's 150 ms lower bound on a
+    loaded runner.
+  - `maximized-open-remaximize-T17` (run 40269141050): KWin reported the window maximized while its frame
+    stayed at the client's own 1280x800. The trace shows Plastile un-maximized it once, honoured the
+    re-maximize and wrote nothing to it afterwards, so the stuck frame lies between the fixture and KWin 6.7.5.
+
+  Neither is retried automatically. A red run is re-run once and the failure is recorded here.
