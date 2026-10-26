@@ -458,7 +458,9 @@ asynchronous versioned messages".
   drops a write back to the committed size while a configure is outstanding (the ledger's E04 rule), so writing at
   once left the window on its tile (found by `persist-reload-restart-T27`; unit test added). *Toggle floating* and a
   switch to the floating layout wait the same way for a tile configure still in flight (a second toggle before a
-  slow client committed the first; unit test in `tests/core/floats.test.ts`).
+  slow client committed the first; unit test in `tests/core/floats.test.ts`). A suspend or unload drops such a
+  wait (the user owns the frames from then on), and a parked scrolling window keeps its parking entry until its
+  restore is written, so every exit still unparks it (review of the bug-hunt fixes; `tests/core/scrollingEngine.test.ts`).
 - **Saves.** Nothing is written before the load reply, or its failure, arrives; changes made meanwhile are saved a
   quiet period after it. One `Write` is in flight at a time; changes made while it waits are saved after its reply.
   Nothing is retried by itself: what a failed `Write` carried is saved with the next change or at unload, with one

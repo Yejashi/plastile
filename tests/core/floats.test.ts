@@ -200,4 +200,21 @@ test("D6/E04: floating a window again while its tile configure is in flight puts
     h.userSetFrame("b", rect(400, 300, 500, 400));
     assert.deepEqual(e.floatPreferences().map((p) => p.float.rect), [rect(400, 300, 500, 400)]);
   }
+  {
+    // Suspended while the restore waits: the user owns the frames from then on, and the resume
+    // writes nothing over where they put it.
+    const { h, e } = toTileAndBack(200);
+    assert.equal(e.execute("plastile.runtime.toggle-suspend").status, "accepted");
+    h.drain();
+    h.advance(1000);
+    const placed = rect(100, 8, 565, 784);
+    h.userSetFrame("b", placed);
+    const writes = h.writesTo("b");
+    assert.equal(e.execute("plastile.runtime.toggle-suspend").status, "accepted");
+    h.drain();
+    h.advance(2000);
+    assert.equal(e.modeOf("b"), "floating");
+    assert.equal(h.writesTo("b"), writes, "nothing written to b at the resume");
+    assert.ok(rectNear(frame(h, "b"), placed), JSON.stringify(frame(h, "b")));
+  }
 });

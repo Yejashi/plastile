@@ -568,6 +568,21 @@ test("late metadata: a resync that finds the app id ends the readiness wait", ()
   assert.equal(e.modeOf("late"), "tiled");
 });
 
+test("late metadata: a window that turns out not to be a normal one is classified at once, not at the deadline", () => {
+  const h = new MockHost();
+  const e = h.start();
+  h.open("a");
+  h.drain();
+  const w = h.open("x", { meta: meta("", {}) });
+  h.drain();
+  assert.equal(e.modeOf("x"), "pending");
+  w.meta = { ...w.meta, kind: "dialog" }; // only normal windows wait for an app id (BEHAVIOR §1)
+  e.metadataChanged("x", w.gen, w.meta);
+  h.drain();
+  assert.equal(e.modeOf("x"), "floating");
+  assert.equal((e.explain("x")!.decision as { reason: string }).reason, "dialog");
+});
+
 test("O06: an invalid work area keeps the last valid placement", () => {
   const { h, e } = setup(["a", "b"]);
   const before = tiledFrames(h, ["a", "b"]);
@@ -1026,6 +1041,26 @@ test("L08/L13: adopt-native on a natively tiled window that cannot tile is a no-
   e.membershipChanged("pin", pin.gen, { output: "O1", desktops: ["D1"], onAllDesktops: false, activities: [] });
   h.drain();
   assert.equal(e.modeOf("pin"), "native");
+  {
+    // Tileable, but the layout has no room (G08): the result says why, and the overflow float is
+    // tried again when a peer leaves.
+    const min700 = { minFrame: { width: 700, height: 0 }, maxFrame: { width: Infinity, height: Infinity }, fixed: false };
+    const h = new MockHost();
+    const e = h.start();
+    h.open("a", { constraints: min700 });
+    h.open("x", { constraints: min700, nativeTile: true });
+    h.drain();
+    assert.equal(e.modeOf("x"), "native");
+    h.active = "x";
+    const r = e.execute("plastile.window.adopt-native");
+    h.drain();
+    assert.equal(r.status, "noop");
+    assert.match(String(r.reason), /^cannot tile: overflow: x: does not fit/);
+    assert.equal(e.modeOf("x"), "floating");
+    h.close("a");
+    h.drain();
+    assert.equal(e.modeOf("x"), "tiled");
+  }
 });
 
 test("Q10/T16: explain lists every matched rule and the rule behind each action, not only the mode rule", () => {
@@ -1396,6 +1431,23 @@ test("BSP axis longest: a split follows the shape of the slot on the real output
     h.drain();
     const f = h.framesOf(["a", "b"]);
     assert.ok(f.b.y > f.a.y + f.a.height - 1, JSON.stringify(f));
+  }
+  {
+    // C08: the work-area read that a split needs can fail; the window still joins (on the
+    // placeholder) and the context is tiled once the area reads again.
+    const h = new MockHost();
+    const e = h.start({ settingsFor: () => longest("last") });
+    h.open("a");
+    h.drain();
+    const orig = h.workArea.bind(h);
+    let failures = 1;
+    h.workArea = (o, d) => { if (failures > 0) { failures--; throw new Error("boom"); } return orig(o, d); };
+    h.open("b");
+    h.drain();
+    h.workArea = orig;
+    assert.ok(e.counters.errors >= 1);
+    assert.equal(e.modeOf("b"), "tiled");
+    assertTiling(tiledFrames(h, ["a", "b"]), AREA);
   }
 });
 

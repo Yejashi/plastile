@@ -480,6 +480,7 @@ export class Engine {
     this.deadlineAt = Infinity;
     this.sweepParked(true); // every parked window back inside its output's work area (SCROLLING §5)
     this.releaseAllZones(); // zoned windows keep their frames (ZONES §2)
+    this.floatRestores.clear(); // a float restore still waiting is Plastile's write: never made later
     this.recs.forEach((r) => {
       L.cancel(r.ledger);
       r.ledger.request = null; // the user owns the frames now; a resume's targets are fresh requests
@@ -520,7 +521,7 @@ export class Engine {
     this.recs.set(r.id, r);
     this.counters.adopted++;
     this.trace.record(this.svc.now(), "add", r.id);
-    if (s.meta.appId === "" && s.meta.kind === "normal" && !s.meta.special) {
+    if (awaitsAppId(s.meta)) {
       // Late metadata: stay visible and pending, bounded by a readiness deadline.
       r.readyBy = this.svc.now() + this.opts.readinessMs;
       this.armDeadline(r.readyBy);
@@ -536,7 +537,7 @@ export class Engine {
     r.frame = rectOf(s.frame); r.nativeTile = s.nativeTile;
     if (s.nativeTile) r.nativeYield = true;
     r.suspensions = this.suspensionsFor(r, s.states);
-    if (r.mode === "pending" && s.meta.appId !== "") r.readyBy = null; // its metadata signal was missed
+    if (r.mode === "pending" && !awaitsAppId(s.meta)) r.readyBy = null; // its metadata signal was missed
     this.reclassify(r, "resync");
   }
 
@@ -600,7 +601,8 @@ export class Engine {
     const relevant = prev.appId !== meta.appId || prev.kind !== meta.kind || prev.transient !== meta.transient
       || prev.resizeable !== meta.resizeable || prev.special !== meta.special || prev.modal !== meta.modal
       || prev.resourceName !== meta.resourceName || (this.opts.titleRules === true && prev.title !== meta.title);
-    if (r.mode === "pending" && meta.appId !== "") { r.readyBy = null; this.reclassify(r, "metadata"); }
+    // The wait ends with its app id, or once the window is no longer one that waits for it (add()).
+    if (r.mode === "pending" && !awaitsAppId(meta)) { r.readyBy = null; this.reclassify(r, "metadata"); }
     else if (relevant) this.reclassify(r, "metadata");
     this.ensureFlush();
   }
@@ -1185,13 +1187,18 @@ export class Engine {
    * Input for a structural edit (insert, rebuild). A BSP split chosen from a slot's shape
    * (bsp.axis "longest") needs the context's real work area, not solve's placeholder; no
    * other edit reads the area, so only that case asks KWin. The placeholder stays while the
-   * work area is invalid (O06).
+   * work area is invalid (O06) or cannot be read (C08: the window still joins).
    */
   private structureInput(c: Ctx, bsp: boolean): SolveInput {
     let area: Rect | null = null;
     if (bsp && this.ctxSettings(c).bsp.axis === "longest") {
-      const a = this.host.workArea(c.key.output, c.key.desktop);
-      if (isValidArea(a)) area = a;
+      try {
+        const a = this.host.workArea(c.key.output, c.key.desktop);
+        if (isValidArea(a)) area = a;
+      } catch (e) {
+        this.counters.errors++;
+        this.svc.log("warn", "work area read failed", String(e));
+      }
     }
     return this.solveInput(c, area);
   }
@@ -2211,6 +2218,9 @@ export class Engine {
         this.reclassify(r, "adopt-native");
         if ((r.mode as PlacementMode) !== "tiled") return noop("cannot tile: " + r.decision.reason);
         this.solveNow(this.ctxFor(r.ctx!));
+        // The layout had no room for it (as Toggle floating, G08): KWin's tile is released and the
+        // window is an overflow float, tried again when its inputs change; the result says so.
+        if ((r.mode as PlacementMode) !== "tiled") return noop("cannot tile: " + (r.exception ?? "does not fit"));
         return ok([r.id]);
       }
     }
@@ -2409,7 +2419,10 @@ export class Engine {
       if (!t) continue;
       const inFlight = this.inFlight(r);
       L.cancel(r.ledger);
-      this.parked.delete(id);
+      // A parked window whose restore waits for its parking configure stays parked until the
+      // restore is written: the sweep (this flush, a stop or a suspend) still brings it inside
+      // its area, superseding that configure (SCROLLING §5.1), so its commit strands nothing.
+      if (inFlight === null) this.parked.delete(id);
       this.restoreFloat(r, t, inFlight);
     }
   }
@@ -2909,9 +2922,11 @@ export class Engine {
     if (!isValidArea(area)) area = this.host.outputs()[0]?.geometry ?? null;
     if (!isValidArea(area)) return;
     const tol = frameTolerance(this.scales.get(p.ctx.output) ?? 1);
-    // The newest request whose size the client never committed, also after a transition cancelled it.
+    // The newest request whose size the client never committed, also after a transition cancelled it
+    // or a hidden desktop dropped it as the ledger's request (deferHidden): the configure is still in
+    // flight either way, so the history is read, not the request.
     const hist = r.ledger.history, last = hist.length ? hist[hist.length - 1] : null;
-    const req = last && !last.seen && r.ledger.request && rectNear(last.rect, r.ledger.request.rect) ? last.rect : null;
+    const req = last && !last.seen ? last.rect : null;
     const inFlight = req !== null && !contains(area, req, tol);
     if (!inFlight && contains(area, now, tol)) return;
     const size = inFlight ? req : now;
@@ -3357,6 +3372,11 @@ function explainRules(w: WindowRules): Record<string, unknown> {
   if (w.minSize !== undefined) actions.minSize = `${w.minSize.width}x${w.minSize.height}`;
   if (w.zone !== undefined) actions.zone = String(w.zone);
   return { ids: w.ruleIds.slice(), actions, reasons: { ...(w.reasons ?? {}) } };
+}
+
+/** A normal window without its app id yet: classified once it arrives or the readiness deadline passes (BEHAVIOR §1). */
+function awaitsAppId(m: WindowMeta): boolean {
+  return m.appId === "" && m.kind === "normal" && !m.special;
 }
 
 /** Floated by the overflow policy (float-new), as opposed to by the user or a rule. */
