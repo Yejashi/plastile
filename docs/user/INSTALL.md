@@ -2,13 +2,14 @@
 
 Plastile is a KWin script package (`KWin/Script`, plugin id `plastile`). Nothing is compiled against KWin. The package is a directory holding QML, a generated JavaScript bundle, a KConfig XT schema and a settings form.
 
-**Supported target:** KWin 6.7 on Wayland (a Plasma 6 Wayland session; XWayland applications inside it are tiled, a Plasma X11 session is not supported). The package declares `X-Plasma-API-Minimum-Version: 6.7`. Versions exercised:
+**Supported target:** KWin 6.7 and 6.8 on Wayland (a Plasma 6 Wayland session; XWayland applications inside it are tiled, a Plasma X11 session is not supported). The package declares `X-Plasma-API-Minimum-Version: 6.7`. Versions exercised:
 
 - **KWin 6.7.5:** nested sessions on the reference host and in CI; a physical session on the reference desktop (build `97fec4a`; the physical runbook is not complete); and, by hand, a laptop at scale 1.35 (an earlier build).
-- **KWin 6.8:** 6.8.1 in nested sessions on the reference host (the full suite passes, 2026-10-25); 6.8.0 in a provisional CI job, whose reload memory checks fail in some runs on KWin 6.8.0's own allocation. The physical checks on 6.8.1 are not finished, so 6.8 is not declared supported yet.
+- **KWin 6.8.1:** nested sessions on the reference host (the full suite passes, 2045/2045 checks at `ee6f8ef`, 2026-10-25); the reference desktop in normal use since 2026-10-25, with windows that open maximized and a 1 h normal-use soak checked at `0a0798c` ([evidence](../status/evidence/physical-recheck-20261025.json)) and build `58614e5` installed and started cleanly ([evidence](../status/evidence/physical-install-58614e5-20261026.json)). The physical runbook has not been repeated on 6.8.1.
+- **KWin 6.8.0:** a provisional CI job. Its reload memory checks fail in some runs because in 7 of 14 repetitions KWin 6.8.0 itself grew by 35–77 MiB over 100 reloads of an empty script ([control](../status/evidence/q09-kwin68-control.json)); it has been observed only over repeated reloads. Two nested full-suite runs on 6.8.1 on the reference host (a different environment) grew 0.35 and 0.43 MiB over 100 reloads of Plastile; the empty-script control has not run on 6.8.1.
 - Any other version: untested.
 
-This is a release candidate, not a release ([status](README.md#status-read-this-first), [G3 checklist](../status/G3_CHECKLIST.md)). Plastile has no licence yet (`"License": "Undecided"` in `metadata.json`, [ADR-012](../design/DECISIONS.md#adr-012-license-and-upstream-reuse-are-deliberate)).
+This is a release candidate, not a release ([status](README.md#status-read-this-first), [G3 checklist](../status/G3_CHECKLIST.md)); a 0.1.0 alpha is being prepared ([draft release notes](../release/0.1.0-alpha.md)). Plastile has no licence yet (`"License": "Undecided"` in `metadata.json`, [ADR-012](../design/DECISIONS.md#adr-012-license-and-upstream-reuse-are-deliberate)).
 
 ## 1. Build from source
 
@@ -102,7 +103,7 @@ What an upgrade keeps (same scenario, after the script restart and after the KWi
 - **Your shortcut bindings:** two rebound commands, a binding given to a command that has none by default, and a cleared default all stayed as you set them, in KGlobalAccel and in `kglobalshortcutsrc`. The rebound keys, pressed for real, ran their command once each; the old keys and the cleared key ran nothing. `Meta+T` stayed KWin's tile editor.
 - **Old defaults, too.** A command you never touched keeps the key the older version registered, even when the new version has a different default. See [Changed defaults](SHORTCUTS.md#default-bindings-measured-with-real-key-presses): after upgrading from a version that bound *Suspend/resume tiling* to `Meta+Shift+S`, it is still `Meta+Shift+S`, which collides with Spectacle; rebind it in the shortcut settings.
 
-Not measured: an upgrade in a physical session, and an upgrade between two released versions (there is no release yet).
+In the physical session on the reference desktop (KWin 6.8.1), `tools/install.sh upgrade` followed by a reboot started the new build (2026-10-26, `58614e5`) ([evidence](../status/evidence/physical-install-58614e5-20261026.json)); whether shortcut bindings were kept was not checked there. Not measured: an upgrade between two released versions (there is no release yet).
 
 ## 3. Enable in System Settings
 
@@ -263,5 +264,5 @@ windows are drawn at their real place from the next frame, even in the middle of
 KWin 6.8.1).
 
 **Where it works:** KWin runs scripted effects only with OpenGL compositing on a hardware renderer. With software
-rendering (llvmpipe) or QPainter compositing it is not loaded and nothing is animated. It has not been run in a
-physical session yet; smoothness on real displays is unverified.
+rendering (llvmpipe) or QPainter compositing it is not loaded and nothing is animated. On the reference desktop
+(KWin 6.8.1) the owner enabled it and reported that it works; smoothness at each refresh rate is not judged or measured.

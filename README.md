@@ -5,14 +5,17 @@ a KWin declarative script with a TypeScript core: master/stack, BSP, monocle and
 configuration and rules; keyboard commands; session persistence; an explain view. Scrolling and manual zones
 exist as experimental opt-in layouts (ADR-014). Plastile places windows at once; an optional, separate KWin
 effect, Plastile Motion (`effect/`, off by default, ADR-023), can animate how windows slide into place, drawing
-only: tested in nested KWin 6.8.1, not yet on a physical display.
+only: tested in nested KWin 6.8.1; on a physical display the owner enabled it and reported that it works, with no
+per-refresh-rate judgement or measurement.
 
 **Status: release candidate, not a qualified release.** It is tested by unit/replay tests and in disposable
-nested KWin sessions (KWin 6.7.5 on the reference machine and in CI; KWin 6.8.0 only in a provisional CI job
-with open failures), and by a physical-session runbook on one desktop (KWin 6.7.5, build `97fec4a`). That
-runbook is not complete: input-to-visible latency passes at 60 Hz but fails for two workloads at 144 Hz and is
-incomplete at 100 Hz, the soak so far covered an idle session only, the owner skipped the unplug and suspend checks, and later
-builds have not run physically. Nested numbers are labelled as nested, physical numbers as physical. The open
+nested KWin sessions (KWin 6.7.5 and 6.8.1 on the reference machine; 6.7.5 in CI, and 6.8.0 in a provisional
+CI job whose reload memory checks fail in some runs on KWin 6.8.0's own growth), and by a physical-session
+runbook on one desktop (KWin 6.7.5, build `97fec4a`). That runbook is not complete: input-to-visible latency
+passes at 60 Hz but fails for two workloads at 144 Hz and is incomplete at 100 Hz, the owner skipped the unplug
+and suspend checks, and it has not been repeated on later builds, which that desktop has been in normal use with on
+KWin 6.8.1 since 2026-10-25 (a 1 h normal-use soak there showed no growth at a constant window count). A 0.1.0 alpha is being prepared
+([draft release notes](docs/release/0.1.0-alpha.md)). Nested numbers are labelled as nested, physical numbers as physical. The open
 gates are in the [G3 checklist](docs/status/G3_CHECKLIST.md); results and failures in
 [STATUS](docs/status/STATUS.md).
 

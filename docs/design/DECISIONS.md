@@ -1136,3 +1136,28 @@ That scenario failed 3 of its checks on the previous effect: parked columns logg
 and a scale change animated every window. It passes on the fixed effect. `virtualScreenGeometryChanged` is
 emitted from `Workspace::geometryChanged` in both KWin 6.7.5 and 6.8.1 (`effecthandler.cpp`). Results are in
 [STATUS](../status/STATUS.md#window-motion-t31-adr-023-nested-kwin-681).
+
+## ADR-024: An alpha before G3, declaring KWin 6.7 and 6.8
+
+**Status:** accepted 2026-10-26 by the owner, who asked for an alpha and to proceed after the recommendation
+below; the licence (ADR-012) and the experimental layouts (ADR-014) stay owner decisions, and the alpha is not
+distributed before the licence is chosen.
+
+**Context.** ROADMAP §10 has one release step, gate G3, and G3 is open on physical items: latency at 144 Hz and
+100 Hz (G3-3), a multi-hour normal-use soak, unplug and suspend (skipped by the owner), physical uninstall, and
+the runbook repeated on the current build ([G3 checklist](../status/G3_CHECKLIST.md)). Every G1/G2 gate is met,
+the first-release feature set is implemented, and a whole-project bug hunt left no critical or high findings.
+The earlier rule was that KWin 6.8 is not declared supported until its physical checks are finished (G3-1b).
+
+**Decision.** Insert a pre-release step: an alpha, version 0.1.0, which does not need the open G3 gates but
+publishes them as known limitations ([release notes draft](../release/0.1.0-alpha.md), checklist
+[§6](../status/G3_CHECKLIST.md#6-alpha-before-g3)). For the alpha the docs declare KWin 6.7 and 6.8 on Wayland,
+each with what was exercised: 6.7.5 nested on the host and in CI, physical runbook at `97fec4a`; 6.8.1 the full
+nested suite on the host (2045/2045 at `ee6f8ef`) and normal use on the reference desktop since 2026-10-25
+without the runbook; 6.8.0 a provisional CI job whose reload RSS bound fails in some runs on KWin 6.8.0's own
+growth ([q09-kwin68-control](../status/evidence/q09-kwin68-control.json)).
+
+**Consequences.** G3 is unchanged: G3-1b stays open for the qualified release, which needs the physical runbook
+on 6.8 before 6.8 counts toward G3-1. The alpha and the release candidate share version 0.1.0, so the qualified
+release must carry a higher version. Alpha users are the first physical testers other than the owner; the
+limitations list in the release notes is the contract for what was not checked.

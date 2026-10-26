@@ -15,13 +15,13 @@ Labels used in this guide: **measured** (observed in a test run), **observed sou
 
 ## Status: read this first
 
-Plastile 0.1.0 is a **release candidate**, not a qualified release. The gates still open are listed in the [G3 checklist](../status/G3_CHECKLIST.md). It has no licence yet ([ADR-012](../design/DECISIONS.md#adr-012-license-and-upstream-reuse-are-deliberate)).
+Plastile 0.1.0 is a **release candidate**, not a qualified release. The gates still open are listed in the [G3 checklist](../status/G3_CHECKLIST.md); a 0.1.0 alpha is being prepared ([draft release notes](../release/0.1.0-alpha.md)). It has no licence yet ([ADR-012](../design/DECISIONS.md#adr-012-license-and-upstream-reuse-are-deliberate)).
 
 | What | Where it stands |
 |---|---|
-| Tested compositor | KWin **6.7.5** (Qt 6.12.0, KF 6.30.0, Arch Linux), see the [environment profile](../status/ENVIRONMENT.md). `metadata.json` declares a minimum Plasma API of 6.7. KWin 6.7.5 is also tested in an Ubuntu 26.10 sandbox; KWin **6.8.0** runs in a provisional CI job that still has open failures (memory growth across repeated script reloads, attributed to KWin 6.8 itself, see [status](../status/STATUS.md)). Other versions are untested. |
+| Tested compositor | KWin **6.7.5** (Qt 6.12.0, KF 6.30.0, Arch Linux), see the [environment profile](../status/ENVIRONMENT.md), and KWin **6.8.1** (Qt 6.12.0, KF 6.31.0) on the same host after a system update. `metadata.json` declares a minimum Plasma API of 6.7. KWin 6.7.5 is also tested in an Ubuntu 26.10 sandbox; KWin **6.8.0** runs in a provisional CI job whose reload memory checks fail in some runs (memory growth across repeated script reloads, measured with an empty script, so KWin 6.8.0's own; see [INSTALL](INSTALL.md)). Other versions are untested. |
 | How it was tested | Unit and replay tests, and **disposable nested `kwin_wayland --virtual` sessions** with a controlled Wayland test client and real input injection (libei). Every geometry check reads window frames from KWin itself, never from Plastile's own bookkeeping. |
-| Physical session | **Partly validated.** The physical runbook ran on one desktop (KWin 6.7.5, three outputs at 60, 100 and 144 Hz, scale 1, plasmashell panels, the owner's applications) with build `97fec4a`. Install, outputs and fractional scale, panels, activities, real applications, shortcuts and idle passed. Latency failed at 144 Hz for two workloads and is incomplete at 100 Hz; cable unplug and system suspend were skipped; the soak is still running ([evidence](../status/evidence/physical-runbook-20261018.json)). Changes after `97fec4a` (the hidden-desktop work-area fix, windows that open maximized) have not run physically. |
+| Physical session | **Partly validated.** The physical runbook ran on one desktop (KWin 6.7.5, three outputs at 60, 100 and 144 Hz, scale 1, plasmashell panels, the owner's applications) with build `97fec4a`. Install, outputs and fractional scale, panels, activities, real applications, shortcuts and idle passed. Latency failed at 144 Hz for two workloads and is incomplete at 100 Hz; cable unplug and system suspend were skipped; the idle soak showed no growth ([evidence](../status/evidence/physical-runbook-20261018.json)). Since 2026-10-25 the desktop runs KWin 6.8.1 in normal use: windows that open maximized were tiled at login and a 1 h normal-use soak showed no growth at a constant window count (build `0a0798c`, [evidence](../status/evidence/physical-recheck-20261025.json)); build `58614e5`, with the bug-hunt fixes, was installed on 2026-10-26 and started cleanly ([evidence](../status/evidence/physical-install-58614e5-20261026.json)). The hidden-desktop work-area fix has not run physically. |
 | Performance | See [Performance: what was measured](#performance-what-was-measured). Every number there names its layer: nested or physical. |
 
 ### What works (measured in nested KWin 6.7.5)
@@ -45,15 +45,15 @@ The last full nested suite on the reference host passed: 141 scenarios, 1897 of 
 - Pointer drags. Dropping a tile onto another tile swaps them on release, with no re-tiling during the drag. Dropping it into a gap snaps it back. Meta+right-drag resizing moves the shared divider. Closing the window or unloading the script mid-drag leaves no errors.
 - Real keyboard input: all 20 default bindings reach Plastile when pressed through libei in a nested session (US keymap). Three earlier defaults that did not were replaced; see [SHORTCUTS](SHORTCUTS.md#default-bindings-measured-with-real-key-presses).
 - Activities (the Activities service started late, a second activity added, windows on two activities float), plasmashell panels and work-area changes, per-screen virtual desktops, XWayland applications, and real applications (Dolphin, System Settings, GNOME Calculator, Alacritty, Firefox, Chromium, xmessage, zenity).
-- Windows that open maximized are un-maximized once and tiled (`maximizedOnOpen`, [ADR-021](../design/DECISIONS.md#adr-021-a-window-that-arrives-maximized-is-un-maximized-and-tiled)). This and the hidden-desktop work-area fix pass nested (`maximized-open-*-T17`, `workarea-hidden-desktop-O07`) but came after the physical build `97fec4a`, so they have not run physically yet.
+- Windows that open maximized are un-maximized once and tiled (`maximizedOnOpen`, [ADR-021](../design/DECISIONS.md#adr-021-a-window-that-arrives-maximized-is-un-maximized-and-tiled)). This and the hidden-desktop work-area fix pass nested (`maximized-open-*-T17`, `workarea-hidden-desktop-O07`) but came after the physical build `97fec4a`. Physically, on KWin 6.8.1 at `0a0798c`, windows that opened maximized at login were tiled ([evidence](../status/evidence/physical-recheck-20261025.json)); the hidden-desktop fix has not run physically yet.
 
 ### What is not covered
 
 - **Physical latency:** grow/shrink and focus fail their latency comparison at 144 Hz, and the 100 Hz run is incomplete ([below](#performance-what-was-measured)).
 - **Physical topology:** unplugging a monitor and suspending the machine were not checked in a physical session (the owner skipped them). VRR was not covered (the reference monitors report it as not capable).
 - **In-app actions in a physical session:** clicking titlebar buttons and tabs of tiled windows, and turning a window's border off and on (G14, G15). The injector sends only Meta chords.
-- **Long sessions:** a 3.83 h physical soak with the desktop left alone showed no growth in KWin's memory or Plastile's connections; a soak with normal use has not run.
-- **KWin 6.8:** only a provisional CI job.
+- **Long sessions:** a 3.83 h physical soak with the desktop left alone showed no growth in KWin's memory or Plastile's connections; a 1 h soak with normal use (KWin 6.8.1) showed Plastile's connections growing only with the window count and KWin's memory flat at a constant window count; a multi-hour soak with normal use has not run.
+- **KWin 6.8:** the full nested suite passes on 6.8.1 and the reference desktop is in normal use with it, but the physical runbook has not been repeated on it; 6.8.0 only in a provisional CI job.
 - **Scrolling and zones:** experimental, nested only.
 - **Uninstall in a physical session.**
 
@@ -64,7 +64,7 @@ The engine is designed for these cases, but designed is not tested.
 Run with the owner's consent, following the [physical runbook](../validation/PHYSICAL_RUNBOOK.md), on KWin 6.7.5, Qt 6.12.0, OpenGL, outputs HDMI-A-1 2560×1440 @ 144 Hz, DP-2 1920×1080 @ 100 Hz and DP-1 1920×1080 @ 60 Hz, all scale 1, build `97fec4a` ([evidence](../status/evidence/physical-runbook-20261018.json)).
 
 - **Passed:** session check; install and smoke test (started at the default log level, 68 shortcuts, errors 0, the persistence helper activated by the session bus); windows on three outputs at mixed refresh rates and sending a window between them; scales 1.25, 1.5 and 1.75 and back; output priority changes; a test panel added, resized, auto-hidden, made floating, moved and removed; activities created, switched and deleted; Dolphin (Wayland and XWayland), Chromium, GNOME Calculator, System Settings, xmessage and a zenity dialog; 19 of 19 injected default shortcuts and *Suspend/resume* by hand; no Plastile work while idle.
-- **Found and fixed after that build:** a tiled window on a desktop not shown was moved by KWin when a panel appeared, and Plastile corrected it toward its old tile; now nothing is written to a window whose desktop is not shown (`a5642dd`). The owner's terminal opens every window maximized, so it was never tiled; now such windows are un-maximized once and tiled (ADR-021). Neither fix has run physically yet.
+- **Found and fixed after that build:** a tiled window on a desktop not shown was moved by KWin when a panel appeared, and Plastile corrected it toward its old tile; now nothing is written to a window whose desktop is not shown (`a5642dd`). The owner's terminal opens every window maximized, so it was never tiled; now such windows are un-maximized once and tiled (ADR-021), which held at login on KWin 6.8.1 (`0a0798c`; the owner's usual terminal launch was not re-checked). The hidden-desktop fix has not run physically yet.
 
 ## Is it working?
 
@@ -213,7 +213,7 @@ Plastile and off by default ([INSTALL](INSTALL.md#8-window-motion-optional),
 - Dragging, maximize, fullscreen, newly opened windows, desktop switches, screen changes (including a scale
   change) and scrolling columns entering or leaving the screen are not animated.
 - It animates any program's moves, not only Plastile's, because it cannot tell them apart.
-- Measured in nested KWin 6.8.1 only: smoothness on real displays (60/100/144 Hz) is not yet judged.
+- Measured in nested KWin 6.8.1. On the reference desktop (KWin 6.8.1) the owner enabled it and reported that it works; smoothness at 60/100/144 Hz has not been judged or measured separately.
 
 ## Saved layout preferences
 

@@ -1,0 +1,29 @@
+{
+  "layer": "physical session (reference desktop, live KWin), read-only checks",
+  "date": "2026-10-26",
+  "kwin": "6.8.1 (Qt 6.12.0, KF 6.31.0)",
+  "build": "58614e5 (main after the 2026-10-25 bug hunt, its review and the CI fixes)",
+  "install": {
+    "consent": "owner asked for the upgrade, then said they had logged out and back in; the machine's boot time (07:40) shows a reboot",
+    "commands": [
+      "npm run build",
+      "tools/install.sh upgrade",
+      "tools/install.sh install-helper"
+    ],
+    "result": "installed bundle byte-identical to the build (cmp); installed effect directory identical to effect/ (diff -r); dist/plastile-0.1.0.kwinscript built by tools/release.py from the same tree carries the same bundle; release.py --check: reproducible",
+    "kwinrc": "unchanged by the installer: plastileEnabled=true, plastile_motionEnabled=true (set by the owner earlier)"
+  },
+  "afterSessionRestart": {
+    "order": "install 07:37; machine booted 07:40; kwin_wayland and the plastile-state helper both started 07:41:14, after the install. Inference from those start times: both run the installed files (the 'started 0.1.0' line cannot tell builds apart; the version string did not change)",
+    "scriptLoaded": "org.kde.kwin.Scripting.isScriptLoaded plastile: true",
+    "effectLoaded": "org.kde.kwin.Effects.isEffectLoaded plastile_motion: true",
+    "helper": "one plastile-state process, /proc/<pid>/exe = ~/.local/libexec/plastile-state, started by the session bus on Plastile's first request",
+    "journal": [
+      "plastile notice started 0.1.0: 0 windows, configuration revision 1; layout master-stack on DP-1 / Desktop 1; layout master-stack on HDMI-A-1 / Desktop 1; layout master-stack on DP-2 / Desktop 1",
+      "plastile notice restored saved layout floating for DP-2 / New Desktop",
+      "plastile warn shortcut conflicts: Meta+Ctrl+S (Plastile suspend/resume and the Wacom tablet's stylus mode toggle), known since P1"
+    ],
+    "errors": "no other plastile line; no TypeError, ReferenceError or QML error from Plastile in this boot's user journal"
+  },
+  "notChecked": "behaviour of the bug-hunt fixes in use (tiling, commands, motion) was not exercised by the tester; the owner uses the desktop normally from here"
+}

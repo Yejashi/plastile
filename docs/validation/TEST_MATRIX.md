@@ -134,8 +134,10 @@ Rows are real runs; per-scenario results are in the linked reports. "All" means 
 | kwin-wayland 4:6.7.5-0ubuntu1 (Ubuntu 26.10 sandbox) | Qt 6.11.2, KF 6.29.0 | Nested `--virtual` in CI | QPainter | Nested | All 88 run scenarios at `67772ee` (CI run 39109880796) | SKIP L14 (tile editor is GL-only), SKIP G02 |
 | kwin 6.8.0 (Nix, pinned nixpkgs) | Qt 6.11.2, KF 6.30.0 | Nested `--virtual` in CI (provisional) | llvmpipe, emulated udmabuf | Nested | 84 of 87 run scenarios at `67772ee` | FAIL `reload-Q09`, `persist-reload-cycles-Q09` (KWin RSS growth), `persist-no-qtcore-Q05` (test environment); SKIP G02 |
 | kwin 6.7.5 (Arch) | Qt 6.12.0 | Physical Plasma Wayland session, reference desktop, build `97fec4a` | OpenGL, AMD RX 9070 XT; 144/100/60 Hz, scale 1 | Physical | P0, P1, P2a–c, P3, P4, P5, P7, P8b; P6 at 60 Hz ([evidence](../status/evidence/physical-runbook-20261018.json)) | FAIL P6 at 144 Hz (ratio, focus); P6 100 Hz incomplete; P8a soak idle only (no growth over 3.83 h, no window activity); P2d, P2e skipped by the owner; P9 and PHY-10 not run ([G3 checklist](../status/G3_CHECKLIST.md)) |
+| kwin 6.8.1 (Arch) | Qt 6.12.0, KF 6.31.0 | Nested `--virtual` on the reference host | OpenGL (host GPU, offscreen) | Nested | All 154 run scenarios at `ee6f8ef`, 2045/2045 checks ([evidence](../status/evidence/integration-host-kwin681-bugfix-ee6f8ef.json)) | SKIP G02 |
+| kwin 6.8.1 (Arch) | Qt 6.12.0, KF 6.31.0 | Physical Plasma Wayland session, reference desktop, normal use | OpenGL, AMD RX 9070 XT; 144/100/60 Hz, scale 1 | Physical | ADR-021 at login, P8a 1 h normal use at `0a0798c` ([evidence](../status/evidence/physical-recheck-20261025.json)); `58614e5` started cleanly ([evidence](../status/evidence/physical-install-58614e5-20261026.json)) | Runbook not repeated; P6 100 Hz and P3 hidden-desktop re-check pending |
 
-The initial support candidate families are 6.7 and 6.8. Earlier Plasma releases and full X11 sessions are separate compatibility work. XWayland-client coverage does not imply full X11-session support.
+The initial support candidate families are 6.7 and 6.8; the alpha declares both (ADR-024). Earlier Plasma releases and full X11 sessions are separate compatibility work. XWayland-client coverage does not imply full X11-session support.
 
 ## 9. Release criteria
 

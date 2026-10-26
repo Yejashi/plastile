@@ -250,3 +250,5 @@ presentation) have no tests because the features do not exist.
     re-maximize and wrote nothing to it afterwards, so the stuck frame lies between the fixture and KWin 6.7.5.
 
   Neither is retried automatically. A red run is re-run once and the failure is recorded here.
+- Last run: `58614e5` (run 40272444147), every job green on its first attempt: 6.7.5 1724/1724 checks (13
+  SKIPs), 6.8.0 1675/1675 (14 SKIPs, both `Q09` bounds passed).
