@@ -2217,6 +2217,9 @@ export class Engine {
         this.reclassify(r, "adopt-native");
         if ((r.mode as PlacementMode) !== "tiled") return noop("cannot tile: " + r.decision.reason);
         this.solveNow(this.ctxFor(r.ctx!));
+        // The layout had no room for it (as Toggle floating, G08): KWin's tile is released and the
+        // window is an overflow float, tried again when its inputs change; the result says so.
+        if ((r.mode as PlacementMode) !== "tiled") return noop("cannot tile: " + (r.exception ?? "does not fit"));
         return ok([r.id]);
       }
     }

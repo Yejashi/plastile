@@ -1026,6 +1026,26 @@ test("L08/L13: adopt-native on a natively tiled window that cannot tile is a no-
   e.membershipChanged("pin", pin.gen, { output: "O1", desktops: ["D1"], onAllDesktops: false, activities: [] });
   h.drain();
   assert.equal(e.modeOf("pin"), "native");
+  {
+    // Tileable, but the layout has no room (G08): the result says why, and the overflow float is
+    // tried again when a peer leaves.
+    const min700 = { minFrame: { width: 700, height: 0 }, maxFrame: { width: Infinity, height: Infinity }, fixed: false };
+    const h = new MockHost();
+    const e = h.start();
+    h.open("a", { constraints: min700 });
+    h.open("x", { constraints: min700, nativeTile: true });
+    h.drain();
+    assert.equal(e.modeOf("x"), "native");
+    h.active = "x";
+    const r = e.execute("plastile.window.adopt-native");
+    h.drain();
+    assert.equal(r.status, "noop");
+    assert.match(String(r.reason), /^cannot tile: overflow: x: does not fit/);
+    assert.equal(e.modeOf("x"), "floating");
+    h.close("a");
+    h.drain();
+    assert.equal(e.modeOf("x"), "tiled");
+  }
 });
 
 test("Q10/T16: explain lists every matched rule and the rule behind each action, not only the mode rule", () => {
