@@ -51,8 +51,54 @@ decorations, Alt+Tab, the task manager, maximize, fullscreen, native quick tilin
 
 ## Installation
 
-There is no published release yet, so for now you build from source. It takes a minute and nothing is compiled
-against KWin.
+### Quick install
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/Yejashi/plastile/main/install.sh | sh
+```
+
+That downloads the newest [release](https://github.com/Yejashi/plastile/releases), checks it against the
+release's `SHA256SUMS`, installs it for your user with `kpackagetool6`, and turns it on. Open two or three
+windows: they tile side by side. Nothing needs `sudo`, and KWin is not restarted.
+
+Add options after `sh -s --`:
+
+| Option | What it does |
+|---|---|
+| `--with-helper` | Also builds the small helper that remembers layouts across logins (needs `cmake` and the Qt 6 development files: Arch `qt6-base`, Debian/Ubuntu `qt6-base-dev`, Fedora `qt6-qtbase-devel`) |
+| `--version v0.1.0-alpha` | Installs a specific release |
+| `--no-enable` | Installs without turning it on |
+| `--uninstall` | Turns Plastile off and removes it |
+
+For example: `curl -fsSL https://raw.githubusercontent.com/Yejashi/plastile/main/install.sh | sh -s -- --with-helper`.
+If you prefer to read the script first, download it and run `sh install.sh --help`.
+
+**Updating:** run the same command again, then **log out and back in**. KWin keeps running the old version of a
+script until it restarts. Do not run `kwin_wayland --replace` on Wayland: it ends your session.
+
+> Before the first release is published, the quick install has nothing to download and says so; use
+> [From source](#from-source) until then.
+
+### NixOS
+
+The repository is a flake with a package, an overlay and a NixOS module:
+
+```nix
+# flake.nix
+inputs.plastile.url = "github:Yejashi/plastile";
+
+# in your NixOS configuration
+imports = [ inputs.plastile.nixosModules.default ];
+programs.plastile.enable = true;
+```
+
+Then turn it on in System Settings (below), or set `kwinrc` `[Plugins] plastileEnabled=true` with
+plasma-manager. It needs a nixpkgs with Plasma 6.7 or newer (nixos-unstable). Details:
+[INSTALL](docs/user/INSTALL.md#nixos).
+
+### From source
+
+You need Node.js 26 and npm.
 
 ```sh
 git clone https://github.com/Yejashi/plastile.git
@@ -64,26 +110,14 @@ tools/install.sh install          # installs the KWin script (and the optional, 
 tools/install.sh install-helper   # optional: remembers layouts across logins
 ```
 
-`tools/install.sh` wraps `kpackagetool6` and only writes to your home directory. It never enables, reloads or
-restarts anything.
+Then turn it on in **System Settings → Window Management → KWin Scripts**: tick **Plastile** and click
+**Apply**. Update with `git pull && npm ci && npm run build && tools/install.sh upgrade` and a re-login;
+remove with `tools/install.sh remove` (and `remove-helper`).
 
-Then enable it:
+### Is it running?
 
-1. Open **System Settings → Window Management → KWin Scripts**.
-2. Tick **Plastile** and click **Apply**.
-3. Open two or three windows: they should tile side by side.
-
-Check that it started with `journalctl --user -b | grep plastile`. You should see
-`plastile notice started 0.1.0: ...`.
-
-**Updating:** run `git pull && npm ci && npm run build && tools/install.sh upgrade`, then **log out and back
-in**. KWin keeps running the old version of a script until it restarts; toggling the script off and on is not
-enough. Do not run `kwin_wayland --replace` on Wayland: it ends your session.
-
-**Uninstalling:** `tools/install.sh remove` (and `remove-helper`). See
-[INSTALL §6](docs/user/INSTALL.md#6-uninstall-cleanly) for clearing the leftover shortcut entries.
-
-The full guide, including the settings dialog and recovery steps, is in [docs/user/INSTALL.md](docs/user/INSTALL.md).
+`journalctl --user -b | grep plastile` should show `plastile notice started 0.1.0: ...`. The full guide, with
+the settings dialog, uninstalling and recovery, is [docs/user/INSTALL.md](docs/user/INSTALL.md).
 
 ## Default shortcuts
 

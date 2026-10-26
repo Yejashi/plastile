@@ -103,6 +103,13 @@ jobs:
         if: hashFiles('tools/release.py') != ''
         run: python3 tools/release.py --check --out dist
 
+      - name: Installer script (install.sh) lint
+        # POSIX sh, run by users as `curl … | sh`; shellcheck is preinstalled on the hosted Ubuntu image.
+        run: |
+          sh -n install.sh
+          shellcheck -s sh install.sh
+          sh install.sh --help > /dev/null
+
       - name: Integration scenario registry imports (no KWin is started)
         # Imports tests/integration/scenarios*.py through run.py --list. This only
         # proves the scenario modules import and register; it does not run them.

@@ -11,6 +11,83 @@ Plastile is a KWin script package (`KWin/Script`, plugin id `plastile`). Nothing
 
 This is a release candidate, not a release ([status](README.md#status-read-this-first), [G3 checklist](../status/G3_CHECKLIST.md)); a 0.1.0 alpha is being prepared ([draft release notes](../release/0.1.0-alpha.md)). Plastile is licensed under GPL-3.0-or-later ([ADR-012](../design/DECISIONS.md#adr-012-license-and-upstream-reuse-are-deliberate)).
 
+## Quick install (from a release)
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/Yejashi/plastile/main/install.sh | sh
+```
+
+[`install.sh`](../../install.sh) at the repository root is a POSIX shell script for users:
+
+- **Download:** it takes the newest release from GitHub (pre-releases included; `--version TAG` picks one, or
+  `--local DIR` uses files built by `tools/release.py`) and checks every file against the release's
+  `SHA256SUMS`. A mismatch stops it before anything is installed.
+- **Version check:** it refuses a KWin older than 6.7 (`--force` overrides) and warns about a version newer
+  than 6.8, or a session that is not Wayland.
+- **Install:** it installs or upgrades the script and the Plastile Motion effect (left disabled) with
+  `kpackagetool6`, in `~/.local/share/kwin`. `--with-helper` builds the [persistence helper](#persistence-helper)
+  from the release's source tarball.
+- **Enable:** on a first install it sets `[Plugins] plastileEnabled=true` with `kwriteconfig6` and calls KWin's
+  `Scripting.start`, which is what ticking the box in System Settings does (`--no-enable` skips this). After an
+  upgrade it only reminds you to log out and back in ([Updating](#updating)).
+- **Uninstall:** `--uninstall` turns the script off, removes the script, the effect and the helper, and prints
+  what was kept: settings, saved layouts and shortcut entries ([section 6](#6-uninstall-cleanly)).
+- **Never:** it never restarts KWin, uses `sudo`, or writes anything except the `plastileEnabled` key.
+
+Tested (2026-10-26) with `dash` against a scratch `XDG_DATA_HOME` and `XDG_CONFIG_HOME` on KWin 6.7.5, with
+`--local` files and `--no-enable`: install, upgrade, a tampered file rejected by its checksum, `--with-helper`
+(the helper built from the tarball and its activation file written), and `--uninstall`. Not tested yet: the
+download from a published release (there is none yet), and the enable step against a running KWin.
+
+Releases are made by the [release workflow](../../.github/workflows/release.yml): pushing a tag `v<version>`
+(for example `v0.1.0-alpha`) builds the files with `tools/release.py --check`, writes `SHA256SUMS` and creates a
+draft GitHub release, which a maintainer publishes after review.
+
+## NixOS
+
+The repository is a flake ([`flake.nix`](../../flake.nix), [`nix/`](../../nix/package.nix)). It provides:
+
+- `packages.<system>.default`;
+- `overlays.default`, which adds `pkgs.plastile`;
+- `nixosModules.default`, with the options `programs.plastile.enable` and `programs.plastile.package`.
+
+The module installs the package system-wide, which puts the script and the effect on `XDG_DATA_DIRS`. It also
+registers the persistence helper with the session bus (`services.dbus.packages`).
+
+```nix
+{
+  inputs.plastile.url = "github:Yejashi/plastile";
+
+  outputs = { nixpkgs, plastile, ... }: {
+    nixosConfigurations.myhost = nixpkgs.lib.nixosSystem {
+      modules = [
+        plastile.nixosModules.default
+        { programs.plastile.enable = true; }
+      ];
+    };
+  };
+}
+```
+
+Each user then turns the script on once: System Settings > Window Management > KWin Scripts, or
+`[Plugins] plastileEnabled=true` in `kwinrc` (with plasma-manager, `programs.plasma.configFile.kwinrc.Plugins.plastileEnabled = true;`).
+Log out and back in after a rebuild that changes Plastile's version.
+
+**Requirements:**
+
+- The module builds Plastile with your system's `pkgs`, so it matches your Plasma. That needs KWin 6.7 or
+  newer and `nodejs_26`, which means nixos-unstable as of 2026-10.
+- On a stable system that takes Plasma from unstable, set
+  `programs.plastile.package = unstable.callPackage "${inputs.plastile}/nix/package.nix" { };` so it is built
+  with the same nixpkgs as KWin.
+
+**Tested** (2026-10-26):
+
+- `nix build` on x86_64-linux: the output has the script with its bundle, the effect, `libexec/plastile-state`,
+  the activation file and the licence.
+- `nix flake check`, and an evaluation of the module that puts the package in `environment.systemPackages`.
+- An equivalent package has run on the reference NixOS desktop.
+
 ## 1. Build from source
 
 **Requirements:**

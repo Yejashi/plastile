@@ -1,0 +1,105 @@
+# Release: pushing a tag v<version>[-suffix] builds the three distributable files with
+# tools/release.py, checks them, and creates a DRAFT GitHub release with them and SHA256SUMS.
+# Nothing is published until a maintainer reviews the draft and clicks "Publish release".
+# install.sh downloads from published releases only.
+#
+#   git tag -a v0.1.0-alpha -m "Plastile 0.1.0 alpha" && git push origin v0.1.0-alpha
+#
+# The tag must start with v + KPlugin.Version from package/metadata.json. A tag with a suffix
+# (v0.1.0-alpha, v0.2.0-rc1) becomes a pre-release.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+env:
+  NODE_MAJOR: "26"
+  PYTHON_VERSION: "3.14"
+
+jobs:
+  release:
+    name: Build and draft the release
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_MAJOR }}
+          cache: npm
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Check the tag against the package version
+        id: version
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          version="$(python3 -c 'import json; print(json.load(open("package/metadata.json"))["KPlugin"]["Version"])')"
+          case "$tag" in
+            "v$version") prerelease=false ;;
+            "v$version"-*) prerelease=true ;;
+            *) echo "::error::tag $tag does not match package version $version (expected v$version or v$version-<suffix>)"; exit 1 ;;
+          esac
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "prerelease=$prerelease" >> "$GITHUB_OUTPUT"
+
+      - name: Install, type check, test, build
+        run: |
+          npm ci
+          npm run check
+
+      - name: Build the release files (reproducible)
+        run: |
+          python3 tools/release.py --check --out dist
+          cd dist && sha256sum -- *.kwinscript *.zip *.tar.gz > SHA256SUMS && cat SHA256SUMS
+
+      - name: Check the installer script
+        # kpackagetool6 is not on the runner: this checks the syntax and argument handling only.
+        run: |
+          sh -n install.sh
+          sh install.sh --help > /dev/null
+
+      - name: Write the release notes
+        run: |
+          {
+            echo "## Install"
+            echo
+            echo '```sh'
+            echo "curl -fsSL https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/main/install.sh | sh -s -- --version ${GITHUB_REF_NAME}"
+            echo '```'
+            echo
+            echo "Add \`--with-helper\` to keep layouts across logins (needs cmake and the Qt 6 development files)."
+            echo "Or install the files by hand: \`kpackagetool6 --type KWin/Script --install plastile-${{ steps.version.outputs.version }}.kwinscript\`."
+            echo "NixOS users: see the [Nix instructions](https://github.com/${GITHUB_REPOSITORY}/blob/${GITHUB_REF_NAME}/docs/user/INSTALL.md#nixos)."
+            echo
+            echo "**Requires KDE Plasma 6 on Wayland with KWin 6.7 or 6.8.** After an upgrade, log out and back in."
+            echo
+            echo "## Files"
+            echo
+            echo "- \`plastile-${{ steps.version.outputs.version }}.kwinscript\`: the KWin script"
+            echo "- \`plastile_motion-${{ steps.version.outputs.version }}.zip\`: the optional Plastile Motion effect (installed disabled)"
+            echo "- \`plastile-state-${{ steps.version.outputs.version }}.tar.gz\`: source of the optional persistence helper"
+            echo "- \`SHA256SUMS\`"
+            echo
+            echo "What changed: [CHANGELOG](https://github.com/${GITHUB_REPOSITORY}/blob/${GITHUB_REF_NAME}/CHANGELOG.md). Release notes and known limitations: [docs/release](https://github.com/${GITHUB_REPOSITORY}/tree/${GITHUB_REF_NAME}/docs/release)."
+          } > notes.md
+          cat notes.md
+
+      - name: Create the draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          flags="--draft --verify-tag"
+          if [ "${{ steps.version.outputs.prerelease }}" = true ]; then flags="$flags --prerelease"; fi
+          # shellcheck disable=SC2086
+          gh release create "$GITHUB_REF_NAME" $flags \
+            --title "Plastile ${GITHUB_REF_NAME#v}" \
+            --notes-file notes.md \
+            dist/*.kwinscript dist/*.zip dist/*.tar.gz dist/SHA256SUMS

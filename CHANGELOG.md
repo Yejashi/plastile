@@ -25,3 +25,7 @@ The first public version. Details and known limitations are in the
 - Plastile Motion: an optional KWin effect, off by default, that animates window movement.
 - Experimental, opt-in scrolling and zones layouts.
 - Licensed under GPL-3.0-or-later.
+- `install.sh`: one-line installer that downloads a release, verifies its checksums, installs, enables,
+  upgrades and uninstalls (`--with-helper` builds the persistence helper).
+- Nix flake with a package, an overlay and a NixOS module (`programs.plastile.enable`).
+- Release workflow: a `v*` tag builds the files and drafts a GitHub release with `SHA256SUMS`.

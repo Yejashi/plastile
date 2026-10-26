@@ -114,6 +114,16 @@ with its evidence and consequences.
 - Never commit private data: window titles, machine-specific paths or raw physical-session logs. Generated
   results go to `artifacts/` (ignored); only redacted summaries belong in `docs/status/evidence/`.
 
+## Releasing (maintainers)
+
+1. Set the version in `package/metadata.json`, `effect/metadata.json`, `package.json` and `helper/CMakeLists.txt`,
+   and move the *Unreleased* entries in `CHANGELOG.md` under the new version.
+2. If `package-lock.json` changed, update `npmDepsHash` in `nix/package.nix`
+   (`nix run nixpkgs#prefetch-npm-deps -- package-lock.json`).
+3. Tag and push: `git tag -a v0.2.0 -m "Plastile 0.2.0" && git push origin v0.2.0`. A suffix (`v0.2.0-rc1`)
+   makes a pre-release. The [release workflow](.github/workflows/release.yml) builds and checks the files and
+   creates a **draft** release; review it and publish it. `install.sh` picks it up from then on.
+
 ## AI coding agents
 
 The repository is set up to be worked on by coding agents as well as people. [AGENTS.md](AGENTS.md) holds the
