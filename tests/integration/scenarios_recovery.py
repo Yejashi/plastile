@@ -255,16 +255,17 @@ def resume_missed(out: Path, c: Checks):
         recs = trace_since(trace(s), t_res)
         facts["resume"] = {"writes": readable(writes_in(recs)), "solves": readable(solves_in(recs)), "delta": delta(a, b)}
         check_adopted(c, s, "resume", before, wid, recs, closed, desk1, desk2, ext, slots)
-        # 2's settled request is its slot: re-placing it there after the drift is a correction
-        # (ledger.decideWrite). Every other write is a plan write, and none is retried.
+        # Suspending dropped every request (the user owned the frames), so re-placing 2 in its slot
+        # after the drift is a plan write like the others, not a correction against 2's budget (B03).
+        # None is retried.
         reasons: dict[str, list[str]] = {}
         for cap, i in wid.items():
             rs = [r["data"]["reason"] for r in recs if r.get("kind") == "write" and r.get("id") == i]
             if rs:
                 reasons[cap] = rs
-        c("resume: each write landed as requested; the only correction re-places 2, which drifted in place",
-          delta(a, b).get("corrections", 0) == 1
-          and reasons == {fx(2): ["correction"], fx(4): ["plan"], fx(5): ["plan"], fx(6): ["plan"]},
+        c("resume: each write landed as requested; re-placing 2, which drifted in place, is a plan write, not a correction",
+          delta(a, b).get("corrections", 0) == 0
+          and reasons == {fx(2): ["plan"], fx(4): ["plan"], fx(5): ["plan"], fx(6): ["plan"]},
           {"delta": delta(a, b), "reasons": reasons})
 
         # The hidden window is tiled once its desktop is shown.
