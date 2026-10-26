@@ -16,7 +16,9 @@ pacing, safety stops, offline correlation, summary) inside a disposable nested K
         [--workloads ...] [--keys] [--binding ACTION=CHORD ...] [--export-testdata DIR]
 
 Prerequisites (inside tools/sandbox/run.sh or on a machine with KWin): npm run build,
-make -C fixtures/client, make -C tools/physical ei, python-dbus.
+make -C fixtures/client, make -C tools/physical ei, python-dbus, a C compiler (the guard self-check
+builds keytap.c with a uinput node that does not exist and runs both guards against this session and against
+a kwin_wayland started without a backend flag inside it).
 Results: artifacts/physical/nested-<stamp>/ with layer "nested-dry-run" in every record.
 """
 from __future__ import annotations
@@ -110,22 +112,92 @@ def nested_outputs(session: Session) -> list[dict] | None:
         return None
 
 
-def guard_self_check(session: Session) -> dict:
-    """The uinput injector and the Python guard must both refuse this nested session."""
-    env = {**session.kw.client_env(), "XDG_SESSION_TYPE": "wayland"}
+def guard_keytap(outdir: Path) -> Path:
+    """keytap.c built for the guard checks with a uinput node that does not exist (-DKEYTAP_UINPUT_PATH):
+    even a guard that wrongly passed could not create a device on the host's seat."""
+    exe, node = outdir / "plastile-keytap-guardcheck", outdir / "no-uinput" / "uinput"
+    cc = os.environ.get("CC", "cc")
+    subprocess.run([cc, "-std=c11", "-O2", "-Wall", "-Wextra", "-Werror", f'-DKEYTAP_UINPUT_PATH="{node}"',
+                    str(HERE / "keytap.c"), "-o", str(exe)], check=True, capture_output=True, timeout=120)
+    return exe
+
+
+def run_guards(keytap: Path, env: dict[str, str], bus_address: str) -> dict:
+    """Both guards against the compositor serving env's WAYLAND_DISPLAY, with that session's bus."""
     out: dict = {}
-    r = subprocess.run([str(common.KEYTAP), "--backend", "uinput", "--settle-ms", "0"], env=env,
+    r = subprocess.run([str(keytap), "--backend", "uinput", "--settle-ms", "0"], env=env,
                        stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=30)
     first = json.loads(r.stdout.splitlines()[0]) if r.stdout.strip() else {}
     out["keytapUinput"] = {"exitCode": r.returncode, "message": first.get("msg")}
     try:
-        common.guard_live_session(env, bus=common.Bus(session.kw.bus_address))
+        common.guard_live_session(env, bus=common.Bus(bus_address))
         out["pythonGuard"] = {"refused": False}
     except common.GuardError as exc:
         out["pythonGuard"] = {"refused": True, "reasons": exc.reasons}
-    out["ok"] = (r.returncode == 3 and "runs nested" in (first.get("msg") or "")
-                 and out["pythonGuard"]["refused"]
-                 and any("runs nested" in x for x in out["pythonGuard"].get("reasons", [])))
+    return out
+
+
+def refused_with(res: dict, needle: str) -> bool:
+    return (res["keytapUinput"]["exitCode"] == 3 and needle in (res["keytapUinput"]["message"] or "")
+            and res["pythonGuard"]["refused"] and any(needle in x for x in res["pythonGuard"].get("reasons", [])))
+
+
+def flag_free_guard_check(session: Session, keytap: Path, outdir: Path) -> dict:
+    """A kwin_wayland started with no backend flag inside this nested session (it picks the Wayland backend
+    itself, as a nested Plasma does) on a bus of its own: the command line looks physical, so only the
+    output-backend check can refuse it (B14). Its WAYLAND_DISPLAY is this session's socket by absolute path,
+    checked to exist first: without one, a flag-free KWin would try the DRM backend of the host's seat."""
+    host = Path(session.kw.run_dir) / session.kw.socket
+    if not host.is_socket():
+        return {"run": False, "reason": f"nested socket {host} missing"}
+    root = outdir / "flag-free-kwin"
+    (root / "config").mkdir(parents=True, exist_ok=True)
+    bus = Path(session.kw.root) / "guardcheck-bus"  # a short path: a socket path has at most 107 bytes
+    env = {**session.kw.env(), "WAYLAND_DISPLAY": str(host), "DBUS_SESSION_BUS_ADDRESS": f"unix:path={bus}",
+           "XDG_CONFIG_HOME": str(root / "config")}
+    env.pop("DISPLAY", None)
+    socket = "wl-guardcheck"
+    dbus = subprocess.Popen(["dbus-daemon", "--session", f"--address=unix:path={bus}", "--nofork", "--nopidfile"],
+                            env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    kwin = None
+    log = open(root / "kwin.log", "wb")
+    try:
+        deadline = time.monotonic() + 5
+        while not bus.exists() and time.monotonic() < deadline:
+            time.sleep(0.05)
+        kwin = subprocess.Popen(["kwin_wayland", "--socket", socket, "--no-lockscreen"], env=env, stdout=log,
+                                stderr=subprocess.STDOUT)
+        up = False
+        deadline = time.monotonic() + 15
+        while time.monotonic() < deadline and kwin.poll() is None and not up:
+            up = (Path(session.kw.run_dir) / socket).exists() and subprocess.run(
+                ["busctl", f"--address=unix:path={bus}", "call", "org.kde.KWin", "/KWin", "org.freedesktop.DBus.Peer",
+                 "Ping"], capture_output=True).returncode == 0
+            time.sleep(0.05)
+        if not up:
+            return {"run": False, "reason": f"the flag-free kwin_wayland did not come up (rc {kwin.poll()}); see {root}"}
+        res = run_guards(keytap, {**env, "WAYLAND_DISPLAY": socket, "XDG_SESSION_TYPE": "wayland"}, f"unix:path={bus}")
+        return {"run": True, **res, "ok": refused_with(res, "not DRM")}
+    finally:
+        for p in (kwin, dbus):
+            if p is not None and p.poll() is None:
+                p.terminate()
+                try:
+                    p.wait(10)
+                except subprocess.TimeoutExpired:
+                    p.kill()
+                    p.wait()
+        log.close()
+
+
+def guard_self_check(session: Session, outdir: Path) -> dict:
+    """The uinput injector and the Python guard must both refuse this nested session, and a flag-free KWin
+    nested inside it. The injector is a build that cannot open /dev/uinput (guard_keytap)."""
+    keytap = guard_keytap(outdir)
+    out = run_guards(keytap, {**session.kw.client_env(), "XDG_SESSION_TYPE": "wayland"}, session.kw.bus_address)
+    out["flagFree"] = flag_free_guard_check(session, keytap, outdir)
+    # A flag-free KWin that cannot start here (no renderer for the Wayland backend) is reported, not a failure.
+    out["ok"] = refused_with(out, "runs nested") and out["flagFree"].get("ok", not out["flagFree"]["run"])
     return out
 
 
@@ -214,8 +286,11 @@ def main(argv: list[str] | None = None) -> int:
             ctx["outputName"] = outs[0]["name"]
             ctx["refreshHzDeclared"] = outs[0]["refreshRate"]
         compositing = s.kw.compositing_type()
-        guard = guard_self_check(s)
-        print(f"uinput guard self-check (must refuse this nested session): {json.dumps(guard)}")
+        guard = guard_self_check(s, outdir)
+        print(f"uinput guard self-check (must refuse this nested session and a flag-free KWin inside it): "
+              f"{json.dumps(guard)}")
+        if not guard["flagFree"]["run"]:
+            print(f"NOTE: flag-free KWin guard check not run: {guard['flagFree']['reason']}")
         if not guard["ok"]:
             print("the session guard did NOT refuse a nested KWin; stopping", file=sys.stderr)
             return 1
