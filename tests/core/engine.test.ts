@@ -568,6 +568,21 @@ test("late metadata: a resync that finds the app id ends the readiness wait", ()
   assert.equal(e.modeOf("late"), "tiled");
 });
 
+test("late metadata: a window that turns out not to be a normal one is classified at once, not at the deadline", () => {
+  const h = new MockHost();
+  const e = h.start();
+  h.open("a");
+  h.drain();
+  const w = h.open("x", { meta: meta("", {}) });
+  h.drain();
+  assert.equal(e.modeOf("x"), "pending");
+  w.meta = { ...w.meta, kind: "dialog" }; // only normal windows wait for an app id (BEHAVIOR §1)
+  e.metadataChanged("x", w.gen, w.meta);
+  h.drain();
+  assert.equal(e.modeOf("x"), "floating");
+  assert.equal((e.explain("x")!.decision as { reason: string }).reason, "dialog");
+});
+
 test("O06: an invalid work area keeps the last valid placement", () => {
   const { h, e } = setup(["a", "b"]);
   const before = tiledFrames(h, ["a", "b"]);

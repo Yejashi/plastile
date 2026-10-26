@@ -521,7 +521,7 @@ export class Engine {
     this.recs.set(r.id, r);
     this.counters.adopted++;
     this.trace.record(this.svc.now(), "add", r.id);
-    if (s.meta.appId === "" && s.meta.kind === "normal" && !s.meta.special) {
+    if (awaitsAppId(s.meta)) {
       // Late metadata: stay visible and pending, bounded by a readiness deadline.
       r.readyBy = this.svc.now() + this.opts.readinessMs;
       this.armDeadline(r.readyBy);
@@ -537,7 +537,7 @@ export class Engine {
     r.frame = rectOf(s.frame); r.nativeTile = s.nativeTile;
     if (s.nativeTile) r.nativeYield = true;
     r.suspensions = this.suspensionsFor(r, s.states);
-    if (r.mode === "pending" && s.meta.appId !== "") r.readyBy = null; // its metadata signal was missed
+    if (r.mode === "pending" && !awaitsAppId(s.meta)) r.readyBy = null; // its metadata signal was missed
     this.reclassify(r, "resync");
   }
 
@@ -601,7 +601,8 @@ export class Engine {
     const relevant = prev.appId !== meta.appId || prev.kind !== meta.kind || prev.transient !== meta.transient
       || prev.resizeable !== meta.resizeable || prev.special !== meta.special || prev.modal !== meta.modal
       || prev.resourceName !== meta.resourceName || (this.opts.titleRules === true && prev.title !== meta.title);
-    if (r.mode === "pending" && meta.appId !== "") { r.readyBy = null; this.reclassify(r, "metadata"); }
+    // The wait ends with its app id, or once the window is no longer one that waits for it (add()).
+    if (r.mode === "pending" && !awaitsAppId(meta)) { r.readyBy = null; this.reclassify(r, "metadata"); }
     else if (relevant) this.reclassify(r, "metadata");
     this.ensureFlush();
   }
@@ -3369,6 +3370,11 @@ function explainRules(w: WindowRules): Record<string, unknown> {
   if (w.minSize !== undefined) actions.minSize = `${w.minSize.width}x${w.minSize.height}`;
   if (w.zone !== undefined) actions.zone = String(w.zone);
   return { ids: w.ruleIds.slice(), actions, reasons: { ...(w.reasons ?? {}) } };
+}
+
+/** A normal window without its app id yet: classified once it arrives or the readiness deadline passes (BEHAVIOR §1). */
+function awaitsAppId(m: WindowMeta): boolean {
+  return m.appId === "" && m.kind === "normal" && !m.special;
 }
 
 /** Floated by the overflow policy (float-new), as opposed to by the user or a rule. */
