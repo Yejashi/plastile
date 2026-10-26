@@ -480,6 +480,7 @@ export class Engine {
     this.deadlineAt = Infinity;
     this.sweepParked(true); // every parked window back inside its output's work area (SCROLLING §5)
     this.releaseAllZones(); // zoned windows keep their frames (ZONES §2)
+    this.floatRestores.clear(); // a float restore still waiting is Plastile's write: never made later
     this.recs.forEach((r) => {
       L.cancel(r.ledger);
       r.ledger.request = null; // the user owns the frames now; a resume's targets are fresh requests
@@ -2409,7 +2410,10 @@ export class Engine {
       if (!t) continue;
       const inFlight = this.inFlight(r);
       L.cancel(r.ledger);
-      this.parked.delete(id);
+      // A parked window whose restore waits for its parking configure stays parked until the
+      // restore is written: the sweep (this flush, a stop or a suspend) still brings it inside
+      // its area, superseding that configure (SCROLLING §5.1), so its commit strands nothing.
+      if (inFlight === null) this.parked.delete(id);
       this.restoreFloat(r, t, inFlight);
     }
   }

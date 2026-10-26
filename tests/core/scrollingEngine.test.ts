@@ -4,7 +4,7 @@
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { rect, type Rect } from "../../src/core/geometry.ts";
+import { rect, rectNear, type Rect } from "../../src/core/geometry.ts";
 import { DEFAULT_SETTINGS } from "../../src/core/defaults.ts";
 import type { ContextSettings } from "../../src/core/types.ts";
 import { MockHost, meta } from "./mockHost.ts";
@@ -336,6 +336,51 @@ for (const [name, exit] of EXITS) {
     h.advance(1000);
     assertAllInside(h, ids, name);
   });
+}
+
+const TO_FLOATING: Array<[string, (e: ReturnType<MockHost["start"]>) => void]> = [
+  ["by command", (e) => { e.execute("plastile.layout.floating"); }],
+  ["by configuration", (e) => { e.configure({ settingsFor: () => ({ ...SCROLL, layout: "floating" }) }); }],
+];
+
+for (const [how, toFloating] of TO_FLOATING) {
+  for (const exit of ["none", "suspend", "stop"]) {
+    test(`a parked column whose float restore waits for its parking configure: floating ${how}, then ${exit}`, () => {
+      // A float restore waiting for an in-flight configure (E04) of a parked window keeps it
+      // parked until written, so the sweep and every exit still bring it inside (SCROLLING §5.1).
+      const F = rect(300, 200, 500, 400);
+      const h = new MockHost();
+      const e = h.start({ settingsFor: () => SCROLL });
+      for (const id of ["a", "b", "c"]) { h.open(id); h.activate(id); h.advance(300); }
+      h.activate("a");
+      h.advance(300);
+      e.execute("plastile.window.toggle-float");
+      h.drain();
+      h.userSetFrame("a", F); // its float rectangle
+      e.execute("plastile.window.toggle-float");
+      h.drain();
+      h.activate("a");
+      h.advance(1000);
+      h.windows.get("a")!.delay = 200;
+      assert.equal(e.execute("plastile.scroll.width-cycle").status, "accepted");
+      h.advance(20);
+      assert.equal(e.execute("plastile.focus.left").status, "accepted");
+      h.drain();
+      assert.equal(e.execute("plastile.focus.left").status, "accepted");
+      h.drain();
+      const a = h.windows.get("a")!;
+      assert.equal(e.explain("a")!.parked, true);
+      assert.ok(inside(rect(0, 0, 1280, 800), a.frame) && a.configures.length > 0, "the parking configure is in flight");
+      toFloating(e);
+      h.drain();
+      if (exit === "suspend") e.execute("plastile.runtime.toggle-suspend");
+      if (exit === "stop") e.stop();
+      h.drain();
+      h.advance(2000);
+      assertAllInside(h, ["a", "b", "c"], `${how}, ${exit}`);
+      if (exit === "none") assert.ok(rectNear(a.frame, F), `at its float rectangle: ${JSON.stringify(a.frame)}`);
+    });
+  }
 }
 
 test("reconcile unparks, then re-parks what its strip still hides", () => {
