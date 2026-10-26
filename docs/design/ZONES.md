@@ -144,7 +144,8 @@ Refinements and deviations, each with its reason:
     (KWin destroys the internal windows while hidden, so nothing is mapped), and destroyed on unload. It holds no timer
     or connection. While shown it is refreshed after every accepted Plastile command (a context reset or layout change
     that leaves zones hides it; a float updates the counts), and only then; other changes appear the next time it is
-    shown. It takes rectangles, labels, a heading and a hint, and holds no zone logic, so another feature (the drop
+    shown. A command that activates a window (a focus command) hides it instead, as KWin closes the legend popup on the
+    activation; the refresh after that command does not show it again (`zones-overlay-activation-M9`, nested 6.8.1). It takes rectangles, labels, a heading and a hint, and holds no zone logic, so another feature (the drop
     preview of ADR-017) can reuse it.
 13. **Own UI.** `isOwnUi` accepts a second fixed caption, `Plastile zones`, under the same no-application-id,
     no-process rule as the inspector (ADR-016).

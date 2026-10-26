@@ -96,7 +96,10 @@ Item {
     Connections {
         target: zoneOverlay.item
         ignoreUnknownSignals: true
-        function onDismissed() { Qt.callLater(root.hideZones); }
+        // KWin closed the legend (Escape, a click, or a window activated, also by a Plastile
+        // command): no longer wanted from now on, so the refresh after that command does not show
+        // it again; its windows are hidden on the next turn.
+        function onDismissed() { root.zonesWanted = false; Qt.callLater(root.hideZones); }
     }
     function showZones(view) {
         zonesWanted = true;
