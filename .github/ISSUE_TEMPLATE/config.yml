@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Troubleshooting guide
+    url: https://github.com/Yejashi/plastile/blob/main/docs/user/TROUBLESHOOTING.md
+    about: Logs, diagnostics and known limitations. Many "it does nothing" reports are monocle or floating layouts.
+  - name: Report a security vulnerability
+    url: https://github.com/Yejashi/plastile/security/advisories/new
+    about: Please report security problems privately.

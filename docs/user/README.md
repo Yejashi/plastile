@@ -15,7 +15,7 @@ Labels used in this guide: **measured** (observed in a test run), **observed sou
 
 ## Status: read this first
 
-Plastile 0.1.0 is a **release candidate**, not a qualified release. The gates still open are listed in the [G3 checklist](../status/G3_CHECKLIST.md); a 0.1.0 alpha is being prepared ([draft release notes](../release/0.1.0-alpha.md)). It has no licence yet ([ADR-012](../design/DECISIONS.md#adr-012-license-and-upstream-reuse-are-deliberate)).
+Plastile 0.1.0 is a **release candidate**, not a qualified release. The gates still open are listed in the [G3 checklist](../status/G3_CHECKLIST.md); a 0.1.0 alpha is being prepared ([draft release notes](../release/0.1.0-alpha.md)). It is licensed under GPL-3.0-or-later ([ADR-012](../design/DECISIONS.md#adr-012-license-and-upstream-reuse-are-deliberate)).
 
 | What | Where it stands |
 |---|---|

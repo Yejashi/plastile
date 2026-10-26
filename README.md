@@ -1,67 +1,221 @@
 # Plastile
 
-A fast, predictable, configurable tiling layer for KDE Plasma 6 that keeps KWin as the window manager. It is
-a KWin declarative script with a TypeScript core: master/stack, BSP, monocle and floating layouts; validated
-configuration and rules; keyboard commands; session persistence; an explain view. Scrolling and manual zones
-exist as experimental opt-in layouts (ADR-014). Plastile places windows at once; an optional, separate KWin
-effect, Plastile Motion (`effect/`, off by default, ADR-023), can animate how windows slide into place, drawing
-only: tested in nested KWin 6.8.1; on a physical display the owner enabled it and reported that it works, with no
-per-refresh-rate judgement or measurement.
+**Automatic tiling for KDE Plasma 6 that keeps KWin as your window manager.**
 
-**Status: release candidate, not a qualified release.** It is tested by unit/replay tests and in disposable
-nested KWin sessions (KWin 6.7.5 and 6.8.1 on the reference machine; 6.7.5 in CI, and 6.8.0 in a provisional
-CI job whose reload memory checks fail in some runs on KWin 6.8.0's own growth), and by a physical-session
-runbook on one desktop (KWin 6.7.5, build `97fec4a`). That runbook is not complete: input-to-visible latency
-passes at 60 Hz but fails for two workloads at 144 Hz and is incomplete at 100 Hz, the owner skipped the unplug
-and suspend checks, and it has not been repeated on later builds, which that desktop has been in normal use with on
-KWin 6.8.1 since 2026-10-25 (a 1 h normal-use soak there showed no growth at a constant window count). A 0.1.0 alpha is being prepared
-([draft release notes](docs/release/0.1.0-alpha.md)). Nested numbers are labelled as nested, physical numbers as physical. The open
-gates are in the [G3 checklist](docs/status/G3_CHECKLIST.md); results and failures in
-[STATUS](docs/status/STATUS.md).
+[![CI](https://github.com/Yejashi/plastile/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Yejashi/plastile/actions/workflows/ci.yml)
+[![License: GPL-3.0-or-later](https://img.shields.io/badge/license-GPL--3.0--or--later-blue.svg)](LICENSE)
+![KWin 6.7 | 6.8](https://img.shields.io/badge/KWin-6.7%20%7C%206.8-1d99f3.svg)
+![Status: alpha](https://img.shields.io/badge/status-alpha-orange.svg)
 
-- Users: [install](docs/user/INSTALL.md), [configuration](docs/user/CONFIGURATION.md),
-  [shortcuts](docs/user/SHORTCUTS.md), [troubleshooting](docs/user/TROUBLESHOOTING.md).
-- Developers: `npm ci && npm run check`, then `python3 tests/integration/run.py` (nested KWin; never touches
-  your running compositor). [HANDOFF](docs/status/HANDOFF.md) has the working context.
-- Licence: not decided yet (ADR-012). Nothing is to be distributed until it is.
+Plastile is a KWin script that arranges your windows into tiles as they open and close. You drive it from the
+keyboard. It decides where windows go and asks KWin to put them there; everything else stays standard Plasma:
+decorations, Alt+Tab, the task manager, maximize, fullscreen, native quick tiling and your existing shortcuts.
 
-## Start here
+> [!WARNING]
+> **Plastile is alpha software (0.1.0).** It is tested heavily in disposable nested KWin sessions and has been
+> used on a real multi-monitor desktop, but a few physical-session checks are still open (see
+> [Project status](#project-status)). Expect rough edges and please [report them](#reporting-bugs).
 
-1. [Agent entry point](docs/START_HERE.md): reading order, first actions, and completion rules.
-2. [Implementation roadmap](docs/implementation/ROADMAP.md): milestones, dependencies, decision gates, and deliverables.
-3. [Implementation backlog](docs/implementation/BACKLOG.md): work packages with acceptance tests.
-4. [Ready-to-use agent instruction](docs/implementation/AGENT_PROMPT.md).
+## Features
 
-## Research
+- **Layouts:** master/stack (default), BSP (binary space partitioning), monocle and floating, chosen per
+  screen, virtual desktop and activity. Switch layouts without losing the window order.
+- **Keyboard first:** focus, swap, move, grow/shrink, master count, rotate/mirror, send to another desktop or
+  screen, float/tile. 68 commands, 20 bound by default, all rebindable in System Settings.
+- **Mouse too:** drop a tile onto another to swap them; `Meta`+right-drag moves the shared divider.
+- **Cooperates with KWin:** maximize, fullscreen, minimize, native quick tiling (`Meta+arrows`) and windows you
+  float are respected rather than fought. A window that refuses a size is corrected at most twice, then left
+  alone with an explanation.
+- **Sensible defaults:** dialogs, utilities, fixed-size and transient windows float. Windows that open
+  maximized are tiled once.
+- **Multi-monitor aware:** mixed refresh rates, fractional scaling, panels, per-screen virtual desktops,
+  activities, monitor hot-plug.
+- **Validated configuration:** a settings dialog for the common options, plus a JSON document for per-screen,
+  per-desktop and per-activity overrides and ordered window rules. Invalid configuration is rejected and the
+  previous one kept. No user code runs inside KWin.
+- **Remembers your choices** (layout, master ratio, floating positions) across logins, through a small
+  optional D-Bus helper.
+- **Explains itself:** *Explain active window* tells you why a window is tiled, floating or left alone.
+- **Instant by default:** windows move in one step with no animation. **Plastile Motion**, a separate optional
+  KWin effect (off by default), animates how windows slide into place without slowing down commands.
+- **Experimental, opt-in:** a scrolling (niri/PaperWM-style) layout and manual zones.
+- **No idle work:** no timers or polling while nothing happens.
 
-- [State of the art and project-by-project source analysis](docs/research/STATE_OF_THE_ART.md).
-- [How KWin and Plasma actually implement window management](docs/research/KWIN_INTERNALS.md).
-- [Pinned source index and research limitations](docs/research/SOURCE_INDEX.md).
-- [Machine-readable acquisition manifest](docs/research/sources.lock.json).
+## Requirements
 
-## Design
+- KDE Plasma 6 in a **Wayland** session with **KWin 6.7 or 6.8**. XWayland applications are tiled; a Plasma X11
+  session is not supported. Other KWin versions are untested.
+- To build: Node.js 26 and npm.
+- Optional, to keep preferences across logins: CMake, a C++17 compiler and Qt 6 Core/DBus development files
+  (Arch `qt6-base`, Debian/Ubuntu `qt6-base-dev`).
 
-- [Architecture and runtime contracts](docs/design/ARCHITECTURE.md).
-- [Window behavior specification](docs/design/BEHAVIOR_SPEC.md).
-- [Configuration and command interface](docs/design/CONFIGURATION.md).
-- [Architecture decision records](docs/design/DECISIONS.md).
+## Installation
 
-## Validation
-
-- [Performance methodology and latency budgets](docs/validation/PERFORMANCE.md).
-- [Correctness and compatibility test matrix](docs/validation/TEST_MATRIX.md).
-- [Open questions, experiments, and risk register](docs/validation/OPEN_QUESTIONS.md).
-
-The implementation is a TypeScript layout/policy core running inside a declarative KWin script. A narrow adapter owns geometry and KWin object lifetimes. Geometry is placed directly; the native-tile comparison prototype was measured and rejected at gate G1 (ADR-003). Native C++ integration remains an evidence-gated alternative, not assumed to be faster merely because it is compiled.
-
-Priorities, in order: desktop correctness and responsiveness; predictable interaction; measured low latency; configuration; additional layouts and visual features. The initial product is an automatic tiler with master/stack, BSP, monocle, and floating behavior; scrolling (M8) and manual zones (M9) are experimental opt-ins.
-
-Research date: **17 October 2026**. Fourteen upstream repositories were sampled, including all eleven tiling projects discussed, KWin, i3, and bspwm. KWin development and the Plasma/6.7 and Plasma/6.8 branches were inspected separately. Two Codeberg homes were inaccessible; their pinned GitHub snapshots are explicitly identified as potentially stale. See the source index before interpreting maintenance or compatibility claims.
-
-Run the documentation integrity check with:
+There is no published release yet, so for now you build from source. It takes a minute and nothing is compiled
+against KWin.
 
 ```sh
-python3 tools/check_docs.py
+git clone https://github.com/Yejashi/plastile.git
+cd plastile
+npm ci
+npm run build
+
+tools/install.sh install          # installs the KWin script (and the optional, disabled Motion effect)
+tools/install.sh install-helper   # optional: remembers layouts across logins
 ```
 
-Read [AGENTS.md](AGENTS.md) before implementing anything.
+`tools/install.sh` wraps `kpackagetool6` and only writes to your home directory. It never enables, reloads or
+restarts anything.
+
+Then enable it:
+
+1. Open **System Settings → Window Management → KWin Scripts**.
+2. Tick **Plastile** and click **Apply**.
+3. Open two or three windows: they should tile side by side.
+
+Check that it started with `journalctl --user -b | grep plastile`. You should see
+`plastile notice started 0.1.0: ...`.
+
+**Updating:** run `git pull && npm ci && npm run build && tools/install.sh upgrade`, then **log out and back
+in**. KWin keeps running the old version of a script until it restarts; toggling the script off and on is not
+enough. Do not run `kwin_wayland --replace` on Wayland: it ends your session.
+
+**Uninstalling:** `tools/install.sh remove` (and `remove-helper`). See
+[INSTALL §6](docs/user/INSTALL.md#6-uninstall-cleanly) for clearing the leftover shortcut entries.
+
+The full guide, including the settings dialog and recovery steps, is in [docs/user/INSTALL.md](docs/user/INSTALL.md).
+
+## Default shortcuts
+
+| Keys | Action |
+|---|---|
+| `Meta+Shift+H` / `J` / `K` / `L` | Focus left / down / up / right |
+| `Meta+Shift+N` / `P` | Focus next / previous window |
+| `Meta+Ctrl+H` / `J` / `K` / `L` | Swap with the window left / below / above / right |
+| `Meta+Shift+Return` | Swap with master |
+| `Meta+Ctrl+=` / `Meta+Ctrl+-` | Grow / shrink the focused tile |
+| `Meta+Shift+I` / `D` | More / fewer master windows |
+| `Meta+Shift+Space` | Next layout (master/stack → BSP → monocle → floating) |
+| `Meta+Shift+M` | Monocle layout |
+| `Meta+Shift+F` | Toggle floating for the active window |
+| `Meta+Shift+O` | Send the window to the next screen |
+| `Meta+Ctrl+S` | Suspend / resume tiling |
+
+The keys avoid KWin's own defaults (`Meta+arrows`, `Meta+T`, `Meta+W`, `Meta+L` and others). Every command and
+what it does exactly is in [docs/user/SHORTCUTS.md](docs/user/SHORTCUTS.md); rebind any of them under
+**System Settings → Keyboard → Shortcuts**, component *KWin*, searching for "Plastile".
+
+> **Nothing seems to happen?** Monocle, the floating layout and a maximized window all look like no tiling.
+> Press `Meta+Shift+Space` to cycle layouts; each change shows an on-screen message. See
+> [Is it working?](docs/user/README.md#is-it-working)
+
+## Configuration
+
+Common options (gaps, default layout, master ratio and count, insert position, focus wrapping, …) are in the
+settings dialog: the configure button next to Plastile under *KWin Scripts*. Per-screen/desktop/activity
+overrides and window rules go in a JSON document (the text box under *Advanced* in the same dialog). This one
+sets 6 px gaps, puts a desktop named "Writing" in monocle, turns tiling off on desktops whose name starts with
+"Chat", and floats KCalc:
+
+```json
+{
+  "schemaVersion": 1,
+  "defaults": { "gaps": { "inner": 6 } },
+  "overrides": [
+    { "id": "writing", "match": { "desktopName": "Writing" }, "set": { "layout": "monocle" } },
+    { "id": "chat", "match": { "desktopName": { "glob": "Chat*" } }, "set": { "enabled": false } }
+  ],
+  "rules": [
+    { "id": "float-calc", "match": { "appId": "org.kde.kcalc" }, "actions": { "mode": "floating" } }
+  ]
+}
+```
+
+Unknown keys are errors, so a typo is reported instead of silently ignored. Every key, matcher and the
+precedence rules are in [docs/user/CONFIGURATION.md](docs/user/CONFIGURATION.md).
+
+## How it works
+
+Plastile is a declarative KWin script with a TypeScript core, bundled to plain JavaScript that runs inside
+KWin's own QML engine. There is no daemon on the hot path and no native plugin to rebuild for each KWin release.
+
+- A pure **policy core** (`src/core`) holds the layout model and computes target rectangles. It knows nothing
+  about KWin, which keeps it unit-testable and replayable.
+- A single **adapter** (`src/adapters/kwin`) is the only code that touches KWin objects and the only writer
+  of window geometry. It keeps the geometry it wants, the geometry it requested and the geometry KWin reports
+  separate, so slow or stubborn applications never cause resize loops.
+- Commands run immediately with one coalesced solve per change; nothing waits on a fixed timer, disk or
+  network.
+- Saved preferences go through an asynchronous D-Bus helper (`helper/`), so KWin's thread never does file I/O.
+
+The design is written up in [docs/design/ARCHITECTURE.md](docs/design/ARCHITECTURE.md), with the reasoning
+behind each choice in the [decision records](docs/design/DECISIONS.md).
+
+## Project status
+
+Plastile 0.1.0 is an **alpha**. What has been tested, and how:
+
+| Layer | Result |
+|---|---|
+| Unit and replay tests | 604 tests (Node) |
+| Nested KWin (disposable `kwin_wayland --virtual` sessions, real input, frames read back from KWin) | Full suite passes on KWin 6.7.5 and 6.8.1; CI runs it on 6.7.5 and 6.8.0 |
+| Physical desktop (3 monitors at 60/100/144 Hz) | Install, multiple outputs, fractional scaling, panels, activities, real applications, shortcuts and idle behaviour pass; in daily use on KWin 6.8.1 |
+
+Known gaps before the first stable release:
+
+- **Latency at high refresh rates.** At 60 Hz every measured action was as fast as KWin's own equivalent. At
+  144 Hz, grow/shrink became visible about 11 ms later (median) than KWin's quick tile, and focus about 10 ms
+  later than KWin's window switch (mostly the window decoration redrawing). Plastile itself answers in under
+  1 ms; where the rest goes is under investigation.
+- **Not yet checked on real hardware:** unplugging a monitor and system suspend (both pass in nested
+  sessions), VRR, two identical monitors, and the scrolling and zones layouts.
+
+All numbers name the environment they were measured in; nested results are never presented as physical ones.
+The full, evidence-linked picture is in the [user guide's status section](docs/user/README.md#status-read-this-first),
+the [release checklist](docs/status/G3_CHECKLIST.md) and the
+[performance report](docs/status/G2_REPORT.md).
+
+## Troubleshooting
+
+- `journalctl --user -b | grep plastile` shows what Plastile did and why.
+- *Explain active window* (unbound by default; bind it or run it over D-Bus) shows why a window is where it is.
+- *Suspend/resume tiling* (`Meta+Ctrl+S`) gets Plastile out of your way instantly; *Reconcile* re-applies the
+  layout.
+
+More in [docs/user/TROUBLESHOOTING.md](docs/user/TROUBLESHOOTING.md), including the
+[known limitations](docs/user/TROUBLESHOOTING.md#known-limitations).
+
+## Reporting bugs
+
+Please [open an issue](https://github.com/Yejashi/plastile/issues/new/choose) and include your KWin version
+(`kwin_wayland --version`), distribution, monitor setup and the output of
+`journalctl --user -b | grep plastile`. The [troubleshooting guide](docs/user/TROUBLESHOOTING.md#reporting-a-problem)
+explains how to capture a trace. Security issues: see [SECURITY.md](SECURITY.md).
+
+## Contributing
+
+Contributions are welcome. [CONTRIBUTING.md](CONTRIBUTING.md) covers the development setup, the test layers
+(unit, nested KWin, physical) and the few hard rules, such as a single geometry writer and no timers on the
+command path. In short:
+
+```sh
+npm ci
+npm run check                     # type check, unit tests, bundle
+python3 tests/integration/run.py  # nested KWin suite; never touches your running desktop
+```
+
+The documentation map is in [docs/README.md](docs/README.md).
+
+## Acknowledgements
+
+Plastile was designed after studying the source of existing tilers, including
+[Krohnkite](https://github.com/anametologin/krohnkite), [Bismuth](https://github.com/Bismuth-Forge/bismuth),
+[Polonium](https://github.com/zeroxoneafour/polonium), [Karousel](https://github.com/peterfajdiga/karousel),
+[KZones](https://github.com/gerritdevriese/kzones), [bspwm](https://github.com/baskerville/bspwm),
+[i3](https://github.com/i3/i3) and of course [KWin](https://invent.kde.org/plasma/kwin). Plastile's code is
+its own; the analysis is in [docs/research/STATE_OF_THE_ART.md](docs/research/STATE_OF_THE_ART.md).
+
+## License
+
+Plastile is free software, licensed under the [GNU General Public License v3.0 or later](LICENSE)
+(`GPL-3.0-or-later`).

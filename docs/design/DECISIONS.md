@@ -136,9 +136,21 @@ Persist configuration, layout preferences, ratios/order hints, and user float ch
 
 ## ADR-012: License and upstream reuse are deliberate
 
-**Status:** accepted process; project license remains an owner decision.
+**Status:** accepted process. Licence chosen by the owner on 2026-10-26: **GPL-3.0-or-later**.
 
 Research links and original design descriptions are not a decision to copy upstream implementations. The sampled repositories include MIT, GPL-family, and mixed component notices. Keep original code as the default; any port must identify file-level notices and the resulting distribution obligations before inclusion. Do not silently assign a new project license to someone else's source. The planning commit does not choose the final software license.
+
+**Decision (2026-10-26, owner).** Plastile is licensed under the GNU General Public License, version 3 or (at
+your option) any later version, SPDX `GPL-3.0-or-later`. The full text is `LICENSE` at the repository root.
+
+- `package/metadata.json`, `effect/metadata.json` and `package.json` say `GPL-3.0-or-later`.
+- `tools/release.py` puts `LICENSE` into every distributable file: `contents/LICENSE` in the script and effect
+  zips (KWin ignores it; `kpackagetool6` installs both packages with it, checked into a scratch data directory)
+  and `plastile-state-<version>/LICENSE` in the helper tarball. A build without the file fails.
+- Why GPL-3.0-or-later: it is copyleft like KWin (GPL-2.0-or-later, which GPL-3.0 may combine with) and most
+  of Plasma, and it is compatible with the helper's Qt 6 dependency (LGPL-3.0 or GPL).
+- Unchanged: the reuse rule above. No upstream code is known to be copied. Files vendored with their own notice
+  keep it (`fixtures/client/protocols/wlr-layer-shell-unstable-v1.xml`, a test fixture, not distributed).
 
 ## ADR-013: Persist session preferences through QtCore Settings
 
@@ -1097,6 +1109,7 @@ that owns only the picture. A KWin script cannot transform how a window is drawn
   (GPL-2.0-or-later), was read as an example of the scripted API only.
 
 The licence remains the owner's decision (ADR-012). The effect's metadata says `Undecided`, as the script's does.
+(Decided on 2026-10-26: both say `GPL-3.0-or-later`, ADR-012.)
 
 **Evidence.**
 
@@ -1141,7 +1154,7 @@ emitted from `Workspace::geometryChanged` in both KWin 6.7.5 and 6.8.1 (`effecth
 
 **Status:** accepted 2026-10-26 by the owner, who asked for an alpha and to proceed after the recommendation
 below; the licence (ADR-012) and the experimental layouts (ADR-014) stay owner decisions, and the alpha is not
-distributed before the licence is chosen.
+distributed before the licence is chosen. (The licence was chosen on 2026-10-26: GPL-3.0-or-later, ADR-012.)
 
 **Context.** ROADMAP §10 has one release step, gate G3, and G3 is open on physical items: latency at 144 Hz and
 100 Hz (G3-3), a multi-hour normal-use soak, unplug and suspend (skipped by the owner), physical uninstall, and

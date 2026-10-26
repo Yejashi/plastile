@@ -47,7 +47,7 @@ For every experiment record: exact version/commit; fixture; steps; expected/actu
 
 ## 3. Deliberately deferred decisions
 
-- Final project license and intentional upstream code reuse: owner decision before distributing implementation. Research is not a license to copy every upstream file.
+- ~~Final project license~~: decided on 2026-10-26, GPL-3.0-or-later (ADR-012). Intentional upstream code reuse stays a deliberate, documented decision. Research is not a license to copy every upstream file.
 - Full X11-session support and older Plasma compatibility: separate from initial Wayland/XWayland-client target.
 - Executable third-party layout plugins: require a resource/isolation design; declarative layouts first.
 - A general daemon, generic IPC automation server, scratchpads, gestures, and shell widgets: only after the core release and a concrete user need.

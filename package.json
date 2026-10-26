@@ -3,6 +3,15 @@
   "private": true,
   "version": "0.1.0",
   "description": "Fast, predictable tiling policy for KDE Plasma that preserves KWin",
+  "license": "GPL-3.0-or-later",
+  "homepage": "https://github.com/Yejashi/plastile",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Yejashi/plastile.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Yejashi/plastile/issues"
+  },
   "type": "module",
   "engines": {
     "node": ">=26"

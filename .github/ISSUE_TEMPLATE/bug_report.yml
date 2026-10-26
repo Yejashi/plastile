@@ -1,0 +1,70 @@
+name: Bug report
+description: Plastile placed a window wrongly, crashed, ignored a shortcut or misbehaved in another way.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting! Before posting logs, check that they contain nothing private: window titles can
+        appear in the configuration JSON and in *Explain active window* output.
+        Security problems: please use [a private report](https://github.com/Yejashi/plastile/security/advisories/new) instead.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened, and what did you expect?
+      description: Which layout, which windows or applications, which command or action.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open three Konsole windows on desktop 1
+        2. Press Meta+Shift+Space twice
+        3. ...
+    validations:
+      required: true
+  - type: input
+    id: plastile-version
+    attributes:
+      label: Plastile version or commit
+      description: The `plastile notice started <version>` line from the journal, or `git rev-parse --short HEAD`.
+    validations:
+      required: true
+  - type: input
+    id: kwin-version
+    attributes:
+      label: KWin version
+      description: Output of `kwin_wayland --version`.
+    validations:
+      required: true
+  - type: input
+    id: distro
+    attributes:
+      label: Distribution
+      placeholder: Arch Linux, Fedora 43, NixOS 26.05, ...
+  - type: textarea
+    id: outputs
+    attributes:
+      label: Monitors
+      description: Number of monitors, resolutions, scale factors and refresh rates (or the output of `kscreen-doctor -o`).
+  - type: textarea
+    id: logs
+    attributes:
+      label: Log
+      description: Output of `journalctl --user -b | grep plastile`. If you can, also a *Log trace* dump taken right after the problem (see TROUBLESHOOTING.md).
+      render: text
+  - type: textarea
+    id: config
+    attributes:
+      label: Configuration
+      description: The `[Script-plastile]` section of `~/.config/kwinrc`, if you changed any settings.
+      render: ini
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: The problem still happens after suspending and resuming tiling (Meta+Ctrl+S twice) or after a re-login.
+        - label: I checked the [known limitations](https://github.com/Yejashi/plastile/blob/main/docs/user/TROUBLESHOOTING.md#known-limitations).

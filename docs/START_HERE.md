@@ -1,6 +1,6 @@
 # Agent entry point
 
-> **Continuing implementation?** Read [status/HANDOFF.md](status/HANDOFF.md) first: it describes the current code, branches, test results and next work. Measured nested results against the performance budgets, by scenario and environment, are in [status/G2_REPORT.md](status/G2_REPORT.md). `status/STATUS.md` and the root README are stale until rewritten.
+> **Continuing implementation?** Read [status/HANDOFF.md](status/HANDOFF.md) first: it describes the current code, branches, test results and next work. Measured nested results against the performance budgets, by scenario and environment, are in [status/G2_REPORT.md](status/G2_REPORT.md). [status/STATUS.md](status/STATUS.md) is the short current status. For a map of all documentation, see [docs/README.md](README.md).
 
 ## Mission
 

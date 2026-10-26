@@ -145,8 +145,7 @@ Beyond [AGENTS.md](../../AGENTS.md):
 
 ## 7. Owner decisions still open
 
-- **License:** "Undecided" (ADR-012). Nothing can be released until the owner picks one. Upstream code stays
-  reference-only.
+- ~~License~~: decided on 2026-10-26, GPL-3.0-or-later (ADR-012). Upstream code stays reference-only.
 - Whether the experimental scrolling and zones layouts ship in the first release or stay opt-in previews
   (ADR-014).
 

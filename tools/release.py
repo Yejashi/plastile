@@ -17,6 +17,9 @@ Both zips are built deterministically:
 - no extra fields, fixed external attributes (0644 regular file), create_system 3;
 - DEFLATE level 9 on every entry (the same zlib produces the same bytes).
 
+Every archive carries the project's GPL-3.0 text from the repository root (ADR-012): the zips as
+contents/LICENSE, which KWin ignores, the tarball as plastile-state-<version>/LICENSE.
+
 The version is read from package/metadata.json (KPlugin.Version). Required entries
 are verified before writing and the file's SHA-256 is printed. Running it twice
 yields identical bytes. The tarball follows the same rules: sorted ustar entries under
@@ -50,6 +53,8 @@ PACKAGE = ROOT / "package"
 HELPER = ROOT / "helper"
 EFFECT = ROOT / "effect"
 EFFECT_ID = "plastile_motion"
+LICENSE = ROOT / "LICENSE"
+LICENSE_ENTRY = "contents/LICENSE"
 # What KWin's scripted-effect loader reads (main.js) and its generic configuration module (main.xml, config.ui).
 EFFECT_REQUIRED = ("metadata.json", "contents/code/main.js", "contents/config/main.xml", "contents/ui/config.ui")
 # The helper sources a build needs (helper/CMakeLists.txt lists them); the tarball holds exactly these.
@@ -131,6 +136,13 @@ def collect_entries(package: Path = PACKAGE, required: tuple[str, ...] = REQUIRE
     return entries
 
 
+def with_license(entries: list[tuple[str, Path]], license_file: Path = LICENSE) -> list[tuple[str, Path]]:
+    """The package entries plus the licence text as contents/LICENSE, replacing any copy in the package."""
+    if not license_file.is_file():
+        raise ReleaseError(f"{license_file} is missing: a release must carry the licence text (ADR-012)")
+    return sorted([e for e in entries if e[0] != LICENSE_ENTRY] + [(LICENSE_ENTRY, license_file)], key=lambda e: e[0])
+
+
 def build_bytes(entries: list[tuple[str, Path]], date_time: tuple) -> bytes:
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as zf:
@@ -152,7 +164,7 @@ def verify_zip(data: bytes, required_entries: tuple[str, ...] = REQUIRED, plugin
         if bad is not None:
             raise ReleaseError(f"corrupt entry in archive: {bad}")
         names = zf.namelist()
-        for required in required_entries:
+        for required in required_entries + (LICENSE_ENTRY,):
             if required not in names:
                 raise ReleaseError(f"archive is missing {required}")
         # Script-only: the helper is never inside the KWin package (ADR-020).
@@ -177,10 +189,14 @@ def helper_tarball_bytes(helper: Path, version: str, date_time: tuple) -> bytes:
         raise ReleaseError("helper sources missing: " + ", ".join(missing))
     stamp = calendar.timegm(date_time + (0, 0, 0))
     prefix = f"plastile-state-{version}"
+    if not LICENSE.is_file():
+        raise ReleaseError(f"{LICENSE} is missing: a release must carry the licence text (ADR-012)")
+    sources = {name: helper / name for name in HELPER_FILES}
+    sources["LICENSE"] = LICENSE
     raw = io.BytesIO()
     with tarfile.open(fileobj=raw, mode="w", format=tarfile.USTAR_FORMAT) as tar:
-        for name in sorted(HELPER_FILES):
-            data = (helper / name).read_bytes()
+        for name in sorted(sources):
+            data = sources[name].read_bytes()
             info = tarfile.TarInfo(f"{prefix}/{name}")
             info.size, info.mtime, info.mode = len(data), stamp, 0o644
             info.uid = info.gid = 0
@@ -200,7 +216,7 @@ def write_atomic(path: Path, data: bytes) -> None:
 
 def build(out_dir: Path, package: Path = PACKAGE, helper: Path = HELPER, effect: Path = EFFECT) -> dict:
     version = read_version(package / "metadata.json")
-    entries = collect_entries(package)
+    entries = with_license(collect_entries(package))
     date = source_date()
     data = build_bytes(entries, date)
     names = verify_zip(data)
@@ -208,7 +224,7 @@ def build(out_dir: Path, package: Path = PACKAGE, helper: Path = HELPER, effect:
     effect_version = read_effect_version(effect / "metadata.json")
     if effect_version != version:
         raise ReleaseError(f"effect version {effect_version!r} differs from the script's {version!r}")
-    effect_data = build_bytes(collect_entries(effect, EFFECT_REQUIRED), date)
+    effect_data = build_bytes(with_license(collect_entries(effect, EFFECT_REQUIRED)), date)
     effect_names = verify_zip(effect_data, EFFECT_REQUIRED, EFFECT_ID)
     out_dir.mkdir(parents=True, exist_ok=True)
     out = out_dir / f"plastile-{version}.kwinscript"
@@ -224,7 +240,7 @@ def build(out_dir: Path, package: Path = PACKAGE, helper: Path = HELPER, effect:
         "bytes": len(data),
         "sha256": hashlib.sha256(data).hexdigest(),
         "helperTarball": {"path": str(tar_out), "bytes": len(tarball), "sha256": hashlib.sha256(tarball).hexdigest(),
-                          "files": sorted(HELPER_FILES)},
+                          "files": sorted(HELPER_FILES + ("LICENSE",))},
         "effect": {"path": str(effect_out), "bytes": len(effect_data), "sha256": hashlib.sha256(effect_data).hexdigest(),
                    "entries": effect_names},
     }

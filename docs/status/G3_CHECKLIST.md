@@ -11,8 +11,7 @@ missing:
 3. **The current code has not been validated physically.** The physical runbook ran on build `97fec4a`. Two changes since
    then touch `src/`: the hidden-workarea fix (`a5642dd`) and windows that open maximized (ADR-021, merged
    `0a371c9`). Testing them needs an install and a re-login (KWin keeps running the old code until it restarts). Since then: `0a0798c` ran on the reference desktop (KWin 6.8.1), where windows that opened maximized were tiled at login; `58614e5`, with the bug-hunt fixes, was installed on 2026-10-26 and started cleanly ([evidence](evidence/physical-install-58614e5-20261026.json)). The runbook has not been repeated on either, and the hidden-desktop fix has not run physically.
-4. **Owner decisions:** the licence (ADR-012; the package says `"License": "Undecided"` and the repository has no
-   licence file); whether the experimental scrolling and zones layouts ship (ADR-014); whether the skipped P2d
+4. **Owner decisions:** whether the experimental scrolling and zones layouts ship (ADR-014); whether the skipped P2d
    (unplug) and P2e (suspend) checks become declared limitations or get run; the optional P9 G1 repeat.
 5. **KWin 6.8.** 6.8.1 passes the full nested suite and runs on the reference desktop, but the physical runbook has not
    been repeated on it; 6.8.0 is a provisional CI job (reload RSS growth from KWin 6.8.0's own allocation). For
@@ -67,7 +66,7 @@ Plasma session). A nested result never stands in for a physical one.
 | T35-1 | G3 checklist complete | met as a checklist; the gates it lists are open | docs | This file |
 | T35-2 | No proposed target is presented as measured | met for the user docs and the README at `c9775ca` | docs | [PERFORMANCE §4](../validation/PERFORMANCE.md#4-proposed-budgets) labels every budget a proposal. The [user guide's performance section](../user/README.md#performance-what-was-measured) gives each number its layer and links the evidence |
 | T35-3 | Screenshots and claims match the package | met at `c9775ca` | docs | The repository has no screenshots. Settings keys, defaults and choices were checked against `package/contents/config/main.xml`, `package/contents/ui/config.ui` and `src/config/schema.ts`; the 68 commands and 20 default keys against `src/core/commands.ts`; metadata (`EnabledByDefault: false`, `X-Plasma-API-Minimum-Version: 6.7`, version 0.1.0) against `package/metadata.json` |
-| T35-4 | Owner licence and reuse decision recorded before distribution | owner decision (open) | — | [ADR-012](../design/DECISIONS.md#adr-012-license-and-upstream-reuse-are-deliberate). `package/metadata.json` says `"License": "Undecided"`; there is no licence file. Nothing may be distributed until this is decided |
+| T35-4 | Owner licence and reuse decision recorded before distribution | met (2026-10-26) | docs | [ADR-012](../design/DECISIONS.md#adr-012-license-and-upstream-reuse-are-deliberate): GPL-3.0-or-later, chosen by the owner. `LICENSE` at the root; both `metadata.json` files and `package.json` say `GPL-3.0-or-later`; `tools/release.py` puts `LICENSE` into all three distributable files. The reuse rule is unchanged: no upstream code is known to be copied |
 | T35-5 | Publish candidate status when physical gates remain unavailable | met | docs | Verdict above; [README](../../README.md); [user guide](../user/README.md#status-read-this-first) |
 | T35-w1 | Supported versions written | met | docs | [INSTALL](../user/INSTALL.md): KWin 6.7 and 6.8 on Wayland (ADR-024), with what was exercised on 6.7.5, 6.8.0 and 6.8.1; others untested |
 | T35-w2 | Feature and default semantics | met | docs | [user guide](../user/README.md), including windows that open maximized (`maximizedOnOpen`, ADR-021) |
@@ -111,7 +110,7 @@ An alpha (0.1.0, [ADR-024](../design/DECISIONS.md#adr-024-an-alpha-before-g3-dec
 | # | Item | State | Evidence |
 |---|---|---|---|
 | A-0 | The alpha step recorded | met | [ADR-024](../design/DECISIONS.md#adr-024-an-alpha-before-g3-declaring-kwin-67-and-68) |
-| A-1 | Licence chosen and recorded (T35-4) | owner decision (open): blocks distribution | [ADR-012](../design/DECISIONS.md#adr-012-license-and-upstream-reuse-are-deliberate) |
+| A-1 | Licence chosen and recorded (T35-4) | met (2026-10-26): GPL-3.0-or-later | [ADR-012](../design/DECISIONS.md#adr-012-license-and-upstream-reuse-are-deliberate), `LICENSE` |
 | A-2 | Scrolling and zones in or out (FB-4) | owner decision (open); the draft assumes in, experimental and off by default | [ADR-014](../design/DECISIONS.md#adr-014-start-m8m9-as-experimental-opt-in-layouts-before-g3-physical-sign-off) |
 | A-3 | Supported versions stated with their evidence | met in docs: KWin 6.7 and 6.8 on Wayland | [INSTALL](../user/INSTALL.md) |
 | A-4 | CI green on the candidate commit | met at `58614e5` (run 40272444147, every job on its first attempt, the 6.8.0 job included) | [CI](CI.md) |

@@ -9,7 +9,7 @@ Plastile is a KWin script package (`KWin/Script`, plugin id `plastile`). Nothing
 - **KWin 6.8.0:** a provisional CI job. Its reload memory checks fail in some runs because in 7 of 14 repetitions KWin 6.8.0 itself grew by 35–77 MiB over 100 reloads of an empty script ([control](../status/evidence/q09-kwin68-control.json)); it has been observed only over repeated reloads. Two nested full-suite runs on 6.8.1 on the reference host (a different environment) grew 0.35 and 0.43 MiB over 100 reloads of Plastile; the empty-script control has not run on 6.8.1.
 - Any other version: untested.
 
-This is a release candidate, not a release ([status](README.md#status-read-this-first), [G3 checklist](../status/G3_CHECKLIST.md)); a 0.1.0 alpha is being prepared ([draft release notes](../release/0.1.0-alpha.md)). Plastile has no licence yet (`"License": "Undecided"` in `metadata.json`, [ADR-012](../design/DECISIONS.md#adr-012-license-and-upstream-reuse-are-deliberate)).
+This is a release candidate, not a release ([status](README.md#status-read-this-first), [G3 checklist](../status/G3_CHECKLIST.md)); a 0.1.0 alpha is being prepared ([draft release notes](../release/0.1.0-alpha.md)). Plastile is licensed under GPL-3.0-or-later ([ADR-012](../design/DECISIONS.md#adr-012-license-and-upstream-reuse-are-deliberate)).
 
 ## 1. Build from source
 

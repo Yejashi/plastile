@@ -10,7 +10,7 @@
         "Description": "Animate windows sliding and resizing to their new place when they are moved or resized by a program, such as a tiling script (visual only; the real geometry changes at once)",
         "EnabledByDefault": false,
         "Id": "plastile_motion",
-        "License": "Undecided",
+        "License": "GPL-3.0-or-later",
         "Name": "Plastile Motion",
         "Version": "0.1.0",
         "Website": "https://github.com/Yejashi/plastile"

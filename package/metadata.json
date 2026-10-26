@@ -10,7 +10,7 @@
         "Description": "Fast, predictable automatic tiling (master/stack, BSP, monocle) that preserves KWin",
         "EnabledByDefault": false,
         "Id": "plastile",
-        "License": "Undecided",
+        "License": "GPL-3.0-or-later",
         "Name": "Plastile",
         "Version": "0.1.0",
         "Website": "https://github.com/Yejashi/plastile"
