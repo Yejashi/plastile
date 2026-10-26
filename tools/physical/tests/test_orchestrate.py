@@ -238,6 +238,16 @@ class BlockEngineTests(unittest.TestCase):
         self.assertTrue(all(r["motion"] == on["label"] and r["inputToSettledNs"] is None for r in samples))
         self.assertTrue(any(r["success"] and r["inputToFinalCommitPresentNs"] for r in samples))
 
+    def test_unknown_motion_state_withholds_the_settle(self):
+        unknown = {"loaded": None, "on": False, "label": "unknown (isEffectLoaded unavailable)", "effectiveDurationMs": 180}
+        out, _meta, _ = self._run("active", 100, samples=3, warmup=0, motion=unknown)
+        ctx = {"stamp": "s", "layer": "synthetic", "inputSource": "dry", "environmentId": "synthetic",
+               "refreshHzDeclared": 60}
+        samples, _w, problems = orchestrate.correlate_dir(out, ctx, {"P03-ratio": {"expect": "resize"}})
+        self.assertEqual(problems, [])
+        self.assertTrue(all(r["motion"] == unknown["label"] and r["inputToSettledNs"] is None for r in samples))
+        self.assertTrue(any(r["success"] and r["inputToFinalCommitPresentNs"] for r in samples))
+
     def test_safety_stop_after_consecutive_misses(self):
         with self.assertRaises(orchestrate.Abort) as cm:
             self._run("idle", 100000, samples=20, warmup=0, max_misses=3)

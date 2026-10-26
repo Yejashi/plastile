@@ -631,7 +631,8 @@ def correlate_dir(outdir: Path, ctx: dict, wl_defs: dict[str, dict]) -> tuple[li
                 "condition": meta["condition"], "action": t["action"], "keys": t.get("sequence"),
                 "warmup": t["phase"] == "warmup", "run": meta["index"], "round": meta["round"],
                 "sample": t["sample"], "windowCount": meta["windowCount"], "motion": motion.get("label"),
-                "motionOn": bool(motion.get("on"))})
+                # A live block whose effect state could not be read is treated as animating: its settle is withheld.
+                "motionOn": bool(motion.get("on")) or ("loaded" in motion and motion["loaded"] is None)})
             # Samples taken before a block abort stay in the data; the block outcome is reported
             # next to them in summary.json ("blocks"), never used to drop samples.
             errs = latency.validate_record(rec)
