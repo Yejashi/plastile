@@ -1186,13 +1186,18 @@ export class Engine {
    * Input for a structural edit (insert, rebuild). A BSP split chosen from a slot's shape
    * (bsp.axis "longest") needs the context's real work area, not solve's placeholder; no
    * other edit reads the area, so only that case asks KWin. The placeholder stays while the
-   * work area is invalid (O06).
+   * work area is invalid (O06) or cannot be read (C08: the window still joins).
    */
   private structureInput(c: Ctx, bsp: boolean): SolveInput {
     let area: Rect | null = null;
     if (bsp && this.ctxSettings(c).bsp.axis === "longest") {
-      const a = this.host.workArea(c.key.output, c.key.desktop);
-      if (isValidArea(a)) area = a;
+      try {
+        const a = this.host.workArea(c.key.output, c.key.desktop);
+        if (isValidArea(a)) area = a;
+      } catch (e) {
+        this.counters.errors++;
+        this.svc.log("warn", "work area read failed", String(e));
+      }
     }
     return this.solveInput(c, area);
   }

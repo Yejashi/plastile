@@ -1397,6 +1397,23 @@ test("BSP axis longest: a split follows the shape of the slot on the real output
     const f = h.framesOf(["a", "b"]);
     assert.ok(f.b.y > f.a.y + f.a.height - 1, JSON.stringify(f));
   }
+  {
+    // C08: the work-area read that a split needs can fail; the window still joins (on the
+    // placeholder) and the context is tiled once the area reads again.
+    const h = new MockHost();
+    const e = h.start({ settingsFor: () => longest("last") });
+    h.open("a");
+    h.drain();
+    const orig = h.workArea.bind(h);
+    let failures = 1;
+    h.workArea = (o, d) => { if (failures > 0) { failures--; throw new Error("boom"); } return orig(o, d); };
+    h.open("b");
+    h.drain();
+    h.workArea = orig;
+    assert.ok(e.counters.errors >= 1);
+    assert.equal(e.modeOf("b"), "tiled");
+    assertTiling(tiledFrames(h, ["a", "b"]), AREA);
+  }
 });
 
 test("BEHAVIOR §12: a configured master ratio/count reaches live contexts; values the user set by command are kept", () => {
