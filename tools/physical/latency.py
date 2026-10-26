@@ -11,12 +11,20 @@ Inputs are two kinds of logs that share CLOCK_MONOTONIC:
 For every tap, the attribution window runs from its `t_input_ns` to the next tap's
 `t_input_ns` (or `timeout_ns`, whichever is first). A configure that arrives in that
 window is attributed to the tap; the commit that acks it is found by xdg serial, and the
-presentation of that commit by buffer `seq`. Per sample:
+presentation of that commit by buffer `seq`. The orchestrator paces taps to the same
+timeout: it sends the next tap only after a response settled or `timeout_ns` passed. A
+tap that follows an input whose response did not complete within the timeout (no
+configure at all, or the injector's `pacing` says so) is a failure: a late configure of
+the earlier input would otherwise be taken for this input's fast response. Per sample:
 
 - inputToFirstPresentNs: earliest presentation of any commit answering an attributed
   configure, minus t_input_ns (PERFORMANCE section 3 "input-to-first-visible").
-- inputToSettledNs: for every affected window, the presentation of the commit answering
-  its last attributed configure; the maximum over windows, minus t_input_ns (t9_settled).
+- inputToFinalCommitPresentNs: for every affected window, the presentation of the commit
+  answering its last attributed configure; the maximum over windows, minus t_input_ns.
+- inputToSettledNs (t9_settled): inputToFinalCommitPresentNs while no effect animates the
+  change. With Plastile Motion on (record context `motionOn`) it is null with a reason: the
+  final commit is presented on the first animated frame, and the end of the animation has
+  no client-visible signal (PERFORMANCE section 6.1).
 
 A sample is successful only when the workload's expected effect was observed (a size
 change for `resize`, an activation change for `activate`) and every affected window's
@@ -56,8 +64,13 @@ EXTENSION_FIELDS = (
     "schemaVersion", "layer", "inputSource", "condition", "action", "keys", "warmup", "run", "round", "windowCount",
     "outputName", "refreshHzDeclared", "refreshNsObserved", "inputNs", "inputWriteNs", "configureNs", "commitNs",
     "settledNs", "inputToFirstPresentNs", "inputToSettledNs", "commitCount", "discardedCount", "quietBeforeNs",
-    "unavailableReasons",
+    "unavailableReasons", "motion", "inputToFinalCommitPresentNs", "settledUnavailableReason",
 )
+# Pacing outcomes (orchestrate.wait_settle) after which the next tap's window cannot be attributed.
+INCOMPLETE_PACING = ("no-effect", "timeout")
+MOTION_SETTLE_REASON = ("t9_settled is not observable with Plastile Motion on: the final commit is presented on the "
+                        "first animated frame and the animation's end has no client-visible signal "
+                        "(inputToFinalCommitPresentNs is that presentation; PERFORMANCE section 6.1)")
 NULLABLE_WITH_REASON = ("contextCount", "dispatchNs", "solveEndNs", "lastRequestNs", "observedNs", "solves",
                         "geometryWrites", "nativeMutations", "correctiveWrites")
 
@@ -142,12 +155,17 @@ def correlate(taps: list[dict], windows: list[Window], *, expect: str, refresh_n
             t_end = min(t_end, t_next)
         if end_ns is not None and t_next is None:
             t_end = min(t_end, end_ns)
-        results.append(_correlate_one(tap, t0, t_end, windows, expect, refresh_ns_declared))
+        r = _correlate_one(tap, t0, t_end, windows, expect, refresh_ns_declared, timeout_ns)
+        if i > 0 and (results[-1]["affectedWindowCount"] == 0 or taps[i - 1].get("pacing") in INCOMPLETE_PACING):
+            r["success"] = False
+            r["failureReason"] = ("the previous input's response did not complete within the sample timeout: "
+                                  "configures in this window may answer it, not this input")
+        results.append(r)
     return results
 
 
 def _correlate_one(tap: dict, t0: int, t_end: int, windows: list[Window], expect: str,
-                   refresh_declared: int | None) -> dict:
+                   refresh_declared: int | None, timeout_ns: int) -> dict:
     r = {
         "tapId": tap.get("id"), "inputNs": t0,
         "inputWriteNs": (int(tap["t_write_end_ns"]) - t0) if tap.get("t_write_end_ns") is not None else None,
@@ -229,7 +247,8 @@ def _correlate_one(tap: dict, t0: int, t_end: int, windows: list[Window], expect
             r["presentationUnavailableReason"] = "no attributed commit was presented"
     # Success: expected effect, presented settle, sane clocks, expected output.
     if r["affectedWindowCount"] == 0:
-        r["failureReason"] = "no configure in the attribution window (key not delivered, unbound, or no-op)"
+        r["failureReason"] = (f"no configure within {timeout_ns / 1e6:g} ms of the input or before the next input "
+                              "(key not delivered, unbound, no-op, or a response slower than the sample timeout)")
     elif not r["effectObserved"]:
         r["failureReason"] = f"configures arrived but no {expect} effect was observed"
     elif clock_problem:
@@ -275,6 +294,8 @@ def to_record(result: dict, ctx: dict) -> dict:
     """Merge one correlation result with block context into a PERFORMANCE section 8 record."""
     na_engine = ("per-sample engine timestamps are not observable in a physical run without the measurement "
                  "build; see blocks.jsonl for block counter totals")
+    final = result["inputToSettledNs"]
+    settled = None if ctx.get("motionOn") else final
     rec = {
         "schemaVersion": SCHEMA_VERSION,
         "runId": ctx["runId"], "implementationCommit": ctx.get("implementationCommit"),
@@ -290,8 +311,10 @@ def to_record(result: dict, ctx: dict) -> dict:
         "inputNs": result["inputNs"], "inputWriteNs": result["inputWriteNs"],
         "dispatchNs": None, "solveEndNs": None, "lastRequestNs": None, "observedNs": None,
         "configureNs": result["configureNs"], "commitNs": result["commitNs"],
-        "presentedNs": result["inputToFirstPresentNs"], "settledNs": result["inputToSettledNs"],
-        "inputToFirstPresentNs": result["inputToFirstPresentNs"], "inputToSettledNs": result["inputToSettledNs"],
+        "presentedNs": result["inputToFirstPresentNs"], "settledNs": settled,
+        "inputToFirstPresentNs": result["inputToFirstPresentNs"], "inputToSettledNs": settled,
+        "inputToFinalCommitPresentNs": final, "motion": ctx.get("motion"),
+        "settledUnavailableReason": MOTION_SETTLE_REASON if final is not None and settled is None else None,
         "presentationUnavailableReason": result["presentationUnavailableReason"],
         "refreshNsObserved": result["refreshNsObserved"], "quietBeforeNs": result["quietBeforeNs"],
         "solves": None, "geometryWrites": None, "nativeMutations": None, "correctiveWrites": None,
@@ -325,20 +348,22 @@ def validate_record(rec: dict) -> list[str]:
         errs.append("presentedNs is null without presentationUnavailableReason")
     if not isinstance(rec["success"], bool):
         errs.append("success must be a boolean")
-    if rec["success"] and (rec["failureReason"] is not None or rec["inputToSettledNs"] is None
-                           or rec["inputToFirstPresentNs"] is None):
-        errs.append("a successful sample needs both latencies and no failure reason")
+    settle_ok = rec["inputToSettledNs"] is not None or (rec["settledUnavailableReason"]
+                                                         and rec["inputToFinalCommitPresentNs"] is not None)
+    if rec["success"] and (rec["failureReason"] is not None or not settle_ok or rec["inputToFirstPresentNs"] is None):
+        errs.append("a successful sample needs both latencies (or a reason for the settle) and no failure reason")
     if not rec["success"] and not rec["failureReason"]:
         errs.append("a failed sample needs a failureReason")
     for f in ("inputNs", "sample"):
         if not isinstance(rec[f], int):
             errs.append(f"{f} must be an integer")
-    for f in ("inputToFirstPresentNs", "inputToSettledNs", "configureNs", "commitNs"):
+    for f in ("inputToFirstPresentNs", "inputToSettledNs", "inputToFinalCommitPresentNs", "configureNs", "commitNs"):
         if rec[f] is not None and not isinstance(rec[f], int):
             errs.append(f"{f} must be an integer or null")
-    if rec["inputToFirstPresentNs"] is not None and rec["inputToSettledNs"] is not None \
-            and rec["inputToSettledNs"] < rec["inputToFirstPresentNs"]:
-        errs.append("settled precedes first present")
+    for f in ("inputToSettledNs", "inputToFinalCommitPresentNs"):
+        if rec["inputToFirstPresentNs"] is not None and rec[f] is not None and rec[f] < rec["inputToFirstPresentNs"]:
+            errs.append("settled precedes first present")
+            break
     if rec["layer"] not in ("physical", "nested-dry-run", "nested-windowed-gpu", "synthetic"):
         errs.append(f"unknown layer {rec['layer']!r}")
     return errs

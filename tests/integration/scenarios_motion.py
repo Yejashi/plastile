@@ -37,13 +37,43 @@ from scenarios import Checks, Skipped, scenario
 EFFECT_DIR = ROOT / "effect"
 EFFECT = "plastile_motion"
 ERRORS = r"plastile (error|warn)|TypeError|ReferenceError|plastile_motion/contents/code/main\.js"
-LINE = re.compile(r"^(\d+\.\d+) \S+ plastile_motion (\w+)(?: (\".*?\"))?(.*)$")
+# Qt prints %{time boot} as "%6d.%03d": below 100000 s of uptime a log line starts with spaces.
+LINE = re.compile(r"^\s*(\d+\.\d+) \S+ plastile_motion (\w+)(?: (\".*?\"))?(.*)$")
+# The effect's debug lines (the callers of PlastileMotion.prototype.log in effect/contents/code/main.js).
+KINDS = ("loaded", "start", "retarget", "end", "skip", "cancel")
+EFFECT_LINE = re.compile(r" plastile_motion (" + "|".join(KINDS) + r")\b")
 DEFAULT_MS = 180
+INSTANT = "[KDE]\nAnimationDurationFactor=0\n"  # kdeglobals: the global animation speed 'Instant'
 EVIDENCE = evidence_file("motion-T31.json")
 
 
 def fx(i: int) -> str:
     return f"plastile-fixture {i}"
+
+
+def parse_motion(lines: list[str]) -> list[dict]:
+    """The effect's debug lines among `lines`, parsed: {t, kind, caption, rest}.
+
+    An effect line that does not parse raises: a check that nothing was animated would otherwise pass over
+    lines it never read."""
+    out = []
+    for ln in lines:
+        m = LINE.match(ln)
+        if not m:
+            if EFFECT_LINE.search(ln):
+                raise NestedError(f"unparsed effect line: {ln!r}")
+            continue
+        out.append({"t": float(m.group(1)), "kind": m.group(2), "caption": json.loads(m.group(3)) if m.group(3) else None,
+                    "rest": m.group(4).strip()})
+    return out
+
+
+def log_seconds(line: str) -> float:
+    """The %{time boot} prefix of a KWin log line (QT_MESSAGE_PATTERN in tools/nested.py), padding allowed."""
+    m = re.match(r"^\s*(\d+\.\d+) ", line)
+    if not m:
+        raise NestedError(f"no boot time in log line: {line!r}")
+    return float(m.group(1))
 
 
 def boot_s() -> float:
@@ -119,16 +149,8 @@ class MotionSession(Session):
 
     def motion(self, offset: int, kind: str | None = None, caption: str | None = None) -> list[dict]:
         """The effect's debug lines since `offset`, parsed: {t, kind, caption, rest}."""
-        out = []
-        for ln in self.kw.lines_since(offset, r" plastile_motion "):
-            m = LINE.match(ln)
-            if not m:
-                continue
-            rec = {"t": float(m.group(1)), "kind": m.group(2), "caption": json.loads(m.group(3)) if m.group(3) else None,
-                   "rest": m.group(4).strip()}
-            if (kind is None or rec["kind"] == kind) and (caption is None or rec["caption"] == caption):
-                out.append(rec)
-        return out
+        return [rec for rec in parse_motion(self.kw.lines_since(offset, r" plastile_motion "))
+                if (kind is None or rec["kind"] == kind) and (caption is None or rec["caption"] == caption)]
 
     # ------------------------------------------------------------------------ screenshots
     def screenshot(self) -> dict:
@@ -221,10 +243,11 @@ def frames_by_caption(s: Session) -> dict[str, dict]:
     return {f["caption"]: f["frame"] for f in s.frames_list()}
 
 
-def wait_motion(s: MotionSession, off: int, kind: str, count: int, timeout: float = 3.0) -> list[dict]:
+def wait_motion(s: MotionSession, off: int, kind: str, count: int, timeout: float = 3.0,
+                caption: str | None = None) -> list[dict]:
     deadline = time.monotonic() + timeout
     while True:
-        got = s.motion(off, kind)
+        got = s.motion(off, kind, caption)
         if len(got) >= count or time.monotonic() > deadline:
             return got
         time.sleep(0.03)
@@ -343,11 +366,7 @@ def run_sequence(out: Path, effect: bool) -> dict:
                     ev = fixture_events(s.fixtures[i].log, "configure")[cfg0[i]:]
                     cfgs[fx(i)] = [[e["width"], e["height"]] for e in ev]
                     cfg_ms += [(e["t_ns"] - t_mono) / 1e6 for e in ev]
-                frame_ms = []
-                for ln in lis.lines("frame", off):
-                    m = re.match(r"^(\d+\.\d+) ", ln)
-                    if m:
-                        frame_ms.append((float(m.group(1)) - t_boot) * 1000)
+                frame_ms = [(log_seconds(ln) - t_boot) * 1000 for ln in lis.lines("frame", off)]
                 d = delta(a, b)
                 steps.append({"command": name, "configures": cfgs,
                               "work": {k: d.get(k, 0) for k in ("commands", "solves", "writes", "corrections")},
@@ -452,9 +471,10 @@ def motion_rapid(out: Path, c: Checks):
 
 
 # ------------------------------------------------------------------------------------------------ (5)
-def mid_animation(s: MotionSession, c: Checks, tag: str, stop) -> None:
+def mid_animation(s: MotionSession, c: Checks, tag: str, stop, unloads: bool = True) -> None:
     """Swap with a 2 s animation, prove it is mid-flight on screen, `stop()` the effect, prove every window is
-    drawn at its real rectangle long before the animation would have ended."""
+    drawn at its real rectangle long before the animation would have ended. `unloads`: whether `stop()` unloads
+    the effect (otherwise it must stay loaded)."""
     before = frames_by_caption(s)
     off = s.kw.mark()
     s.cmd("swap.next")
@@ -476,9 +496,9 @@ def mid_animation(s: MotionSession, c: Checks, tag: str, stop) -> None:
     errs = visual_errors(shot, frames)
     time.sleep(0.8)
     ref = s.screenshot()
-    c(f"(5) {tag}: the effect is unloaded", gone)
-    c(f"(5) {tag}: {round(shot_at, 2)} s after unloading (1.4 s before the animation's end) every window is drawn at its "
-      "real rectangle, and the image equals a later reference", not errs and image_diff(shot, ref) == 0.0,
+    c(f"(5) {tag}: the effect is {'unloaded' if unloads else 'still loaded'}", gone == unloads)
+    c(f"(5) {tag}: {round(shot_at, 2)} s after stopping it (about a second before the animation's end) every window is "
+      "drawn at its real rectangle, and the image equals a later reference", not errs and image_diff(shot, ref) == 0.0,
       {"errors": errs, "diff": image_diff(shot, ref)})
 
 
@@ -491,11 +511,22 @@ def set_enabled(s: MotionSession, on: bool) -> None:
         raise RuntimeError(f"kwriteconfig6 failed: {r.stderr.strip()}")
 
 
+def set_speed(s: MotionSession, factor: float) -> None:
+    """What System Settings > General Behavior > Animation speed writes: kdeglobals [KDE] AnimationDurationFactor
+    with KConfig::Notify, which KWin's Options reloads before it reconfigures every effect. Nested config and bus only."""
+    r = subprocess.run(["kwriteconfig6", "--file", "kdeglobals", "--group", "KDE", "--key", "AnimationDurationFactor",
+                        "--notify", str(factor)], env=s.kw.env(), capture_output=True, text=True, timeout=10)
+    if r.returncode != 0:
+        raise RuntimeError(f"kwriteconfig6 failed: {r.stderr.strip()}")
+
+
 @scenario("motion-unload-mid-T31")
 def motion_unload(out: Path, c: Checks):
     """(5) Unloading the effect mid-animation (D-Bus unloadEffect, and the System Settings path: kwinrc
     [Plugins] plastile_motionEnabled=false written with a change notification) leaves every window drawn at its real geometry at
-    once. Plastile is not involved and keeps working; the effect loads and animates again afterwards."""
+    once. So does switching the global animation speed to Instant mid-animation (kdeglobals [KDE]
+    AnimationDurationFactor=0 with a change notification), which leaves the effect loaded. Plastile is not involved
+    and keeps working; the effect loads and animates again afterwards."""
     with MotionSession(out, effect_config={"Duration": 2000}) as s:
         s.require_effect()
         three_loaded(s)
@@ -511,6 +542,24 @@ def motion_unload(out: Path, c: Checks):
             set_enabled(s, False)
             Session.wait_for(lambda: not s.effect_loaded(), 5, "effect disabled through kwinrc with a change notification")
         mid_animation(s, c, "kwinrc Enabled=false with a change notification", disable)
+        set_enabled(s, True)
+        Session.wait_for(s.effect_loaded, 5, "effect enabled again through kwinrc with a change notification")
+        time.sleep(0.3)
+        off = s.kw.mark()
+
+        def instant():
+            set_speed(s, 0)
+            # Pacing only (the screenshot is the oracle): KWin's config watcher delivers the change asynchronously.
+            wait_motion(s, off, "cancel", 2, timeout=0.4)
+        mid_animation(s, c, "global animation speed Instant", instant, unloads=False)
+        cancels = sorted(x["caption"] for x in s.motion(off, "cancel") if x["rest"] == "reason=instant")
+        c("(5) Instant: the effect cancelled both running animations (reason=instant)", len(cancels) == 2, cancels)
+        off = s.kw.mark()
+        s.cmd("swap.next")
+        s.settle()
+        time.sleep(0.2)
+        c("(5) Instant: a later swap starts no animation", not s.motion(off, "start"),
+          [(x["kind"], x["caption"], x["rest"]) for x in s.motion(off)])
         cnt = s.settle()
         c("Plastile kept tiling throughout (oracle) and recorded no error", not tiling_errors(s.frames_list(), s.area(), 8)
           and cnt["counters"]["errors"] == 0, tiling_errors(s.frames_list(), s.area(), 8))
@@ -658,8 +707,9 @@ def motion_hit_test(out: Path, c: Checks):
 @scenario("motion-instant-T31")
 def motion_instant(out: Path, c: Checks):
     """(7) The global animation speed 'Instant' (kdeglobals [KDE] AnimationDurationFactor=0) disables the
-    effect: it loads, but a swap is not animated and the image shows the final frames at once."""
-    with MotionSession(out, kdeglobals="[KDE]\nAnimationDurationFactor=0\n") as s:
+    effect: it loads, but a swap is not animated and the image shows the final frames at once. The effect is
+    configured for 2000 ms, so an animation that still ran would be under way when the image is taken."""
+    with MotionSession(out, kdeglobals=INSTANT, effect_config={"Duration": 2000}) as s:
         s.require_effect()
         three_loaded(s)
         off = s.kw.mark()
@@ -668,18 +718,22 @@ def motion_instant(out: Path, c: Checks):
           [x["rest"] for x in s.motion(off, "loaded")])
         before = frames_by_caption(s)
         off = s.kw.mark()
+        t0 = time.monotonic()
         s.cmd("swap.next")
-        s.settle()
-        time.sleep(0.1)
+        # The image is taken as soon as KWin reports the swap, not after a settle.
+        until_true(lambda: sum(not near(v, before[k]) for k, v in frames_by_caption(s).items()) == 2, 2)
         shot = s.screenshot()
+        shot_ms = round((time.monotonic() - t0) * 1000)
         frames = s.frames_list()
+        s.settle()
         moved = [k for k, v in frames_by_caption(s).items() if not near(v, before[k])]
         skips = s.motion(off, "skip")
         c("(7) the swap moved two windows and neither was animated (skip reason=instant)",
           len(moved) == 2 and not s.motion(off, "start") and sorted(x["caption"] for x in skips if "reason=instant" in x["rest"])
           == sorted(moved), {"moved": moved, "skips": [(x["caption"], x["rest"]) for x in skips]})
         errs = visual_errors(shot, frames)
-        c("(7) the image shows every window at its real rectangle right after the command", not errs, errs)
+        c("(7) the image taken when KWin reports the swap, within a quarter of the configured 2000 ms, shows every "
+          "window at its real rectangle", not errs and shot_ms < 500, {"errors": errs, "shotMs": shot_ms})
         c("no errors in KWin's log", not s.log_lines(ERRORS), s.log_lines(ERRORS)[:5])
 
 
@@ -701,7 +755,8 @@ def motion_outputs(out: Path, c: Checks):
         before = frames_by_caption(s)
         off = s.kw.mark()
         s.cmd("move.output-next")
-        ends = wait_motion(s, off, "end", 1, timeout=4)
+        # Fixture 4's own end: the reflow on Virtual-0 starts earlier and ends first.
+        ends = wait_motion(s, off, "end", 1, timeout=4, caption=fx(4))
         time.sleep(0.3)
         s.settle()
         after = {f["caption"]: f for f in s.frames_list()}
@@ -942,7 +997,8 @@ def motion_edges(out: Path, c: Checks):
         b = s.screenshot()
         c("keyboard quick tile: the image is still afterwards (no stuck transform; the quick tile overlaps a tile, so "
           "the per-window colour check does not apply)", image_diff(a, b) == 0.0, image_diff(a, b))
-        c("no errors in KWin's log", not s.log_lines(ERRORS), s.log_lines(ERRORS)[:5])
+        c("scrolling, scale, minimize, desktop, suspend and quick-tile session: no errors in KWin's log",
+          not s.log_lines(ERRORS), s.log_lines(ERRORS)[:5])
 
     with MotionSession(out / "close", effect_config={"Duration": 2000}) as s:
         s.require_effect()
@@ -971,5 +1027,5 @@ def motion_edges(out: Path, c: Checks):
         errs = visual_errors(shot, frames)
         c("close mid-animation: the others settle; every window drawn at its real rectangle and still",
           len(ends) >= 1 and not errs and image_diff(shot, ref) == 0.0, {"errors": errs, "diff": image_diff(shot, ref)})
-        c("no errors in KWin's log", not s.log_lines(ERRORS), s.log_lines(ERRORS)[:5])
+        c("close session: no errors in KWin's log", not s.log_lines(ERRORS), s.log_lines(ERRORS)[:5])
         record("motion-edges-T31", {"visualErrors": shots, "closeVictim": victim})

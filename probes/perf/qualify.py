@@ -62,7 +62,7 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 sys.path.insert(0, str(ROOT / "tests/integration"))
 sys.path.insert(0, str(HERE))
-from harness import PLUGIN, Listener, Session, delta, tiling_errors, trace  # noqa: E402
+from harness import PLUGIN, STATE_HELPER, Listener, Session, delta, tiling_errors, trace  # noqa: E402
 from workloads import GAP, load_quiet, log_ts_ns, measure_env, stack_feasibility, stack_output_height  # noqa: E402
 import perfcommon as common  # noqa: E402
 
@@ -83,6 +83,34 @@ WINDOW_CAP_NS = 50_000_000  # client events later than 50 ms after a command are
 
 def expected_writes(wl: str, n: int) -> int:
     return {"ratio": n, "swap": 2, "master": n, "focus": 0, "noop": 0}[wl]
+
+
+def sample_failure(wl: str, cmd: str, outer: list | None, perf: dict | None, writes: int | None,
+                   expected: int) -> str | None:
+    """Why one measured command is not a successful sample, or None (PERFORMANCE §6.8).
+
+    Uninstrumented samples have no perf record: only their outer span is checked here, and a
+    focus block's activations are checked per block (block_ok)."""
+    status = perf["status"] if perf else None
+    if outer is None or outer[0] != cmd:
+        return "no outer span for this command"
+    if perf is not None and status not in ("accepted", "noop"):
+        return f"status {status}"
+    if perf is not None and wl == "focus" and status != "accepted":
+        return "focus.next did not activate a window (status noop)"
+    if writes is not None and writes != expected:
+        return f"writes {writes} != expected {expected}"
+    return None
+
+
+def block_ok(b: dict) -> bool:
+    """A measured block is valid: every command had its span, the layout is correct and settled, corrections are
+    the explained E04 case only (a late commit of an older target after KWin dropped the newer configure:
+    counters.stale), no error, and every focus.next activated a window (a no-op focus does nothing, fast)."""
+    d = b["countersDelta"]
+    return (b["outerIdsMatch"] and not b["tilingErrorsAfter"] and b["outstandingAfter"] == 0
+            and d.get("corrections", 0) <= d.get("stale", 0) and d.get("errors", 0) == 0
+            and (b["workload"] != "focus" or d.get("activations", 0) == b["commands"]))
 
 
 def unit_seed(base: int, n: int, mode: str, run: int) -> int:
@@ -259,7 +287,9 @@ def main() -> int:
         env["QT_LOGGING_RULES"] = "js=true;qml=true;kwin_scripting=true;qt.qml.gc.allocatorStats=true"
     qml = args.qml.resolve()
     unit["root"] = {"qml": str(qml.relative_to(ROOT)) if qml.is_relative_to(ROOT) else "outside the tree",
-                    "bundleSha256": common.sha256(qml.parent.parent.parent / "package/contents/code/plastile.mjs")}
+                    "bundleSha256": common.sha256(qml.parent.parent.parent / "package/contents/code/plastile.mjs"),
+                    # the persistence helper the session's private bus activates (Session(helper=True))
+                    "helperSha256": common.sha256(STATE_HELPER)}
     blocks, samples = [], []
     t_unit = time.monotonic()
     with Session(out / "session", width=1920, height=stack_output_height(n), extra_env=env, qml=qml,
@@ -328,14 +358,7 @@ def main() -> int:
             # Frame requests issued by this command's solve (engine counter delta inside solveAndApply);
             # a command that did not solve issued none. Uninstrumented runs have block totals only.
             writes = (timing.get("writes", 0) if timing else 0) if p else None
-            status = p["status"] if p else None
-            fail = None
-            if o is None or o[0] != r["cmd"]:
-                fail = "no outer span for this command"
-            elif p is not None and status not in ("accepted", "noop"):
-                fail = f"status {status}"
-            elif writes is not None and writes != exp:
-                fail = f"writes {writes} != expected {exp}"
+            fail = sample_failure(r["workload"], r["cmd"], o, p, writes, exp)
             rows.append({
                 "runId": run_id, "implementationCommit": unit["implementationCommit"], "environmentId": env_id,
                 "workload": f"P03-{r['workload']}", "sample": len(rows), "contextCount": 1 + args.inactive,
@@ -363,14 +386,11 @@ def main() -> int:
     unit["machineEnd"] = common.machine_state()
     unit["sampleCount"] = len(rows)
     unit["failures"] = sum(1 for r in rows if not r["success"])
-    # Corrections are allowed only as the ledger's explained E04 case (a late commit of an older target
-    # after KWin dropped the newer configure: counters.stale), and are reported (PERFORMANCE §4).
-    block_ok = all(b["outerIdsMatch"] and not b["tilingErrorsAfter"] and b["outstandingAfter"] == 0
-                   and b["countersDelta"].get("corrections", 0) <= b["countersDelta"].get("stale", 0)
-                   and b["countersDelta"].get("errors", 0) == 0 for b in blocks)
+    # Corrections are allowed only as the ledger's explained E04 case, and are reported (PERFORMANCE §4).
+    blocks_ok = all(block_ok(b) for b in blocks)
     unit["corrections"] = {k: sum(b["countersDelta"].get(k, 0) for b in blocks if not b["warmup"])
                            for k in ("corrections", "stale", "superseded", "partial", "deadlines", "diverged")}
-    unit["pass"] = bool(ok_setup and block_ok and unit["failures"] == 0 and not unit["badLines"]
+    unit["pass"] = bool(ok_setup and blocks_ok and unit["failures"] == 0 and not unit["badLines"]
                         and not unit["teardown"]["isScriptLoadedAfter"])
     common.write_json(out / "unit.json", unit)
     meas = [r for r in rows if not r["warmup"] and r["outerNs"] is not None]

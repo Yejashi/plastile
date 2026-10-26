@@ -2,7 +2,9 @@
 // Loads the settings schema and form like KWin's ScriptingConfig (group "Script-plastile"),
 // then: (1) every schema entry has a kcfg_ widget and vice versa, (2) defaults reach the
 // widgets, (3) widget edits are saved with the runtime's vocabulary (Enum by choice name),
-// (4) file values written by hand reach the widgets. Prints one JSON report.
+// (4) file values written by hand reach the widgets, (5) hand-set values survive an Apply that
+// changes another field (layout=scrolling, masterRatio=0.555, ratioStep=0.025), and choosing Master
+// and stack over layout=scrolling saves it. Prints one JSON report.
 #include <KConfigDialogManager>
 #include <KConfigGroup>
 #include <KConfigLoader>
@@ -100,6 +102,49 @@ int main(int argc, char **argv)
     for (const char *k : {"layout", "diagnostics", "gapOuter"})
         reloaded[QString::fromLatin1(k)] = widgetValue(form->findChild<QWidget *>(QStringLiteral("kcfg_") + QString::fromLatin1(k)));
     report[QStringLiteral("widgetsAfterHandEdit")] = reloaded;
+
+    // Hand-set values the dialog has no exact widget value for must survive an Apply that changes
+    // something else, and the layout combo must show (and switch away from) every runtime layout.
+    group.writeEntry("layout", QStringLiteral("scrolling"));
+    group.writeEntry("masterRatio", 0.555);
+    group.writeEntry("ratioStep", 0.025);
+    config->sync();
+    config->reparseConfiguration();
+    loader.load();
+    manager.updateWidgets();
+    auto layoutItem = dynamic_cast<KCoreConfigSkeleton::ItemEnum *>(loader.findItemByName(QStringLiteral("layout")));
+    int scrolling = -1;
+    if (layoutItem) {
+        const auto choices = layoutItem->choices();
+        for (int i = 0; i < choices.size(); ++i)
+            if (choices[i].name == QLatin1String("scrolling")) scrolling = i;
+    }
+    auto layoutCombo = form->findChild<QComboBox *>(QStringLiteral("kcfg_layout"));
+    if (scrolling < 0 || layoutCombo->currentIndex() != scrolling)
+        problems.append(QStringLiteral("layout=scrolling is shown as combo index %1").arg(layoutCombo->currentIndex()));
+    report[QStringLiteral("changedBeforeEdit")] = manager.hasChanged();
+    if (manager.hasChanged()) problems.append(QStringLiteral("the dialog reports changes right after loading hand-set values"));
+    form->findChild<QSpinBox *>(QStringLiteral("kcfg_gapInner"))->setValue(14);
+    manager.updateSettings();
+    loader.save();
+    config->sync();
+    config->reparseConfiguration();
+    const KConfigGroup kept = config->group(QStringLiteral("Script-plastile"));
+    for (const char *k : {"layout", "masterRatio", "ratioStep"}) {
+        const QString want = QString::fromLatin1(k) == QLatin1String("layout") ? QStringLiteral("scrolling")
+            : QString::fromLatin1(k) == QLatin1String("masterRatio") ? QStringLiteral("0.555") : QStringLiteral("0.025");
+        if (kept.readEntry(k, QString()) != want)
+            problems.append(QStringLiteral("an Apply that changed only gapInner rewrote %1=%2 as %3")
+                                .arg(QString::fromLatin1(k), want, kept.readEntry(k, QString())));
+    }
+    layoutCombo->setCurrentIndex(0);
+    manager.updateSettings();
+    loader.save();
+    config->sync();
+    config->reparseConfiguration();
+    // KConfig removes a key set back to its default; the runtime then reads the default.
+    if (config->group(QStringLiteral("Script-plastile")).readEntry("layout", QStringLiteral("master-stack")) != QLatin1String("master-stack"))
+        problems.append(QStringLiteral("choosing Master and stack over layout=scrolling did not save it"));
     report[QStringLiteral("problems")] = problems;
     printf("%s\n", QJsonDocument(report).toJson(QJsonDocument::Indented).constData());
     return problems.isEmpty() ? 0 : 1;

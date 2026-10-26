@@ -28,6 +28,8 @@
         <item><property name="text"><string>Binary split (BSP)</string></property></item>
         <item><property name="text"><string>Monocle (one window at a time)</string></property></item>
         <item><property name="text"><string>Floating (no tiling)</string></property></item>
+        <item><property name="text"><string>Scrolling (experimental)</string></property></item>
+        <item><property name="text"><string>Zones (experimental)</string></property></item>
        </widget>
       </item>
       <item row="1" column="0">
@@ -90,7 +92,7 @@
       <item row="4" column="1">
        <widget class="QDoubleSpinBox" name="kcfg_ratioStep">
         <property name="decimals">
-         <number>2</number>
+         <number>3</number>
         </property>
         <property name="minimum">
          <double>0.010000000000000</double>
@@ -154,7 +156,7 @@
       <item row="0" column="1">
        <widget class="QDoubleSpinBox" name="kcfg_masterRatio">
         <property name="decimals">
-         <number>2</number>
+         <number>3</number>
         </property>
         <property name="minimum">
          <double>0.050000000000000</double>

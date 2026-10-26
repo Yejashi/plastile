@@ -178,9 +178,18 @@ KWin restarts or the script reloads.
 EOF
 }
 
-# The executable a D-Bus activation file starts (empty when there is no file).
+# The executable a D-Bus activation file starts (empty when there is no file). The bus splits
+# Exec= like a shell command line, so the helper's file names it in double quotes
+# (helper/CMakeLists.txt); a file from an older install names it bare.
 service_exec() {
-    [ -f "$1" ] && sed -n 's/^Exec=//p' "$1" | head -n 1 || true
+    [ -f "$1" ] && sed -n 's/^Exec=//p' "$1" | head -n 1 | sed 's/^"\(.*\)"$/\1/' || true
+}
+
+# Whether a helper owns its bus name now (org.freedesktop.DBus.NameHasOwner, which starts nothing).
+helper_running() {
+    [ -n "${DBUS_SESSION_BUS_ADDRESS:-}" ] && command -v dbus-send >/dev/null 2>&1 \
+        && dbus-send --session --print-reply --dest=org.freedesktop.DBus /org/freedesktop/DBus \
+            org.freedesktop.DBus.NameHasOwner string:"$SERVICE_NAME" 2>/dev/null | grep -q 'boolean true'
 }
 
 # Ask the session bus to re-read its service files (org.freedesktop.DBus.ReloadConfig), for a
@@ -202,6 +211,9 @@ cmd_install_helper() {
         command -v "$tool" >/dev/null 2>&1 || die "$tool not found (building the helper needs cmake, a C++17 compiler and the Qt 6 Core and DBus development files)" 127
     done
     [ -f "$HELPER_SOURCE/CMakeLists.txt" ] || die "$HELPER_SOURCE/CMakeLists.txt is missing"
+    case "$HELPER_PREFIX" in
+        *[\"\\\$\`]*) die "the helper prefix $HELPER_PREFIX contains a double quote, backslash, \$ or backquote, which the helper's D-Bus activation file cannot name: set PLASTILE_HELPER_PREFIX to another directory" ;;
+    esac
     cmake -S "$HELPER_SOURCE" -B "$HELPER_BUILD" -DCMAKE_BUILD_TYPE=Release \
         -DCMAKE_INSTALL_PREFIX="$HELPER_PREFIX" -DCMAKE_INSTALL_LIBEXECDIR=libexec \
         -DPLASTILE_DBUS_SERVICE_DIR="$DATA_HOME/dbus-1/services" >/dev/null \
@@ -211,13 +223,19 @@ cmd_install_helper() {
     exe=$(service_exec "$SERVICE_FILE")
     [ -x "$exe" ] || die "installed, but $SERVICE_FILE does not name an executable helper ($exe)"
     reload_bus
+    if helper_running; then
+        running="A helper started before this install is running: it keeps serving this session until
+KWin exits (a logout), and the session bus starts the installed one after that."
+    else
+        running="The session bus starts the helper when Plastile first asks for it (when the script starts
+or reloads); nothing is running now. A Plastile that already runs without it keeps its
+preferences in memory until the script is reloaded or KWin restarts."
+    fi
     cat <<EOF
 
 Installed: $exe
 Activation file: $SERVICE_FILE
-The session bus starts the helper when Plastile first asks for it (when the script starts
-or reloads); nothing is running now. A Plastile that already runs without it keeps its
-preferences in memory until the script is reloaded or KWin restarts.
+$running
 Saved state: $STATE_DIR
 EOF
 }

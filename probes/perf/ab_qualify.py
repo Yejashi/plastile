@@ -79,7 +79,9 @@ def summarize(d: Path) -> dict:
              "implementationDirty": [u["implementationDirty"] for u in units],
              "corrections": [u["corrections"]["corrections"] for u in units], "failures": [u["failures"] for u in units]}
         for wl in WORKLOADS:
-            meas = {k: [r for r in rs if not r["warmup"] and r["workload"] == f"P03-{wl}"] for k, rs in rows.items()}
+            # Failed samples are counted per unit (c["failures"]), never pooled as latencies (PERFORMANCE §6.8).
+            meas = {k: [r for r in rs if not r["warmup"] and r["success"] and r["workload"] == f"P03-{wl}"]
+                    for k, rs in rows.items()}
             solve = [[r["solveNs"] / 1e6 for r in rs if r["solveNs"] is not None] for rs in meas.values()]
             outer = [[r["outerNs"] / 1e6 for r in rs if r["outerNs"] is not None] for rs in meas.values()]
             c[wl] = {"solve": cell([r for r in solve if r]), "outer": cell([r for r in outer if r])}

@@ -52,6 +52,7 @@ export const LAYOUTS: Record<LayoutKind, AnyLayout> = {
 export const REPARK_LIMIT = 8;
 const LAYOUT_CYCLE: readonly LayoutKind[] = ["master-stack", "bsp", "monocle", "floating"];
 const DIVERGED = "did not reach its target after bounded corrections";
+const SELF_RESIZING = "keeps changing its own size; Plastile stopped correcting it";
 /** Preferences kept for dropped (empty) contexts, most recent first out last. */
 export const RETAINED_MAX = 64;
 
@@ -200,7 +201,7 @@ interface Rec {
   readyBy: number | null;
   border: { original: boolean; applied: boolean } | null;
   rules: WindowRules | null;
-  /** Matched once against restored float preferences (T27). */
+  /** Classified at least once: matched against waiting float preferences then, or at a load (T27). */
   restoreChecked: boolean;
   /**
    * The frame the window had when this runtime adopted it in start(), before any write; null for
@@ -298,10 +299,26 @@ export class Engine {
   private interactionStart = new Map<WindowId, { ctx: ContextId; kind: LayoutKind; index: number }>();
   /** User float decisions by application identity (live or closed windows), oldest first, bounded. */
   private floatPrefs = new Map<string, FloatPreference>();
-  /** Float preferences restored from persistence and not yet matched to a window (T27, Q06). */
+  /**
+   * Float preferences waiting for a window (T27, Q06): restored from persistence and not matched yet,
+   * or of a user-floated window that closed. Oldest first, bounded.
+   */
   private pendingFloats = new Map<string, FloatPreference>();
   /** Windows to match against pendingFloats in the next flush (after a burst of adoptions). */
   private restoreChecks = new Set<WindowId>();
+  /**
+   * Contexts whose layout became floating other than by a command (a configuration activation, a
+   * saved layout from the load reply): their members' float rectangles are restored in the next
+   * flush, as a layout switch does, once the context is shown.
+   */
+  private floatLayouts = new Set<Ctx>();
+  /**
+   * Float restores waiting for the window's tile configure still in flight (E04: KWin drops a write
+   * back to the committed size while a configure is outstanding, and the window would land on its
+   * tile). Written in the flush after that configure commits (a frame of the requested size) or its
+   * deadline passes; that commit is not the user's float position.
+   */
+  private floatRestores = new Map<WindowId, { size: Rect; until: number }>();
   /** Windows opened after start() whose arrival maximize state is decided in the next flush (ADR-021). */
   private openChecks = new Set<WindowId>();
   /** Windows that arrived maximized in a context not shown: decided when it is shown (ADR-021). */
@@ -422,6 +439,8 @@ export class Engine {
     this.floatPrefs.clear();
     this.pendingFloats.clear();
     this.restoreChecks.clear();
+    this.floatLayouts.clear();
+    this.floatRestores.clear();
     this.openChecks.clear();
     this.openHidden.clear();
     this.openJoining.clear();
@@ -461,8 +480,10 @@ export class Engine {
     this.deadlineAt = Infinity;
     this.sweepParked(true); // every parked window back inside its output's work area (SCROLLING §5)
     this.releaseAllZones(); // zoned windows keep their frames (ZONES §2)
+    this.floatRestores.clear(); // a float restore still waiting is Plastile's write: never made later
     this.recs.forEach((r) => {
       L.cancel(r.ledger);
+      r.ledger.request = null; // the user owns the frames now; a resume's targets are fresh requests
       this.restoreBorder(r);
     });
   }
@@ -500,7 +521,7 @@ export class Engine {
     this.recs.set(r.id, r);
     this.counters.adopted++;
     this.trace.record(this.svc.now(), "add", r.id);
-    if (s.meta.appId === "" && s.meta.kind === "normal" && !s.meta.special) {
+    if (awaitsAppId(s.meta)) {
       // Late metadata: stay visible and pending, bounded by a readiness deadline.
       r.readyBy = this.svc.now() + this.opts.readinessMs;
       this.armDeadline(r.readyBy);
@@ -516,6 +537,7 @@ export class Engine {
     r.frame = rectOf(s.frame); r.nativeTile = s.nativeTile;
     if (s.nativeTile) r.nativeYield = true;
     r.suspensions = this.suspensionsFor(r, s.states);
+    if (r.mode === "pending" && !awaitsAppId(s.meta)) r.readyBy = null; // its metadata signal was missed
     this.reclassify(r, "resync");
   }
 
@@ -546,6 +568,7 @@ export class Engine {
     this.openChecks.delete(r.id);
     this.openHidden.delete(r.id);
     this.openJoining.delete(r.id);
+    this.floatRestores.delete(r.id);
     this.recs.delete(r.id);
     if (r.userMode === "floating") this.releaseFloat(r);
   }
@@ -561,6 +584,7 @@ export class Engine {
     this.floatPrefs.delete(key);
     this.pendingFloats.delete(key);
     this.pendingFloats.set(key, p);
+    if (this.pendingFloats.size > FLOATS_MAX) this.pendingFloats.delete(this.pendingFloats.keys().next().value as string);
   }
 
   private live(id: WindowId, gen: number): Rec | null {
@@ -577,7 +601,8 @@ export class Engine {
     const relevant = prev.appId !== meta.appId || prev.kind !== meta.kind || prev.transient !== meta.transient
       || prev.resizeable !== meta.resizeable || prev.special !== meta.special || prev.modal !== meta.modal
       || prev.resourceName !== meta.resourceName || (this.opts.titleRules === true && prev.title !== meta.title);
-    if (r.mode === "pending" && meta.appId !== "") { r.readyBy = null; this.reclassify(r, "metadata"); }
+    // The wait ends with its app id, or once the window is no longer one that waits for it (add()).
+    if (r.mode === "pending" && !awaitsAppId(meta)) { r.readyBy = null; this.reclassify(r, "metadata"); }
     else if (relevant) this.reclassify(r, "metadata");
     this.ensureFlush();
   }
@@ -646,7 +671,9 @@ export class Engine {
     if (r.nativeTile === hasTile) return;
     r.nativeTile = hasTile;
     if (hasTile) {
-      // Explicit native quick tile / tile editor action: yield until adopted (BEHAVIOR §9).
+      // Explicit native quick tile / tile editor action: yield until adopted (BEHAVIOR §9). It
+      // replaces a float decision as Toggle floating back to tiled does: the preference is forgotten.
+      if (r.userMode === "floating") this.forgetFloat(r);
       r.userMode = null;
       r.nativeYield = true;
       this.reclassify(r, "native-tile");
@@ -669,6 +696,14 @@ export class Engine {
       this.ensureFlush();
       return;
     }
+    const waiting = this.floatRestores.get(id);
+    if (waiting && (r.mode === "floating" || this.inFloatingLayout(r))) {
+      // A float restore waits for this window's tile configure: what arrives now is that configure
+      // or the frame before it, never the user's float position. Its commit lets the restore go.
+      L.observe(r.ledger, f);
+      if (sizeNear(f, waiting.size, r.ledger.tol)) this.ensureFlush();
+      return;
+    }
     if (r.mode === "floating" && r.suspensions.size === 0 && r.ledger.status !== "pending") this.captureFloat(r, f);
     if (r.mode !== "tiled") { L.observe(r.ledger, f); return; }
     if (this.inFloatingLayout(r)) {
@@ -689,7 +724,8 @@ export class Engine {
     switch (o) {
       case "settled":
         this.counters.settled++;
-        if (r.exception === DIVERGED) r.exception = null; // a slow client got there after all
+        // A slow client got there after all, or a self-resizing one reached a newer target.
+        if (r.exception === DIVERGED || r.exception === SELF_RESIZING) r.exception = null;
         this.trace.record(this.svc.now(), "settled", id);
         this.disarmIfIdle();
         if (this.restoreChecks.has(id)) this.ensureFlush(); // a restore waited for this request
@@ -730,7 +766,7 @@ export class Engine {
           else if (r.ledger.status !== "diverged") {
             L.diverge(r.ledger);
             this.counters.diverged++;
-            r.exception = "keeps changing its own size; Plastile stopped correcting it";
+            r.exception = SELF_RESIZING;
           }
         }
         break;
@@ -803,13 +839,17 @@ export class Engine {
       c.key = key;
       c.id = id;
       this.contexts.set(id, c);
+      // A key is live or retained, never both (the snapshot rejects a duplicate): the live state is current.
+      this.retained.delete(id);
     }
     for (const [id, kept] of [...this.retained]) {
       const to = renames.get(kept.key.output);
       if (to === undefined) continue;
       this.retained.delete(id);
       const key: ContextKey = { output: to, desktop: kept.key.desktop, activity: kept.key.activity };
-      this.retained.set(contextId(key), { key, prefs: kept.prefs });
+      // Onto a live context: that one is current. Onto another retained entry: the moved one, of the
+      // monitor connected now, replaces it.
+      if (!this.contexts.has(contextId(key))) this.retain(key, kept.prefs);
     }
     for (const [id, p] of [...this.parked]) {
       const to = renames.get(p.ctx.output);
@@ -870,11 +910,16 @@ export class Engine {
     const toggled = new Map<ContextId, boolean>();
     if (settings) {
       before.forEach((old, c) => {
+        const prefs = this.prefsOf(c); // against the configuration it had
         c.settings = null;
         const now = this.ctxSettings(c);
         toggled.set(c.id, old.enabled !== now.enabled);
         if (sameValue(old, now)) return;
         if (c.states["master-stack"] !== undefined) this.rebaseMasterStack(c, old);
+        // What it holds beyond the configuration changed (a field rebased, or a value set by command
+        // that the configuration now equals): saved, so the next start shows what this session does.
+        if (!sameValue(prefs, this.prefsOf(c))) this.persistChanged({ context: c.key });
+        if (c.layoutOverride === null && old.layout !== "floating" && now.layout === "floating") this.floatLayouts.add(c);
         this.markDirty(c.key);
         this.retryOverflow(c.id); // layout parameters changed (BEHAVIOR §11)
       });
@@ -982,6 +1027,10 @@ export class Engine {
   }
 
   private reclassify(r: Rec, why: string): void {
+    // Waiting for late metadata (BEHAVIOR §1): only its arrival or the readiness deadline ends the
+    // wait (both clear readyBy first). Other events (membership, constraints, configuration, a native
+    // tile) are already stored on the record and are classified with the metadata.
+    if (r.mode === "pending" && r.readyBy !== null) return;
     this.counters.reclassified++;
     const key = this.singleContextKey(r.membership);
     const prevMin = r.rules?.minSize;
@@ -1005,9 +1054,11 @@ export class Engine {
     }
     if (mode === "tiled" && !(this.settingsFor(key!).enabled)) mode = "floating";
     this.transition(r, mode, key, why);
-    if (!r.restoreChecked && r.mode !== "pending" && this.pendingFloats.size > 0) {
+    if (!r.restoreChecked && r.mode !== "pending") {
+      // Its first classification is its adoption: only then is it matched against waiting float
+      // preferences, so a window already in use never takes one on a later, unrelated reclassify.
       r.restoreChecked = true;
-      this.restoreChecks.add(r.id);
+      if (this.pendingFloats.size > 0) this.restoreChecks.add(r.id);
     }
     if (r.open === "hidden") this.openShownLater(r, "wait"); // another context: decided again
     if (r.open === "wait" && r.mode !== "pending") this.openChecks.add(r.id); // ready: decided in the next flush
@@ -1127,9 +1178,29 @@ export class Engine {
   private layoutState(c: Ctx, kind: LayoutKind): any {
     if (c.states[kind] === undefined) {
       const lay = LAYOUTS[kind];
-      c.states[kind] = lay.rebuild(lay.initial(this.ctxSettings(c)), c.members, this.solveInput(c, null));
+      c.states[kind] = lay.rebuild(lay.initial(this.ctxSettings(c)), c.members, this.structureInput(c, kind === "bsp"));
     }
     return c.states[kind];
+  }
+
+  /**
+   * Input for a structural edit (insert, rebuild). A BSP split chosen from a slot's shape
+   * (bsp.axis "longest") needs the context's real work area, not solve's placeholder; no
+   * other edit reads the area, so only that case asks KWin. The placeholder stays while the
+   * work area is invalid (O06) or cannot be read (C08: the window still joins).
+   */
+  private structureInput(c: Ctx, bsp: boolean): SolveInput {
+    let area: Rect | null = null;
+    if (bsp && this.ctxSettings(c).bsp.axis === "longest") {
+      try {
+        const a = this.host.workArea(c.key.output, c.key.desktop);
+        if (isValidArea(a)) area = a;
+      } catch (e) {
+        this.counters.errors++;
+        this.svc.log("warn", "work area read failed", String(e));
+      }
+    }
+    return this.solveInput(c, area);
   }
 
   private joinContext(r: Rec): void {
@@ -1143,7 +1214,7 @@ export class Engine {
     else if (insert === "after-focus" && focus !== null) at = c.members.indexOf(focus) + 1;
     c.members.splice(at, 0, r.id);
     const anchor = at > 0 ? c.members[at - 1] : null;
-    const input = this.solveInput(c, null);
+    const input = this.structureInput(c, c.states.bsp !== undefined);
     // Scrolling: a new column right of the focused one, or at the end (SCROLLING §2).
     const scrollAnchor = insert === "after-focus" ? focus : null;
     for (const kind of Object.keys(c.states) as LayoutKind[]) {
@@ -1249,6 +1320,8 @@ export class Engine {
         return;
       }
       this.matchRestores();
+      this.runFloatRestores();
+      this.restoreFloatLayouts();
       this.retryOverflows();
       this.runOpenChecks();
       if (this.endedInteractions.size) {
@@ -1349,12 +1422,16 @@ export class Engine {
     this.corrections.clear();
     for (const id of ids) {
       const r = this.recs.get(id);
-      if (!r || !this.ownsGeometry(r) || !r.ledger.desired) continue;
-      // A dirty context is re-solved in this flush and its fresh target supersedes the old
-      // one (e.g. KWin moved a tile off a new panel before the area change was known).
-      if (this.dirty.has(contextId(r.ctx!))) continue;
+      if (!r) continue;
+      // A correction not written here leaves no request outstanding: one whose deadline already
+      // came due has none left, and a later solve to the same target would skip it as in flight.
+      if (!this.ownsGeometry(r) || !r.ledger.desired) { L.cancel(r.ledger); continue; }
       // Hidden since it was queued: never written while hidden, re-solved when shown.
       if (!this.shown(r)) { this.deferHidden(r, r.frame); continue; }
+      // A dirty context is re-solved in this flush and its fresh target supersedes the old
+      // one (e.g. KWin moved a tile off a new panel before the area change was known); the
+      // same target is written again there as the correction.
+      if (this.dirty.has(contextId(r.ctx!))) { L.cancel(r.ledger); continue; }
       if (rectNear(r.frame, r.ledger.desired, r.ledger.tol) || rectNear(r.frame, r.ledger.accepted, r.ledger.tol)) continue;
       if (!L.canCorrect(r.ledger)) continue;
       this.contained("correction", () => this.write(r, r.ledger.desired!, "correction"));
@@ -1398,11 +1475,14 @@ export class Engine {
    * hidden. KWin moves such windows itself (its work-area check after a panel or output change),
    * so this is not drift to correct: nothing is written while hidden, no correction is spent and
    * nothing diverges. Its context is invalidated and re-solved, against the area then current,
-   * when it is shown (markVisibleDirty).
+   * when it is shown (markVisibleDirty). Its request is dropped, so the write then is a fresh
+   * plan write, not a correction of the same target counted against the window's budget.
    */
   private deferHidden(r: Rec, f: Rect): void {
     this.corrections.delete(r.id);
     this.reparkQueue.delete(r.id);
+    L.cancel(r.ledger);
+    r.ledger.request = null;
     const c = r.ctx ? this.contexts.get(contextId(r.ctx)) : undefined;
     if (c && c.applied === c.revision) c.revision++;
     this.trace.record(this.svc.now(), "hidden-external", r.id, { frame: f, desired: r.ledger.desired });
@@ -1484,6 +1564,7 @@ export class Engine {
       this.counters.overflow++;
       r.exception = "overflow: " + (res.notes.find((n) => n.startsWith(id + ":")) ?? "does not fit");
       this.transition(r, "floating", r.ctx, "overflow");
+      this.applyBorderPolicy(r); // out of the layout: a border rule applies only while tiled
     }
     c.plan = res.slots;
     c.applied = c.revision;
@@ -1600,7 +1681,7 @@ export class Engine {
   /** Cancel the deadline once no request or readiness wait is outstanding (no idle timer). */
   private disarmIfIdle(): void {
     if (!this.cancelDeadline) return;
-    let waiting = false;
+    let waiting = this.floatRestores.size > 0;
     this.recs.forEach((r) => {
       if (!waiting && (r.ledger.outstanding || r.readyBy !== null || r.open === "requested")) waiting = true;
     });
@@ -1647,12 +1728,14 @@ export class Engine {
       } else if (x.kind === "accepted") {
         this.counters.accepted++;
       } else if (x.kind === "correct") {
-        if (this.ownsGeometry(r)) this.corrections.add(r.id);
+        this.corrections.add(r.id); // no deadline is armed for it again: runCorrections writes or cancels it
       } else if (x.kind === "diverged") {
         this.counters.diverged++;
         r.exception = DIVERGED;
       }
     }
+    // Float restores past their deadline are written in the flush below; the others wait on.
+    this.floatRestores.forEach((w) => { if (w.until > now) next = Math.min(next, w.until); });
     if (next < Infinity) this.armDeadline(next);
     this.ensureFlush();
   }
@@ -2085,7 +2168,15 @@ export class Engine {
         if (!this.suspended) {
           this.suspended = true;
           // A window still waiting for its open decision is adopted at resume, left as it is (ADR-021).
-          this.recs.forEach((w) => { if (w.open === "wait" || w.open === "watch" || w.open === "hidden") w.open = null; });
+          // So is one whose un-maximize is not acknowledged yet: the suspension ends that wait (its
+          // deadline is cancelled), and while KWin reports it maximized it is suspended as for any maximize.
+          this.recs.forEach((w) => {
+            if (w.open === "wait" || w.open === "watch" || w.open === "hidden") w.open = null;
+            else if (w.open === "requested") {
+              w.open = null;
+              if (w.states.maximized) w.suspensions.add("maximized");
+            }
+          });
           this.openChecks.clear();
           this.openHidden.clear();
           this.releaseOwnership();
@@ -2116,13 +2207,20 @@ export class Engine {
       if (action === "toggle-float") return this.toggleFloat(r);
       if (action === "adopt-native") {
         if (r.mode !== "native") return noop("window is not natively tiled");
+        // As toggle-float: a window that cannot tile keeps KWin's tile and gets no sticky tile request.
+        const why = this.whyNotTileable(r, this.singleContextKey(r.membership));
+        if (why !== null) return noop("cannot tile: " + why);
         r.releasingTile = true;
         if (!this.host.releaseNativeTile(r.id, r.gen)) r.releasingTile = false;
         r.nativeTile = false;
         r.nativeYield = false;
         r.userMode = "tiled";
         this.reclassify(r, "adopt-native");
-        if (r.ctx) this.solveNow(this.ctxFor(r.ctx));
+        if ((r.mode as PlacementMode) !== "tiled") return noop("cannot tile: " + r.decision.reason);
+        this.solveNow(this.ctxFor(r.ctx!));
+        // The layout had no room for it (as Toggle floating, G08): KWin's tile is released and the
+        // window is an overflow float, tried again when its inputs change; the result says so.
+        if ((r.mode as PlacementMode) !== "tiled") return noop("cannot tile: " + (r.exception ?? "does not fit"));
         return ok([r.id]);
       }
     }
@@ -2145,6 +2243,7 @@ export class Engine {
         if (cur === "zones") this.releaseZones(c); // zoned windows keep their frames (ZONES §2)
         c.layoutOverride = next;
         if (next === "floating") this.restoreFloatRects(c);
+        this.retryOverflow(c.id); // layout parameters changed (BEHAVIOR §11)
         this.solveNow(c);
         this.persistChanged({ context: c.key });
         this.layoutChanged(c, cur);
@@ -2181,6 +2280,8 @@ export class Engine {
       this.releaseZones(c);
       c.layoutOverride = null;
       c.states = {};
+      if (cur !== "floating" && this.layoutKind(c) === "floating") this.restoreFloatRects(c); // as a switch to floating
+      this.retryOverflow(c.id);
       this.solveNow(c);
       this.persistChanged({ context: c.key });
       this.layoutChanged(c, cur);
@@ -2221,11 +2322,12 @@ export class Engine {
     if (r.mode === "excluded") return { status: "noop", reason: "window is excluded: " + r.decision.reason, targets: [] };
     if (r.mode === "tiled") {
       const ctx = r.ctx;
+      const inFlight = this.inFlight(r); // read before the transition cancels the ledger
       r.userMode = "floating";
       this.reclassify(r, "toggle-float");
       if (!r.suspensions.size) {
         const t = this.floatTarget(r);
-        if (t) { this.writeRestore(r, t); this.captureFloat(r, t); }
+        if (t) { this.restoreFloat(r, t, inFlight); this.captureFloat(r, t); }
       } else this.rememberFloat(r);
       if (ctx) this.solveNow(this.ctxFor(ctx));
       return { status: "accepted", targets: [r.id] };
@@ -2234,7 +2336,10 @@ export class Engine {
       // Decide before touching anything: a refused tile request changes no state.
       const why = this.whyNotTileable(r, this.singleContextKey(r.membership));
       if (why !== null) return { status: "noop", reason: "cannot tile: " + why, targets: [] };
-      if (r.suspensions.size === 0) this.captureFloat(r, r.frame);
+      // While a float restore waits, the frame may be the tile configure that just committed.
+      if (r.suspensions.size === 0 && !this.floatRestores.has(r.id)) this.captureFloat(r, r.frame);
+      this.floatRestores.delete(r.id);
+      const prevUser = r.userMode;
       if (r.userMode === "floating") this.forgetFloat(r);
       r.userMode = "tiled";
       r.exception = null;
@@ -2247,9 +2352,52 @@ export class Engine {
       this.reclassify(r, "toggle-tile");
       if ((r.mode as PlacementMode) !== "tiled") return { status: "noop", reason: "cannot tile: " + r.decision.reason, targets: [] };
       this.solveNow(this.ctxFor(r.ctx!));
+      if ((r.mode as PlacementMode) !== "tiled") {
+        // The solve had no room for it (overflow): nothing was written, and it stays what it was,
+        // an overflow float tried again when its inputs change, or the user's float.
+        const reason = "cannot tile: " + (r.exception ?? "does not fit");
+        r.userMode = prevUser;
+        if (prevUser === "floating") { r.exception = null; this.rememberFloat(r); }
+        return { status: "noop", reason, targets: [] };
+      }
       return { status: "accepted", targets: [r.id] };
     }
     return { status: "noop", reason: "window not ready", targets: [] };
+  }
+
+  /** The window's tile request still in flight (its target and when it was issued), or null. */
+  private inFlight(r: Rec): { rect: Rect; since: number } | null {
+    const e = r.ledger;
+    return e.outstanding && e.request && e.pendingSince !== null ? { rect: e.request.rect, since: e.pendingSince } : null;
+  }
+
+  /**
+   * Restore a window leaving the tiling to its float target: written now, or, while its tile
+   * configure is in flight, once that commits or its deadline passes (floatRestores, E04).
+   */
+  private restoreFloat(r: Rec, target: Rect, inFlight: { rect: Rect; since: number } | null): void {
+    if (inFlight === null) { this.writeRestore(r, target); return; }
+    const until = inFlight.since + this.opts.deadlineMs;
+    this.floatRestores.set(r.id, { size: inFlight.rect, until });
+    this.armDeadline(until);
+  }
+
+  /** Float restores whose tile configure committed or whose deadline passed (in the flush). */
+  private runFloatRestores(): void {
+    if (this.floatRestores.size === 0) return;
+    const now = this.svc.now();
+    const due: WindowId[] = [];
+    this.floatRestores.forEach((w, id) => {
+      const r = this.recs.get(id);
+      if (!r || w.until <= now || sizeNear(r.frame, w.size, r.ledger.tol)) due.push(id);
+    });
+    for (let i = 0; i < due.length; ++i) {
+      const r = this.recs.get(due[i]);
+      this.floatRestores.delete(due[i]);
+      if (!r || r.suspensions.size !== 0 || !(r.mode === "floating" || this.inFloatingLayout(r))) continue; // tiled again: the plan owns it
+      const t = this.floatTarget(r);
+      if (t) { L.cancel(r.ledger); this.parked.delete(r.id); this.writeRestore(r, t); }
+    }
   }
 
   /** One restore write for a window leaving the tiling (not tracked for corrections). */
@@ -2268,7 +2416,28 @@ export class Engine {
       const r = this.recs.get(id);
       if (!r || !r.floatRect || r.suspensions.size !== 0) continue;
       const t = this.floatTarget(r);
-      if (t) { L.cancel(r.ledger); this.parked.delete(id); this.writeRestore(r, t); }
+      if (!t) continue;
+      const inFlight = this.inFlight(r);
+      L.cancel(r.ledger);
+      // A parked window whose restore waits for its parking configure stays parked until the
+      // restore is written: the sweep (this flush, a stop or a suspend) still brings it inside
+      // its area, superseding that configure (SCROLLING §5.1), so its commit strands nothing.
+      if (inFlight === null) this.parked.delete(id);
+      this.restoreFloat(r, t, inFlight);
+    }
+  }
+
+  /** Contexts that became floating outside a command (floatLayouts), restored once shown. */
+  private restoreFloatLayouts(): void {
+    if (this.floatLayouts.size === 0) return;
+    const list = [...this.floatLayouts];
+    this.floatLayouts.clear();
+    for (const c of list) {
+      if (this.contexts.get(c.id) !== c || this.layoutKind(c) !== "floating") continue; // collected, or another layout since
+      if (!this.isVisible(c.key)) { this.floatLayouts.add(c); continue; } // never written while hidden
+      // As the layout command: zoned windows keep their frames (released first, ZONES §2).
+      this.releaseZones(c);
+      this.restoreFloatRects(c);
     }
   }
 
@@ -2425,7 +2594,10 @@ export class Engine {
    * Where a window leaving the tiling goes (BEHAVIOR §3, D6): its float rectangle when that was
    * taken on its current output (moved inside the area only if it lies outside it), the
    * rectangle translated proportionally into the current work area when it was taken on another
-   * output (also one since unplugged), or a bounded centred default without one.
+   * output (also one since unplugged), or a bounded centred default without one. A work area of
+   * the same size at another origin is the output itself moved (a neighbour's resolution or scale
+   * changed, the outputs were rearranged): the rectangle moves with it. A work area of another
+   * size (a panel, the output's own mode) leaves the rectangle where it is.
    */
   private floatTarget(r: Rec): Rect | null {
     const f = r.floatRect;
@@ -2437,7 +2609,9 @@ export class Engine {
       return centredDefault(area, c.minFrame, c.maxFrame);
     }
     if (f.output !== out) return relocate(f.rect, f.area, area);
-    return intersects(f.rect, area) ? f.rect : clampInto(f.rect, area);
+    const moved = sizeNear(f.area, area, 0.5) && !rectNear(f.area, area, 0.5);
+    const at = moved ? rect(f.rect.x + area.x - f.area.x, f.rect.y + area.y - f.area.y, f.rect.width, f.rect.height) : f.rect;
+    return intersects(at, area) ? at : clampInto(at, area);
   }
 
   private planRects(c: Ctx): Map<WindowId, Rect> {
@@ -2735,7 +2909,10 @@ export class Engine {
   /**
    * One restore write placing a parked window inside its output's work area: its virtual
    * position clamped into the area (a window larger than the area is shrunk to it). Skipped
-   * when the window is already inside (moved back by KWin, the user or a newer request).
+   * when the window is already inside (moved back by KWin, the user or a newer request) and no
+   * request outside the area is still in flight: a parking write that also changed the size is
+   * a configure the client has not committed yet, and its commit would move the window off every
+   * output. It is superseded by a restore at the size it carries.
    */
   private unpark(r: Rec, p: Parked): void {
     const now = this.host.frame(r.id, r.gen);
@@ -2744,8 +2921,16 @@ export class Engine {
     if (!isValidArea(area) && r.membership.output !== null) area = this.host.workArea(r.membership.output, p.ctx.desktop);
     if (!isValidArea(area)) area = this.host.outputs()[0]?.geometry ?? null;
     if (!isValidArea(area)) return;
-    if (contains(area, now, frameTolerance(this.scales.get(p.ctx.output) ?? 1))) return;
-    const w = Math.min(now.width, area.width), h = Math.min(now.height, area.height);
+    const tol = frameTolerance(this.scales.get(p.ctx.output) ?? 1);
+    // The newest request whose size the client never committed, also after a transition cancelled it
+    // or a hidden desktop dropped it as the ledger's request (deferHidden): the configure is still in
+    // flight either way, so the history is read, not the request.
+    const hist = r.ledger.history, last = hist.length ? hist[hist.length - 1] : null;
+    const req = last && !last.seen ? last.rect : null;
+    const inFlight = req !== null && !contains(area, req, tol);
+    if (!inFlight && contains(area, now, tol)) return;
+    const size = inFlight ? req : now;
+    const w = Math.min(size.width, area.width), h = Math.min(size.height, area.height);
     const x = Math.min(Math.max(p.virtual.x, area.x), area.x + area.width - w);
     const y = Math.min(Math.max(p.virtual.y, area.y), area.y + area.height - h);
     L.cancel(r.ledger);
@@ -2774,16 +2959,19 @@ export class Engine {
   private scrollCommand(c: Ctx, r: Rec | null, action: string): { status: CommandStatus; reason?: string; targets: string[] } {
     if (this.layoutKind(c) !== "scrolling") return { status: "noop", reason: "the layout here is not scrolling", targets: [] };
     if (!r || !this.participates(r) || !sameContext(r.ctx, c.key)) return { status: "noop", reason: "active window is not tiled here", targets: [] };
+    if (action !== "consume" && action !== "expel" && action !== "width-cycle" && action !== "center") {
+      return { status: "rejected", reason: "unsupported command", targets: [] };
+    }
     const state = this.layoutState(c, "scrolling") as ScrollState;
+    // Widths and the view are measured on the strip as shown.
+    const area = this.host.workArea(c.key.output, c.key.desktop);
+    if (!isValidArea(area)) return { status: "noop", reason: "no usable area", targets: [] };
+    const input = this.solveInput(c, area);
     let o;
-    if (action === "consume") o = scrollConsume(state, r.id);
-    else if (action === "expel") o = scrollExpel(state, r.id);
-    else if (action === "width-cycle") o = cycleWidth(state, r.id, this.ctxSettings(c).scrolling.widthPresets);
-    else if (action === "center") {
-      const area = this.host.workArea(c.key.output, c.key.desktop);
-      if (!isValidArea(area)) return { status: "noop", reason: "no usable area", targets: [] };
-      o = scrollCentre(state, r.id, this.solveInput(c, area));
-    } else return { status: "rejected", reason: "unsupported command", targets: [] };
+    if (action === "consume") o = scrollConsume(state, r.id, input);
+    else if (action === "expel") o = scrollExpel(state, r.id, input);
+    else if (action === "width-cycle") o = cycleWidth(state, r.id, this.ctxSettings(c).scrolling.widthPresets, input);
+    else o = scrollCentre(state, r.id, input);
     if (!o.changed) return { status: "noop", reason: o.reason ?? "no change", targets: [] };
     c.states.scrolling = o.state;
     this.solveNow(c);
@@ -2794,7 +2982,9 @@ export class Engine {
   private scrollMove(c: Ctx, r: Rec, action: string): { status: CommandStatus; reason?: string; targets: string[] } {
     const state = this.layoutState(c, "scrolling") as ScrollState;
     if (action === "left" || action === "right") {
-      const o = moveColumn(state, r.id, action);
+      const area = this.host.workArea(c.key.output, c.key.desktop);
+      if (!isValidArea(area)) return { status: "noop", reason: "no usable area", targets: [] };
+      const o = moveColumn(state, r.id, action, this.solveInput(c, area));
       if (!o.changed) return { status: "noop", reason: o.reason ?? `nothing ${action}`, targets: [] };
       c.states.scrolling = o.state;
       this.solveNow(c);
@@ -3125,18 +3315,26 @@ export class Engine {
     if (!this.alive) return;
     const c = this.contexts.get(contextId(key));
     if (!c) { this.retain(key, prefs); return; }
+    const kind = this.layoutKind(c), ms = c.states["master-stack"];
     this.applyPrefs(c, prefs);
+    if (kind !== "floating" && this.layoutKind(c) === "floating") this.floatLayouts.add(c);
+    // A restored layout or master/stack ratio and count are new layout parameters (BEHAVIOR §11).
+    if (this.layoutKind(c) !== kind || !sameValue(ms, c.states["master-stack"])) this.retryOverflow(c.id);
     c.revision++;
     this.markDirty(c.key);
     this.ensureFlush();
   }
 
-  /** User float decisions per application, newest first: the accessor for persistence (T27). */
+  /**
+   * User float decisions per application, most important first: the accessor for persistence (T27).
+   * Those of windows open now, newest first, then those waiting for a window (closed this session or
+   * restored and not matched yet), newest first; the snapshot keeps the first 64.
+   */
   floatPreferences(): FloatPreference[] {
-    const out: FloatPreference[] = [];
-    this.floatPrefs.forEach((p) => { out.push(p); });
-    this.pendingFloats.forEach((p, k) => { if (!this.floatPrefs.has(k)) out.push(p); });
-    return out.reverse();
+    const live: FloatPreference[] = [], waiting: FloatPreference[] = [];
+    this.floatPrefs.forEach((p) => { live.push(p); });
+    this.pendingFloats.forEach((p, k) => { if (!this.floatPrefs.has(k)) waiting.push(p); });
+    return live.reverse().concat(waiting.reverse());
   }
 
   /**
@@ -3152,9 +3350,9 @@ export class Engine {
       this.pendingFloats.set(key, p);
       if (this.pendingFloats.size > FLOATS_MAX) this.pendingFloats.delete(this.pendingFloats.keys().next().value as string);
     }
-    this.recs.forEach((r) => {
-      if (!r.restoreChecked && r.mode !== "pending") { r.restoreChecked = true; this.restoreChecks.add(r.id); }
-    });
+    // The saved state is matched against every window live now, once (Q06); windows still pending
+    // are matched when they are first classified.
+    this.recs.forEach((r) => { if (r.mode !== "pending") this.restoreChecks.add(r.id); });
     if (this.restoreChecks.size > 0) this.ensureFlush();
   }
 
@@ -3174,6 +3372,11 @@ function explainRules(w: WindowRules): Record<string, unknown> {
   if (w.minSize !== undefined) actions.minSize = `${w.minSize.width}x${w.minSize.height}`;
   if (w.zone !== undefined) actions.zone = String(w.zone);
   return { ids: w.ruleIds.slice(), actions, reasons: { ...(w.reasons ?? {}) } };
+}
+
+/** A normal window without its app id yet: classified once it arrives or the readiness deadline passes (BEHAVIOR §1). */
+function awaitsAppId(m: WindowMeta): boolean {
+  return m.appId === "" && m.kind === "normal" && !m.special;
 }
 
 /** Floated by the overflow policy (float-new), as opposed to by the user or a rule. */

@@ -86,7 +86,9 @@ the pointer only during an active drag, as ARCHITECTURE requires.
 - Replay: assign issues one write; repeated assign is a no-op; float toggle restores the floating
   rectangle; layout switch and stop release ownership without moving windows.
 - Nested KWin: keyboard assign on two outputs with different work areas (oracle frames equal the
-  model's rectangles); overlay created only on show and destroyed on unload; no timers while hidden.
+  model's rectangles); overlay created only on show and destroyed on unload; no timers while hidden; a zone
+  command while it is shown redraws it (the `zones overlay` info line, which lists each zone's rectangle and
+  window count, shows the unassigned zone empty).
 - Physical session (open gate): overlay rendering, numbers legible at mixed scales.
 
 ## 6. Implementation notes and deviations
@@ -137,10 +139,13 @@ Refinements and deviations, each with its reason:
     (that press is consumed) or when a window is activated. Measured in nested KWin 6.7.5 (`zones-overlay-M9`): both
     windows exist only after `zone.show`, both are excluded as Plastile's own UI, Escape pressed through libei hides
     them, and unload destroys them. Pointer pass-through was not measured.
-12. **Overlay lifecycle.** The QML component is created on the first `zone.show`, hidden and shown again afterwards
+12. **Overlay lifecycle.** The QML component is compiled with `main.qml` at load (ADR-016 addendum), created on the
+    first `zone.show`, hidden and shown again afterwards
     (KWin destroys the internal windows while hidden, so nothing is mapped), and destroyed on unload. It holds no timer
-    or connection. While shown it is refreshed by Plastile's own commands only; other changes appear the next time it is
-    shown. It takes rectangles, labels, a heading and a hint, and holds no zone logic, so another feature (the drop
+    or connection. While shown it is refreshed after every accepted Plastile command (a context reset or layout change
+    that leaves zones hides it; a float updates the counts), and only then; other changes appear the next time it is
+    shown. A command that activates a window (a focus command) hides it instead, as KWin closes the legend popup on the
+    activation; the refresh after that command does not show it again (`zones-overlay-activation-M9`, nested 6.8.1). It takes rectangles, labels, a heading and a hint, and holds no zone logic, so another feature (the drop
     preview of ADR-017) can reuse it.
 13. **Own UI.** `isOwnUi` accepts a second fixed caption, `Plastile zones`, under the same no-application-id,
     no-process rule as the inspector (ADR-016).

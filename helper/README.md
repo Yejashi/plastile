@@ -46,7 +46,11 @@ tools/install.sh remove-helper
 Installing with CMake directly: choose the prefix when configuring
 (`-DCMAKE_INSTALL_PREFIX=$HOME/.local`, then `cmake --install build/helper`). The activation
 file's `Exec=` and its directory are fixed at configure time, so `cmake --install --prefix`
-puts the binary somewhere the activation file does not name.
+puts the binary somewhere the activation file does not name. The session bus splits `Exec=` like a
+shell command line, so the file names the binary in double quotes: the install path may contain
+spaces, and configuring refuses one with a double quote, `$`, backquote or newline (CMake turns
+a backslash in the prefix into `/`). `install-helper` refuses a `PLASTILE_HELPER_PREFIX` holding a
+double quote, backslash, `$` or backquote before it builds anything.
 
 It needs CMake, a C++17 compiler and the Qt 6 (6.5 or later) Core and DBus development files.
 `install-helper` puts the binary in `$PLASTILE_HELPER_PREFIX/libexec` (default `~/.local`) and

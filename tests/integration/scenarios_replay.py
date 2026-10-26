@@ -29,7 +29,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
-from harness import ROOT, Session, fixture_events, tiling_errors  # noqa: E402
+from harness import ROOT, Session, fixture_events, provenance, tiling_errors  # noqa: E402
 from scenarios import Checks, Skipped, scenario  # noqa: E402
 
 RECORD_QML = ROOT / "tools/replay/record.qml"
@@ -192,9 +192,6 @@ def capture(name: str, out: Path) -> tuple[dict, dict]:
         raise RuntimeError("no recording printed at unload")
     rec = json.loads(line[-1].split("plastile replay ", 1)[1])
     ids = rec.pop("ids")
-    rev = subprocess.run(["git", "-C", str(ROOT), "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip()
-    dirty = bool(subprocess.run(["git", "-C", str(ROOT), "status", "--porcelain", "--", "src", "package", "tools"],
-                                capture_output=True, text=True).stdout.strip())
     fixture = {
         "format": rec.pop("format"),
         "name": name,
@@ -203,7 +200,8 @@ def capture(name: str, out: Path) -> tuple[dict, dict]:
             **versions,
             "layer": "nested KWin, virtual backend (tools/nested.py), not a physical session",
             "how": f"python3 tests/integration/scenarios_replay.py --only {name} (recording root tools/replay/record.qml)",
-            "implementationCommit": rev, "implementationDirty": dirty,
+            # The captures this run already wrote do not make the next one dirty.
+            **provenance(exclude=("tests/fixtures/replay",)),
             # The bundle KWin ran: rebuilding at the commit (npm run build) reproduces this hash.
             "bundleSha256": hashlib.sha256(BUNDLE.read_bytes()).hexdigest(),
             "date": time.strftime("%Y-%m-%d"),

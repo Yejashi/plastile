@@ -5,16 +5,16 @@ TypeScript core (`src/`). It is a **release candidate in preparation, not a rele
 validated in unit/replay tests and in disposable nested KWin sessions, and the [physical runbook](../validation/PHYSICAL_RUNBOOK.md)
 has run on one desktop at build `97fec4a` (results below). Gate G3 is open: see the [G3 checklist](G3_CHECKLIST.md).
 
-Updated 2026-10-19 at `main` (see `git log`). [HANDOFF](HANDOFF.md) has the working context for the next
+Updated 2026-10-25 at `main` (see `git log`). [HANDOFF](HANDOFF.md) has the working context for the next
 agent; this file is the short status.
 
 ## Tested environments and last results
 
 | Layer | Environment | Last result |
 |---|---|---|
-| Unit/replay | Node 26 (`node --test tests/core/*.test.ts`), mock host and fake KWin, replay fixtures recorded from nested KWin (`tests/fixtures/replay/`) | 517/517 (`main` at `cf5fe36`), including QV4-vs-V8 iteration scenarios run in the `qml` tool (Qt 6.12.0) where installed. CI's core job has no Qt and skips them; the `native-tools` job now runs them with `PLASTILE_REQUIRE_QV4=1` (hosted run 39300522170: 17/17, skipped 0) |
+| Unit/replay | Node 26 (`node --test tests/core/*.test.ts`), mock host and fake KWin, replay fixtures recorded from nested KWin (`tests/fixtures/replay/`) | 604/604 (`wf/bugfix` at `ee6f8ef`, after the 2026-10-25 bug hunt and its review; 535/535 at `f43de02`), including QV4-vs-V8 iteration scenarios |
 | Nested, virtual backend | Reference host: Arch Linux, KWin 6.7.5, Qt 6.12.0, KF 6.30.0 ([ENVIRONMENT](ENVIRONMENT.md)) | `3297b6d` (`wf/rekey-review`): 1897/1897 checks, 141/141 scenarios, 1 expected SKIP ([evidence](evidence/integration-host-3297b6d.json)); earlier `521eb6c` (`wf/rekey`, [evidence](evidence/integration-host-521eb6c.json)) and `eb23093`, the same counts ([evidence](evidence/integration-host-eb23093.json)) |
-| Nested, virtual backend, KWin 6.8.1 | Reference host after a system update (2026-10-25): Arch Linux, KWin 6.8.1, Qt 6.12.0, KF 6.31.0 | `0a0798c`: 1895/1895 checks, 141/141 scenarios, 1 expected SKIP ([evidence](evidence/integration-host-kwin681-0a0798c.json)). Two checks fewer than 6.7.5: `workarea-hidden-desktop-O07` checks that 6.8 leaves hidden windows in place instead of the two 6.7 confinement preconditions. `reload-Q09` grew KWin by 0.35 MiB over 100 reloads and `persist-reload-cycles-Q09` by 0.13 MiB, so the 20–35 MiB growth seen in the CI Nix job (6.8.0, llvmpipe) does not occur here |
+| Nested, virtual backend, KWin 6.8.1 | Reference host after a system update (2026-10-25): Arch Linux, KWin 6.8.1, Qt 6.12.0, KF 6.31.0 | `ee6f8ef` (`wf/bugfix` after its review, the bug-hunt fixes): 2045/2045 checks, 155 scenarios with 154 run and 1 expected SKIP ([evidence](evidence/integration-host-kwin681-bugfix-ee6f8ef.json)); `reload-Q09` grew KWin by 0.43 MiB over 100 reloads and `persist-reload-cycles-Q09` by 3.4 MiB, both inside their bounds. Earlier: `0a0798c` 1895/1895 ([evidence](evidence/integration-host-kwin681-0a0798c.json)) |
 | Nested, virtual backend (CI) | Ubuntu 26.10 sandbox: KWin 6.7.5, Qt 6.11.2, KF 6.29.0, QPainter compositing | `cf5fe36`: 1664/1664 checks, 128/128 scenarios, 4 expected SKIPs (run 39300522170). Red from `97fec4a` to `eca2df5`: the fake OSD needed PyGObject, missing from the image, and one maximized-open race check did not reproduce there; both fixed in `459bae8` |
 | Nested, virtual backend (CI, provisional) | Nix: KWin 6.8.0, Qt 6.11.2, KF 6.30.0, llvmpipe | `5229536`: 1619/1619 checks, 125/125 scenarios, 5 expected SKIPs (run 39232013184). At `459bae8` the two `Q09` RSS bounds failed (run 39219911863); they fail in some runs only. At `e5ffed1` and `2eb05dd` `package-upgrade-bindings-T26-T32` failed once each: KWin 6.8's tile manager saved its default `[Tiling]` layout to kwinrc while `install.sh` ran (1 of 10 looped runs on a diagnostic branch); the check now names changed keys and leaves KWin's own `[Tiling]` groups out (`4f859a0`, passed on 6.8 in run 39290027258, where only `reload-Q09` failed). `workarea-hidden-desktop-O07` expects 6.8 to leave hidden windows in place (6.8 removed `checkWorkspacePosition`'s strut confinement). Stays provisional: its RSS checks fail in some runs on KWin 6.8's own heap growth (below) |
 | Nested, windowed on the real GPU | Reference host: nested KWin 6.7.5's outputs are windows on the live compositor (`PLASTILE_NESTED_HOST_DISPLAY`), OpenGL on the real GPU, 144 Hz host output; private bus, config and XDG dirs | Latency kit at full protocol (30,000 taps): every Plastile workload `pass` against its matched baseline; 19/19 chords delivered; real apps, real `plasmashell` panels, GL tile editor pass ([runbook §1](../validation/PHYSICAL_RUNBOOK.md#1-what-was-validated-where)). Labelled `nested-windowed-gpu`, never physical |
@@ -71,6 +71,99 @@ trips at baseline (max 0.76 ms, against a 31.9 s stall with a held lock before)
 250 ms (released 0–2 ms after load with the helper running, 6–11 ms when it is activated). A saved float names
 the window it came from (schema 2), so a window the user moved while Plastile was disabled keeps its place.
 
+## Bug hunt, 2026-10-25 (unit and nested KWin 6.8.1)
+
+At the owner's request, the whole project was searched for bugs. Sixteen finders each took one subsystem or one
+cross-cutting lens, and five more covered the gaps a completeness critic named. An independent verifier then
+tried to refute each finding. Of 71 findings, 2 were dropped (one refuted, one documented design). The verifiers
+confirmed 68 and judged 1 plausible: 18 medium, 51 low, none critical or high.
+
+**Outcome:** 63 fixed in code, each with a regression test that fails without its fix. 6 were documentation
+corrections where the code was right: B27/B52 (directional swap and move are no-ops in monocle), B50
+(focusWrap in scrolling), B32, B51 and B66. Nothing was left open. The full list with evidence is in the
+workflow results (`wf/fix-*` branches merged into `wf/bugfix`).
+
+Medium findings fixed:
+- **Float preferences:**
+  - an already-open tiled sibling took a closed window's float on a later unrelated event (B00);
+  - toggling float while a tile configure was in flight left the window at the tile (B05);
+  - an output re-key onto a retained key duplicated a context, and the next load rejected the snapshot (B09);
+  - stale pending floats crowded out this session's decisions (B10);
+  - float rectangles were restored in stale absolute coordinates after the output moved (B12).
+- **Reconcile:**
+  - an unrelated reclassify ended the readiness wait, so a window tiled before its rules matched (B01);
+  - a skipped deadline correction left the request outstanding forever (B02);
+  - re-tiling after the user or KWin owned the frame was charged to the correction budget (B03);
+  - unpark skipped a window whose in-flight configure targeted the parking spot (B08).
+- **Commands and layouts:**
+  - adopt-native released KWin's tile on a window that cannot tile (B04);
+  - BSP `longest` used a fixed 1920x1080 area instead of the real work area (B07/B24);
+  - a layout change by command, reset or restored preferences never reconsidered overflow floats (B16).
+- **Adapter:** a layer-shell bar with a namespace other than `dock` (waybar, AGS, eww) never re-solved the area
+  (B06).
+- **Test oracles:**
+  - `motion-edges-T31` overwrote its first session's log check (B11);
+  - motion scenarios could not parse KWin's log on a host up less than about 28 h (B17).
+- **Physical kit:**
+  - a response slower than the effect timeout counted as "key not delivered" and as a fast success for the next
+    key (B13);
+  - the live-session guard accepted a nested KWin started without a backend flag (B14);
+  - with Plastile Motion on, settle time ignored the animation; it is now motion-aware and labelled (B15).
+
+The new realapps survivor oracle (B47) found a real harness leak. `plasma_waitforname`, activated on the
+private bus by chromium's notification, outlived the nested session. `NestedKwin.stop()` now ends the bus's
+descendants (`d590d06`).
+
+**Results:**
+- Unit: 595/595 before the review, 604/604 after.
+- Harness offline tests: `tests/integration` 11 OK and `tools/physical/tests` OK (1 skip because `/dev/uinput`
+  exists on the host).
+- Nested KWin 6.8.1 full suite at `56ce8ae` (before the review): 2041/2041 checks, 153/153 run scenarios, 1
+  expected SKIP. The first full run, at `758c32c`, failed
+  `realapps-chromium` (the leak above) and `resume-missed-events-T19` (an oracle that did not yet count the B03
+  plan write); both were fixed before the second run.
+- Physical: none of these fixes has been checked on the reference desktop yet.
+
+**Adversarial review of the fixes** (three reviewers, branches `wf/review-engine`, `wf/review-runtime` and
+`wf/review-tests`, merged into `wf/bugfix`). For every finding with a code fix, a reviewer reverted the fix and
+confirmed that its regression test fails. They found and fixed regressions and gaps:
+- **Engine:** two fix interactions could leave a window off every output.
+  - A parked column whose float restore was deferred (B05 x B08) left the parked set early. A stop or suspend
+    before its parking configure committed stranded it.
+  - B03's `deferHidden` cleared the request B08's unpark relied on. A slow column whose parking deadline passed
+    while hidden stayed off-screen at a stop or suspend.
+
+  Both now hold the window inside its area. Also fixed:
+  - a waiting float restore survived suspend and overwrote the user's placement at resume;
+  - the new work-area read for BSP `longest` was unguarded (C08);
+  - adopt-native reported `accepted` when the window overflowed;
+  - a pending window that turned out to be a dialog waited for the deadline.
+- **Runtime:** the B31 overlay refresh re-mapped a dismissed zone overlay for one turn after an activating
+  command. `onDismissed` now clears the wish at once (new nested scenario `zones-overlay-activation-M9`).
+- **Physical kit and probes:**
+  - keytap's guard tests ran the real `/dev/uinput` build, so a guard regression could have created a real
+    virtual keyboard in the live session. Tests now use a build with a non-existent device path.
+  - The guard's accepting path now runs on this host.
+  - `nested_dryrun` proves both guards refuse a flag-free nested `kwin_wayland`.
+  - `probes/perf/run.py` and `tools/physical/common.git_revision` now count every implementation path.
+  - Motion durations round like `Math.round`.
+  - A live block whose motion state cannot be read withholds its settle.
+
+After the review, at `ee6f8ef`, the nested KWin 6.8.1 full suite passed: 2045/2045 checks, 154/154 run scenarios,
+1 expected SKIP ([evidence](evidence/integration-host-kwin681-bugfix-ee6f8ef.json)). Unit tests: 604/604.
+
+Left as known minor items (reported by the reviewers, not fixed):
+- Moving a panel to the opposite edge shifts float rectangles by the panel's thickness (the B12 rule).
+- A drag during the at most 750 ms float-restore wait is overwritten when the restore is written.
+- adopt-native releases KWin's tile before an overflow is known.
+- A hidden context waiting in `floatLayouts` could restore its float rectangles twice if its layout is switched
+  away and back first.
+- The scrolling view can jump once when the column holding it is dropped.
+- The layer-shell bar hook (B06) does not see an exclusive-zone change without a frame change.
+- Some older probes (`probes/persistence/cost`, `probes/timing/baseline.py`, `probes/baseline-upstream`)
+  still use narrow dirty-tree pathspecs.
+- `swap-move-layouts-L06` still uses the weaker tiling-only oracle after layout switches.
+
 ## Window motion (T31, ADR-023), nested KWin 6.8.1
 
 At the owner's request T31 was reopened. Window motion ships as **Plastile Motion**, a separate scripted KWin effect
@@ -82,7 +175,7 @@ texture, from the old frame to the new one. Plastile is unchanged: one immediate
 Nested results: branch `wf/motion`, KWin 6.8.1, OpenGL ES on the reference host's GPU, virtual backend at 60 Hz
 ([evidence](evidence/motion-T31.json); oracles: KWin frames, fixture configures, ScreenShot2 images).
 
-- **Unit:** 18/18 (`tests/core/motion.test.ts`; 2 added in review).
+- **Unit:** 21/21 (`tests/core/motion.test.ts`; 2 added in review, 3 in the bug hunt below).
 - **Nested scenarios at `b1d4e03`:** `scenarios_motion.py`, 9/9 scenarios and 76/76 checks.
   - Swap: starts for the two moved windows only. Both end at the real frame 214 ms after the command, against a
     180 ms duration.

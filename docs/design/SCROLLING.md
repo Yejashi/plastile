@@ -36,6 +36,7 @@ One strip per context `(output, desktop, activity)`, as for every other layout (
 | `columns` | Ordered list; each column has a stable id, ordered window ids (stacked vertically), a width, and per-window height weights |
 | `width` | Column width as a fraction of the usable area width (presets cycle 1/3, 1/2, 2/3, 1), clamped to member minima |
 | `viewport` | x offset of the visible window into the strip, in strip coordinates |
+| `anchor` | The column holding the view (the leftmost column reaching into it, set whenever the view is set) and the viewport's offset from that column's left edge |
 | `policy` | `"centered"` (the focused column is centred when it fits) or `"lazy"` (scroll just enough to show it). Default `lazy` |
 
 Strip coordinates are logical pixels starting at 0 at the left edge of the first column. Columns are laid
@@ -45,6 +46,14 @@ shared-edge rounding like the other layouts.
 The layout keeps window order across focus changes. Insertion puts a new window in a new column after
 the focused column, or at the end when nothing is focused. Removing a window removes it from its
 column; an empty column is dropped and the viewport is clamped.
+
+The viewport is resolved from its anchor at every solve, so a column that leaves or joins the strip left
+of the view (a parked window closed, minimized, made fullscreen or restored) does not move the columns on
+screen; only their strip coordinates change. When the anchor column itself closes or shows nothing, the
+next column takes its place and holds the view, which closes the gap as before. Commands that rearrange
+columns (swap/move left and right, consume, expel) keep the viewport's strip offset from just before the
+command (an anchor kept through a reorder would scroll with its column), and the next solve anchors it
+again.
 
 ## 3. Projection and parking
 
@@ -100,8 +109,13 @@ dispatch.
 1. **Nothing stays parked when Plastile stops owning the context.** Unload, suspend, switching the
    context to another layout, a configuration that disables the context, and `reconcile` all unpark.
    Unparking places parked windows back inside their output's work area, either at their virtual
-   position clamped into the area or centred when that is invalid. This is tested by forcing each exit path while
-   windows are parked.
+   position clamped into the area or centred when that is invalid. A window whose parking write also changed
+   its size can still show its old, visible frame when Plastile lets go, because KWin applies that write's
+   position only when the client commits the configure. Such a window is unparked too, at the size that
+   configure carries, and the unparking write replaces the configure. A parked window whose floating
+   rectangle is restored when the context becomes floating, and whose restore waits for that configure,
+   stays parked until the restore is written, so an exit in between still unparks it. This is tested by
+   forcing each exit path while windows are parked, also while a parked column's resize is still in flight.
 2. After an output topology change, KWin may have pulled parked windows back. The normal topology
    flush re-solves the strip and re-parks them. The brief visible transient is a documented limitation.
 3. A parked window that becomes active, for example through Alt+Tab or a notification, scrolls into
@@ -110,7 +124,10 @@ dispatch.
    a window transparent or minimized.
 5. No animation is introduced: scrolling is instantaneous (ADR-006).
 6. Floating, fullscreen, maximized and minimized windows keep the existing suspension rules. A
-   suspended member keeps its column slot until it rejoins.
+   suspended member keeps its column slot until it rejoins. A column holding only suspended members
+   is not laid out, and the column commands (swap/move left and right, consume, expel) skip it: they
+   act on the nearest column that shows a window, and a suspended column-mate does not count as
+   sharing the column.
 
 **KWin 6.8 confinement (measured in CI, 2026-10-18).** KWin 6.8.0 runs `confineInteractiveMove` on every commit that acknowledges a configure (`XdgToplevelWindow::handleRoleCommit`), so an activation, scale or decoration change briefly pulls a parked window back into the work area; 6.7.5 only did so during an interactive move. The engine re-parks such position-only pull-backs through a separate allowance (`REPARK_LIMIT`, 8 per parking target, restored by activation and topology events) instead of the correction budget, so the strip stays valid; another tool fighting the parking still ends in a bounded divergence. The brief visible flash on those events is a 6.8 cost of off-output parking; whether parking remains the right projection on 6.8 is open (ADR-014).
 
@@ -153,7 +170,9 @@ Refinements and deviations, each with its reason:
    column only as far as that clamp allows. `centered` always centres the focused column, also at the ends.
 5. **Column pixel width** is `floor(fraction × (usable + gap) − gap)`, at least the widest member's minimum.
    Fractions that sum to 1 then fill the usable width exactly with their gaps, and rounding never makes a
-   column cross the area edge and get parked.
+   column cross the area edge and get parked. Width changes (grow/shrink, width-cycle, a dragged column
+   edge) start from the width as shown, which a minimum can hold above the stored fraction, and a change
+   that leaves the shown width the same is a no-op ("width clamped by minimum size").
 6. **Visibility tolerance.** A column is visible when its projection lies inside the area within the
    ordinary ½ px tolerance; everything else, including a column crossing an edge by one pixel, is parked.
 7. **Commands not listed in §4.** `swap.up/down` and `move.up/down` move the window within its column;

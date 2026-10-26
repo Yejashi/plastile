@@ -54,6 +54,22 @@ test("T23: focusWrap wraps within the context; focus only (no solve, no write)",
   assert.equal(h.writes.length, writes);
 });
 
+test("T23: focusWrap in monocle wraps nowhere (one shared slot); next/previous still cycles", () => {
+  const ids = ["a", "b", "c", "d"];
+  const { h, e } = setup(ids, { focusWrap: true, layout: "monocle" });
+  h.activate("a");
+  h.drain();
+  for (const dir of ["left", "right", "up", "down"]) {
+    for (let i = 0; i < 3; ++i) {
+      assert.equal(e.execute("plastile.focus." + dir).status, "noop", dir);
+      assert.equal(h.active, "a", dir);
+    }
+  }
+  const seen: string[] = [];
+  for (let i = 0; i < 4; ++i) { e.execute("plastile.focus.next"); seen.push(h.active!); }
+  assert.deepEqual(seen, ["b", "c", "d", "a"]);
+});
+
 test("T23: focusWrap never crosses to another output", () => {
   const h = new MockHost();
   h.outs.push({ id: "O2", name: "O2", geometry: rect(1280, 0, 1280, 800), scale: 1 });

@@ -177,8 +177,9 @@ location, `StandardPaths.GenericStateLocation` + `/plastile/state-0.ini` and `st
 `[plastile] snapshot`. The snapshot (`src/persist/snapshot.ts`) is `{schemaVersion, generation, savedAt,
 contexts: [{outputKey, desktopId, activity, layout, masterStack}], floats: [{appId, resourceName, role, rect,
 outputKey, area}]}`, at most 64 entries of each. Contexts come from `Engine.contextPreferences()`. Floats are
-recorded only when the user floats a window with *Toggle floating*, and are forgotten when the user tiles it again.
-Any invalid field rejects the whole snapshot. Migrations (`src/persist/migrate.ts`) are pure per-version steps.
+recorded only when the user floats a window with *Toggle floating*, and are forgotten when the user tiles it again
+(or quick-tiles it with KWin). Any invalid field rejects the whole snapshot, so the save leaves out any entry the
+load would refuse (an over-long identity from a client, a second entry for one key). Migrations (`src/persist/migrate.ts`) are pure per-version steps.
 Version 1 is the first schema, so the chain is still empty, and a newer schema is rejected. *(Schema 2 adds each
 float's `windowHint`, with the first migration; see the [ADR-020
 addendum](#addendum-same-window-float-hint-and-a-bounded-start-up-hold-2026-10-18).)*
@@ -187,7 +188,9 @@ At load the runtime reads both slots before the first solve and applies the vali
 It logs one line if any slot was rejected. If a slot holds a newer schema, nothing is written that session, which
 keeps that file intact for the newer Plastile. A saved float is given to a window only when exactly one live window
 has its `appId`/`resourceName`/`role` (Q06, `src/persist/match.ts`). Otherwise the window gets ordinary insertion
-and the saved float waits.
+and the saved float waits. It is matched against windows being adopted (those live at the load reply, and each
+window when it is first classified), never against a window already in use when a float starts waiting, such as
+the sibling of a floated window that closed.
 
 A change only marks the state dirty. A one-shot timer writes the snapshot 2 s after the last change: it is re-armed
 on later changes, never periodic, and also re-armed while a window is being moved or resized. A clean unload writes
@@ -320,6 +323,18 @@ or geometry writes. While it is open it takes the keyboard like a menu; global s
 id and no process, which ordinary Wayland and X11 clients do not have. Further own windows (a zones overlay)
 must reuse the marker or extend `isOwnUi`.
 
+### Addendum: compiled with main.qml, created on use (2026-10-25)
+
+`Loader.setSource("Inspector.qml")` read the file at the first use. KWin keeps the files a script loaded with until
+KWin restarts ([INSTALL, Updating](../user/INSTALL.md#updating)), so an upgrade or a removal while Plastile ran
+made that first use read the new or missing file. Measured in nested KWin 6.8.1 (scenario
+`package-files-replaced-T32`): a replaced `Inspector.qml` opened with the replacement's caption, and a deleted
+`ZoneOverlay.qml` left no overlay while the counters said `shown`. **Change:** `main.qml` declares both as
+inline components (`Inspector { view: root.inspectorView }`, `ZoneOverlay { view: root.zonesView }`), so they are
+compiled and cached with `main.qml`, and the asynchronous `Loader`s take them as `sourceComponent`. The objects are
+still created only on use and off the command's call; reading and compiling the two files moves to script load
+(not measured). A package missing either file no longer starts; `tools/release.py` already requires both.
+
 ## ADR-017: Defer the drag drop preview; live peer resize is opt-in
 
 **Status:** accepted (2026-10-18); task T29.
@@ -441,14 +456,20 @@ asynchronous versioned messages".
   re-solve in the engine's next flush; the reply callback writes no geometry, and the single writer is unchanged.
   A float restored to a window whose tile request is still in flight now waits for that request to settle: KWin
   drops a write back to the committed size while a configure is outstanding (the ledger's E04 rule), so writing at
-  once left the window on its tile (found by `persist-reload-restart-T27`; unit test added).
+  once left the window on its tile (found by `persist-reload-restart-T27`; unit test added). *Toggle floating* and a
+  switch to the floating layout wait the same way for a tile configure still in flight (a second toggle before a
+  slow client committed the first; unit test in `tests/core/floats.test.ts`). A suspend or unload drops such a
+  wait (the user owns the frames from then on), and a parked scrolling window keeps its parking entry until its
+  restore is written, so every exit still unparks it (review of the bug-hunt fixes; `tests/core/scrollingEngine.test.ts`).
 - **Saves.** Nothing is written before the load reply, or its failure, arrives; changes made meanwhile are saved a
   quiet period after it. One `Write` is in flight at a time; changes made while it waits are saved after its reply.
   Nothing is retried by itself: what a failed `Write` carried is saved with the next change or at unload, with one
   diagnostic per run of failures. A failed or absent helper at load (`ServiceUnknown`, an error reply, a malformed
   reply) gives state `memory`, one diagnostic and no further request. A clean unload sends one final `Write` if
   dirty, after a `Write` still in flight and into the other slot. An unload while the load is pending writes
-  nothing: the slots' generations are not known yet.
+  nothing: the slots' generations are not known yet. The quiet period is measured with `Date.now()`, the wall
+  clock: a step back (NTP, a manual change) restarts it, so a save waits at most one more period, never the length
+  of the step.
 - **The interaction postponement is dropped.** ADR-013 postponed a save due during an interactive move or resize
   because the save blocked the compositor thread for milliseconds, and capped the postponement at 30 s for a move
   that never ends. Issuing a save now costs about as much as one command handler (below), so the postponement and
@@ -652,7 +673,9 @@ client.
   it, KWin still reports `maximizeMode` 3, which is then not a suspension.
 - **Bounded.** At most one un-maximize per window. After it, any maximize is honoured as T17 specifies. If KWin
   still reports the window maximized when the wait ends (`deadlineMs`; the client asked to be maximized again
-  before acknowledging), it is honoured: the tile request is cancelled and nothing is corrected. Not maximizable:
+  before acknowledging), it is honoured: the tile request is cancelled and nothing is corrected. A suspend during
+  that wait ends it as well: a window KWin still reports maximized is suspended as for any maximize, so the
+  resume leaves it maximized unless the client acknowledged the un-maximize meanwhile. Not maximizable:
   it stays maximized, explained.
 - **Said.** Explain's `onOpen` (the inspector's *On open* row) and the trace (`open-maximized` with
   `action: unmaximized | kept`, `unmaximized` when KWin reports it, `remaximized`) record what happened. No new
@@ -958,13 +981,24 @@ that owns only the picture. A KWin script cannot transform how a window is drawn
   new target and the full duration. KWin restarts each timeline from the value it painted last; both values are
   absolute, so they stay valid after the real frame moved. Ten commands therefore make one animation that ends
   one duration after the last. If KWin already ended it, a new animation starts from the frame it ended at.
+  A change within 0.5 px (added after a bug hunt) leaves a running animation as it is: KWin re-snaps a frame to the
+  device-pixel grid when the client commits at a new output's scale (`XdgToplevelWindow::handleRoleCommit`,
+  `snapToPixels`), for example a fraction of a pixel just after a move to an output with another scale. Such
+  changes retarget it only once they add up to more than 0.5 px from its target.
 - **No timers.** Every decision is taken in a KWin signal handler. The grace periods below compare
-  `Date.now()` with a timestamp stored in an earlier handler; no timer is created.
+  `Date.now()` with a timestamp stored in an earlier handler; no timer is created. `Date.now()` is wall-clock time
+  (QV4 reads `QDateTime::currentMSecsSinceEpoch`), so it can step back (an NTP correction, a manual time change).
+  A stamp ahead of the current time counts as expired (added after a bug hunt): a step back can shorten a grace
+  period, never lengthen it.
 - **What is not animated** (`motionDecide`, with the reason it logs):
   - `instant`: the global animation speed is "Instant" (`effects.animationTimeFactor` 0). This is the reduced-motion
-    switch, read at every change.
+    switch, read at every change. A switch to it also stops running animations (added after a bug hunt): KWin
+    reconfigures every effect when the speed changes (`Options::animationSpeedChanged` ->
+    `EffectsHandler::reconfigureEffects`, which emits the script's `configChanged`), and the effect then cancels
+    every animation it runs.
   - `type`: windows that are not managed normal windows, popups, and internal windows such as Plastile's inspector.
-  - `invalid`, `unchanged`: a rectangle under 1 px, or a change within 0.5 px.
+  - `invalid`, `unchanged`: a rectangle under 1 px, or a change within 0.5 px (which does not stop a running
+    animation; see Retargeting).
   - `offscreen` (added in review): either rectangle overlaps no output the window was on, or its centre has a
     negative coordinate. The scrolling layout parks columns off every output (above the top output, so at negative
     y); a column scrolled in or out appears or disappears, which is not a move. `AnimationEffect` also treats a
@@ -989,8 +1023,9 @@ that owns only the picture. A KWin script cannot transform how a window is drawn
   - `opening`: within 500 ms after the window appeared. Its first placement belongs to the open animation.
   - `grabbed`: another effect holds an add, close, minimize or unminimize grab on the window.
 - **Interruption and cleanup.**
-  - An excluded change, a maximize request, a closing window or a transition calls `cancel()`. `cancel()` does not
-    repaint (`AnimationEffect::cancel`), so the effect damages the area the animation covered, plus a shadow margin.
+  - An excluded change (other than one within 0.5 px), a maximize request, a closing window, a transition or a
+    switch of the global speed to "Instant" calls `cancel()`. `cancel()` does not repaint (`AnimationEffect::cancel`),
+    so the effect damages the area the animation covered, plus a shadow margin.
   - A closing window is never kept alive by a move animation.
   - Unloading destroys the effect's JavaScript engine with all its connections. `AnimationEffect`'s destructor
     drops every animation, and `EffectsHandler::unloadEffect` repaints the whole scene.
@@ -1065,10 +1100,10 @@ The licence remains the owner's decision (ADR-012). The effect's metadata says `
 
 **Evidence.**
 
-- **Unit:** [motion.test.ts](../../tests/core/motion.test.ts), 18 tests (2 added in review). They cover the metadata and settings
-  schema, the duration and easing rules, every `motionDecide` reason, and the shipped `main.js` run against a fake
-  scripted-effect host: start, retarget, end, cancel and repaint, the interaction rules, the transition cancel, and
-  closing.
+- **Unit:** [motion.test.ts](../../tests/core/motion.test.ts), 21 tests (2 added in review, 3 after a bug hunt). They cover the
+  metadata and settings schema, the duration and easing rules, every `motionDecide` reason, and the shipped `main.js` run
+  against a fake scripted-effect host: start, retarget, end, cancel and repaint, the interaction rules, the transition
+  cancel, closing, a backward clock step, a sub-pixel change mid-animation and a switch to "Instant" mid-animation.
 - **Nested:** [scenarios_motion.py](../../tests/integration/scenarios_motion.py). The setup: KWin 6.8.1, OpenGL ES
   on the host GPU, virtual backend at 60 Hz. The effect is loaded through the nested bus's `/Effects` or the nested
   kwinrc. The oracles are KWin's frames, the fixtures' protocol logs and ScreenShot2 images of the composited

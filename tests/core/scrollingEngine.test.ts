@@ -4,7 +4,7 @@
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { rect, type Rect } from "../../src/core/geometry.ts";
+import { rect, rectNear, type Rect } from "../../src/core/geometry.ts";
 import { DEFAULT_SETTINGS } from "../../src/core/defaults.ts";
 import type { ContextSettings } from "../../src/core/types.ts";
 import { MockHost, meta } from "./mockHost.ts";
@@ -162,6 +162,114 @@ test("consume, expel, width-cycle, center and swap are accepted and keep the mod
   assert.ok(inside(rect(0, 0, 1280, 800), h.windows.get(h.active!)!.frame));
 });
 
+test("a parked column left of the view closing, minimized or restored does not move the columns on screen", () => {
+  const ids = ["a", "b", "c", "d", "e"];
+  const { h, e } = setup(ids);
+  e.execute("plastile.focus.left");
+  e.execute("plastile.focus.left");
+  e.execute("plastile.focus.right");
+  h.drain();
+  const shown = () => ids.filter((id) => h.windows.get(id)!.alive && !h.windows.get(id)!.states.minimized
+    && inside(rect(0, 0, 1280, 800), h.windows.get(id)!.frame)).map((id) => `${id}@${h.windows.get(id)!.frame.x}`);
+  assert.equal(h.active, "d");
+  assert.deepEqual(shown(), ["c@8", "d@644"]);
+  const writesTo = (from: number, id: string) => h.writes.slice(from).filter((w) => w.id === id).length;
+  const w0 = h.writes.length;
+  h.setStates("b", { minimized: true });
+  h.drain();
+  assert.deepEqual(shown(), ["c@8", "d@644"], "b minimized");
+  h.setStates("b", { minimized: false });
+  h.drain();
+  assert.deepEqual(shown(), ["c@8", "d@644"], "b restored");
+  h.close("a");
+  h.drain();
+  h.advance(1000);
+  assert.deepEqual(shown(), ["c@8", "d@644"], "a closed");
+  assert.equal(h.active, "d");
+  assert.equal(writesTo(w0, "c") + writesTo(w0, "d"), 0, "no write to a window on screen");
+  // Closing a column on screen still closes the gap: d takes c's place.
+  h.close("c");
+  h.drain();
+  assert.deepEqual(shown(), ["d@8", "e@644"]);
+  assert.deepEqual(e.check(), []);
+});
+
+test("swap and consume next to a column whose only window is minimized act on the visible neighbour", () => {
+  const ids = ["a", "b", "c"];
+  {
+    const { h, e } = setup(ids);
+    h.activate("a");
+    h.drain();
+    h.setStates("b", { minimized: true });
+    h.drain();
+    const c0 = h.windows.get("c")!.frame;
+    assert.equal(e.execute("plastile.swap.right").status, "accepted");
+    h.drain();
+    const a = h.windows.get("a")!.frame, c = h.windows.get("c")!.frame;
+    assert.ok(c.x < a.x, `the first press moves a right of c: a ${JSON.stringify(a)} c ${JSON.stringify(c)}`);
+    assert.notDeepEqual(c, c0);
+  }
+  {
+    const { h, e } = setup(ids);
+    h.setStates("b", { minimized: true });
+    h.drain();
+    h.activate("c");
+    h.drain();
+    assert.equal(e.execute("plastile.scroll.consume").status, "accepted");
+    h.drain();
+    const a = h.windows.get("a")!.frame, c = h.windows.get("c")!.frame;
+    assert.equal(a.x, c.x, "c joined a's column, the visible one");
+    // With its column-mate a minimized, c is alone as shown: expel has nothing to do.
+    h.setStates("a", { minimized: true });
+    h.drain();
+    assert.equal(e.execute("plastile.scroll.expel").status, "noop");
+  }
+});
+
+test("grow, shrink and width-cycle on a column held wide by a minimum: only changes that show are accepted", () => {
+  const min900 = { minFrame: { width: 900, height: 1 }, maxFrame: { width: Infinity, height: Infinity }, fixed: false };
+  const h = new MockHost();
+  const e = h.start({ settingsFor: () => SCROLL });
+  h.open("a", { constraints: min900 });
+  h.activate("a");
+  h.open("b");
+  h.activate("b");
+  h.drain();
+  h.activate("a");
+  h.drain();
+  assert.equal(h.windows.get("a")!.frame.width, 900);
+  const writes = h.writes.length;
+  const r = e.execute("plastile.resize.shrink");
+  assert.equal(r.status, "noop");
+  assert.equal(r.reason, "width clamped by minimum size");
+  assert.equal(h.writes.length, writes);
+  assert.equal(e.execute("plastile.resize.grow").status, "accepted");
+  h.drain();
+  assert.ok(h.windows.get("a")!.frame.width > 900, "the first grow shows");
+  assert.equal(e.execute("plastile.scroll.width-cycle").status, "accepted");
+  h.drain();
+  assert.equal(h.windows.get("a")!.frame.width, 1264, "the next preset wider than shown: full width");
+});
+
+test("focus left/right: no wrap by default; with focusWrap the strip wraps to its other end; up/down never wrap", () => {
+  const ids = ["a", "b", "c", "d"];
+  {
+    const { h, e } = setup(ids);
+    assert.equal(h.active, "d");
+    assert.equal(e.execute("plastile.focus.right").status, "noop");
+    assert.equal(h.active, "d");
+  }
+  const { h, e } = setup(ids, { ...SCROLL, focusWrap: true });
+  assert.equal(e.execute("plastile.focus.right").status, "accepted");
+  assert.equal(h.active, "a");
+  h.drain();
+  assert.ok(inside(rect(0, 0, 1280, 800), h.windows.get("a")!.frame), "the first column scrolled into view");
+  assert.equal(e.execute("plastile.focus.left").status, "accepted");
+  assert.equal(h.active, "d", "left from the first column wraps to the last");
+  h.drain();
+  for (const dir of ["up", "down"]) assert.equal(e.execute("plastile.focus." + dir).status, "noop", dir);
+});
+
 test("scroll commands outside a scrolling context are no-ops", () => {
   const h = new MockHost();
   const e = h.start();
@@ -202,6 +310,107 @@ for (const [name, exit] of EXITS) {
     assertAllInside(h, ids, name);
     assert.deepEqual(parkedIds(h, ids), []);
   });
+}
+
+for (const [name, exit] of EXITS) {
+  test(`nothing stays parked after ${name}, also a column parked while its resize is still in flight`, () => {
+    const ids = ["a", "b", "c"];
+    const h = new MockHost();
+    const e = h.start({ settingsFor: () => SCROLL });
+    for (const id of ids) {
+      h.open(id, id === "a" ? { delay: 200 } : {});
+      h.activate(id);
+      h.advance(300);
+    }
+    h.activate("a");
+    h.advance(300);
+    assert.equal(e.execute("plastile.scroll.width-cycle").status, "accepted");
+    h.advance(20);
+    assert.equal(e.execute("plastile.focus.right").status, "accepted");
+    h.drain();
+    const a = h.windows.get("a")!;
+    assert.equal(e.explain("a")!.parked, true);
+    assert.ok(inside(rect(0, 0, 1280, 800), a.frame), "its committed frame is still visible: the parking configure is in flight");
+    exit(h, e);
+    h.drain();
+    h.advance(1000);
+    assertAllInside(h, ids, name);
+  });
+}
+
+for (const [name, exit] of EXITS.filter(([n]) => n === "suspend" || n === "stop")) {
+  test(`nothing stays parked after ${name}, also a slow column whose parking deadline passed while its desktop was hidden`, () => {
+    // The deadline defers a hidden window (deferHidden drops its request); the configure is still in flight.
+    const ids = ["a", "b", "c"];
+    const h = new MockHost();
+    const e = h.start({ settingsFor: () => SCROLL });
+    for (const id of ids) {
+      h.open(id, id === "a" ? { delay: 3000 } : {});
+      h.activate(id);
+      h.advance(4000);
+    }
+    h.activate("a");
+    h.advance(4000);
+    assert.equal(e.execute("plastile.scroll.width-cycle").status, "accepted");
+    h.advance(20);
+    assert.equal(e.execute("plastile.focus.right").status, "accepted");
+    h.drain();
+    const a = h.windows.get("a")!;
+    assert.equal(e.explain("a")!.parked, true);
+    assert.ok(inside(rect(0, 0, 1280, 800), a.frame) && a.configures.length > 0, "the parking configure is in flight");
+    h.showDesktop("O1", "D2");
+    h.drain();
+    h.advance(1500); // its deadline passes while D1 is hidden
+    exit(h, e);
+    h.drain();
+    h.advance(10_000);
+    assertAllInside(h, ids, name);
+  });
+}
+
+const TO_FLOATING: Array<[string, (e: ReturnType<MockHost["start"]>) => void]> = [
+  ["by command", (e) => { e.execute("plastile.layout.floating"); }],
+  ["by configuration", (e) => { e.configure({ settingsFor: () => ({ ...SCROLL, layout: "floating" }) }); }],
+];
+
+for (const [how, toFloating] of TO_FLOATING) {
+  for (const exit of ["none", "suspend", "stop"]) {
+    test(`a parked column whose float restore waits for its parking configure: floating ${how}, then ${exit}`, () => {
+      // A float restore waiting for an in-flight configure (E04) of a parked window keeps it
+      // parked until written, so the sweep and every exit still bring it inside (SCROLLING §5.1).
+      const F = rect(300, 200, 500, 400);
+      const h = new MockHost();
+      const e = h.start({ settingsFor: () => SCROLL });
+      for (const id of ["a", "b", "c"]) { h.open(id); h.activate(id); h.advance(300); }
+      h.activate("a");
+      h.advance(300);
+      e.execute("plastile.window.toggle-float");
+      h.drain();
+      h.userSetFrame("a", F); // its float rectangle
+      e.execute("plastile.window.toggle-float");
+      h.drain();
+      h.activate("a");
+      h.advance(1000);
+      h.windows.get("a")!.delay = 200;
+      assert.equal(e.execute("plastile.scroll.width-cycle").status, "accepted");
+      h.advance(20);
+      assert.equal(e.execute("plastile.focus.left").status, "accepted");
+      h.drain();
+      assert.equal(e.execute("plastile.focus.left").status, "accepted");
+      h.drain();
+      const a = h.windows.get("a")!;
+      assert.equal(e.explain("a")!.parked, true);
+      assert.ok(inside(rect(0, 0, 1280, 800), a.frame) && a.configures.length > 0, "the parking configure is in flight");
+      toFloating(e);
+      h.drain();
+      if (exit === "suspend") e.execute("plastile.runtime.toggle-suspend");
+      if (exit === "stop") e.stop();
+      h.drain();
+      h.advance(2000);
+      assertAllInside(h, ["a", "b", "c"], `${how}, ${exit}`);
+      if (exit === "none") assert.ok(rectNear(a.frame, F), `at its float rectangle: ${JSON.stringify(a.frame)}`);
+    });
+  }
 }
 
 test("reconcile unparks, then re-parks what its strip still hides", () => {

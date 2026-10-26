@@ -4,7 +4,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { compileConfig, DEFAULT_DIAGNOSTICS, DEFAULT_OSD, FLAT_KEYS } from "../../src/config/index.ts";
-import { DIAGNOSTICS, MAXIMIZED_ON_OPEN } from "../../src/config/schema.ts";
+import { DIAGNOSTICS, LAYOUTS, MAXIMIZED_ON_OPEN } from "../../src/config/schema.ts";
 import { DEFAULT_SETTINGS } from "../../src/core/defaults.ts";
 import { COMMANDS } from "../../src/core/commands.ts";
 
@@ -54,6 +54,26 @@ test("the settings dialog (config.ui) has one widget per schema entry, and every
     const w = widgets.find((x) => x.name === e.name)!;
     if (e.type === "Enum") assert.equal(w.items, e.choices.length, `${e.name}: one combo item per choice, in the same order`);
     if (e.type === "Bool") assert.equal(w.cls, "QCheckBox", `${e.name}: a check box`);
+  }
+});
+
+test("the dialog offers every runtime layout: one it lacks shows as Master and stack and cannot be applied back", () => {
+  // KConfigXT reads an unknown Enum name as the default index, so the item would load as 0, and
+  // choosing Master and stack would equal the loaded value and write nothing.
+  assert.deepEqual(entries.find((e) => e.name === "layout")!.choices, [...LAYOUTS]);
+});
+
+test("the dialog's ratio spin boxes keep three decimals and the schema's range (an unrelated Apply rewrites a rounded value)", () => {
+  const ui = readFileSync(new URL("../../package/contents/ui/config.ui", import.meta.url), "utf8");
+  const spins = [...ui.matchAll(/<widget class="QDoubleSpinBox" name="kcfg_([^"]+)">([\s\S]*?)<\/widget>/g)];
+  assert.deepEqual(spins.map((m) => m[1]).sort(), entries.filter((e) => e.type === "Double").map((e) => e.name).sort());
+  const prop = (body: string, name: string): number =>
+    Number(new RegExp(`<property name="${name}">\\s*<(?:number|double)>([^<]+)<`).exec(body)![1]);
+  for (const [, name, body] of spins) {
+    const e = entries.find((x) => x.name === name)!;
+    assert.ok(prop(body, "decimals") >= 3, `${name}: a hand-set 0.555 or 0.025 survives an Apply`);
+    assert.equal(prop(body, "minimum"), Number(/<min>([^<]+)<\/min>/.exec(e.body)![1]), `${name}: minimum`);
+    assert.equal(prop(body, "maximum"), Number(/<max>([^<]+)<\/max>/.exec(e.body)![1]), `${name}: maximum`);
   }
 });
 

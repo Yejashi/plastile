@@ -5,7 +5,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { rect, rectNear } from "../../src/core/geometry.ts";
 import { DEFAULT_SETTINGS } from "../../src/core/defaults.ts";
-import { MockHost, meta } from "./mockHost.ts";
+import { FREE, MockHost, meta } from "./mockHost.ts";
 import { assertTiling } from "./helpers.ts";
 
 const AREA = rect(0, 0, 1280, 800);
@@ -530,6 +530,59 @@ test("late metadata: pending window classified at the readiness deadline", () =>
   assert.equal(e.modeOf("late"), "tiled");
 });
 
+test("late metadata: membership, constraint and configuration events do not end the readiness wait; its rule applies", () => {
+  const rulesFor = (m: { appId: string }) => (m.appId === "float-me" ? { mode: "floating" as const, ruleIds: ["f"] } : null);
+  const h = new MockHost();
+  const e = h.start({ rulesFor });
+  h.open("a");
+  h.drain();
+  h.advance(5);
+  const w = h.open("x", { meta: meta("", {}), frame: rect(100, 100, 400, 300) });
+  h.drain();
+  // KWin reports output, desktop or activity changes and constraint commits around mapping.
+  e.membershipChanged("x", w.gen, { ...w.membership });
+  e.constraintsChanged("x", w.gen, { ...FREE, minFrame: { width: 200, height: 100 } });
+  e.configure({ rulesFor });
+  h.drain();
+  assert.equal(e.modeOf("x"), "pending", "still waiting for its app id");
+  assert.equal(h.writesTo("x"), 0);
+  w.meta = meta("float-me");
+  e.metadataChanged("x", w.gen, w.meta);
+  h.drain();
+  assert.equal(e.modeOf("x"), "floating", "the rule matched the app id that arrived");
+  assert.equal(h.writesTo("x"), 0, "never tiled, so nothing to restore");
+  assert.deepEqual(w.frame, rect(100, 100, 400, 300));
+  const deadlines = e.counters.deadlines;
+  h.advance(60_000);
+  assert.equal(e.counters.deadlines, deadlines, "no readiness deadline left once the wait ended");
+});
+
+test("late metadata: a resync that finds the app id ends the readiness wait", () => {
+  const h = new MockHost();
+  const e = h.start();
+  const w = h.open("late", { meta: meta("", {}) });
+  h.drain();
+  w.meta = meta("late"); // the metadata signal was missed
+  e.reconcile([h.snapshot(w)]);
+  h.drain();
+  assert.equal(e.modeOf("late"), "tiled");
+});
+
+test("late metadata: a window that turns out not to be a normal one is classified at once, not at the deadline", () => {
+  const h = new MockHost();
+  const e = h.start();
+  h.open("a");
+  h.drain();
+  const w = h.open("x", { meta: meta("", {}) });
+  h.drain();
+  assert.equal(e.modeOf("x"), "pending");
+  w.meta = { ...w.meta, kind: "dialog" }; // only normal windows wait for an app id (BEHAVIOR §1)
+  e.metadataChanged("x", w.gen, w.meta);
+  h.drain();
+  assert.equal(e.modeOf("x"), "floating");
+  assert.equal((e.explain("x")!.decision as { reason: string }).reason, "dialog");
+});
+
 test("O06: an invalid work area keeps the last valid placement", () => {
   const { h, e } = setup(["a", "b"]);
   const before = tiledFrames(h, ["a", "b"]);
@@ -750,6 +803,43 @@ test("G04: a client slower than the deadline is not learned as a constraint and 
   assertTiling(tiledFrames(h, ["a", "b"]), AREA);
 });
 
+test("G04/D8: a lost configure is corrected when a peer's learned maximum re-solves the context at the same deadline", () => {
+  const slot = setup(["a", "b"]).h.windows.get("b")!.frame;
+  const h = new MockHost();
+  const e = h.start();
+  const a = h.open("a");
+  h.drain();
+  h.advance(5);
+  a.commitOffset = { width: -400, height: -100 }; // a hidden maximum: a commits less than it was asked
+  const b = h.open("b", { delay: 50 });
+  h.drain();
+  b.configures.splice(0); // b's configure is lost
+  h.advance(5000);
+  assert.equal(e.counters.learned, 1, "a's maximum learned at the deadline b shares");
+  assert.ok(rectNear(b.frame, slot), `b at ${JSON.stringify(b.frame)}`);
+  assert.equal(e.outstandingCount(), 0);
+});
+
+test("G04/D8: a request whose deadline came due while the layout placed nothing is written again when it does", () => {
+  const slot = setup(["a", "b"]).h.windows.get("b")!.frame;
+  const h = new MockHost();
+  const e = h.start();
+  h.open("a");
+  h.drain();
+  h.advance(5);
+  const b = h.open("b", { delay: 50 });
+  h.drain();
+  b.configures.splice(0); // b's configure is lost
+  e.execute("plastile.layout.floating");
+  h.drain();
+  h.advance(5000);
+  e.execute("plastile.layout.master-stack");
+  h.drain();
+  h.advance(5000);
+  assert.ok(rectNear(b.frame, slot), `b at ${JSON.stringify(b.frame)}`);
+  assert.equal(e.outstandingCount(), 0);
+});
+
 test("G12: a client that never answers is not learned as a constraint", () => {
   const { h, e } = setup(["a", "b"], { b: { ignore: true, delay: 10 } });
   h.advance(10_000);
@@ -801,6 +891,59 @@ test("G11 after I03: the window resized by the user is still corrected when the 
   h.advance(5000);
   assert.ok(rectNear(h.windows.get("a")!.frame, a1), `a back in its slot: ${JSON.stringify(h.windows.get("a")!.frame)}`);
   assert.ok(e.counters.corrections > corrections);
+});
+
+test("G11 after resume: re-tiling a window the user moved while suspended spends no correction", () => {
+  const { h, e } = setup(["a", "b"]);
+  const slot = h.windows.get("a")!.frame;
+  h.active = "a";
+  for (let i = 0; i < 2; ++i) {
+    e.execute("plastile.runtime.toggle-suspend");
+    h.userSetFrame("a", rect(50 + i, 50, 400, 400));
+    h.drain();
+    e.execute("plastile.runtime.toggle-suspend");
+    h.drain();
+    assert.ok(rectNear(h.windows.get("a")!.frame, slot), "re-tiled at resume");
+  }
+  assert.equal(e.counters.corrections, 0, "a resume places the window: a plan write, not a correction");
+  h.userSetFrame("a", rect(slot.x, slot.y, 300, 300)); // the application resizes itself once
+  h.advance(5000);
+  assert.ok(rectNear(h.windows.get("a")!.frame, slot), `a back in its slot: ${JSON.stringify(h.windows.get("a")!.frame)}`);
+  assert.equal(e.explain("a")!.exception, null);
+});
+
+test("G11 after a hidden desktop: re-tiling a window KWin moved while hidden spends no correction", () => {
+  const { h, e } = setup(["a", "b"]);
+  const slot = h.windows.get("a")!.frame;
+  for (let i = 0; i < 2; ++i) {
+    h.visible.set("O1", "D2"); e.visibilityChanged(); h.drain();
+    h.userSetFrame("a", rect(30 + i, 40, slot.width, slot.height)); // KWin's work-area check on the hidden desktop
+    h.drain();
+    h.visible.set("O1", "D1"); e.visibilityChanged(); h.drain();
+    assert.ok(rectNear(h.windows.get("a")!.frame, slot), "re-tiled when shown");
+  }
+  assert.equal(e.counters.corrections, 0, "no correction is spent for a move KWin made while hidden");
+  h.userSetFrame("a", rect(slot.x, slot.y, 300, 300));
+  h.advance(5000);
+  assert.ok(rectNear(h.windows.get("a")!.frame, slot), `a back in its slot: ${JSON.stringify(h.windows.get("a")!.frame)}`);
+  assert.equal(e.explain("a")!.exception, null);
+});
+
+test("G11: once a self-resizing window converges on a new target, its explanation is cleared", () => {
+  const { h, e } = setup(["a", "b"]);
+  for (let i = 0; i < 3; ++i) {
+    h.userSetFrame("a", rect(8, 8, 400 - 10 * i, 784));
+    h.drain();
+  }
+  h.advance(5000);
+  assert.match(String(e.explain("a")!.exception), /keeps changing its own size/);
+  h.active = "a";
+  e.activeChanged("a");
+  assert.equal(e.execute("plastile.resize.grow").status, "accepted");
+  h.drain();
+  h.advance(5000);
+  assert.equal((e.explain("a")!.ledger as { status: string }).status, "settled");
+  assert.equal(e.explain("a")!.exception, null, "converged: no stale explanation");
 });
 
 test("L13/L14: a native yield survives the tile being released and later reclassification", () => {
@@ -869,6 +1012,55 @@ test("L08/L13: toggle-float on a window that cannot tile is a no-op without side
   h2.active = "y";
   assert.equal(e2.execute("plastile.window.toggle-float").status, "noop");
   assert.equal(e2.explain("y")!.userMode, null);
+});
+
+test("L08/L13: adopt-native on a natively tiled window that cannot tile is a no-op that keeps KWin's tile", () => {
+  const fixed = { minFrame: { width: 400, height: 300 }, maxFrame: { width: 400, height: 300 }, fixed: true };
+  const allDesktops = { output: "O1", desktops: [], onAllDesktops: true, activities: [] };
+  const { h, e } = setup(["a", "x", "pin"], { x: { constraints: fixed }, pin: { membership: allDesktops } });
+  for (const id of ["x", "pin"]) {
+    const w = h.windows.get(id)!;
+    w.nativeTile = true;
+    e.nativeTileChanged(id, w.gen, true);
+    h.userSetFrame(id, rect(0, 0, 640, 800));
+    h.drain();
+    assert.equal(e.modeOf(id), "native");
+    const writes = h.writes.filter((x) => x.id === id).length;
+    h.active = id;
+    const r = e.execute("plastile.window.adopt-native");
+    h.drain();
+    assert.equal(r.status, "noop", id);
+    assert.match(String(r.reason), /^cannot tile: /, id);
+    assert.equal(w.nativeTile, true, `${id}: native tile not released`);
+    assert.equal(e.modeOf(id), "native", id);
+    assert.equal(e.explain(id)!.userMode, null, `${id}: no sticky tile request`);
+    assert.equal(h.writes.filter((x) => x.id === id).length, writes, `${id}: no write`);
+  }
+  // The window that was on all desktops moves to one: still KWin's (no tile request was left behind).
+  const pin = h.windows.get("pin")!;
+  e.membershipChanged("pin", pin.gen, { output: "O1", desktops: ["D1"], onAllDesktops: false, activities: [] });
+  h.drain();
+  assert.equal(e.modeOf("pin"), "native");
+  {
+    // Tileable, but the layout has no room (G08): the result says why, and the overflow float is
+    // tried again when a peer leaves.
+    const min700 = { minFrame: { width: 700, height: 0 }, maxFrame: { width: Infinity, height: Infinity }, fixed: false };
+    const h = new MockHost();
+    const e = h.start();
+    h.open("a", { constraints: min700 });
+    h.open("x", { constraints: min700, nativeTile: true });
+    h.drain();
+    assert.equal(e.modeOf("x"), "native");
+    h.active = "x";
+    const r = e.execute("plastile.window.adopt-native");
+    h.drain();
+    assert.equal(r.status, "noop");
+    assert.match(String(r.reason), /^cannot tile: overflow: x: does not fit/);
+    assert.equal(e.modeOf("x"), "floating");
+    h.close("a");
+    h.drain();
+    assert.equal(e.modeOf("x"), "tiled");
+  }
 });
 
 test("Q10/T16: explain lists every matched rule and the rule behind each action, not only the mode rule", () => {
@@ -944,6 +1136,27 @@ test("C12: in monocle a focus change selects and raises once, with no deferred s
   assert.deepEqual(h.raises.slice(raises), ["b"], "no extra raise");
 });
 
+test("SHORTCUTS: in monocle directional swap and move are no-ops; swap next/previous/master reorder", () => {
+  const { h, e } = setup(["a", "b", "c"]);
+  const K = { output: "O1", desktop: "D1", activity: "default" };
+  h.active = "b";
+  e.execute("plastile.layout.monocle");
+  h.drain();
+  const writes = h.writes.length;
+  for (const fam of ["swap", "move"]) {
+    for (const dir of ["left", "right", "up", "down"]) {
+      assert.equal(e.execute(`plastile.${fam}.${dir}`).status, "noop", `${fam}.${dir}`);
+    }
+  }
+  h.drain();
+  assert.deepEqual(e.membersOf(K), ["a", "b", "c"]);
+  assert.equal(h.writes.length, writes, "nothing written");
+  assert.equal(e.execute("plastile.swap.next").status, "accepted");
+  assert.deepEqual(e.membersOf(K), ["a", "c", "b"]);
+  assert.equal(e.execute("plastile.swap.master").status, "accepted");
+  assert.deepEqual(e.membersOf(K), ["b", "c", "a"]);
+});
+
 test("C08: an exception while solving one context does not drop the other dirty contexts", () => {
   const h = new MockHost();
   h.outs.push({ id: "O2", name: "O2", geometry: rect(1280, 0, 1280, 800), scale: 1 });
@@ -1000,6 +1213,112 @@ test("L06/L08: in the floating layout the user's latest placement is what a late
   assert.ok(rectNear(h.windows.get("b")!.frame, rect(900, 400, 300, 300)));
 });
 
+test("L06: every route back to the floating layout restores remembered float rectangles (reset, configuration, saved state)", () => {
+  // b was floated at (300,200,500,400) and tiled again; a was moved by the user while the context was floating.
+  const F = rect(300, 200, 500, 400);
+  const prep = (configured: "master-stack" | "floating") => {
+    let layout: "master-stack" | "floating" = configured;
+    const h = new MockHost();
+    const e = h.start({ settingsFor: () => ({ ...DEFAULT_SETTINGS, layout }) });
+    h.open("a"); h.open("b");
+    h.drain();
+    h.advance(5);
+    if (configured === "floating") assert.equal(e.execute("plastile.layout.master-stack").status, "accepted");
+    h.active = "b";
+    e.execute("plastile.window.toggle-float");
+    h.drain();
+    h.userSetFrame("b", F);
+    e.execute("plastile.window.toggle-float");
+    h.drain();
+    assert.equal(e.modeOf("b"), "tiled");
+    assert.ok(!rectNear(h.windows.get("b")!.frame, F), "precondition: b is on its tile");
+    return { h, e, set: (l: "master-stack" | "floating") => { layout = l; } };
+  };
+  const at = (h: MockHost) => JSON.stringify(h.windows.get("b")!.frame);
+  {
+    const { h, e } = prep("floating");
+    assert.equal(e.execute("plastile.context.reset").status, "accepted");
+    h.drain();
+    assert.equal(e.layoutAt({ output: "O1", desktop: "D1", activity: "default" }), "floating");
+    assert.ok(rectNear(h.windows.get("b")!.frame, F), `reset to the configured floating layout: ${at(h)}`);
+  }
+  {
+    const { h, e, set } = prep("master-stack");
+    set("floating");
+    const w0 = h.writes.length;
+    e.configure({ settingsFor: () => ({ ...DEFAULT_SETTINGS, layout: "floating" }) });
+    assert.equal(h.writes.length, w0, "configure itself writes nothing: the flush does");
+    h.drain();
+    assert.ok(rectNear(h.windows.get("b")!.frame, F), `configured layout became floating: ${at(h)}`);
+  }
+  {
+    const { h, e } = prep("master-stack");
+    const w0 = h.writes.length;
+    e.setContextPreferences({ output: "O1", desktop: "D1", activity: "default" }, { layout: "floating", masterStack: null });
+    assert.equal(h.writes.length, w0, "the load reply writes no geometry (ADR-020)");
+    h.drain();
+    assert.ok(rectNear(h.windows.get("b")!.frame, F), `saved floating layout: ${at(h)}`);
+  }
+  {
+    // A context not shown is restored once it is shown, never written while hidden.
+    const { h, e } = prep("master-stack");
+    h.showDesktop("O1", "D2");
+    h.drain();
+    const w0 = h.writes.length;
+    e.setContextPreferences({ output: "O1", desktop: "D1", activity: "default" }, { layout: "floating", masterStack: null });
+    h.drain();
+    assert.equal(h.writes.length, w0, "hidden: nothing written");
+    h.showDesktop("O1", "D1");
+    h.drain();
+    assert.ok(rectNear(h.windows.get("b")!.frame, F), `restored when shown: ${at(h)}`);
+  }
+});
+
+test("G08: Toggle floating on an overflow float that still does not fit reports why and changes nothing", () => {
+  const min700 = { minFrame: { width: 700, height: 0 }, maxFrame: { width: Infinity, height: Infinity }, fixed: false };
+  const { h, e } = setup(["a", "b"], { a: { constraints: min700 }, b: { constraints: min700 } });
+  assert.equal(e.modeOf("b"), "floating");
+  const exception = e.explain("b")!.exception;
+  assert.ok(String(exception).startsWith("overflow"));
+  h.activate("b");
+  h.drain();
+  const w0 = h.writes.length;
+  const res = e.execute("plastile.window.toggle-float");
+  h.drain();
+  assert.equal(res.status, "noop");
+  assert.match(String(res.reason), /^cannot tile: overflow: b: does not fit/);
+  assert.equal(e.modeOf("b"), "floating");
+  assert.equal(h.writes.length, w0, "no write");
+  assert.equal(e.explain("b")!.exception, exception);
+  assert.equal(e.explain("b")!.userMode, null, "the refused request left no user decision behind");
+  // Still an overflow float: tried again when a peer leaves.
+  h.close("a");
+  h.drain();
+  assert.equal(e.modeOf("b"), "tiled");
+  // A user float that does not fit when tiled stays the user's float, with its saved preference.
+  {
+    const { h, e } = setup(["a", "b"], { a: { constraints: min700 } });
+    h.activate("b");
+    e.execute("plastile.window.toggle-float");
+    h.drain();
+    h.userSetFrame("b", rect(200, 100, 750, 400)); // the user makes it wider than half the output
+    const b = h.windows.get("b")!;
+    b.constraints = min700;
+    e.constraintsChanged("b", b.gen, min700);
+    h.drain();
+    const prefs = e.floatPreferences().map((p) => p.float.rect);
+    const res = e.execute("plastile.window.toggle-float");
+    h.drain();
+    assert.equal(res.status, "noop");
+    assert.match(String(res.reason), /^cannot tile: overflow/);
+    assert.equal(e.modeOf("b"), "floating");
+    assert.equal(e.explain("b")!.userMode, "floating");
+    assert.equal(e.explain("b")!.exception, null, "a user float, not an overflow float");
+    assert.deepEqual(e.floatPreferences().map((p) => p.float.rect), prefs, "its preference kept");
+    assert.ok(rectNear(h.windows.get("b")!.frame, rect(200, 100, 750, 400)));
+  }
+});
+
 test("G08/BEHAVIOR §11: an overflow float is reconsidered when the area, constraints, peers or configuration change", () => {
   const min700 = { minFrame: { width: 700, height: 0 }, maxFrame: { width: Infinity, height: Infinity }, fixed: false };
   const free = { minFrame: { width: 0, height: 0 }, maxFrame: { width: Infinity, height: Infinity }, fixed: false };
@@ -1038,6 +1357,97 @@ test("G08/BEHAVIOR §11: an overflow float is reconsidered when the area, constr
     e.configure({ settingsFor: () => ({ ...DEFAULT_SETTINGS, layout: "monocle" }) });
     h.drain();
     assert.deepEqual(["a", "b", "c"].map((id) => e.modeOf(id)), ["tiled", "tiled", "tiled"], "configuration activation");
+  }
+});
+
+test("G08/BEHAVIOR §11: a layout changed by command, reset or restored preferences reconsiders overflow floats", () => {
+  const min700 = { minFrame: { width: 700, height: 0 }, maxFrame: { width: Infinity, height: Infinity }, fixed: false };
+  const ids = ["a", "b", "c"];
+  const patch = { a: { constraints: min700 }, b: { constraints: min700 }, c: { constraints: min700 } };
+  const K1 = { output: "O1", desktop: "D1", activity: "default" };
+  for (const cmd of ["plastile.layout.monocle", "plastile.layout.scrolling"]) {
+    const { h, e } = setup(ids, patch);
+    assert.deepEqual(ids.map((id) => e.modeOf(id)), ["tiled", "floating", "floating"]);
+    h.active = "a";
+    assert.equal(e.execute(cmd).status, "accepted");
+    h.drain();
+    assert.deepEqual(ids.map((id) => e.modeOf(id)), ["tiled", "tiled", "tiled"], cmd);
+    assert.equal(e.explain("c")!.exception, null, cmd);
+  }
+  {
+    // Reset to a configured monocle from a master/stack chosen by command.
+    const h = new MockHost();
+    const e = h.start({ settingsFor: () => ({ ...DEFAULT_SETTINGS, layout: "monocle" }) });
+    for (const id of ids) h.open(id, patch[id as keyof typeof patch]);
+    h.drain();
+    h.active = "a";
+    e.execute("plastile.layout.master-stack");
+    h.drain();
+    assert.deepEqual(ids.map((id) => e.modeOf(id)), ["tiled", "floating", "floating"]);
+    assert.equal(e.execute("plastile.context.reset").status, "accepted");
+    h.drain();
+    assert.deepEqual(ids.map((id) => e.modeOf(id)), ["tiled", "tiled", "tiled"], "context.reset");
+  }
+  {
+    // A saved monocle layout that arrives after the windows overflowed (persistence restore).
+    const { h, e } = setup(ids, patch);
+    e.setContextPreferences(K1, { layout: "monocle", masterStack: null });
+    h.drain();
+    assert.deepEqual(ids.map((id) => e.modeOf(id)), ["tiled", "tiled", "tiled"], "restored preferences");
+  }
+});
+
+test("BSP axis longest: a split follows the shape of the slot on the real output, not a 16:9 placeholder", () => {
+  const longest = (insert: "last" | "focused", layout: "bsp" | "master-stack" = "bsp") =>
+    ({ ...DEFAULT_SETTINGS, layout, bsp: { ...DEFAULT_SETTINGS.bsp, axis: "longest" as const, insert } });
+  const run = (w: number, ht: number, ids: string[], s: typeof DEFAULT_SETTINGS) => {
+    const h = new MockHost();
+    h.outs = [{ id: "O1", name: "O1", geometry: rect(0, 0, w, ht), scale: 1 }];
+    const e = h.start({ settingsFor: () => s });
+    for (const id of ids) { h.open(id); h.drain(); h.advance(5); }
+    return { h, e };
+  };
+  {
+    // Portrait: the only slot is taller than wide, so b goes below a.
+    const { h } = run(1080, 1920, ["a", "b"], longest("last"));
+    const f = h.framesOf(["a", "b"]);
+    assert.equal(f.a.x, f.b.x, JSON.stringify(f));
+    assert.ok(f.b.y > f.a.y + f.a.height - 1, JSON.stringify(f));
+    assertTiling(tiledFrames(h, ["a", "b"]), rect(0, 0, 1080, 1920));
+  }
+  {
+    // Ultrawide: b's half (1708x1424) is still wider than tall, so c goes beside b.
+    const { h } = run(3440, 1440, ["a", "b", "c"], longest("last"));
+    const f = h.framesOf(["a", "b", "c"]);
+    assert.equal(f.b.y, f.c.y, JSON.stringify(f));
+    assert.equal(f.b.height, f.c.height, JSON.stringify(f));
+    assertTiling(tiledFrames(h, ["a", "b", "c"]), rect(0, 0, 3440, 1440));
+  }
+  {
+    // The first switch to BSP builds the tree from the members on the same real area.
+    const { h, e } = run(1080, 1920, ["a", "b"], longest("last", "master-stack"));
+    h.active = "a";
+    assert.equal(e.execute("plastile.layout.bsp").status, "accepted");
+    h.drain();
+    const f = h.framesOf(["a", "b"]);
+    assert.ok(f.b.y > f.a.y + f.a.height - 1, JSON.stringify(f));
+  }
+  {
+    // C08: the work-area read that a split needs can fail; the window still joins (on the
+    // placeholder) and the context is tiled once the area reads again.
+    const h = new MockHost();
+    const e = h.start({ settingsFor: () => longest("last") });
+    h.open("a");
+    h.drain();
+    const orig = h.workArea.bind(h);
+    let failures = 1;
+    h.workArea = (o, d) => { if (failures > 0) { failures--; throw new Error("boom"); } return orig(o, d); };
+    h.open("b");
+    h.drain();
+    h.workArea = orig;
+    assert.ok(e.counters.errors >= 1);
+    assert.equal(e.modeOf("b"), "tiled");
+    assertTiling(tiledFrames(h, ["a", "b"]), AREA);
   }
 });
 

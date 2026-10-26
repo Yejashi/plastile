@@ -13,7 +13,7 @@ import json
 import time
 from pathlib import Path
 
-from harness import Input, Session, delta, near
+from harness import Input, Session, delta, near, trace
 from scenarios import Checks, Skipped, scenario
 from scenarios_config import trace_modes
 from scenarios_workarea import quit_panel, spawn_panel, until
@@ -183,6 +183,7 @@ def zones_overlay(out: Path, c: Checks):
 
         f0 = frames(s)
         c0 = s.counters()
+        off = s.kw.mark()
         s.cmd("zone.show")
         try:
             s.wait_for(lambda: len(own_windows(s)) == 2, 5, "overlay windows")
@@ -203,9 +204,15 @@ def zones_overlay(out: Path, c: Checks):
         c("showing the overlay solved nothing and wrote no geometry (counters)", d.get("solves", 0) == 0 and d.get("writes", 0) == 0, d)
         c("tiles unchanged while the overlay is shown (oracle)",
           all(near(f0[k]["frame"], frames(s)[k]["frame"], 0.5) for k in f0), {k: v["frame"] for k, v in frames(s).items()})
+        shown = overlay_log(s, off)
+        off = s.kw.mark()
         s.cmd("zone.unassign")  # fixture 2 is active: released, the shown overlay is refreshed
-        time.sleep(0.4)
-        c("a zone command while shown keeps the overlay (refreshed, no new windows)", len(own_windows(s)) == 2, own_windows(s))
+        until(lambda: overlay_log(s, off) is not None, 3)
+        refreshed = overlay_log(s, off)
+        counts = lambda m: {z["n"]: z["windows"] for z in m["zones"]} if m else None  # noqa: E731
+        c("a zone command while shown refreshes the overlay: zone 2 is drawn empty after the unassign (log), "
+          "and no new windows", counts(shown) == {1: 1, 2: 1} and counts(refreshed) == {1: 1, 2: 0}
+          and len(own_windows(s)) == 2, {"shown": counts(shown), "refreshed": counts(refreshed), "own": own_windows(s)})
 
         escape_note = ""
         try:
@@ -246,3 +253,50 @@ def zones_overlay(out: Path, c: Checks):
         c("no errors, warnings, JS exceptions or QML warnings", not warn, warn[:5])
         if inp is None:
             raise Skipped(f"Escape check not run: {escape_note}")
+
+
+@scenario("zones-overlay-activation-M9")
+def zones_overlay_activation(out: Path, c: Checks):
+    """While the overlay is shown, any accepted command refreshes it (a float updates the counts), but a
+    command that activates a window lets it close: KWin closes the legend popup on the activation, and
+    the refresh after that command does not map it again."""
+    with Session(out, config={"layout": "zones", "diagnostics": "info"}) as s:
+        s.spawn(1); s.spawn(2)
+        s.load()
+        s.settle()
+        s.act(fx(1), "workspace.activeWindow = w")
+        s.cmd("zone.assign-1")
+        s.act(fx(2), "workspace.activeWindow = w")
+        s.cmd("zone.assign-2")
+        s.settle()
+        s.cmd("zone.show")
+        s.wait_for(lambda: len(own_windows(s)) == 2, 5, "overlay windows")
+        time.sleep(0.3)
+        counts = lambda m: {z["n"]: z["windows"] for z in m["zones"]} if m else None  # noqa: E731
+
+        # Fixture 2 is active: floating it is neither a zone nor a layout command, and refreshes the overlay.
+        off = s.kw.mark()
+        s.cmd("window.toggle-float")
+        until(lambda: overlay_log(s, off) is not None, 3)
+        time.sleep(0.3)
+        c("toggle-float while shown refreshes the overlay: zone 2 is drawn empty (log), the overlay stays",
+          counts(overlay_log(s, off)) == {1: 1, 2: 0} and len(own_windows(s)) == 2
+          and s.counters().get("zoneOverlay") == "shown",
+          {"log": overlay_log(s, off), "own": own_windows(s)})
+
+        seen = {r.get("id") for r in trace(s) if r.get("kind") == "mode"}
+        off = s.kw.mark()
+        s.cmd("focus.left")  # activates fixture 1: KWin closes the legend popup
+        time.sleep(0.8)
+        active = json.loads(s.js("emit(workspace.activeWindow ? workspace.activeWindow.caption : null)")[0])
+        added = [r for r in trace(s) if r.get("kind") == "mode" and r.get("id") not in seen]
+        c("an activating command hides the shown overlay and does not map it again (oracle: active window, no "
+          "overlay window left; trace: no window added since; log: no refresh)",
+          active == fx(1) and own_windows(s) == [] and added == [] and s.counters().get("zoneOverlay") == "hidden"
+          and not s.log_lines(r"plastile info zones overlay \{", off),
+          {"active": active, "added": added, "own": own_windows(s), "log": s.log_lines(r"zones overlay", off)})
+        s.cmd("zone.show")
+        s.wait_for(lambda: len(own_windows(s)) == 2, 5, "overlay windows again")
+        c("shown again afterwards", s.counters().get("zoneOverlay") == "shown", own_windows(s))
+        warn = s.log_lines(ERRORS)
+        c("no errors, warnings, JS exceptions or QML warnings", not warn, warn[:5])

@@ -47,7 +47,11 @@ test("zone.show creates the overlay on first use, toggles it, and unload destroy
   assert.deepEqual(v.rects.map((r) => r.label), ["1", "2"]);
   assert.deepEqual(v.rects[1].rect, { x: g.x, y: g.y, width: g.width, height: g.height }, "zone 2 is where the window went");
   assert.equal(v.rects[1].detail, "1 window");
-  assert.ok(f.lines.some((l) => l.startsWith("plastile info zones overlay ")), "the drawn rectangles are logged at info");
+  const logged = f.lines.filter((l) => l.startsWith("plastile info zones overlay "));
+  assert.equal(logged.length, 1, "the drawn rectangles are logged at info");
+  // With the window counts: the nested scenario tells a refreshed overlay from a stale one by them.
+  assert.deepEqual(JSON.parse(logged[0].slice("plastile info zones overlay ".length)).zones.map((z: { n: number; windows: number }) =>
+    [z.n, z.windows]), [[1, 0], [2, 1]]);
   rt.dispatch("plastile.zone.layout-next");
   assert.deepEqual(calls, ["show", "show"], "a zone command refreshes a shown overlay");
   assert.equal(shown[1].heading.indexOf("Zones: thirds"), 0);
@@ -60,6 +64,27 @@ test("zone.show creates the overlay on first use, toggles it, and unload destroy
   rt.dispatch("plastile.zone.show");
   rt.shutdown();
   assert.deepEqual(calls.slice(-2), ["show", "destroy"]);
+});
+
+test("any accepted Plastile command refreshes a shown overlay: a reset out of zones hides it, a float updates the count", () => {
+  const a = setup("master-stack");
+  a.rt.dispatch("plastile.layout.zones");
+  a.rt.dispatch("plastile.zone.show");
+  assert.deepEqual(a.calls, ["show"]);
+  assert.equal(a.rt.dispatch("plastile.context.reset")!.status, "accepted");
+  assert.deepEqual(a.calls, ["show", "hide"], "no zone rectangles over a master-stack desktop");
+  a.rt.shutdown();
+
+  const { ws, qt, wins, rt, calls, shown } = setup("zones");
+  ws.activeWindow = wins[0];
+  rt.dispatch("plastile.zone.assign-2");
+  qt.drain();
+  rt.dispatch("plastile.zone.show");
+  assert.match(shown[0].heading, /1 assigned/);
+  assert.equal(rt.dispatch("plastile.window.toggle-float")!.status, "accepted");
+  assert.deepEqual(calls, ["show", "show"]);
+  assert.match(shown[1].heading, /0 assigned/, "the floated window left its zone");
+  rt.shutdown();
 });
 
 test("zone.show outside a zones context shows nothing and says why", () => {

@@ -64,7 +64,7 @@ kpackagetool6 --type KWin/Script --remove plastile
 
 This copies the package to `~/.local/share/kwin/scripts/plastile/` (or `$XDG_DATA_HOME/kwin/scripts/plastile/`).
 
-**`tools/install.sh`** wraps exactly these commands (`install`, `upgrade`, `remove`, `status`) and adds `install-helper` and `remove-helper` for the [persistence helper](#persistence-helper). `install`, `upgrade` and `remove` also install, replace and remove the optional [Plastile Motion effect](#8-window-motion-optional), which stays disabled until you turn it on. It refuses to install a package without the built bundle. It never enables, reloads or restarts anything and never writes `kwinrc`. `python3 tools/release.py --out dist` builds a `dist/plastile-<version>.kwinscript` archive, and both `kpackagetool6` and `install.sh` accept that archive instead of the `package` directory. The physical runs installed with `tools/install.sh install` and `install-helper`.
+**`tools/install.sh`** wraps exactly these commands (`install`, `upgrade`, `remove`, `status`) and adds `install-helper` and `remove-helper` for the [persistence helper](#persistence-helper). `install`, `upgrade` and `remove` also install, replace and remove the optional [Plastile Motion effect](#8-window-motion-optional), which stays disabled until you turn it on. It refuses to install a package without the built bundle, and so does `tools/release.py`; a failed `npm run build` removes the bundle, so neither ships one the build rejected or one built from older sources. It never enables, reloads or restarts anything and never writes `kwinrc`. `python3 tools/release.py --out dist` builds a `dist/plastile-<version>.kwinscript` archive, and both `kpackagetool6` and `install.sh` accept that archive instead of the `package` directory. The physical runs installed with `tools/install.sh install` and `install-helper`.
 
 What was measured (nested KWin 6.7.5, kpackagetool6 2.0, package installed into the session's private data directory):
 
@@ -82,7 +82,7 @@ tools/install.sh status            # shows "helper    : installed (...)"
 tools/install.sh remove-helper     # uninstall it (the saved state is kept)
 ```
 
-`install-helper` builds `helper/` with CMake in `build/helper-install`, installs the binary as `~/.local/libexec/plastile-state` (`PLASTILE_HELPER_PREFIX` changes `~/.local`), writes `~/.local/share/dbus-1/services/org.kde.plastile.State.service` (under `$XDG_DATA_HOME` if set), and asks the session bus to re-read its service files. Nothing starts until Plastile asks; the helper exits after a minute without requests. A Plastile that is already running without the helper notices it at its next start: disable and re-enable the script, or log out and in. A release also carries the helper's sources as `dist/plastile-state-<version>.tar.gz` (built by `tools/release.py`), which builds the same way with `cmake`.
+`install-helper` builds `helper/` with CMake in `build/helper-install`, installs the binary as `~/.local/libexec/plastile-state` (`PLASTILE_HELPER_PREFIX` changes `~/.local`), writes `~/.local/share/dbus-1/services/org.kde.plastile.State.service` (under `$XDG_DATA_HOME` if set), and asks the session bus to re-read its service files. Nothing starts until Plastile asks. Once Plastile has asked, the helper keeps running while KWin is on the session bus, which is until you log out; it exits a minute after KWin left, and the bus starts it again at the next request (`persist-helper-contract-T27`, nested). If a helper is running when you run `install-helper` again (an upgrade), the installer says so: the running one keeps serving until you log out, and the new build starts after that (`package-helper-install-T32`, nested). The prefix may contain spaces (the activation file names the binary in double quotes) but not a double quote, backslash, `$` or backquote: `install-helper` refuses such a prefix. A Plastile that is already running without the helper notices it at its next start: disable and re-enable the script, or log out and in. A release also carries the helper's sources as `dist/plastile-state-<version>.tar.gz` (built by `tools/release.py`), which builds the same way with `cmake`.
 
 Without the helper Plastile tiles normally and logs `plastile warn persistence unavailable` once at start-up. Measured in nested sessions: installation into a private prefix and data directory, D-Bus activation and saving (`package-helper-install-T32`). In both physical sessions (KWin 6.7.5) the session bus activated the helper on Plastile's first request (dbus-broker under systemd on the reference desktop), and on the laptop a layout survived a re-login ([first run](../status/evidence/physical-first-run-20261018.json), [runbook](../status/evidence/physical-runbook-20261018.json)). How long that activation takes in a physical session was not measured.
 
@@ -142,12 +142,13 @@ The configure button next to Plastile in KWin Scripts opens KWin's generic scrip
 
 The dialog writes values to `~/.config/kwinrc` under `[Script-plastile]`, using the key names in [CONFIGURATION](CONFIGURATION.md#flat-keys). Choices are stored by name (`layout=bsp`).
 
-The dialog was verified headlessly with `tools/settings-check`, which loads the same schema and form the way KWin's dialog does. It confirmed four things:
+The dialog was verified headlessly with `tools/settings-check`, which loads the same schema and form the way KWin's dialog does. It confirmed five things:
 
 - every schema entry is bound to a widget
 - defaults reach the widgets
 - edits are saved in the vocabulary the runtime expects
 - hand-edited values load back
+- hand-set values the form shows exactly (`layout=scrolling`, `masterRatio=0.555`, `ratioStep=0.025`) survive an Apply that changes another field, and choosing *Master and stack* over `layout=scrolling` saves it
 
 It has been opened and applied in KWin's real dialog in a nested session (`kcmshell6 kcm_kwin_scripts`, driven with real input; scenario `settings-dialog-T28`), but **not** clicked through in a physical session.
 
@@ -210,7 +211,7 @@ The `configJson` key holds the JSON document as a single KConfig string. The set
    ```
 
    It removes every KWin shortcut registration that has no live action. Measured in nested KWin 6.7.5 (`package-upgrade-bindings-T26-T32`): with Plastile running it removed no Plastile entry; after the removal it removed all of them, from KGlobalAccel and from the file, and nothing else (235 KWin registrations before, 167 after: the 68 of Plastile). It is not limited to Plastile: the leftovers of other removed KWin scripts go too, and so, by inference, would the registrations of any KWin action that is not registered at that moment (a disabled script's shortcuts, for example), with the bindings you gave them. Or edit the file from a session where KWin is not running.
-5. Run `tools/install.sh remove-helper` if you installed the persistence helper (or delete `~/.local/libexec/plastile-state` and `~/.local/share/dbus-1/services/org.kde.plastile.State.service`). A helper that is running exits on its own within a minute.
+5. Run `tools/install.sh remove-helper` if you installed the persistence helper (or delete `~/.local/libexec/plastile-state` and `~/.local/share/dbus-1/services/org.kde.plastile.State.service`). A helper that is running keeps serving this session until you log out, as `remove-helper` says; nothing starts it after that.
 6. Optionally, delete `~/.local/state/plastile/`, which holds saved layout preferences ([details](README.md#saved-layout-preferences)).
 
 Windows keep the geometry they had at unload. Nothing is restored to a pre-Plastile arrangement, because no such arrangement is stored.
@@ -257,8 +258,9 @@ KWin loads it as soon as it sees the change (`--notify`; without it the change w
 Measured in nested KWin 6.8.1: both this command and an effect installed while KWin was running loaded at once.
 
 **Turn it off:** untick it, or run the same command with `false`; or set the global animation speed to *Instant*
-(*System Settings > General Behavior*), which turns off this and KWin's other animations. Windows are drawn at
-their real place from the next frame, even in the middle of an animation (measured in nested KWin 6.8.1).
+(*System Settings > General Behavior*), which turns off this and KWin's other animations. With each of the three,
+windows are drawn at their real place from the next frame, even in the middle of an animation (measured in nested
+KWin 6.8.1).
 
 **Where it works:** KWin runs scripted effects only with OpenGL compositing on a hardware renderer. With software
 rendering (llvmpipe) or QPainter compositing it is not loaded and nothing is animated. It has not been run in a

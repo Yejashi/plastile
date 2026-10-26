@@ -113,6 +113,10 @@ jobs:
           test "$n" -gt 0
           echo "SCENARIO_COUNT=$n" >> "$GITHUB_ENV"
 
+      - name: Integration harness oracle unit tests (no KWin is started)
+        # The harness's own checks: reused check names, the Motion log parser, run provenance.
+        run: python3 -m unittest discover -s tests/integration -p 'test_*.py' -v
+
       - name: Install native build dependencies (Wayland and X11 fixture clients)
         run: |
           sudo apt-get update
@@ -150,11 +154,12 @@ jobs:
           make -C tools/input
           test -x build/input/plastile-input
 
-      - name: Physical-session kit (tools/physical) unit tests and build
-        # Offline tests only (synthetic and recorded fixture logs). The live tools
-        # refuse to run outside a real Plasma Wayland session.
+      - name: Physical-session kit (tools/physical) and perf-probe oracle unit tests, build
+        # Offline tests only (synthetic and recorded fixture logs, synthetic perf campaigns).
+        # The live tools refuse to run outside a real Plasma Wayland session.
         run: |
           python3 -m unittest discover -s tools/physical/tests -v
+          python3 -m unittest discover -s probes/perf/tests -v
           make -C tools/physical
 
       - name: Job summary
@@ -167,7 +172,7 @@ jobs:
             echo
             echo "| Check | Result |"
             echo "|---|---|"
-            echo "| Node ${NODE_MAJOR} type check, tests/core (pure + replay), bundle, docs check, release --check, fixture builds | required: job status ${{ job.status }} |"
+            echo "| Node ${NODE_MAJOR} type check, tests/core (pure + replay), bundle, docs check, release --check, harness oracle unit tests, fixture builds | required: job status ${{ job.status }} |"
             echo "| libei-dev install + tools/input build | ${{ steps.input_build.outcome }} |"
             echo "| Nested KWin integration scenarios (${SCENARIO_COUNT:-?} registered here) | run by the integration-nested job |"
             echo "| Physical-session checks | **NOT RUN**: requires a live Plasma Wayland desktop |"

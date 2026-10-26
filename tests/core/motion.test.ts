@@ -412,3 +412,88 @@ test("a desktop, activity or output change stops every running animation (with a
   w.setFrame(C);
   assert.equal(h.calls.animate.length, 2, "the output change's own reflow is not animated");
 });
+
+test("a backward step of the wall clock (Date.now) cannot stretch a grace period", () => {
+  const h = host();
+  const base = { duration: 180, managed: true, normal: true, popup: false, internal: false, deleted: false, old: A, next: B,
+    screen: { x: 0, y: 0, width: 1280, height: 800 }, statePendingAt: null, fullScreen: false, userMoveResize: false,
+    interactions: 0, fullScreenEffect: false, visible: true, minimized: false, now: 10_000, suppressUntil: 0,
+    windowSuppressUntil: 0, addedAt: null, grabbed: false };
+  const decide = (p: object) => h.ctx.motionDecide({ ...base, ...p });
+  const HOUR = 3_600_000;
+  // Stamps an hour ahead of now: the clock stepped back by an hour after they were taken.
+  assert.equal(decide({ suppressUntil: 10_000 + HOUR }), "", "a global transition stamp beyond its 300 ms grace");
+  assert.equal(decide({ windowSuppressUntil: 10_000 + HOUR }), "", "a window's transition stamp beyond its grace");
+  assert.equal(decide({ windowSuppressUntil: 10_200 }), "transition", "positive control: within the grace");
+  assert.equal(decide({ suppressUntil: 10_000 + HOUR, windowSuppressUntil: 10_200 }), "transition",
+    "a stale global stamp does not hide a window's live one");
+  assert.equal(decide({ addedAt: 10_000 + HOUR }), "", "opened 'in the future': not an opening any more");
+  assert.equal(decide({ statePendingAt: 10_000 + HOUR }), "", "a maximize request 'in the future' has expired");
+
+  const w = new FakeWindow("w", A);
+  const fresh = new FakeWindow("fresh", C);
+  const k = host({ windows: [w] });
+  k.add(fresh);
+  k.effects.desktopChanged.emit();
+  k.advance(-HOUR);   // an NTP correction after resume, a manual time change, an RTC kept in local time
+  k.advance(50);
+  w.setFrame(B);
+  fresh.setFrame(A);
+  assert.equal(k.calls.animate.length, 2, "both animate 50 ms after the step, not an hour later");
+  k.end(w);
+  w.sig("minimizedChanged").emit(w);
+  w.setFrame(C);
+  assert.equal(k.calls.animate.length, 2, "a window's own transition after the step still suppresses it");
+});
+
+test("a sub-pixel frame change mid-animation (a re-snap to the pixel grid) leaves the running animation alone", () => {
+  const w = new FakeWindow("w", A);
+  const h = host({ windows: [w], config: { Debug: true } });
+  w.setFrame(B);
+  assert.equal(h.running.size, 2);
+  h.advance(20);
+  // KWin re-snaps the frame once the client commits at another output's scale: 565 logical px at 1.25 is 706.25
+  // device px, rounded to 706, so 564.8.
+  w.setFrame({ ...B, width: 564.8 });
+  assert.equal(h.calls.cancel.length, 0, "not cancelled: the picture does not jump to the end");
+  assert.equal(h.calls.retarget.length, 0, "and not restarted: the animation ends when it would have");
+  assert.equal(h.running.size, 2);
+  assert.equal(h.calls.log.filter((l) => l.includes(" skip ") || l.includes(" cancel ")).length, 0);
+  // Sub-pixel changes that add up to more than the tolerance from the animation's target retarget it.
+  const drifted = { ...B, width: 564.4 };
+  w.setFrame(drifted);
+  assert.equal(h.calls.cancel.length, 0);
+  const [pos, sz] = h.calls.animate[0];
+  assert.deepEqual(h.calls.retarget, [[pos.id, centre(drifted), 180], [sz.id, size(drifted), 180]]);
+  assert.equal(h.calls.animate.length, 1);
+  h.end(w);
+  w.setFrame({ ...B, width: 564.2 });
+  assert.equal(h.calls.animate.length, 1, "with nothing running a sub-pixel change is still not animated");
+  w.setFrame(C);
+  h.running.clear();   // ended in KWin without the script hearing yet
+  w.setFrame({ ...C, width: 564.6 });
+  w.setFrame({ ...C, width: 564.2 });
+  assert.equal(h.calls.animate.length, 2, "a drift after the animation ended in KWin starts nothing");
+  assert.equal(h.calls.cancel.length, 1);
+});
+
+test("switching the global speed to Instant mid-animation stops it at once (configChanged, with a repaint)", () => {
+  const w = new FakeWindow("w", A);
+  const v = new FakeWindow("v", B);
+  const h = host({ windows: [w, v], config: { Duration: 2000, Debug: true } });
+  w.setFrame(B);
+  v.setFrame(A);
+  h.advance(100);
+  (h.ctx.effect.configChanged as Signal).emit();
+  assert.equal(h.calls.cancel.length, 0, "a reconfigure at a non-zero speed keeps running animations");
+  // System Settings > Animation speed > Instant: Options::animationSpeedChanged -> EffectsHandler::reconfigureEffects
+  // -> ScriptedEffect::reconfigure emits configChanged (KWin 6.7.5 to 6.8.1).
+  h.effects.animationTimeFactor = 0;
+  (h.ctx.effect.configChanged as Signal).emit();
+  assert.equal(h.calls.cancel.length, 2, "both windows' animations are cancelled");
+  assert.equal(h.running.size, 0);
+  assert.equal(h.calls.repaint.length, 2, "cancel() does not repaint by itself");
+  assert.equal(h.calls.log.filter((l) => l.includes(" cancel ") && l.endsWith("reason=instant")).length, 2);
+  w.setFrame(C);
+  assert.equal(h.calls.animate.length, 2, "and nothing new starts");
+});

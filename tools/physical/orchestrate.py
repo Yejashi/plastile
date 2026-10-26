@@ -88,6 +88,13 @@ def select_workloads(all_wl: dict[str, dict], names: str | None) -> list[str]:
     return chosen
 
 
+def missing_baselines(all_wl: dict[str, dict], names: list[str]) -> list[str]:
+    """Selected candidates whose matched baseline is not selected: they will get no verdict."""
+    return [f"{n}: matched baseline {all_wl[n]['matchedBaseline']} is not selected, so {n} gets no verdict "
+            f"(add it with --workloads)" for n in names
+            if all_wl[n].get("matchedBaseline") and all_wl[n]["matchedBaseline"] not in names]
+
+
 def make_plan(workloads: list[str], windows: list[int], rounds: int, seed: int,
               wl_defs: dict[str, dict] | None = None) -> list[dict]:
     """Randomized complete block design: every round contains each cell once, shuffled."""
@@ -333,6 +340,10 @@ class Driver:
     def counters(self) -> dict | None:
         return None
 
+    def motion(self) -> dict | None:
+        """Plastile Motion's state for a block (PERFORMANCE section 6.1), or None when not observable."""
+        return None
+
     def before_block(self, block: dict) -> None:
         pass
 
@@ -388,6 +399,9 @@ class LiveDriver(Driver):
             print(f"restored Plastile to {'loaded' if self.initial_loaded else 'not loaded'}")
         except (Abort, RuntimeError) as exc:
             print(f"WARNING: could not restore Plastile's loaded state: {exc}", file=sys.stderr)
+
+    def motion(self) -> dict | None:
+        return common.motion_state(self.bus)
 
     def spawn_fixture(self, ident: int, log_name: str) -> subprocess.Popen:
         return subprocess.Popen([str(common.FIXTURE), "--ssd", "--id", str(ident), "--app-id", "plastile-fixture",
@@ -446,7 +460,6 @@ class Params:
         self.warmup = kw.get("warmup", 50)
         self.gap_min_ms = kw.get("gap_min_ms", 30.0)
         self.gap_max_ms = kw.get("gap_max_ms", 90.0)
-        self.effect_timeout_ms = kw.get("effect_timeout_ms", 600.0)
         self.sample_timeout_ms = kw.get("sample_timeout_ms", 2000.0)
         self.max_misses = kw.get("max_misses", 10)
         self.map_timeout_s = kw.get("map_timeout_s", 15.0)
@@ -454,14 +467,15 @@ class Params:
         self.refresh_hz = kw.get("refresh_hz")
 
 
-def wait_settle(monitor: Monitor, fixtures: list[Fixture], t0: int, quiet_ns: int, effect_timeout_ns: int,
-                sample_timeout_ns: int) -> str:
-    """Pacing only: 'settled', 'no-effect' or 'timeout'. Records are computed offline."""
+def wait_settle(monitor: Monitor, fixtures: list[Fixture], t0: int, quiet_ns: int, sample_timeout_ns: int) -> str:
+    """Pacing only: 'settled', 'no-effect' or 'timeout'. Records are computed offline.
+
+    The next tap is sent only after this returns, and latency.correlate attributes configures
+    up to the same sample timeout, so a slow response is never taken for the next tap's.
+    """
     while True:
         now = common.monotonic_ns()
         cfg_seen = any(f.last_cfg_ns >= t0 for f in fixtures)
-        if not cfg_seen and now - t0 >= effect_timeout_ns:
-            return "no-effect"
         wake = t0 + sample_timeout_ns
         if cfg_seen:
             pending = any(ts >= t0 for f in fixtures for ts in f.pending.values())
@@ -470,10 +484,8 @@ def wait_settle(monitor: Monitor, fixtures: list[Fixture], t0: int, quiet_ns: in
                 return "settled"
             if not pending:
                 wake = min(wake, last + quiet_ns)
-        else:
-            wake = min(wake, t0 + effect_timeout_ns)
         if now - t0 >= sample_timeout_ns:
-            return "timeout"
+            return "timeout" if cfg_seen else "no-effect"
         monitor.pump(max(0.001, (wake - now) / 1e9))
 
 
@@ -482,12 +494,13 @@ def run_block(driver: Driver, keytap: KeyTap, monitor: Monitor, block: dict, wl:
     bdir = outdir / "blocks" / f"{block['index']:03d}-{block['workload']}-n{block['windowCount']}"
     bdir.mkdir(parents=True, exist_ok=True)
     meta = {**block, "condition": wl["condition"], "expect": wl["expect"], "dir": str(bdir.relative_to(outdir)),
-            "startedNs": common.monotonic_ns(), "outcome": None, "taps": 0}
+            "startedNs": common.monotonic_ns(), "outcome": None, "taps": 0, "sampleTimeoutMs": params.sample_timeout_ms}
     taps_out = open(bdir / "taps.jsonl", "w")
     fixtures: list[Fixture] = []
     try:
         driver.ensure_condition(wl["condition"])
         driver.before_block(block)
+        meta["motion"] = driver.motion()
         for i in range(1, block["windowCount"] + 1):
             proc = driver.spawn_fixture(i, f"fixture-{i}")
             fixtures.append(Fixture(i, proc, bdir / f"fixture-{i}.jsonl", monitor))
@@ -517,11 +530,10 @@ def run_block(driver: Driver, keytap: KeyTap, monitor: Monitor, block: dict, wl:
             tap_id = f"b{block['index']:03d}t{seq:05d}"
             seq += 1
             rec = keytap.tap(tap_id, b["mods"], b["key"])
-            taps_out.write(json.dumps({**rec, "action": action, "phase": phase, "sample": sample,
-                                       "sequence": b["sequence"]}) + "\n")
             meta["taps"] += 1
-            res = wait_settle(monitor, fixtures, int(rec["t_input_ns"]), quiet_ns,
-                              int(params.effect_timeout_ms * 1e6), int(params.sample_timeout_ms * 1e6))
+            res = wait_settle(monitor, fixtures, int(rec["t_input_ns"]), quiet_ns, int(params.sample_timeout_ms * 1e6))
+            taps_out.write(json.dumps({**rec, "action": action, "phase": phase, "sample": sample,
+                                       "sequence": b["sequence"], "pacing": res}) + "\n")
             monitor.wait_until(lambda: False, rng.uniform(params.gap_min_ms, params.gap_max_ms) / 1000)
             return res
 
@@ -606,7 +618,9 @@ def correlate_dir(outdir: Path, ctx: dict, wl_defs: dict[str, dict]) -> tuple[li
         wl = wl_defs[meta["workload"]]
         refresh_ns = int(round(1e9 / ctx["refreshHzDeclared"])) if ctx.get("refreshHzDeclared") else None
         results = latency.correlate(taps, windows, expect=wl["expect"], refresh_ns_declared=refresh_ns,
-                                    end_ns=meta.get("endedNs"))
+                                    end_ns=meta.get("endedNs"),
+                                    timeout_ns=int(meta.get("sampleTimeoutMs", latency.DEFAULT_TIMEOUT_NS / 1e6) * 1e6))
+        motion = meta.get("motion") or {}
         by_id = {r["tapId"]: r for r in results}
         meta["presentGrid"] = latency.present_grid(windows, meta.get("refreshNsObservedAtStart"))
         for t in taps:
@@ -616,7 +630,9 @@ def correlate_dir(outdir: Path, ctx: dict, wl_defs: dict[str, dict]) -> tuple[li
                 **ctx, "runId": f"{ctx['stamp']}-b{meta['index']:03d}", "workload": meta["workload"],
                 "condition": meta["condition"], "action": t["action"], "keys": t.get("sequence"),
                 "warmup": t["phase"] == "warmup", "run": meta["index"], "round": meta["round"],
-                "sample": t["sample"], "windowCount": meta["windowCount"]})
+                "sample": t["sample"], "windowCount": meta["windowCount"], "motion": motion.get("label"),
+                # A live block whose effect state could not be read is treated as animating: its settle is withheld.
+                "motionOn": bool(motion.get("on")) or ("loaded" in motion and motion["loaded"] is None)})
             # Samples taken before a block abort stay in the data; the block outcome is reported
             # next to them in summary.json ("blocks"), never used to drop samples.
             errs = latency.validate_record(rec)
@@ -638,6 +654,7 @@ def finish(outdir: Path, ctx: dict, wl_defs: dict[str, dict], bootstrap: int = 2
     s["schemaProblems"] = problems
     s["blocks"] = [{"index": m["index"], "round": m["round"], "workload": m["workload"], "condition": m["condition"],
                     "windowCount": m["windowCount"], "outcome": m.get("outcome"), "taps": m.get("taps"),
+                    "motion": m.get("motion"),
                     "refreshNsObservedAtStart": m.get("refreshNsObservedAtStart"),
                     "countersDelta": counters_delta(m), "presentGrid": m.get("presentGrid")}
                    for m in ctx.pop("_blocks", [])]
@@ -703,6 +720,8 @@ def cmd_plan(args) -> int:
     wl = load_workloads(args.workload_file)
     names = select_workloads(wl, args.workloads)
     plan = make_plan(names, [int(x) for x in args.windows.split(",")], args.rounds, args.seed, wl)
+    for note in missing_baselines(wl, names):
+        print(f"NOTE: {note}")
     for b in plan:
         print(f"{b['index']:3d} round {b['round'] + 1}: {b['workload']:<14} [{wl[b['workload']]['condition']}] "
               f"n={b['windowCount']}")
@@ -756,6 +775,10 @@ def cmd_run(args) -> int:
         print(str(exc), file=sys.stderr)
         return 1
     outdir = args.out or common.ARTIFACTS / common.stamp()
+    if any((outdir / "blocks").glob("*/block.json")):
+        # correlate_dir would pool the old blocks with this run's under one context.json.
+        print(f"{outdir} already holds blocks of another run; pass a new --out", file=sys.stderr)
+        return 1
     outdir.mkdir(parents=True, exist_ok=True)
     rev, dirty = common.git_revision()
     installed = report["plastile"].get("installedBundleSha256")
@@ -768,6 +791,13 @@ def cmd_run(args) -> int:
           f"{per_cell} measured samples per cell.")
     if per_cell < summarize.P99_MIN_SAMPLES:
         print(f"NOTE: fewer than {summarize.P99_MIN_SAMPLES} samples per cell: p99 will be withheld.")
+    for note in missing_baselines(wl_defs, names):
+        print(f"NOTE: {note}")
+    motion = common.motion_state(bus)
+    if motion["on"]:
+        print(f"NOTE: Plastile Motion is on ({motion['label']}). Every block records its motion state and is labelled "
+              "with it; inputToSettledNs (t9_settled) is null because the animation's end is not observable, and "
+              "inputToFinalCommitPresentNs is reported instead (PERFORMANCE section 6.1).")
     if installed and ctx["repoBundleSha256"] and installed != ctx["repoBundleSha256"]:
         print("NOTE: the installed Plastile bundle differs from this checkout's build; implementationCommit "
               "will not describe what runs (installedBundleSha256 is recorded).")
@@ -787,7 +817,7 @@ def cmd_run(args) -> int:
                                                   "bindings": bindings, "blocks": plan, "toggle": args.toggle,
                                                   "workloadDefinitions": {n: wl_defs[n] for n in names}}, indent=1))
     params = Params(samples=args.samples, warmup=args.warmup, gap_min_ms=args.gap_min_ms, gap_max_ms=args.gap_max_ms,
-                    effect_timeout_ms=args.effect_timeout_ms, sample_timeout_ms=args.sample_timeout_ms,
+                    sample_timeout_ms=args.sample_timeout_ms,
                     max_misses=args.max_consecutive_misses, counters=not args.no_counters,
                     refresh_hz=out.get("refreshRate"))
     driver = LiveDriver(bus, args.toggle, args.output, args.yes)
@@ -979,8 +1009,8 @@ def main(argv: list[str] | None = None) -> int:
                    "plastile.resize.grow=Meta+Ctrl+= or ...=KEY_LEFTMETA+KEY_LEFTCTRL+KEY_EQUAL")
     r.add_argument("--gap-min-ms", type=float, default=30.0)
     r.add_argument("--gap-max-ms", type=float, default=90.0)
-    r.add_argument("--effect-timeout-ms", type=float, default=600.0)
-    r.add_argument("--sample-timeout-ms", type=float, default=2000.0)
+    r.add_argument("--sample-timeout-ms", type=float, default=2000.0,
+                   help="longest response a tap waits for before the next tap; also the attribution window")
     r.add_argument("--max-consecutive-misses", type=int, default=10)
     r.add_argument("--no-counters", action="store_true", help="do not ask Plastile to log counters per block")
     r.add_argument("--bootstrap", type=int, default=2000)

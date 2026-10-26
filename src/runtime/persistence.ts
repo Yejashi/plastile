@@ -56,6 +56,7 @@ export interface PrefsModel {
 }
 
 export interface PersistServices {
+  /** Milliseconds (Date.now() in KWin): the wall clock, which can step back; the debounce allows for that. */
   now(): number;
   log(level: "error" | "warn" | "info" | "debug", message: string, data?: unknown): void;
   /** Wall-clock timestamp for savedAt (informational only). */
@@ -274,7 +275,8 @@ export class Persister {
 
   private arm(): void {
     if (this.armed || !this.store || this.inflight) return; // a write in flight re-arms on its reply
-    const wait = Math.max(this.lastChange + DEBOUNCE_MS - this.svc.now(), SLACK_MS);
+    // At most one quiet period: the clock is the wall clock, and a step back must not defer the save by the step.
+    const wait = Math.min(Math.max(this.lastChange + DEBOUNCE_MS - this.svc.now(), SLACK_MS), DEBOUNCE_MS);
     this.armed = true;
     this.store.schedule(wait, this.due);
   }
@@ -282,7 +284,11 @@ export class Persister {
   private onDue(): void {
     this.armed = false;
     if (!this.alive || !this.dirty || !this.store || this.inflight) return;
-    const wait = this.lastChange + DEBOUNCE_MS - this.svc.now();
+    const now = this.svc.now();
+    // The last change lies ahead of the clock: it stepped back (NTP, a manual change) since. The quiet
+    // period starts again now, so the save waits one more period rather than the length of the step.
+    if (this.lastChange > now) this.lastChange = now;
+    const wait = this.lastChange + DEBOUNCE_MS - now;
     if (wait > SLACK_MS) {
       this.armed = true;
       this.store.schedule(wait, this.due);

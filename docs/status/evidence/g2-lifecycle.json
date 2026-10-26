@@ -1,5 +1,6 @@
 {
  "purpose": "G2 P05 bursts, P05 boundary, P07/P12/P13",
+ "quantileCorrection": "P05 configuresPerWindow and P07 burst/paced statistics were computed by probes/perf/workloads.py's former q(): s[int(p*(n-1))], which puts p95 one rank below the nearest-rank quantile the rest of the G2 evidence uses (p50 agrees at these sample counts), and it published p99 from 8 to 50 samples. Those p99 values are withheld here; p50/p95 stay as recorded because the raw samples no longer exist (G2_REPORT \u00a714). workloads.q() is nearest-rank with p99 withheld below 5000 samples since then, and g2_aggregate.py withholds a copied small-sample p99.",
  "P05": {
   "perN": {
    "32": [
@@ -47,9 +48,10 @@
       "n": 32,
       "p50": 11,
       "p95": 14,
-      "p99": 15,
+      "p99": null,
       "max": 16,
-      "min": 3
+      "min": 3,
+      "p99WithheldReason": "n=32 < 5000 (PERFORMANCE \u00a76.5); withheld after G2, see quantileCorrection"
      },
      "finalTilingErrors": []
     },
@@ -94,9 +96,10 @@
       "n": 32,
       "p50": 10,
       "p95": 14,
-      "p99": 15,
+      "p99": null,
       "max": 16,
-      "min": 3
+      "min": 3,
+      "p99WithheldReason": "n=32 < 5000 (PERFORMANCE \u00a76.5); withheld after G2, see quantileCorrection"
      },
      "finalTilingErrors": []
     },
@@ -143,9 +146,10 @@
       "n": 32,
       "p50": 10,
       "p95": 13,
-      "p99": 13,
+      "p99": null,
       "max": 15,
-      "min": 3
+      "min": 3,
+      "p99WithheldReason": "n=32 < 5000 (PERFORMANCE \u00a76.5); withheld after G2, see quantileCorrection"
      },
      "finalTilingErrors": []
     },
@@ -191,9 +195,10 @@
       "n": 32,
       "p50": 10,
       "p95": 14,
-      "p99": 15,
+      "p99": null,
       "max": 16,
-      "min": 3
+      "min": 3,
+      "p99WithheldReason": "n=32 < 5000 (PERFORMANCE \u00a76.5); withheld after G2, see quantileCorrection"
      },
      "finalTilingErrors": []
     },
@@ -241,9 +246,10 @@
       "n": 32,
       "p50": 12,
       "p95": 15,
-      "p99": 16,
+      "p99": null,
       "max": 17,
-      "min": 3
+      "min": 3,
+      "p99WithheldReason": "n=32 < 5000 (PERFORMANCE \u00a76.5); withheld after G2, see quantileCorrection"
      },
      "finalTilingErrors": []
     }
@@ -292,9 +298,10 @@
       "n": 8,
       "p50": 3,
       "p95": 4,
-      "p99": 4,
+      "p99": null,
       "max": 4,
-      "min": 3
+      "min": 3,
+      "p99WithheldReason": "n=8 < 5000 (PERFORMANCE \u00a76.5); withheld after G2, see quantileCorrection"
      },
      "finalTilingErrors": []
     },
@@ -340,9 +347,10 @@
       "n": 8,
       "p50": 5,
       "p95": 6,
-      "p99": 6,
+      "p99": null,
       "max": 6,
-      "min": 3
+      "min": 3,
+      "p99WithheldReason": "n=8 < 5000 (PERFORMANCE \u00a76.5); withheld after G2, see quantileCorrection"
      },
      "finalTilingErrors": []
     },
@@ -387,9 +395,10 @@
       "n": 8,
       "p50": 5,
       "p95": 6,
-      "p99": 6,
+      "p99": null,
       "max": 6,
-      "min": 3
+      "min": 3,
+      "p99WithheldReason": "n=8 < 5000 (PERFORMANCE \u00a76.5); withheld after G2, see quantileCorrection"
      },
      "finalTilingErrors": []
     },
@@ -434,9 +443,10 @@
       "n": 8,
       "p50": 4,
       "p95": 4,
-      "p99": 4,
+      "p99": null,
       "max": 5,
-      "min": 3
+      "min": 3,
+      "p99WithheldReason": "n=8 < 5000 (PERFORMANCE \u00a76.5); withheld after G2, see quantileCorrection"
      },
      "finalTilingErrors": []
     },
@@ -482,9 +492,10 @@
       "n": 8,
       "p50": 5,
       "p95": 5,
-      "p99": 5,
+      "p99": null,
       "max": 6,
-      "min": 3
+      "min": 3,
+      "p99WithheldReason": "n=8 < 5000 (PERFORMANCE \u00a76.5); withheld after G2, see quantileCorrection"
      },
      "finalTilingErrors": []
     }
@@ -683,17 +694,19 @@
      "n": 50,
      "p50": 144180,
      "p95": 435639,
-     "p99": 562879,
+     "p99": null,
      "max": 685339,
-     "min": 103490
+     "min": 103490,
+     "p99WithheldReason": "n=50 < 5000 (PERFORMANCE \u00a76.5); withheld after G2, see quantileCorrection"
     },
     "paced": {
      "n": 50,
      "p50": 209470,
      "p95": 306420,
-     "p99": 346649,
+     "p99": null,
      "max": 725378,
-     "min": 164619
+     "min": 164619,
+     "p99WithheldReason": "n=50 < 5000 (PERFORMANCE \u00a76.5); withheld after G2, see quantileCorrection"
     },
     "commandsQueued": 0,
     "counters": {
@@ -712,17 +725,19 @@
      "n": 50,
      "p50": 176490,
      "p95": 263919,
-     "p99": 507619,
+     "p99": null,
      "max": 540879,
-     "min": 108060
+     "min": 108060,
+     "p99WithheldReason": "n=50 < 5000 (PERFORMANCE \u00a76.5); withheld after G2, see quantileCorrection"
     },
     "paced": {
      "n": 50,
      "p50": 238259,
      "p95": 298840,
-     "p99": 713899,
+     "p99": null,
      "max": 809849,
-     "min": 185360
+     "min": 185360,
+     "p99WithheldReason": "n=50 < 5000 (PERFORMANCE \u00a76.5); withheld after G2, see quantileCorrection"
     },
     "commandsQueued": 0,
     "counters": {

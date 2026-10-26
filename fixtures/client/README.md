@@ -61,8 +61,10 @@ sessions that are running the old binary keep working during a rebuild.
 | `--ssd` / `--csd` | Request server-/client-side decoration through xdg-decoration. By default, no decoration mode is negotiated and the manager is not bound. |
 | `--panel EDGE:SIZE` | Instead of an xdg_toplevel, create a `zwlr_layer_surface_v1` (layer `top`, namespace `dock`) anchored to EDGE (`top`, `bottom`, `left`, `right`) plus both perpendicular edges, `exclusive_zone` SIZE, keyboard interactivity none, requested size SIZE on the anchored axis and 0 (compositor fills) on the other. The window is logged as `win:"panel"`. Every configure is acked and answered with a buffer of exactly the configured size. `zwlr_layer_shell_v1` and `wl_output` (v4, for names) are bound only in this mode. Size flags, decoration, delay and child options do not apply. |
 | `--output NAME` | Panel mode only: anchor the panel to the `wl_output` whose `name` event is NAME (for example `Virtual-1`). Without it the compositor chooses the output. An unknown name logs an `error` and exits with code 1. |
+| `--panel-scope NAME` | Panel mode only: the layer-surface namespace instead of `dock`. KWin types the window by it, and a namespace it does not list (for example `waybar`) gives a normal, unmanaged window that still reserves its exclusive zone (observed source: kwin v6.8.1 `src/layershellv1window.cpp`). |
 
-The delay, ignore-size, and decoration settings also apply to the child. A
+The delay and decoration settings also apply to the child; `--ignore-size`, `--clamp`
+and the min/max hints apply to the main window only (the child commits every configured size). A
 configure size of 0 on an axis uses the current size on that axis. At most one of
 `--exit-after-ms`, `--exit-after-map-ms` and `--exit-on-map` may be given, and the
 exit, late-minimum and maximize options are refused in panel mode.

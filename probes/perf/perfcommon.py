@@ -20,10 +20,11 @@ ROOT = HERE.parents[1]
 sys.path.insert(0, str(ROOT / "tools/physical"))
 from summarize import P99_MIN_SAMPLES, bootstrap_ci, quantile  # noqa: E402
 
-# Paths whose state decides what was measured: the runtime (src, package), the probes, the
+# Paths whose state decides what was measured: the runtime (src, package), the persistence
+# helper every nested session runs on its private bus (helper, ADR-020), the probes, the
 # harness, the fixtures and the tools that build them. A probe run from a tree with changes
 # here is recorded as implementationDirty: true and is not publishable evidence.
-TRACKED = ("src", "package", "probes", "tests/integration", "fixtures", "tools")
+TRACKED = ("src", "package", "helper", "probes", "tests/integration", "fixtures", "tools")
 CLK_TCK = os.sysconf("SC_CLK_TCK")
 
 
@@ -43,6 +44,19 @@ def sha256(path: Path) -> str | None:
         return hashlib.sha256(Path(path).read_bytes()).hexdigest()
     except OSError:
         return None
+
+
+def kwin_version(text: str | None) -> str | None:
+    """'kwin 6.8.1' (kwin_wayland --version, as versions() records it) -> '6.8.1'."""
+    return text.split()[-1] if text and text.split() else None
+
+
+def nested_kwin(version_texts) -> str:
+    """'nested KWin <version>' from the versions the measured units recorded (never a constant)."""
+    vs = sorted({kwin_version(t) or "unknown" for t in version_texts})
+    if not vs:
+        return "nested KWin (version not recorded)"
+    return f"nested KWin {vs[0]}" if len(vs) == 1 else f"nested KWin (mixed versions: {', '.join(vs)})"
 
 
 def versions() -> dict:

@@ -47,7 +47,15 @@ Item {
         c.call();
     }
     // No inspector object exists until "Explain active window" opens it; closing destroys it.
-    // Asynchronous: reading and compiling Inspector.qml happen off the command's call.
+    // Inspector.qml and ZoneOverlay.qml are compiled with this file, not read on first use: KWin
+    // keeps a loaded script's compiled files until it restarts, so a session keeps one version
+    // of each after an upgrade or a removal changes the files on disk. Creation is asynchronous,
+    // off the command's call.
+    property var inspectorView: null
+    Component {
+        id: inspectorType
+        Inspector { view: root.inspectorView }
+    }
     Loader {
         id: inspector
         active: false
@@ -60,11 +68,12 @@ Item {
         function onDismissed() { Qt.callLater(root.closeInspector); }
     }
     function openInspector(view) {
+        inspectorView = view;
+        inspector.sourceComponent = inspectorType;
         inspector.active = true;
-        inspector.setSource("Inspector.qml", { view: view });
     }
     function closeInspector() {
-        inspector.source = "";
+        inspector.sourceComponent = undefined;
         inspector.active = false;
     }
     // ---- end T26/T28/D9 ----
@@ -73,6 +82,11 @@ Item {
     // Nothing exists until the first "Zones: show or hide the zone overlay"; it is then hidden and
     // shown again (Escape, a click, or the command hides it) and destroyed on unload.
     property bool zonesWanted: false
+    property var zonesView: null
+    Component {
+        id: zoneOverlayType
+        ZoneOverlay { view: root.zonesView }
+    }
     Loader {
         id: zoneOverlay
         active: false
@@ -82,13 +96,17 @@ Item {
     Connections {
         target: zoneOverlay.item
         ignoreUnknownSignals: true
-        function onDismissed() { Qt.callLater(root.hideZones); }
+        // KWin closed the legend (Escape, a click, or a window activated, also by a Plastile
+        // command): no longer wanted from now on, so the refresh after that command does not show
+        // it again; its windows are hidden on the next turn.
+        function onDismissed() { root.zonesWanted = false; Qt.callLater(root.hideZones); }
     }
     function showZones(view) {
         zonesWanted = true;
-        if (zoneOverlay.item) { zoneOverlay.item.view = view; zoneOverlay.item.showOverlay(); return; }
+        zonesView = view;
+        if (zoneOverlay.item) { zoneOverlay.item.showOverlay(); return; }
+        zoneOverlay.sourceComponent = zoneOverlayType;
         zoneOverlay.active = true;
-        zoneOverlay.setSource("ZoneOverlay.qml", { view: view });
     }
     function hideZones() {
         zonesWanted = false;
@@ -96,7 +114,7 @@ Item {
     }
     function destroyZones() {
         zonesWanted = false;
-        zoneOverlay.source = "";
+        zoneOverlay.sourceComponent = undefined;
         zoneOverlay.active = false;
     }
     // ---- end zones overlay ----

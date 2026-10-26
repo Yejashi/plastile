@@ -11,6 +11,8 @@ It confirms, without changing anything:
 - outputs with modes, refresh rates, scales, priorities and VRR policy (kscreen-doctor -j);
 - whether Plastile is installed, enabled in kwinrc (read), loaded (isScriptLoaded getter),
   and whether the installed bundle matches this checkout's build;
+- Plastile Motion: kwinrc/kdeglobals settings (read) and whether the effect is loaded
+  (isEffectLoaded getter), PERFORMANCE section 6.1;
 - Plastile and KWin shortcut bindings, duplicate key sequences, the native tile editor (Meta+T);
 - activities, virtual desktops, the logind session state, /dev/uinput access, CPU governor.
 
@@ -176,6 +178,7 @@ def collect(guard: dict | None = None, bus: common.Bus | None = None, env: dict[
                                       "tileEditorEffectLoaded": "tileseditor" in effects},
         "outputs": common.kscreen_outputs(),
         "plastile": plastile_state(bus, env),
+        "motion": common.motion_state(bus, common.config_home(env)),
         "shortcuts": shortcut_state(env),
         "activities": {"count": activities}, "virtualDesktops": {"count": desktops},
         "input": {"uinputExists": Path("/dev/uinput").exists(), "uinputWritable": os.access("/dev/uinput", os.W_OK)},
@@ -215,6 +218,11 @@ def evaluate(report: dict, require_output: str | None, require_plastile: str) ->
     if p["installed"] and p["installedBundleSha256"] != p["repoBundleSha256"]:
         rows.append(("WARN", "plastile bundle", "installed bundle differs from this checkout's build (or no build)"))
     rows.append(("OK", "plastile enabled in kwinrc", str(p["enabledInKwinrc"])))
+    m = report.get("motion") or {}
+    rows.append(("WARN" if m.get("on") else "OK", "plastile motion",
+                 f"{m.get('label')} (loaded {m.get('loaded')}, kwinrc {m.get('enabledInKwinrc')}, effective "
+                 f"{m.get('effectiveDurationMs')} ms)" + ("; P6 blocks are labelled motion on and report no t9_settled"
+                                                         if m.get("on") else "")))
     loaded = p["loaded"]
     want = {"loaded": True, "unloaded": False}.get(require_plastile)
     level = "FAIL" if (loaded is None or (want is not None and loaded is not want)) else "OK"

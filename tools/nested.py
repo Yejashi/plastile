@@ -242,8 +242,13 @@ class NestedKwin:
             _terminate(self._kwin)
             self._kwin = None
         if self._dbus is not None:
+            # Services the bus activated (the persistence helper, portals, plasma_waitforname for
+            # org.freedesktop.Notifications, which waits for plasmashell) are its descendants, and some
+            # outlive it: plasma_waitforname was still running 30 s after its bus exited.
+            activated = _descendants(self._dbus.pid)
             _terminate(self._dbus)
             self._dbus = None
+            _terminate_pids(activated)
         if self.artifact_dir is not None:
             self.artifact_dir.mkdir(parents=True, exist_ok=True)
             for name in ("kwin.log", "dbus.log"):
@@ -514,6 +519,48 @@ class NestedKwin:
             if k in keys:
                 parts[k] = int(line.split()[1])
         return parts or None
+
+
+def _proc_stat(pid: int) -> tuple[int, int] | None:
+    """(ppid, start time in clock ticks) of a live process, or None (also for a zombie: it has exited)."""
+    try:
+        f = Path(f"/proc/{pid}/stat").read_text().rsplit(")", 1)[1].split()
+        return None if f[0] == "Z" else (int(f[1]), int(f[19]))
+    except (OSError, ValueError, IndexError):
+        return None
+
+
+def _descendants(root: int) -> dict[int, int]:
+    """Every live descendant of `root` (not `root` itself): {pid: start time}, which tells a reused PID apart."""
+    stats = {}
+    for p in os.listdir("/proc"):
+        if p.isdigit():
+            st = _proc_stat(int(p))
+            if st is not None:
+                stats[int(p)] = st
+    out: dict[int, int] = {}
+    level = {root}
+    while level:
+        level = {p for p, (pp, _) in stats.items() if pp in level and p not in out and p != root}
+        out.update({p: stats[p][1] for p in level})
+    return out
+
+
+def _terminate_pids(pids: dict[int, int], grace: float = 3.0) -> None:
+    """SIGTERM, then SIGKILL after `grace`, each of `pids` ({pid: start time}) still running as that process."""
+    def alive() -> list[int]:
+        return [p for p, t in pids.items() if (_proc_stat(p) or (0, -1))[1] == t]
+    for sig in (signal.SIGTERM, signal.SIGKILL):
+        for p in alive():
+            try:
+                os.kill(p, sig)
+            except OSError:
+                pass
+        deadline = time.monotonic() + grace
+        while alive() and time.monotonic() < deadline:
+            time.sleep(0.05)
+        if not alive():
+            return
 
 
 def _terminate(proc: subprocess.Popen, grace: float = 3.0) -> None:

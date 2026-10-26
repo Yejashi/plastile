@@ -28,6 +28,13 @@ target_compile_definitions(plastile-state PRIVATE QT_NO_CAST_FROM_ASCII QT_NO_CA
     PLASTILE_STATE_VERSION="${PROJECT_VERSION}")
 
 set(PLASTILE_STATE_EXEC "${CMAKE_INSTALL_FULL_LIBEXECDIR}/plastile-state")
+# The session bus splits Exec= like a shell command line, so the activation file writes the path in
+# double quotes (a prefix with spaces stays one argument). A path holding a character that would end
+# or escape inside those quotes is refused rather than escaped.
+if(PLASTILE_STATE_EXEC MATCHES "[\"\\\\$`\n]")
+  message(FATAL_ERROR "The helper's install path ${PLASTILE_STATE_EXEC} contains a double quote, backslash, $, "
+                      "backquote or newline, which its D-Bus activation file cannot name: choose another prefix")
+endif()
 configure_file(org.kde.plastile.State.service.in ${CMAKE_CURRENT_BINARY_DIR}/org.kde.plastile.State.service @ONLY)
 
 install(TARGETS plastile-state RUNTIME DESTINATION ${CMAKE_INSTALL_LIBEXECDIR})
