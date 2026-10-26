@@ -1,8 +1,9 @@
 """plastile-keytap: strict build, dry-backend protocol and uinput session guard (no desktop).
 
-The uinput backend's device path is NOT exercised here: the guard tests stop before
-/dev/uinput is opened, and the one test that lets the guard pass runs only when
-/dev/uinput does not exist, so no virtual keyboard can ever be created by this suite.
+The uinput backend's device path is NOT exercised here. Every `--backend uinput` run uses a
+second build whose device node is a path that does not exist (-DKEYTAP_UINPUT_PATH), so no
+virtual keyboard can ever be created by this suite, even if a guard check wrongly passed; that
+build lets the test of the guard's accepting path run on a host with /dev/uinput too.
 The guard's D-Bus queries go to a fake `busctl` placed first on PATH, never to a real bus.
 """
 from __future__ import annotations
@@ -58,15 +59,22 @@ def run_dry(lines: list[str], *extra: str) -> tuple[int, list[dict]]:
 @unittest.skipIf(CC is None, "no C compiler")
 class KeytapTests(unittest.TestCase):
     binary: str = ""
+    guard_binary: str = ""  # the uinput backend with a device node that does not exist
+    no_uinput: str = ""
 
     @classmethod
     def setUpClass(cls):
         cls.tmp = tempfile.TemporaryDirectory()
         cls.binary = str(Path(cls.tmp.name) / "plastile-keytap")
-        r = subprocess.run([CC, "-std=c11", "-O2", "-Wall", "-Wextra", "-Werror", str(SRC), "-o", cls.binary],
-                           capture_output=True, text=True)
-        if r.returncode != 0:
-            raise AssertionError(f"keytap.c does not build with -Wall -Wextra -Werror:\n{r.stderr}")
+        cls.guard_binary = str(Path(cls.tmp.name) / "plastile-keytap-no-uinput")
+        cls.no_uinput = str(Path(cls.tmp.name) / "no-such-dir" / "uinput")
+        for exe, defs in ((cls.binary, []), (cls.guard_binary, [f'-DKEYTAP_UINPUT_PATH="{cls.no_uinput}"'])):
+            r = subprocess.run([CC, "-std=c11", "-O2", "-Wall", "-Wextra", "-Werror", *defs, str(SRC), "-o", exe],
+                               capture_output=True, text=True)
+            if r.returncode != 0:
+                raise AssertionError(f"keytap.c does not build with -Wall -Wextra -Werror {defs}:\n{r.stderr}")
+        if os.path.exists(cls.no_uinput):
+            raise AssertionError(f"{cls.no_uinput} exists")
 
     @classmethod
     def tearDownClass(cls):
@@ -158,7 +166,7 @@ class KeytapTests(unittest.TestCase):
             p.stdout.close()
 
     def _uinput(self, env: dict[str, str]) -> tuple[int, list[dict]]:
-        r = subprocess.run([self.binary, "--backend", "uinput", "--settle-ms", "0"], input="", env=env,
+        r = subprocess.run([self.guard_binary, "--backend", "uinput", "--settle-ms", "0"], input="", env=env,
                            capture_output=True, text=True, timeout=20)
         return r.returncode, [json.loads(x) for x in r.stdout.splitlines()]
 
@@ -227,8 +235,13 @@ class KeytapTests(unittest.TestCase):
                 p.kill()
                 p.wait()
 
-    @unittest.skipIf(os.path.exists("/dev/uinput"), "/dev/uinput exists: never let the guard pass in a test")
+    def test_the_test_build_never_names_the_real_device(self):
+        # What makes the guard tests safe on a desktop with /dev/uinput: the build they run cannot open it.
+        self.assertNotIn(b"/dev/uinput\0", Path(self.guard_binary).read_bytes())
+        self.assertIn(b"/dev/uinput\0", Path(self.binary).read_bytes())
+
     def test_uinput_guard_passes_for_a_physical_looking_kwin(self):
+        # The accepting path: a KWin-named socket owner without nested flags, owning org.kde.KWin, on DRM.
         env = {**os.environ, "XDG_SESSION_TYPE": "wayland"}
         with tempfile.TemporaryDirectory() as td:
             bindir = fake_busctl(Path(td))
@@ -239,8 +252,8 @@ class KeytapTests(unittest.TestCase):
             finally:
                 p.kill()
                 p.wait()
-        self.assertEqual(rc, 4, out)  # past the guard; then /dev/uinput is missing
-        self.assertIn("cannot open /dev/uinput", out[0]["msg"])
+        self.assertEqual(rc, 4, out)  # past the guard; then the (test build's) device node is missing
+        self.assertIn(f"cannot open {self.no_uinput}", out[0]["msg"])
 
 
 if __name__ == "__main__":
