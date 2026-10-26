@@ -45,7 +45,7 @@ decorations, Alt+Tab, the task manager, maximize, fullscreen, native quick tilin
 
 - KDE Plasma 6 in a **Wayland** session with **KWin 6.7 or 6.8**. XWayland applications are tiled; a Plasma X11
   session is not supported. Other KWin versions are untested.
-- To build: Node.js 26 and npm.
+- To build: Node.js 22.18 or newer and npm.
 - Optional, to keep preferences across logins: CMake, a C++17 compiler and Qt 6 Core/DBus development files
   (Arch `qt6-base`, Debian/Ubuntu `qt6-base-dev`).
 
@@ -98,7 +98,7 @@ plasma-manager. It needs a nixpkgs with Plasma 6.7 or newer (nixos-unstable). De
 
 ### From source
 
-You need Node.js 26 and npm.
+You need Node.js 22.18 or newer and npm.
 
 ```sh
 git clone https://github.com/Yejashi/plastile.git
