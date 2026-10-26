@@ -18,7 +18,6 @@ import argparse
 import json
 import random
 import re
-import subprocess
 import sys
 import time
 from pathlib import Path
@@ -43,11 +42,10 @@ def main() -> int:
     args = ap.parse_args()
     stamp = time.strftime("%Y%m%dT%H%M%S")
     out = ROOT / "artifacts/perf" / stamp
-    rev = subprocess.run(["git", "-C", str(ROOT), "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip()
-    dirty = bool(subprocess.run(["git", "-C", str(ROOT), "status", "--porcelain", "--", "src", "package", "probes"],
-                                capture_output=True, text=True).stdout.strip())
+    # The same provenance as every other nested probe (perfcommon.TRACKED: the helper, harness and fixtures too).
+    meta = perfcommon.git_meta()
     versions = perfcommon.versions()
-    result = {"implementationCommit": rev, "implementationDirty": dirty,
+    result = {"implementationCommit": meta["implementationCommit"], "implementationDirty": meta["implementationDirty"],
               "layer": f"{perfcommon.nested_kwin([versions['kwin']] if versions['kwin'] else [])} virtual backend",
               "versions": versions, "clock": "CLOCK_MONOTONIC via measurement module", "samplesPerWorkload": args.samples,
               "counts": {}}

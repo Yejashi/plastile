@@ -159,6 +159,15 @@ class ProvenanceTests(unittest.TestCase):
                          "nested KWin (mixed versions: 6.7.5, 6.8.1)")
         self.assertEqual(perfcommon.nested_kwin([]), "nested KWin (version not recorded)")
 
+    def test_every_probe_with_a_nested_session_records_the_shared_provenance(self):
+        # A probe with its own `git status -- <paths>` misses what perfcommon.TRACKED covers (run.py checked only
+        # src, package and probes, though its sessions run the helper, the harness and the fixtures).
+        starts_session = [p for p in sorted(PERF.glob("*.py"))
+                          if any(ln.startswith("from harness import") and "Session" in ln
+                                 for ln in p.read_text().splitlines())]
+        self.assertIn(PERF / "run.py", starts_session)
+        self.assertEqual([p.name for p in starts_session if "git_meta(" not in p.read_text()], [])
+
     def test_a_helper_change_marks_the_tree_dirty(self):
         # Every nested session runs the persistence helper (harness Session(helper=True)).
         with tempfile.TemporaryDirectory() as d:
