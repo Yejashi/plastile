@@ -9,6 +9,7 @@ import os
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 from pathlib import Path
 
@@ -116,6 +117,46 @@ class ProvenanceTest(unittest.TestCase):
     def test_an_excluded_path_does_not(self):
         self.assertFalse(self.dirty_after("tests/fixtures/replay/x.json", ("tests/fixtures/replay",)))
         self.assertTrue(harness.provenance(self.root)["implementationDirty"])
+
+
+class TeardownTest(unittest.TestCase):
+    """NestedKwin.stop() with a stand-in bus: what the bus activated must not outlive the session."""
+
+    def stopped_session(self, script: str) -> tuple[list[int], list[int]]:
+        """Stop a session whose bus runs `script` (sh); its descendants before and after stop()."""
+        import nested  # tools/, on the path through harness
+        kw = nested.NestedKwin.__new__(nested.NestedKwin)
+        kw._conn, kw._clients, kw._kwin, kw.artifact_dir = None, [], None, None
+        kw.root = Path(tempfile.mkdtemp())
+        kw._dbus = subprocess.Popen(["sh", "-c", script])
+        deadline = time.monotonic() + 5
+        while len(nested._descendants(kw._dbus.pid)) < 2 and time.monotonic() < deadline:
+            time.sleep(0.02)
+        before = list(nested._descendants(kw._dbus.pid))
+        kw.stop()
+        time.sleep(0.2)
+        return before, [p for p in before if nested._proc_stat(p) is not None]
+
+    def test_activated_services_that_outlive_the_bus_are_stopped(self):
+        # Like plasma_waitforname under the private dbus-daemon: children that ignore the bus's exit.
+        before, left = self.stopped_session("sleep 60 & sleep 60 & wait")
+        self.assertEqual(len(before), 2)
+        self.assertEqual(left, [])
+
+    def test_one_that_ignores_sigterm_is_killed(self):
+        before, left = self.stopped_session("sh -c 'trap \"\" TERM; while :; do sleep 0.1; done' & wait")
+        self.assertGreaterEqual(len(before), 1)
+        self.assertEqual(left, [])
+
+    def test_a_reused_pid_is_not_signalled(self):
+        import nested
+        other = subprocess.Popen(["sleep", "60"])
+        try:
+            nested._terminate_pids({other.pid: -1}, grace=0.1)  # another start time: not the process recorded
+            self.assertIsNone(other.poll())
+        finally:
+            other.kill()
+            other.wait()
 
 
 if __name__ == "__main__":
