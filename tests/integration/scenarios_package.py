@@ -503,5 +503,6 @@ def files_replaced(out: Path, c: Checks):
           got == ["Plastile zones", "Plastile zones"] and state == "shown", {"windows": got, "state": state})
         s.cmd("zone.show")
         s.unload()
-        errs = s.log_lines(r"Inspector\.qml|ZoneOverlay\.qml|No such file|TypeError|ReferenceError")
+        # "No such file" only next to a QML path: PipeWire logs a missing client.conf in the same journal.
+        errs = s.log_lines(r"Inspector\.qml|ZoneOverlay\.qml|\.qml\b.*No such file|TypeError|ReferenceError")
         c("no QML load errors or JS exceptions", not errs, errs[:5])
