@@ -1,5 +1,5 @@
 {
- "implementationCommit": "56ce8ae1deca654e2c295c3f3641f662b7708f9f",
+ "implementationCommit": "ee6f8efe5be3646f68311caf92d1fd68af729956",
  "implementationDirty": false,
  "kwin": "kwin 6.8.1",
  "layer": "nested KWin virtual backend (not physical)",
@@ -87,7 +87,7 @@
     }
    },
    "error": null,
-   "seconds": 1.2,
+   "seconds": 1.1,
    "pass": true
   },
   "noop-and-focus-C11-C12": {
@@ -253,13 +253,13 @@
     "burst: solves bounded (< windows added)": {
      "pass": true,
      "detail": {
-      "solves": 4,
-      "flushes": 4,
-      "writes": 20,
-      "skipNoop": 4,
-      "observations": 20,
-      "settled": 12,
-      "superseded": 8,
+      "solves": 5,
+      "flushes": 5,
+      "writes": 27,
+      "skipNoop": 5,
+      "observations": 27,
+      "settled": 9,
+      "superseded": 18,
       "reclassified": 6,
       "adopted": 6
      }
@@ -271,13 +271,13 @@
     "burst remove: solves bounded": {
      "pass": true,
      "detail": {
-      "solves": 5,
-      "flushes": 5,
-      "writes": 23,
-      "skipNoop": 5,
-      "observations": 16,
-      "settled": 4,
-      "superseded": 12,
+      "solves": 6,
+      "flushes": 6,
+      "writes": 27,
+      "skipNoop": 6,
+      "observations": 24,
+      "settled": 15,
+      "superseded": 9,
       "removed": 6
      }
     }
@@ -311,7 +311,7 @@
      "pass": true,
      "detail": {
       "mode": "floating",
-      "exception": "overflow: {56154027-df94-4df0-9ccc-75c7361fbf96}: does not fit (stack column of 3 needs 1100 px height, has 784); overflow float-new",
+      "exception": "overflow: {4b0f6d0c-9e4d-4b85-80ca-e988a62ec798}: does not fit (stack column of 3 needs 1100 px height, has 784); overflow float-new",
       "overflow": 1
      }
     },
@@ -466,7 +466,7 @@
     }
    },
    "error": null,
-   "seconds": 5.1,
+   "seconds": 5.0,
    "pass": true
   },
   "states-L09-L12": {
@@ -521,7 +521,7 @@
     "L11: maximize respected": {
      "pass": true,
      "detail": {
-      "id": "{52dd7394-5b76-4186-9662-f350ccdbbac1}",
+      "id": "{c9559af1-a52f-4e5b-bc47-9f413ff2c9fd}",
       "caption": "plastile-fixture 1",
       "appId": "plastile-fixture",
       "frame": {
@@ -543,7 +543,7 @@
       "tile": false,
       "output": "Virtual-0",
       "desktops": [
-       "d813478d-25b8-4c32-bb1b-cef89633b11f"
+       "a0ec4afc-84fe-4834-9f71-864e930fe902"
       ],
       "onAllDesktops": false,
       "keepAbove": false,
@@ -791,7 +791,7 @@
     }
    },
    "error": null,
-   "seconds": 1.7,
+   "seconds": 1.8,
    "pass": true
   },
   "desktops-L15": {
@@ -829,7 +829,7 @@
     }
    },
    "error": null,
-   "seconds": 2.4,
+   "seconds": 2.3,
    "pass": true
   },
   "reload-Q09": {
@@ -854,31 +854,31 @@
     "Q09: KWin RSS bounded from cycle 10 to 100 (< 16 MiB growth; gross-leak bound, independent)": {
      "pass": true,
      "detail": {
-      "growthKiB": 300,
+      "growthKiB": 444,
       "samples": [
-       353024,
-       353164,
-       353084,
-       353192,
-       353296,
-       353276,
-       353316,
-       353428,
-       353468,
-       353324
+       353268,
+       353376,
+       353416,
+       353460,
+       353436,
+       353544,
+       353648,
+       353500,
+       353732,
+       353712
       ],
       "partsFirstLast": [
        {
-        "VmRSS": 349212,
-        "RssAnon": 84652,
-        "RssFile": 254216,
-        "RssShmem": 10344
+        "VmRSS": 349804,
+        "RssAnon": 85040,
+        "RssFile": 254356,
+        "RssShmem": 10408
        },
        {
-        "VmRSS": 353324,
-        "RssAnon": 86468,
-        "RssFile": 254284,
-        "RssShmem": 12572
+        "VmRSS": 353712,
+        "RssAnon": 86656,
+        "RssFile": 254420,
+        "RssShmem": 12636
        }
       ]
      }
@@ -918,16 +918,16 @@
      "detail": {
       "cycles": 100,
       "kwinRssKiBEvery10": [
-       353024,
-       353164,
-       353084,
-       353192,
-       353296,
-       353276,
-       353316,
-       353428,
-       353468,
-       353324
+       353268,
+       353376,
+       353416,
+       353460,
+       353436,
+       353544,
+       353648,
+       353500,
+       353732,
+       353712
       ],
       "idleCpuBefore": 0.0,
       "idleCpuAfter": 0.0,
@@ -942,7 +942,7 @@
     }
    },
    "error": null,
-   "seconds": 51.2,
+   "seconds": 51.3,
    "pass": true
   },
   "config-Q01": {
@@ -991,7 +991,7 @@
     "Q01: invalid config rejected with a message": {
      "pass": true,
      "detail": [
-      "  7354.927 qml plastile error configuration rejected; keeping previous revision [\"gapInner: must be an integer in 0..200\"]"
+      " 20247.021 qml plastile error configuration rejected; keeping previous revision [\"gapInner: must be an integer in 0..200\"]"
      ]
     },
     "Q01: previous revision retained: every tile where the 4/4 revision put it, nothing written": {
@@ -1090,7 +1090,7 @@
     }
    },
    "error": null,
-   "seconds": 5.1,
+   "seconds": 5.0,
    "pass": true
   },
   "fractional-scale-G03": {
@@ -1605,7 +1605,7 @@
     }
    },
    "error": null,
-   "seconds": 8.0,
+   "seconds": 7.9,
    "pass": true
   },
   "replug-identity-O05": {
@@ -1657,7 +1657,7 @@
     "T30: the unplugged output's emptied context is dropped": {
      "pass": true,
      "detail": [
-      "Virtual-0\u241ff3546b9d-9b8e-4f47-a184-ce10d757f4a6\u241fdefault"
+      "Virtual-0\u241fe2c2b287-a245-4098-9926-2178afa66737\u241fdefault"
      ]
     },
     "O05 replug: Plastile handled the change (trace 'topology', solves >= 1)": {
@@ -1673,19 +1673,17 @@
        "write"
       ],
       "counters": {
-       "solves": 7,
-       "flushes": 7,
-       "writes": 7,
-       "corrections": 3,
-       "skipNoop": 12,
-       "observations": 8,
+       "solves": 3,
+       "flushes": 4,
+       "writes": 3,
+       "corrections": 2,
+       "skipNoop": 7,
+       "observations": 5,
        "settled": 1,
-       "stale": 2,
-       "superseded": 1,
-       "partial": 1,
+       "stale": 1,
        "external": 3,
-       "reclassified": 3,
-       "raises": 3
+       "reclassified": 2,
+       "raises": 1
       }
      }
     },
@@ -1693,6 +1691,7 @@
      "pass": true,
      "detail": {
       "movedBackByKWin": [
+       "plastile-fixture 3",
        "plastile-fixture 4"
       ],
       "frames": [
@@ -1727,7 +1726,7 @@
     }
    },
    "error": null,
-   "seconds": 4.7,
+   "seconds": 4.5,
    "pass": true
   },
   "reconcile": {
@@ -2522,8 +2521,8 @@
     "trace: zero writes for both helper ids": {
      "pass": true,
      "detail": {
-      "{26c8fa64-de32-4e93-b215-9ba4740d54ea}": 2,
-      "{e15cc287-11a9-4087-a425-5617f966c10a}": 1
+      "{cc9b28f2-099d-4243-80c2-fc4c714497e6}": 2,
+      "{a98c24bf-7b20-4288-9011-95d5973c4a51}": 1
      }
     },
     "explain helper: excluded as a tiny helper surface (builtin)": {
@@ -2648,7 +2647,7 @@
     "fixture 1 is on Virtual-1 and not tiled there (oracle)": {
      "pass": true,
      "detail": {
-      "id": "{29b9be99-6a8e-4900-bf5f-2963fe9d3fbb}",
+      "id": "{b47f3363-f183-4206-9729-668b01fae6b0}",
       "caption": "plastile-fixture 1",
       "appId": "plastile-fixture",
       "frame": {
@@ -2670,7 +2669,7 @@
       "tile": false,
       "output": "Virtual-1",
       "desktops": [
-       "899518bc-1778-4190-840b-bf5717e56cb1"
+       "9b7d0f07-4475-445c-a4d9-2b1ecc542a68"
       ],
       "onAllDesktops": false,
       "keepAbove": false,
@@ -2712,7 +2711,7 @@
     }
    },
    "error": null,
-   "seconds": 3.9,
+   "seconds": 4.0,
    "pass": true
   },
   "reload-config-D9-Q04": {
@@ -2732,7 +2731,7 @@
     "D9: exactly one activation for one reload": {
      "pass": true,
      "detail": [
-      "  7414.131 qml plastile info configuration activated {\"revision\":2}"
+      " 20305.949 qml plastile info configuration activated {\"revision\":2}"
      ]
     },
     "D9: the command asked KWin to reconfigure (logged request)": {
@@ -2743,7 +2742,7 @@
      "pass": true,
      "detail": {
       "requests": 20,
-      "sendSeconds": 0.011,
+      "sendSeconds": 0.01,
       "activations": 1,
       "gap": 12,
       "started": 1,
@@ -2774,7 +2773,7 @@
      "pass": true,
      "detail": {
       "requests": 20,
-      "sendSeconds": 0.011,
+      "sendSeconds": 0.01,
       "activations": 1,
       "gap": 12,
       "started": 1,
@@ -2805,7 +2804,7 @@
      "pass": true,
      "detail": {
       "requests": 20,
-      "sendSeconds": 0.011,
+      "sendSeconds": 0.01,
       "activations": 1,
       "gap": 12,
       "started": 1,
@@ -2901,7 +2900,7 @@
      "pass": true,
      "detail": [
       {
-       "id": "{64f09e69-32b9-405f-bee8-eaa5db623211}",
+       "id": "{ff766f67-d7bc-4dbb-80a7-7bc77fc70709}",
        "popup": true,
        "appId": "",
        "pid": -1,
@@ -3124,7 +3123,7 @@
     }
    },
    "error": null,
-   "seconds": 2.2,
+   "seconds": 2.1,
    "pass": true
   },
   "per-output-desktops-O08": {
@@ -3155,10 +3154,10 @@
      "pass": true,
      "detail": {
       "2": [
-       "37d2d44d-d5d7-4111-997c-e4efceb1cf23"
+       "3ddff218-aab3-4984-b39b-e8380f9b67bf"
       ],
       "5": [
-       "37d2d44d-d5d7-4111-997c-e4efceb1cf23"
+       "3ddff218-aab3-4984-b39b-e8380f9b67bf"
       ]
      }
     },
@@ -3241,7 +3240,7 @@
       "solves": 1,
       "contexts": [
        {
-        "id": "Virtual-0\u241f78fedd98-abce-417e-b9c3-1544fec85683\u241fdefault",
+        "id": "Virtual-0\u241fa66b24a1-80ae-4b71-9a9f-1478b8744c7a\u241fdefault",
         "layout": "master-stack",
         "members": 1,
         "tiled": 1,
@@ -3250,7 +3249,7 @@
         "applied": 9
        },
        {
-        "id": "Virtual-1\u241f78fedd98-abce-417e-b9c3-1544fec85683\u241fdefault",
+        "id": "Virtual-1\u241fa66b24a1-80ae-4b71-9a9f-1478b8744c7a\u241fdefault",
         "layout": "master-stack",
         "members": 2,
         "tiled": 2,
@@ -3259,7 +3258,7 @@
         "applied": 4
        },
        {
-        "id": "Virtual-0\u241f37d2d44d-d5d7-4111-997c-e4efceb1cf23\u241fdefault",
+        "id": "Virtual-0\u241f3ddff218-aab3-4984-b39b-e8380f9b67bf\u241fdefault",
         "layout": "master-stack",
         "members": 1,
         "tiled": 1,
@@ -3268,7 +3267,7 @@
         "applied": -1
        },
        {
-        "id": "Virtual-1\u241f37d2d44d-d5d7-4111-997c-e4efceb1cf23\u241fdefault",
+        "id": "Virtual-1\u241f3ddff218-aab3-4984-b39b-e8380f9b67bf\u241fdefault",
         "layout": "master-stack",
         "members": 1,
         "tiled": 1,
@@ -3306,7 +3305,7 @@
     "O08: only the shown window was written": {
      "pass": true,
      "detail": {
-      "{849cbb8e-2749-4b7a-8b7d-9411c34e018e}": 1
+      "{599aa769-9746-47dc-908b-7834aa61f5bb}": 1
      }
     },
     "O08: switching back to an applied context leaves its windows in place": {
@@ -3384,13 +3383,13 @@
       "currentDesktopChangedOnV1Switch": [
        [
         {
-         "id": "78fedd98-abce-417e-b9c3-1544fec85683",
+         "id": "a66b24a1-80ae-4b71-9a9f-1478b8744c7a",
          "name": "Desktop 1",
          "x11DesktopNumber": 1,
          "type": "KWin::VirtualDesktop"
         },
         {
-         "id": "37d2d44d-d5d7-4111-997c-e4efceb1cf23",
+         "id": "3ddff218-aab3-4984-b39b-e8380f9b67bf",
          "name": "Two",
          "x11DesktopNumber": 2,
          "type": "KWin::VirtualDesktop"
@@ -3405,13 +3404,13 @@
       "currentDesktopChangedOnV0Switch": [
        [
         {
-         "id": "78fedd98-abce-417e-b9c3-1544fec85683",
+         "id": "a66b24a1-80ae-4b71-9a9f-1478b8744c7a",
          "name": "Desktop 1",
          "x11DesktopNumber": 1,
          "type": "KWin::VirtualDesktop"
         },
         {
-         "id": "37d2d44d-d5d7-4111-997c-e4efceb1cf23",
+         "id": "3ddff218-aab3-4984-b39b-e8380f9b67bf",
          "name": "Two",
          "x11DesktopNumber": 2,
          "type": "KWin::VirtualDesktop"
@@ -3430,7 +3429,7 @@
     }
    },
    "error": null,
-   "seconds": 5.8,
+   "seconds": 5.9,
    "pass": true
   },
   "follow-on-send-T24": {
@@ -3440,7 +3439,7 @@
      "detail": [
       "Virtual-1",
       [
-       "6929eb66-c06f-4963-ae0f-1449948b0085"
+       "d437c6cb-324a-41f4-90c6-a0b2a90d5276"
       ]
      ]
     },
@@ -3472,7 +3471,7 @@
     "default: fixture 2 is on desktop Two": {
      "pass": true,
      "detail": [
-      "6929eb66-c06f-4963-ae0f-1449948b0085"
+      "d437c6cb-324a-41f4-90c6-a0b2a90d5276"
      ]
     },
     "default: Virtual-0 still shows Desktop 1, its remaining window reflowed": {
@@ -3500,7 +3499,7 @@
      "detail": [
       "Virtual-1",
       [
-       "f1305abf-8e1f-4e57-9dda-adb43a0baedd"
+       "55e2acae-a5a1-482e-a317-fe17f11c8cce"
       ]
      ]
     },
@@ -3532,7 +3531,7 @@
     "follow: fixture 2 is on desktop Two": {
      "pass": true,
      "detail": [
-      "f1305abf-8e1f-4e57-9dda-adb43a0baedd"
+      "55e2acae-a5a1-482e-a317-fe17f11c8cce"
      ]
     },
     "follow: Virtual-0 shows Two, Virtual-1 unchanged": {
@@ -3566,7 +3565,7 @@
     }
    },
    "error": null,
-   "seconds": 6.1,
+   "seconds": 6.0,
    "pass": true
   },
   "activities-E08": {
@@ -3575,10 +3574,10 @@
      "pass": true,
      "detail": {
       "activities": [
-       "cac2285a-5930-493a-afbb-9956d2a41ae0",
-       "ff7dc2bc-71f4-4321-90a8-00da248d16e4"
+       "39767d57-d17f-40b5-a765-e1d73cfbfdf0",
+       "159822e4-306d-4263-a5fd-226499c57714"
       ],
-      "current": "cac2285a-5930-493a-afbb-9956d2a41ae0"
+      "current": "39767d57-d17f-40b5-a765-e1d73cfbfdf0"
      }
     },
     "E08: windows on the current activity tile": {
@@ -3648,7 +3647,7 @@
       "solves": 1,
       "contexts": [
        {
-        "id": "Virtual-0\u241f78eca27f-dc4a-4b0b-a122-7f4bc8ef8f4e\u241fcac2285a-5930-493a-afbb-9956d2a41ae0",
+        "id": "Virtual-0\u241f11ac16cf-8c36-4be6-b4b1-17b9d70decda\u241f39767d57-d17f-40b5-a765-e1d73cfbfdf0",
         "layout": "master-stack",
         "members": 2,
         "tiled": 2,
@@ -3657,7 +3656,7 @@
         "applied": 8
        },
        {
-        "id": "Virtual-0\u241f78eca27f-dc4a-4b0b-a122-7f4bc8ef8f4e\u241fff7dc2bc-71f4-4321-90a8-00da248d16e4",
+        "id": "Virtual-0\u241f11ac16cf-8c36-4be6-b4b1-17b9d70decda\u241f159822e4-306d-4263-a5fd-226499c57714",
         "layout": "master-stack",
         "members": 2,
         "tiled": 2,
@@ -3746,26 +3745,26 @@
       },
       "withService": {
        "activities": [
-        "cac2285a-5930-493a-afbb-9956d2a41ae0"
+        "39767d57-d17f-40b5-a765-e1d73cfbfdf0"
        ],
-       "current": "cac2285a-5930-493a-afbb-9956d2a41ae0"
+       "current": "39767d57-d17f-40b5-a765-e1d73cfbfdf0"
       },
       "signalsOnAddActivity": {
        "activityAdded": [
         [
-         "ff7dc2bc-71f4-4321-90a8-00da248d16e4"
+         "159822e4-306d-4263-a5fd-226499c57714"
         ]
        ],
        "activitiesChanged": [
         [
-         "ff7dc2bc-71f4-4321-90a8-00da248d16e4"
+         "159822e4-306d-4263-a5fd-226499c57714"
         ]
        ],
        "currentActivityChanged": []
       },
       "newWindowActivities": {
        "activities": [
-        "cac2285a-5930-493a-afbb-9956d2a41ae0"
+        "39767d57-d17f-40b5-a765-e1d73cfbfdf0"
        ],
        "onAllActivities": "undefined"
       },
@@ -3788,7 +3787,7 @@
       },
       "currentActivityChangedArgs": [
        [
-        "ff7dc2bc-71f4-4321-90a8-00da248d16e4"
+        "159822e4-306d-4263-a5fd-226499c57714"
        ]
       ],
       "currentDesktopChangedOnActivitySwitch": 0,
@@ -3867,7 +3866,7 @@
        "activityAdded": [],
        "currentActivityChanged": [
         [
-         "9058029d-cd93-4de4-9da8-6534375d0601"
+         "3cc7102e-54e6-4c92-b426-a89478be2a70"
         ]
        ]
       },
@@ -3963,31 +3962,31 @@
      "detail": {
       "windowActivitiesWithOneActivity": {
        "activities": [
-        "555b85ee-4113-4954-a65b-c5c7ac1ec437"
+        "4d9c23f5-616b-409c-9e5f-a435eb884af6"
        ],
        "onAllActivities": "undefined"
       },
       "contextWithOneActivity": {
        "output": "Virtual-0",
-       "desktop": "c5d1893a-8729-4b4d-90a4-7e7e59b04a98",
-       "activity": "555b85ee-4113-4954-a65b-c5c7ac1ec437",
+       "desktop": "1ee8483a-ace0-40f0-896b-4df9f024799f",
+       "activity": "4d9c23f5-616b-409c-9e5f-a435eb884af6",
        "outputName": "Virtual-0"
       },
       "contextAfterSecondActivity": {
        "output": "Virtual-0",
-       "desktop": "c5d1893a-8729-4b4d-90a4-7e7e59b04a98",
-       "activity": "555b85ee-4113-4954-a65b-c5c7ac1ec437",
+       "desktop": "1ee8483a-ace0-40f0-896b-4df9f024799f",
+       "activity": "4d9c23f5-616b-409c-9e5f-a435eb884af6",
        "outputName": "Virtual-0"
       },
       "signalsOnRemoveActivity": {
        "activityRemoved": [
         [
-         "b88aa309-dfe9-484c-bd8f-6fc2f0c12d90"
+         "6b76e80b-6c91-4da2-9b17-4e3524aaba87"
         ]
        ],
        "activitiesChanged": [
         [
-         "b88aa309-dfe9-484c-bd8f-6fc2f0c12d90"
+         "6b76e80b-6c91-4da2-9b17-4e3524aaba87"
         ]
        ],
        "currentActivityChanged": []
@@ -4025,7 +4024,7 @@
     "send to the other output: tiled on Virtual-1 (oracle)": {
      "pass": true,
      "detail": {
-      "id": "{f95f89cc-ed16-422d-b9c2-c9faefcca658}",
+      "id": "{3117e1f4-746e-4961-a3cd-3071f873c9dd}",
       "caption": "plastile-fixture 2",
       "appId": "plastile-fixture",
       "frame": {
@@ -4047,7 +4046,7 @@
       "tile": false,
       "output": "Virtual-1",
       "desktops": [
-       "16ab1d19-be40-4fca-8252-6ff47454c449"
+       "644baa16-a882-4942-abc8-eb7682fbdbae"
       ],
       "onAllDesktops": false,
       "keepAbove": false,
@@ -4059,7 +4058,7 @@
     "D6: float again restores inside Virtual-1's work area, still on Virtual-1 (oracle)": {
      "pass": true,
      "detail": {
-      "id": "{f95f89cc-ed16-422d-b9c2-c9faefcca658}",
+      "id": "{3117e1f4-746e-4961-a3cd-3071f873c9dd}",
       "caption": "plastile-fixture 2",
       "appId": "plastile-fixture",
       "frame": {
@@ -4081,7 +4080,7 @@
       "tile": false,
       "output": "Virtual-1",
       "desktops": [
-       "16ab1d19-be40-4fca-8252-6ff47454c449"
+       "644baa16-a882-4942-abc8-eb7682fbdbae"
       ],
       "onAllDesktops": false,
       "keepAbove": false,
@@ -4171,25 +4170,25 @@
     "one save after the quiet period: first write event 1.5-4 s after the last change (inotify)": {
      "pass": true,
      "detail": {
-      "secondsAfterLastChange": 2.0012721960001727
+      "secondsAfterLastChange": 2.0004455900016183
      }
     },
     "the save is atomic: written to an unnamed temporary file, which then appears as state-0.json; never written in place (the helper's QSaveFile; inotify)": {
      "pass": true,
      "detail": [
-      "+2.001s attrib ",
-      "+2.001s close_write #31485183",
-      "+2.001s attrib #31485183",
-      "+2.001s modify #31485183",
+      "+2.000s attrib ",
+      "+2.001s close_write #31489953",
+      "+2.001s attrib #31489953",
+      "+2.001s modify #31489953",
       "+2.006s create state-0.json",
-      "+2.006s close_write #31485183"
+      "+2.006s close_write #31489953"
      ]
     },
     "only the slot being saved and unnamed temporary files are touched (no lock file)": {
      "pass": true,
      "detail": [
       "",
-      "#31485183",
+      "#31489953",
       "state-0.json"
      ]
     },
@@ -4205,7 +4204,7 @@
      "detail": {
       "schemaVersion": 2,
       "generation": 1,
-      "savedAt": "2026-10-26T00:19:47.506Z",
+      "savedAt": "2026-10-26T03:54:39.323Z",
       "contexts": [
        {
         "outputKey": "Virtual-0",
@@ -4236,7 +4235,7 @@
          "width": 1280,
          "height": 800
         },
-        "windowHint": "{dec85972-f04c-4da9-b481-8c285189d714}"
+        "windowHint": "{edc0090a-b754-437a-9142-02b9707e0e6a}"
        }
       ]
      }
@@ -4338,12 +4337,12 @@
      "detail": [
       {
        "by": "reply",
-       "heldMs": 6,
+       "heldMs": 5,
        "heldNs": null
       },
       {
        "by": "reply",
-       "heldMs": 0,
+       "heldMs": 1,
        "heldNs": null
       }
      ]
@@ -4351,7 +4350,7 @@
     "restart: saved state loaded once (log)": {
      "pass": true,
      "detail": [
-      "  7464.854 qml plastile info saved state loaded {\"generation\":1,\"contexts\":1,\"floats\":1,\"keptUserChanges\":0,\"applyNs\":null,\"parseNs\":null,\"replyMs\":6}"
+      " 20356.671 qml plastile info saved state loaded {\"generation\":1,\"contexts\":1,\"floats\":1,\"keptUserChanges\":0,\"applyNs\":null,\"parseNs\":null,\"replyMs\":6}"
      ]
     },
     "restart: the master column has the saved ratio once the helper replied (oracle)": {
@@ -4411,14 +4410,14 @@
      "pass": true,
      "detail": {
       "saveEvents": [
-       "+2.001s attrib ",
-       "+2.001s open #31485183",
-       "+2.001s close_write #31485183",
-       "+2.001s open #31485183",
-       "+2.001s attrib #31485183",
-       "+2.001s modify #31485183",
+       "+2.000s attrib ",
+       "+2.001s open #31489953",
+       "+2.001s close_write #31489953",
+       "+2.001s open #31489953",
+       "+2.001s attrib #31489953",
+       "+2.001s modify #31489953",
        "+2.006s create state-0.json",
-       "+2.006s close_write #31485183"
+       "+2.006s close_write #31489953"
       ],
       "permissions": {
        "plastile": "0o700",
@@ -4427,7 +4426,7 @@
       "snapshot": {
        "schemaVersion": 2,
        "generation": 1,
-       "savedAt": "2026-10-26T00:19:47.506Z",
+       "savedAt": "2026-10-26T03:54:39.323Z",
        "contexts": [
         {
          "outputKey": "Virtual-0",
@@ -4458,7 +4457,7 @@
           "width": 1280,
           "height": 800
          },
-         "windowHint": "{dec85972-f04c-4da9-b481-8c285189d714}"
+         "windowHint": "{edc0090a-b754-437a-9142-02b9707e0e6a}"
         }
        ]
       },
@@ -4477,14 +4476,14 @@
        "firstLoad (activates the helper)": [
         {
          "by": "reply",
-         "heldMs": 6,
+         "heldMs": 5,
          "heldNs": null
         }
        ],
        "reload (helper running)": [
         {
          "by": "reply",
-         "heldMs": 0,
+         "heldMs": 1,
          "heldNs": null
         }
        ],
@@ -4516,6 +4515,19 @@
        "kwinExit": 15,
        "termAfterCommandS": 0.151,
        "teardownAfterCommandS": [
+        0.155
+       ],
+       "generationAfterExit": 2,
+       "ratio": 0.6500000000000001,
+       "errors": []
+      },
+      {
+       "mode": "running",
+       "helperRunningAtExit": true,
+       "firstSave": 1,
+       "kwinExit": 15,
+       "termAfterCommandS": 0.151,
+       "teardownAfterCommandS": [
         0.156
        ],
        "generationAfterExit": 2,
@@ -4529,20 +4541,7 @@
        "kwinExit": 15,
        "termAfterCommandS": 0.151,
        "teardownAfterCommandS": [
-        0.155
-       ],
-       "generationAfterExit": 2,
-       "ratio": 0.6500000000000001,
-       "errors": []
-      },
-      {
-       "mode": "running",
-       "helperRunningAtExit": true,
-       "firstSave": 1,
-       "kwinExit": 15,
-       "termAfterCommandS": 0.151,
-       "teardownAfterCommandS": [
-        0.155
+        0.156
        ],
        "generationAfterExit": 2,
        "ratio": 0.6500000000000001,
@@ -4554,13 +4553,13 @@
      "pass": true,
      "detail": [
       [
+       0.155
+      ],
+      [
        0.156
       ],
       [
-       0.155
-      ],
-      [
-       0.155
+       0.156
       ]
      ]
     },
@@ -4604,7 +4603,7 @@
        "kwinExit": 15,
        "termAfterCommandS": 0.151,
        "teardownAfterCommandS": [
-        0.155
+        0.156
        ],
        "generationAfterExit": 2,
        "ratio": 0.6500000000000001,
@@ -4617,7 +4616,7 @@
        "kwinExit": 15,
        "termAfterCommandS": 0.151,
        "teardownAfterCommandS": [
-        0.155
+        0.156
        ],
        "generationAfterExit": 2,
        "ratio": 0.6500000000000001,
@@ -4632,10 +4631,10 @@
        0.155
       ],
       [
-       0.155
+       0.156
       ],
       [
-       0.155
+       0.156
       ]
      ]
     },
@@ -4677,6 +4676,19 @@
        "kwinExit": 15,
        "termAfterCommandS": 0.151,
        "teardownAfterCommandS": [
+        0.155
+       ],
+       "generationAfterExit": 2,
+       "ratio": 0.6500000000000001,
+       "errors": []
+      },
+      {
+       "mode": "running",
+       "helperRunningAtExit": true,
+       "firstSave": 1,
+       "kwinExit": 15,
+       "termAfterCommandS": 0.151,
+       "teardownAfterCommandS": [
         0.156
        ],
        "generationAfterExit": 2,
@@ -4690,20 +4702,7 @@
        "kwinExit": 15,
        "termAfterCommandS": 0.151,
        "teardownAfterCommandS": [
-        0.155
-       ],
-       "generationAfterExit": 2,
-       "ratio": 0.6500000000000001,
-       "errors": []
-      },
-      {
-       "mode": "running",
-       "helperRunningAtExit": true,
-       "firstSave": 1,
-       "kwinExit": 15,
-       "termAfterCommandS": 0.151,
-       "teardownAfterCommandS": [
-        0.155
+        0.156
        ],
        "generationAfterExit": 2,
        "ratio": 0.6500000000000001,
@@ -4729,7 +4728,7 @@
        "kwinExit": 15,
        "termAfterCommandS": 0.151,
        "teardownAfterCommandS": [
-        0.155
+        0.156
        ],
        "generationAfterExit": 2,
        "ratio": 0.6500000000000001,
@@ -4742,7 +4741,7 @@
        "kwinExit": 15,
        "termAfterCommandS": 0.151,
        "teardownAfterCommandS": [
-        0.155
+        0.156
        ],
        "generationAfterExit": 2,
        "ratio": 0.6500000000000001,
@@ -4752,7 +4751,7 @@
     }
    },
    "error": null,
-   "seconds": 20.2,
+   "seconds": 20.1,
    "pass": true
   },
   "persist-ambiguous-Q06": {
@@ -4763,7 +4762,7 @@
       "snapshot": {
        "schemaVersion": 2,
        "generation": 1,
-       "savedAt": "2026-10-26T00:20:16.007Z",
+       "savedAt": "2026-10-26T03:55:07.722Z",
        "contexts": [],
        "floats": [
         {
@@ -4783,11 +4782,11 @@
           "width": 1280,
           "height": 800
          },
-         "windowHint": "{beb3b810-fe88-4b93-a850-2b2c46a41e58}"
+         "windowHint": "{93415410-480f-4534-a967-4398df77188d}"
         }
        ]
       },
-      "id9": "{beb3b810-fe88-4b93-a850-2b2c46a41e58}"
+      "id9": "{93415410-480f-4534-a967-4398df77188d}"
      }
     },
     "same window: the float goes to the window it was taken from (9), at its rectangle; the second instance tiles (explain + oracle)": {
@@ -4903,7 +4902,7 @@
      "detail": {
       "schemaVersion": 2,
       "generation": 1,
-      "savedAt": "2026-10-26T00:20:16.007Z",
+      "savedAt": "2026-10-26T03:55:07.722Z",
       "contexts": [],
       "floats": [
        {
@@ -4923,7 +4922,7 @@
          "width": 1280,
          "height": 800
         },
-        "windowHint": "{beb3b810-fe88-4b93-a850-2b2c46a41e58}"
+        "windowHint": "{93415410-480f-4534-a967-4398df77188d}"
        }
       ]
      }
@@ -5016,7 +5015,7 @@
      "pass": true,
      "detail": {
       "diag": [
-       "  7492.480 qml plastile warn saved state rejected: slot 0: not valid JSON (truncated or damaged); slot 1: contexts[0].masterStack.ratio: must be strictly between 0 and 1 (and 2 more); using defaults"
+       " 20384.172 qml plastile warn saved state rejected: slot 0: not valid JSON (truncated or damaged); slot 1: contexts[0].masterStack.ratio: must be strictly between 0 and 1 (and 2 more); using defaults"
       ],
       "other": []
      }
@@ -5026,7 +5025,7 @@
      "detail": {
       "schemaVersion": 2,
       "generation": 1,
-      "savedAt": "2026-10-26T00:20:21.649Z",
+      "savedAt": "2026-10-26T03:55:13.333Z",
       "contexts": [
        {
         "outputKey": "Virtual-0",
@@ -5045,8 +5044,8 @@
     "Q07: after that save the next load uses it (ratio 0.6, oracle) and reports slot 1 only": {
      "pass": true,
      "detail": [
-      "  7492.480 qml plastile warn saved state rejected: slot 0: not valid JSON (truncated or damaged); slot 1: contexts[0].masterStack.ratio: must be strictly between 0 and 1 (and 2 more); using defaults",
-      "  7495.544 qml plastile warn saved state rejected: slot 1: contexts[0].masterStack.ratio: must be strictly between 0 and 1 (and 2 more); using slot 0 (generation 1)"
+      " 20384.172 qml plastile warn saved state rejected: slot 0: not valid JSON (truncated or damaged); slot 1: contexts[0].masterStack.ratio: must be strictly between 0 and 1 (and 2 more); using defaults",
+      " 20387.232 qml plastile warn saved state rejected: slot 1: contexts[0].masterStack.ratio: must be strictly between 0 and 1 (and 2 more); using slot 0 (generation 1)"
      ]
     },
     "Q07 torn newest slot: the previous valid snapshot applies (ratio 0.65, oracle)": {
@@ -5059,7 +5058,7 @@
     "Q07 torn newest slot: one diagnostic naming slot 1 and the slot used": {
      "pass": true,
      "detail": [
-      "  7496.223 qml plastile warn saved state rejected: slot 1: not valid JSON (truncated or damaged); using slot 0 (generation 7)"
+      " 20387.911 qml plastile warn saved state rejected: slot 1: not valid JSON (truncated or damaged); using slot 0 (generation 7)"
      ]
     },
     "Q07 newer schema: defaults (oracle)": {
@@ -5069,7 +5068,7 @@
     "Q07 newer schema: one diagnostic saying nothing is saved": {
      "pass": true,
      "detail": [
-      "  7496.939 qml plastile warn saved state rejected: slot 0: schema version 99 is newer than this Plastile's 2; using defaults; written by a newer Plastile: nothing is saved this session"
+      " 20388.602 qml plastile warn saved state rejected: slot 0: schema version 99 is newer than this Plastile's 2; using defaults; written by a newer Plastile: nothing is saved this session"
      ]
     },
     "Q07 newer schema: its file is untouched and no other slot is written, also at unload (file)": {
@@ -5082,19 +5081,19 @@
      "pass": true,
      "detail": {
       "a.diagnostic": [
-       "  7492.480 qml plastile warn saved state rejected: slot 0: not valid JSON (truncated or damaged); slot 1: contexts[0].masterStack.ratio: must be strictly between 0 and 1 (and 2 more); using defaults"
+       " 20384.172 qml plastile warn saved state rejected: slot 0: not valid JSON (truncated or damaged); slot 1: contexts[0].masterStack.ratio: must be strictly between 0 and 1 (and 2 more); using defaults"
       ],
       "b.diagnostic": [
-       "  7496.223 qml plastile warn saved state rejected: slot 1: not valid JSON (truncated or damaged); using slot 0 (generation 7)"
+       " 20387.911 qml plastile warn saved state rejected: slot 1: not valid JSON (truncated or damaged); using slot 0 (generation 7)"
       ],
       "c.diagnostic": [
-       "  7496.939 qml plastile warn saved state rejected: slot 0: schema version 99 is newer than this Plastile's 2; using defaults; written by a newer Plastile: nothing is saved this session"
+       " 20388.602 qml plastile warn saved state rejected: slot 0: schema version 99 is newer than this Plastile's 2; using defaults; written by a newer Plastile: nothing is saved this session"
       ]
      }
     }
    },
    "error": null,
-   "seconds": 8.0,
+   "seconds": 7.9,
    "pass": true
   },
   "persist-no-helper-Q05": {
@@ -5106,7 +5105,7 @@
     "Q05: one diagnostic naming the missing helper": {
      "pass": true,
      "detail": [
-      "  7500.452 qml plastile warn persistence unavailable (the org.kde.plastile.State helper did not answer: not installed or failed); preferences are kept in memory only {\"reason\":\"no reply\"}"
+      " 20392.065 qml plastile warn persistence unavailable (the org.kde.plastile.State helper did not answer: not installed or failed); preferences are kept in memory only {\"reason\":\"no reply\"}"
      ]
     },
     "Q05: commands work (one grow step moves the master edge, oracle)": {
@@ -5140,7 +5139,7 @@
     }
    },
    "error": null,
-   "seconds": 3.9,
+   "seconds": 3.8,
    "pass": true
   },
   "persist-helper-stopped-Q05": {
@@ -5149,16 +5148,16 @@
      "pass": true,
      "detail": {
       "generation": 1,
-      "pid": 260477
+      "pid": 485266
      }
     },
     "control: the round-trip probe sees a 400 ms stall of KWin's main thread (a busy one-shot script; max >= 300 ms)": {
      "pass": true,
      "detail": {
-      "n": 41,
-      "p50": 0.138,
-      "p95": 0.157,
-      "max": 391.038
+      "n": 40,
+      "p50": 0.147,
+      "p95": 0.36,
+      "max": 398.574
      }
     },
     "Q05: KWin's main thread keeps answering while the save to the stopped helper comes due and is issued (round trips every 10 ms for 2.6 s: p50 within baseline + 5 ms, max < 250 ms)": {
@@ -5166,15 +5165,15 @@
      "detail": {
       "baseline": {
        "n": 30,
-       "p50": 0.134,
-       "p95": 0.197,
-       "max": 0.376
+       "p50": 0.221,
+       "p95": 0.331,
+       "max": 0.531
       },
       "acrossDue": {
-       "n": 255,
-       "p50": 0.139,
-       "p95": 0.162,
-       "max": 0.631
+       "n": 253,
+       "p50": 0.204,
+       "p95": 0.313,
+       "max": 0.715
       }
      }
     },
@@ -5183,15 +5182,15 @@
      "detail": {
       "baseline": {
        "n": 30,
-       "p50": 0.134,
-       "p95": 0.197,
-       "max": 0.376
+       "p50": 0.221,
+       "p95": 0.331,
+       "max": 0.531
       },
       "stopped": {
        "n": 30,
-       "p50": 0.148,
-       "p95": 0.176,
-       "max": 0.368
+       "p50": 0.211,
+       "p95": 0.38,
+       "max": 0.441
       }
      }
     },
@@ -5204,9 +5203,9 @@
        879
       ],
       "ms": [
-       16.3,
-       14.5,
-       15.1
+       15.9,
+       13.6,
+       15.3
       ]
      }
     },
@@ -5253,8 +5252,8 @@
      "detail": {
       "generation": 4,
       "pid": [
-       260477,
-       260562
+       485266,
+       485349
       ],
       "ratio": 0.6500000000000001
      }
@@ -5268,32 +5267,32 @@
      "detail": {
       "baselineRoundTripMs": {
        "n": 30,
-       "p50": 0.134,
-       "p95": 0.197,
-       "max": 0.376
+       "p50": 0.221,
+       "p95": 0.331,
+       "max": 0.531
       },
       "controlStallRoundTripMs": {
-       "n": 41,
-       "p50": 0.138,
-       "p95": 0.157,
-       "max": 391.038
+       "n": 40,
+       "p50": 0.147,
+       "p95": 0.36,
+       "max": 398.574
       },
       "commandToOracleMs": [
-       16.3,
-       14.5,
-       15.1
+       15.9,
+       13.6,
+       15.3
       ],
       "dueRoundTripMs": {
-       "n": 255,
-       "p50": 0.139,
-       "p95": 0.162,
-       "max": 0.631
+       "n": 253,
+       "p50": 0.204,
+       "p95": 0.313,
+       "max": 0.715
       },
       "stoppedRoundTripMs": {
        "n": 30,
-       "p50": 0.148,
-       "p95": 0.176,
-       "max": 0.368
+       "p50": 0.211,
+       "p95": 0.38,
+       "max": 0.441
       },
       "stoppedSeconds": 5.6,
       "inflight": {
@@ -5327,30 +5326,30 @@
        "+0.000s open state-0.json",
        "+0.000s access state-0.json",
        "+0.000s close_nowrite state-0.json",
-       "+0.000s open #31485398",
-       "+0.000s close_write #31485398",
-       "+0.000s open #31485398",
-       "+0.000s attrib #31485398",
-       "+0.000s modify #31485398",
-       "+0.005s create state-1.json",
-       "+0.005s close_write #31485398",
-       "+0.030s open state-0.json",
-       "+0.030s access state-0.json",
-       "+0.030s close_nowrite state-0.json",
-       "+0.030s open state-1.json",
-       "+0.030s access state-1.json",
-       "+0.030s close_nowrite state-1.json",
-       "+0.056s open #31485402",
-       "+0.056s attrib #31485402",
-       "+0.056s modify #31485402",
-       "+0.058s create state-0.json.bxqiVM",
-       "+0.058s close_write #31485402",
-       "+0.058s moved_from state-0.json.bxqiVM",
-       "+0.058s moved_to state-0.json",
-       "+0.060s open state-0.json",
-       "+0.060s access state-0.json",
-       "+0.060s close_nowrite state-0.json",
-       "+0.060s open state-1.json",
+       "+0.000s open #31490168",
+       "+0.000s close_write #31490168",
+       "+0.000s open #31490168",
+       "+0.000s attrib #31490168",
+       "+0.000s modify #31490168",
+       "+0.003s create state-1.json",
+       "+0.003s close_write #31490168",
+       "+0.031s open state-0.json",
+       "+0.031s access state-0.json",
+       "+0.031s close_nowrite state-0.json",
+       "+0.031s open state-1.json",
+       "+0.031s access state-1.json",
+       "+0.031s close_nowrite state-1.json",
+       "+0.054s open #31490172",
+       "+0.054s attrib #31490172",
+       "+0.054s modify #31490172",
+       "+0.056s create state-0.json.YstoWP",
+       "+0.056s close_write #31490172",
+       "+0.056s moved_from state-0.json.YstoWP",
+       "+0.056s moved_to state-0.json",
+       "+0.061s open state-0.json",
+       "+0.061s access state-0.json",
+       "+0.061s close_nowrite state-0.json",
+       "+0.061s open state-1.json",
        "+0.061s access state-1.json",
        "+0.061s close_nowrite state-1.json"
       ],
@@ -5369,7 +5368,7 @@
     }
    },
    "error": null,
-   "seconds": 11.8,
+   "seconds": 11.9,
    "pass": true
   },
   "persist-helper-delayed-Q05": {
@@ -5388,22 +5387,22 @@
     "load: the first solve waited for the reply only up to the start-up hold's 250 ms deadline (log: released once, by the deadline, 150-600 ms after the load request: a QML Timer, observed firing at 214 ms)": {
      "pass": true,
      "detail": [
-      "  7516.486 qml plastile info start-up hold released {\"by\":\"deadline\",\"heldMs\":241,\"heldNs\":null}"
+      " 20408.087 qml plastile info start-up hold released {\"by\":\"deadline\",\"heldMs\":241,\"heldNs\":null}"
      ]
     },
     "precondition: the user's change was made before the reply arrived": {
      "pass": true,
      "detail": {
-      "secondsSinceStart": 0.49
+      "secondsSinceStart": 0.5
      }
     },
     "load: the saved state arrives once, about 4 s after the start (log)": {
      "pass": true,
      "detail": {
       "lines": [
-       "  7520.455 qml plastile info saved state loaded {\"generation\":4,\"contexts\":2,\"floats\":0,\"keptUserChanges\":1,\"applyNs\":null,\"parseNs\":null,\"replyMs\":4210}"
+       " 20412.005 qml plastile info saved state loaded {\"generation\":4,\"contexts\":2,\"floats\":0,\"keptUserChanges\":1,\"applyNs\":null,\"parseNs\":null,\"replyMs\":4160}"
       ],
-      "seconds": 4.21
+      "seconds": 4.22
      }
     },
     "load: the saved ratio applies to the untouched output (Virtual-0 0.65, oracle)": {
@@ -5442,15 +5441,15 @@
      "detail": {
       "loadPending": {
        "n": 20,
-       "p50": 0.141,
-       "p95": 0.573,
-       "max": 0.573
+       "p50": 0.132,
+       "p95": 0.618,
+       "max": 0.618
       },
       "saving": {
        "n": 20,
-       "p50": 0.138,
-       "p95": 0.325,
-       "max": 0.325
+       "p50": 0.2,
+       "p95": 0.327,
+       "max": 0.327
       }
      }
     },
@@ -5466,29 +5465,29 @@
        "heldMs": 241,
        "heldNs": null
       },
-      "replyAfterStartS": 4.21,
+      "replyAfterStartS": 4.22,
       "loadPendingRoundTripMs": {
        "n": 20,
-       "p50": 0.141,
-       "p95": 0.573,
-       "max": 0.573
+       "p50": 0.132,
+       "p95": 0.618,
+       "max": 0.618
       },
       "reply": [
-       "  7520.455 qml plastile info saved state loaded {\"generation\":4,\"contexts\":2,\"floats\":0,\"keptUserChanges\":1,\"applyNs\":null,\"parseNs\":null,\"replyMs\":4210}"
+       " 20412.005 qml plastile info saved state loaded {\"generation\":4,\"contexts\":2,\"floats\":0,\"keptUserChanges\":1,\"applyNs\":null,\"parseNs\":null,\"replyMs\":4160}"
       ],
       "savingRoundTripMs": {
        "n": 20,
-       "p50": 0.138,
-       "p95": 0.325,
-       "max": 0.325
+       "p50": 0.2,
+       "p95": 0.327,
+       "max": 0.327
       },
-      "commandToOracleMsWhileSaving": 7.6,
-      "secondsIssueToGeneration6": 7.8
+      "commandToOracleMsWhileSaving": 7.3,
+      "secondsIssueToGeneration6": 7.7
      }
     }
    },
    "error": null,
-   "seconds": 12.8,
+   "seconds": 12.7,
    "pass": true
   },
   "persist-reload-cycles-Q09": {
@@ -5496,26 +5495,26 @@
     "Q09: every save replaces its slot atomically, also when overwriting (no in-place write; inotify)": {
      "pass": true,
      "detail": [
-      "+7529.370s attrib ",
-      "+7529.370s close_write #31485435",
-      "+7529.370s attrib #31485435",
-      "+7529.370s modify #31485435",
-      "+7529.375s create state-0.json",
-      "+7529.375s close_write #31485435",
-      "+7529.773s close_write #31485438",
-      "+7529.773s attrib #31485438",
-      "+7529.773s modify #31485438",
-      "+7529.778s create state-1.json",
-      "+7529.778s close_write #31485438",
-      "+7530.166s attrib #31485439",
-      "+7530.166s modify #31485439",
-      "+7530.171s create state-0.json.idHUDY",
-      "+7530.171s close_write #31485439",
-      "+7530.171s moved_from state-0.json.idHUDY",
-      "+7530.171s moved_to state-0.json",
-      "+7530.590s attrib #31485435",
-      "+7530.590s modify #31485435",
-      "+7530.595s create state-1.json.ORAvjJ"
+      "+20420.900s attrib ",
+      "+20420.900s close_write #31490205",
+      "+20420.900s attrib #31490205",
+      "+20420.900s modify #31490205",
+      "+20420.905s create state-0.json",
+      "+20420.905s close_write #31490205",
+      "+20421.296s close_write #31490208",
+      "+20421.296s attrib #31490208",
+      "+20421.296s modify #31490208",
+      "+20421.301s create state-1.json",
+      "+20421.301s close_write #31490208",
+      "+20421.689s attrib #31490209",
+      "+20421.689s modify #31490209",
+      "+20421.694s create state-0.json.WlqoEY",
+      "+20421.694s close_write #31490209",
+      "+20421.694s moved_from state-0.json.WlqoEY",
+      "+20421.694s moved_to state-0.json",
+      "+20422.093s attrib #31490205",
+      "+20422.093s modify #31490205",
+      "+20422.099s create state-1.json.DhFxIu"
      ]
     },
     "Q09: each of 20 unloads saved exactly once: the Write sent during unload is delivered (generation +1 per cycle, file)": {
@@ -5569,40 +5568,40 @@
     "Q09: KWin RSS bounded across the reloads (< 8 MiB growth; gross-leak bound, independent)": {
      "pass": true,
      "detail": {
-      "growthKiB": 3548,
+      "growthKiB": 3524,
       "samples": [
-       357448,
-       360444,
-       360836,
-       360960,
-       360900,
-       360972,
-       360984,
-       360932,
-       360872,
-       361004,
-       360944,
-       360948,
-       361024,
-       360964,
-       360904,
-       361036,
-       360980,
-       360984,
-       361052,
-       360996
+       349752,
+       352668,
+       353120,
+       353244,
+       353188,
+       353188,
+       353260,
+       353204,
+       353212,
+       353152,
+       353224,
+       353292,
+       353236,
+       353240,
+       353244,
+       353248,
+       353188,
+       353324,
+       353268,
+       353276
       ],
       "partsFirstLast": [
        {
-        "VmRSS": 348296,
-        "RssAnon": 83928,
-        "RssFile": 254024,
+        "VmRSS": 348596,
+        "RssAnon": 83868,
+        "RssFile": 254384,
         "RssShmem": 10344
        },
        {
-        "VmRSS": 360996,
-        "RssAnon": 94336,
-        "RssFile": 254088,
+        "VmRSS": 353276,
+        "RssAnon": 86244,
+        "RssFile": 254460,
         "RssShmem": 12572
        }
       ]
@@ -5660,43 +5659,43 @@
        null
       ],
       "rssKiB": [
-       357448,
-       360444,
-       360836,
-       360960,
-       360900,
-       360972,
-       360984,
-       360932,
-       360872,
-       361004,
-       360944,
-       360948,
-       361024,
-       360964,
-       360904,
-       361036,
-       360980,
-       360984,
-       361052,
-       360996
+       349752,
+       352668,
+       353120,
+       353244,
+       353188,
+       353188,
+       353260,
+       353204,
+       353212,
+       353152,
+       353224,
+       353292,
+       353236,
+       353240,
+       353244,
+       353248,
+       353188,
+       353324,
+       353268,
+       353276
       ],
       "scriptObjects": [
        "Script0"
       ],
       "firstSaveEvents": [
-       "+7529.370s attrib ",
-       "+7529.370s close_write #31485435",
-       "+7529.370s attrib #31485435",
-       "+7529.370s modify #31485435",
-       "+7529.375s create state-0.json",
-       "+7529.375s close_write #31485435",
-       "+7529.773s close_write #31485438",
-       "+7529.773s attrib #31485438",
-       "+7529.773s modify #31485438",
-       "+7529.778s create state-1.json",
-       "+7529.778s close_write #31485438",
-       "+7530.166s attrib #31485439"
+       "+20420.900s attrib ",
+       "+20420.900s close_write #31490205",
+       "+20420.900s attrib #31490205",
+       "+20420.900s modify #31490205",
+       "+20420.905s create state-0.json",
+       "+20420.905s close_write #31490205",
+       "+20421.296s close_write #31490208",
+       "+20421.296s attrib #31490208",
+       "+20421.296s modify #31490208",
+       "+20421.301s create state-1.json",
+       "+20421.301s close_write #31490208",
+       "+20421.689s attrib #31490209"
       ]
      }
     }
@@ -5775,7 +5774,7 @@
     "FR1: unload logs the stop notice": {
      "pass": true,
      "detail": [
-      "  7542.044 qml plastile notice stopped"
+      " 20433.592 qml plastile notice stopped"
      ]
     },
     "FR1: diagnostics=error hides the notices (positive control: the script is loaded)": {
@@ -5853,7 +5852,7 @@
     "FR2: with two desktops the desktop is named": {
      "pass": true,
      "detail": {
-      "t": 7546.866572982,
+      "t": 20438.398347423,
       "icon": "window-duplicate",
       "text": "Floating layout (tiling off) \u2014 Desktop 1"
      }
@@ -5896,7 +5895,7 @@
      "pass": true,
      "detail": {
       "debug": [
-       "  7549.334 qml plastile debug on-screen display unavailable (org.kde.plasmashell /org/kde/osdService showText failed); messages are dropped, and a command at least 30 s later tries again"
+       " 20440.858 qml plastile debug on-screen display unavailable (org.kde.plasmashell /org/kde/osdService showText failed); messages are dropped, and a command at least 30 s later tries again"
       ],
       "osd": {
        "state": "failed",
@@ -5928,7 +5927,7 @@
       "early": [],
       "later": [
        {
-        "t": 7579.844956453,
+        "t": 20471.369773658,
         "icon": "window-maximize",
         "text": "Monocle layout"
        }
@@ -5959,10 +5958,10 @@
      "detail": {
       "active": [
        "plastile-fixture 3",
-       "6c958517-9574-458b-8976-26c5a42435a5"
+       "81117fc7-86f5-40b8-b9d3-6ac1c65370e0"
       ],
       "desktops": [
-       "893b8223-f9bd-4901-838d-b053bf7640ac"
+       "a29ff7a8-3864-4b94-bc74-6c029c75e59d"
       ]
      }
     },
@@ -5986,8 +5985,8 @@
     "FR4: ... and not the active window's hidden desktop (counters)": {
      "pass": true,
      "detail": {
-      "Virtual-0/6c958517-9574-458b-8976-26c5a42435a5": "monocle",
-      "Virtual-0/893b8223-f9bd-4901-838d-b053bf7640ac": "master-stack"
+      "Virtual-0/81117fc7-86f5-40b8-b9d3-6ac1c65370e0": "monocle",
+      "Virtual-0/a29ff7a8-3864-4b94-bc74-6c029c75e59d": "master-stack"
      }
     },
     "FR4: the notice names the desktop on screen": {
@@ -6000,7 +5999,7 @@
      "pass": true,
      "detail": [
       {
-       "t": 7581.382452661,
+       "t": 20472.91233217,
        "icon": "window-maximize",
        "text": "Monocle layout \u2014 Desktop 1"
       }
@@ -6024,8 +6023,8 @@
        }
       ],
       "layouts": {
-       "Virtual-0/6c958517-9574-458b-8976-26c5a42435a5": "master-stack",
-       "Virtual-0/893b8223-f9bd-4901-838d-b053bf7640ac": "master-stack"
+       "Virtual-0/81117fc7-86f5-40b8-b9d3-6ac1c65370e0": "master-stack",
+       "Virtual-0/a29ff7a8-3864-4b94-bc74-6c029c75e59d": "master-stack"
       }
      }
     },
@@ -6058,7 +6057,7 @@
      "pass": true,
      "detail": [
       {
-       "id": "Virtual-0\u241fb37877dc-a091-4ee6-8b16-b2ce38c0c23e\u241fdefault",
+       "id": "Virtual-0\u241f1ba1d1b5-6e02-44cf-9591-6c1e8586b3ce\u241fdefault",
        "layout": "master-stack",
        "members": 2,
        "tiled": 1,
@@ -6083,7 +6082,7 @@
       "suspended": null,
       "contexts": [
        {
-        "id": "Virtual-0\u241fb37877dc-a091-4ee6-8b16-b2ce38c0c23e\u241fdefault",
+        "id": "Virtual-0\u241f1ba1d1b5-6e02-44cf-9591-6c1e8586b3ce\u241fdefault",
         "layout": "master-stack",
         "members": 2,
         "tiled": 2,
@@ -6297,14 +6296,14 @@
     "the helper exits when its bus goes away": {
      "pass": true,
      "detail": {
-      "pid": 262808
+      "pid": 487498
      }
     },
     "the helper stays past its idle period while its caller is still on the bus": {
      "pass": true,
      "detail": {
-      "pid": 262815,
-      "owner": 262815
+      "pid": 487505,
+      "owner": 487505
      }
     },
     "once its caller left, the helper exits after its idle period and gives its name back": {
@@ -6319,8 +6318,8 @@
        ""
       ],
       "pids": [
-       262815,
-       262828
+       487505,
+       487520
       ]
      }
     },
@@ -6356,12 +6355,12 @@
     "facts (recorded, always passes)": {
      "pass": true,
      "detail": {
-      "delayedSeconds": 1.5
+      "delayedSeconds": 1.49
      }
     }
    },
    "error": null,
-   "seconds": 20.1,
+   "seconds": 20.2,
    "pass": true
   },
   "output-offset-origin-G02": {
@@ -6379,7 +6378,7 @@
      "detail": {
       "kscreen": {
        "code": 0,
-       "output": "7610.980 kscreen.doctor Set output position QPoint(0,300)\n  7610.980 kscreen.doctor Set output position QPoint(1280,0)"
+       "output": "20502.580 kscreen.doctor Set output position QPoint(0,300)\n 20502.580 kscreen.doctor Set output position QPoint(1280,0)"
       },
       "geometry": {
        "Virtual-0": {
@@ -6462,7 +6461,7 @@
      "detail": {
       "kscreen": {
        "code": 0,
-       "output": "7613.556 kscreen.doctor Set output position QPoint(0,0)\n  7613.556 kscreen.doctor Set output position QPoint(300,800)"
+       "output": "20505.150 kscreen.doctor Set output position QPoint(0,0)\n 20505.150 kscreen.doctor Set output position QPoint(300,800)"
       },
       "geometry": {
        "Virtual-0": {
@@ -6575,7 +6574,7 @@
     }
    },
    "error": null,
-   "seconds": 8.1,
+   "seconds": 8.0,
    "pass": true
   },
   "output-negative-origin-G02": {
@@ -6585,7 +6584,7 @@
      "detail": {
       "kscreen": {
        "code": 0,
-       "output": "applying config failed! Position of enabled output Virtual-0 is negative (-1,280, 0)\n  7619.037 kscreen.doctor Set output position QPoint(-1280,0)"
+       "output": "applying config failed! Position of enabled output Virtual-0 is negative (-1,280, 0)\n 20510.617 kscreen.doctor Set output position QPoint(-1280,0)"
       },
       "before": {
        "Virtual-0": {
@@ -6625,7 +6624,7 @@
    "error": null,
    "seconds": 2.1,
    "pass": null,
-   "skipped": "KWin rejects a negative position for an enabled output and normalizes logical output origins to (0, 0) (kscreen-doctor: 'sition of enabled output Virtual-0 is negative (-1,280, 0)\\n  7619.037 kscreen.doctor Set output position QPoint(-1280,0)'); a negative origin cannot occur"
+   "skipped": "KWin rejects a negative position for an enabled output and normalizes logical output origins to (0, 0) (kscreen-doctor: 'sition of enabled output Virtual-0 is negative (-1,280, 0)\\n 20510.617 kscreen.doctor Set output position QPoint(-1280,0)'); a negative origin cannot occur"
   },
   "output-reorder-O03": {
    "checks": {
@@ -6692,7 +6691,7 @@
      "pass": true,
      "detail": [
       {
-       "id": "Virtual-0\u241f4d8f7d1a-6683-46ff-bf36-3ec811e81e1a\u241fdefault",
+       "id": "Virtual-0\u241f67833d12-4102-4816-882a-a52dbfed13e1\u241fdefault",
        "layout": "master-stack",
        "members": 2,
        "tiled": 2,
@@ -6701,7 +6700,7 @@
        "applied": 10
       },
       {
-       "id": "Virtual-1\u241f4d8f7d1a-6683-46ff-bf36-3ec811e81e1a\u241fdefault",
+       "id": "Virtual-1\u241f67833d12-4102-4816-882a-a52dbfed13e1\u241fdefault",
        "layout": "bsp",
        "members": 2,
        "tiled": 2,
@@ -6710,7 +6709,7 @@
        "applied": 7
       },
       {
-       "id": "Virtual-2\u241f4d8f7d1a-6683-46ff-bf36-3ec811e81e1a\u241fdefault",
+       "id": "Virtual-2\u241f67833d12-4102-4816-882a-a52dbfed13e1\u241fdefault",
        "layout": "master-stack",
        "members": 2,
        "tiled": 2,
@@ -6753,7 +6752,7 @@
      "detail": {
       "kscreen": {
        "code": 0,
-       "output": "7624.931 kscreen.doctor Set output position QPoint(0,0)\n  7624.931 kscreen.doctor Set output position QPoint(1280,0)\n  7624.931 kscreen.doctor Set output position QPoint(2560,0)"
+       "output": "20516.479 kscreen.doctor Set output position QPoint(0,0)\n 20516.480 kscreen.doctor Set output position QPoint(1280,0)\n 20516.480 kscreen.doctor Set output position QPoint(2560,0)"
       },
       "geometry": {
        "Virtual-0": {
@@ -6795,7 +6794,7 @@
      "pass": true,
      "detail": [
       {
-       "id": "Virtual-0\u241f4d8f7d1a-6683-46ff-bf36-3ec811e81e1a\u241fdefault",
+       "id": "Virtual-0\u241f67833d12-4102-4816-882a-a52dbfed13e1\u241fdefault",
        "layout": "master-stack",
        "members": 2,
        "tiled": 2,
@@ -6804,7 +6803,7 @@
        "applied": 12
       },
       {
-       "id": "Virtual-1\u241f4d8f7d1a-6683-46ff-bf36-3ec811e81e1a\u241fdefault",
+       "id": "Virtual-1\u241f67833d12-4102-4816-882a-a52dbfed13e1\u241fdefault",
        "layout": "bsp",
        "members": 2,
        "tiled": 2,
@@ -6813,7 +6812,7 @@
        "applied": 9
       },
       {
-       "id": "Virtual-2\u241f4d8f7d1a-6683-46ff-bf36-3ec811e81e1a\u241fdefault",
+       "id": "Virtual-2\u241f67833d12-4102-4816-882a-a52dbfed13e1\u241fdefault",
        "layout": "master-stack",
        "members": 2,
        "tiled": 2,
@@ -6880,15 +6879,15 @@
      "pass": true,
      "detail": [
       {
-       "id": "d98e5c86-ce5f-4745-ace7-6852597274f2",
+       "id": "3b1ebb37-6914-48f5-a2eb-e5b730ab41ed",
        "name": "Desktop 1"
       },
       {
-       "id": "d3a3bba1-f458-47bd-9964-4408a097b954",
+       "id": "7a4448d3-35d8-4331-91ca-f31270940b37",
        "name": "Two"
       },
       {
-       "id": "1fb90fe3-5068-4fcc-8e3a-01d963ec3bcc",
+       "id": "d45afbfa-41d5-4bea-a29d-b764df2b6f9b",
        "name": "Three"
       }
      ]
@@ -6897,16 +6896,16 @@
      "pass": true,
      "detail": {
       "1": [
-       "d98e5c86-ce5f-4745-ace7-6852597274f2"
+       "3b1ebb37-6914-48f5-a2eb-e5b730ab41ed"
       ],
       "2": [
-       "d98e5c86-ce5f-4745-ace7-6852597274f2"
+       "3b1ebb37-6914-48f5-a2eb-e5b730ab41ed"
       ],
       "3": [
-       "d3a3bba1-f458-47bd-9964-4408a097b954"
+       "7a4448d3-35d8-4331-91ca-f31270940b37"
       ],
       "4": [
-       "d3a3bba1-f458-47bd-9964-4408a097b954"
+       "7a4448d3-35d8-4331-91ca-f31270940b37"
       ]
      }
     },
@@ -6937,15 +6936,15 @@
      "pass": true,
      "detail": [
       {
-       "id": "d98e5c86-ce5f-4745-ace7-6852597274f2",
+       "id": "3b1ebb37-6914-48f5-a2eb-e5b730ab41ed",
        "name": "Desktop 1"
       },
       {
-       "id": "d3a3bba1-f458-47bd-9964-4408a097b954",
+       "id": "7a4448d3-35d8-4331-91ca-f31270940b37",
        "name": "Renamed"
       },
       {
-       "id": "1fb90fe3-5068-4fcc-8e3a-01d963ec3bcc",
+       "id": "d45afbfa-41d5-4bea-a29d-b764df2b6f9b",
        "name": "Three"
       }
      ]
@@ -6954,16 +6953,16 @@
      "pass": true,
      "detail": {
       "1": [
-       "d98e5c86-ce5f-4745-ace7-6852597274f2"
+       "3b1ebb37-6914-48f5-a2eb-e5b730ab41ed"
       ],
       "2": [
-       "d98e5c86-ce5f-4745-ace7-6852597274f2"
+       "3b1ebb37-6914-48f5-a2eb-e5b730ab41ed"
       ],
       "3": [
-       "d3a3bba1-f458-47bd-9964-4408a097b954"
+       "7a4448d3-35d8-4331-91ca-f31270940b37"
       ],
       "4": [
-       "d3a3bba1-f458-47bd-9964-4408a097b954"
+       "7a4448d3-35d8-4331-91ca-f31270940b37"
       ]
      }
     },
@@ -6971,7 +6970,7 @@
      "pass": true,
      "detail": [
       {
-       "id": "Virtual-0\u241fd98e5c86-ce5f-4745-ace7-6852597274f2\u241fdefault",
+       "id": "Virtual-0\u241f3b1ebb37-6914-48f5-a2eb-e5b730ab41ed\u241fdefault",
        "layout": "bsp",
        "members": 2,
        "tiled": 2,
@@ -6980,7 +6979,7 @@
        "applied": 7
       },
       {
-       "id": "Virtual-0\u241fd3a3bba1-f458-47bd-9964-4408a097b954\u241fdefault",
+       "id": "Virtual-0\u241f7a4448d3-35d8-4331-91ca-f31270940b37\u241fdefault",
        "layout": "master-stack",
        "members": 2,
        "tiled": 2,
@@ -7012,15 +7011,15 @@
      "pass": true,
      "detail": [
       {
-       "id": "d98e5c86-ce5f-4745-ace7-6852597274f2",
+       "id": "3b1ebb37-6914-48f5-a2eb-e5b730ab41ed",
        "name": "Desktop 1"
       },
       {
-       "id": "1fb90fe3-5068-4fcc-8e3a-01d963ec3bcc",
+       "id": "d45afbfa-41d5-4bea-a29d-b764df2b6f9b",
        "name": "Three"
       },
       {
-       "id": "d3a3bba1-f458-47bd-9964-4408a097b954",
+       "id": "7a4448d3-35d8-4331-91ca-f31270940b37",
        "name": "Renamed"
       }
      ]
@@ -7029,16 +7028,16 @@
      "pass": true,
      "detail": {
       "1": [
-       "d98e5c86-ce5f-4745-ace7-6852597274f2"
+       "3b1ebb37-6914-48f5-a2eb-e5b730ab41ed"
       ],
       "2": [
-       "d98e5c86-ce5f-4745-ace7-6852597274f2"
+       "3b1ebb37-6914-48f5-a2eb-e5b730ab41ed"
       ],
       "3": [
-       "d3a3bba1-f458-47bd-9964-4408a097b954"
+       "7a4448d3-35d8-4331-91ca-f31270940b37"
       ],
       "4": [
-       "d3a3bba1-f458-47bd-9964-4408a097b954"
+       "7a4448d3-35d8-4331-91ca-f31270940b37"
       ]
      }
     },
@@ -7057,16 +7056,16 @@
      "pass": true,
      "detail": {
       "1": [
-       "d98e5c86-ce5f-4745-ace7-6852597274f2"
+       "3b1ebb37-6914-48f5-a2eb-e5b730ab41ed"
       ],
       "2": [
-       "1fb90fe3-5068-4fcc-8e3a-01d963ec3bcc"
+       "d45afbfa-41d5-4bea-a29d-b764df2b6f9b"
       ],
       "3": [
-       "d3a3bba1-f458-47bd-9964-4408a097b954"
+       "7a4448d3-35d8-4331-91ca-f31270940b37"
       ],
       "4": [
-       "d3a3bba1-f458-47bd-9964-4408a097b954"
+       "7a4448d3-35d8-4331-91ca-f31270940b37"
       ]
      }
     },
@@ -7083,16 +7082,16 @@
      "pass": true,
      "detail": {
       "1": [
-       "d98e5c86-ce5f-4745-ace7-6852597274f2"
+       "3b1ebb37-6914-48f5-a2eb-e5b730ab41ed"
       ],
       "2": [
-       "d98e5c86-ce5f-4745-ace7-6852597274f2"
+       "3b1ebb37-6914-48f5-a2eb-e5b730ab41ed"
       ],
       "3": [
-       "d3a3bba1-f458-47bd-9964-4408a097b954"
+       "7a4448d3-35d8-4331-91ca-f31270940b37"
       ],
       "4": [
-       "d3a3bba1-f458-47bd-9964-4408a097b954"
+       "7a4448d3-35d8-4331-91ca-f31270940b37"
       ]
      }
     },
@@ -7101,27 +7100,27 @@
      "detail": {
       "desktops": [
        {
-        "id": "1fb90fe3-5068-4fcc-8e3a-01d963ec3bcc",
+        "id": "d45afbfa-41d5-4bea-a29d-b764df2b6f9b",
         "name": "Three"
        },
        {
-        "id": "d3a3bba1-f458-47bd-9964-4408a097b954",
+        "id": "7a4448d3-35d8-4331-91ca-f31270940b37",
         "name": "Renamed"
        }
       ],
-      "current": "1fb90fe3-5068-4fcc-8e3a-01d963ec3bcc",
+      "current": "d45afbfa-41d5-4bea-a29d-b764df2b6f9b",
       "memberships": {
        "1": [
-        "1fb90fe3-5068-4fcc-8e3a-01d963ec3bcc"
+        "d45afbfa-41d5-4bea-a29d-b764df2b6f9b"
        ],
        "2": [
-        "1fb90fe3-5068-4fcc-8e3a-01d963ec3bcc"
+        "d45afbfa-41d5-4bea-a29d-b764df2b6f9b"
        ],
        "3": [
-        "d3a3bba1-f458-47bd-9964-4408a097b954"
+        "7a4448d3-35d8-4331-91ca-f31270940b37"
        ],
        "4": [
-        "d3a3bba1-f458-47bd-9964-4408a097b954"
+        "7a4448d3-35d8-4331-91ca-f31270940b37"
        ]
       }
      }
@@ -7165,27 +7164,27 @@
       "afterRemoval": {
        "desktops": [
         {
-         "id": "1fb90fe3-5068-4fcc-8e3a-01d963ec3bcc",
+         "id": "d45afbfa-41d5-4bea-a29d-b764df2b6f9b",
          "name": "Three"
         },
         {
-         "id": "d3a3bba1-f458-47bd-9964-4408a097b954",
+         "id": "7a4448d3-35d8-4331-91ca-f31270940b37",
          "name": "Renamed"
         }
        ],
-       "current": "1fb90fe3-5068-4fcc-8e3a-01d963ec3bcc",
+       "current": "d45afbfa-41d5-4bea-a29d-b764df2b6f9b",
        "memberships": {
         "1": [
-         "1fb90fe3-5068-4fcc-8e3a-01d963ec3bcc"
+         "d45afbfa-41d5-4bea-a29d-b764df2b6f9b"
         ],
         "2": [
-         "1fb90fe3-5068-4fcc-8e3a-01d963ec3bcc"
+         "d45afbfa-41d5-4bea-a29d-b764df2b6f9b"
         ],
         "3": [
-         "d3a3bba1-f458-47bd-9964-4408a097b954"
+         "7a4448d3-35d8-4331-91ca-f31270940b37"
         ],
         "4": [
-         "d3a3bba1-f458-47bd-9964-4408a097b954"
+         "7a4448d3-35d8-4331-91ca-f31270940b37"
         ]
        }
       }
@@ -7193,7 +7192,7 @@
     }
    },
    "error": null,
-   "seconds": 9.8,
+   "seconds": 9.7,
    "pass": true
   },
   "all-desktops-L16": {
@@ -7202,16 +7201,16 @@
      "pass": true,
      "detail": {
       "1": [
-       "96287393-92cb-4142-ad27-ebf0e3a65468"
+       "233031c1-8008-4a55-83e7-f524b52f6e4c"
       ],
       "2": [
-       "96287393-92cb-4142-ad27-ebf0e3a65468"
+       "233031c1-8008-4a55-83e7-f524b52f6e4c"
       ],
       "3": [
-       "96287393-92cb-4142-ad27-ebf0e3a65468"
+       "233031c1-8008-4a55-83e7-f524b52f6e4c"
       ],
       "4": [
-       "92bedd52-bef9-4baf-97ef-2c8208610676"
+       "1ccf99a8-732b-4d19-aad6-6b57595bdf79"
       ]
      }
     },
@@ -7271,8 +7270,8 @@
      "pass": true,
      "detail": {
       "desktops": [
-       "96287393-92cb-4142-ad27-ebf0e3a65468",
-       "92bedd52-bef9-4baf-97ef-2c8208610676"
+       "233031c1-8008-4a55-83e7-f524b52f6e4c",
+       "1ccf99a8-732b-4d19-aad6-6b57595bdf79"
       ],
       "decision": {
        "mode": "floating",
@@ -7302,7 +7301,7 @@
      "pass": true,
      "detail": {
       "desktops": [
-       "92bedd52-bef9-4baf-97ef-2c8208610676"
+       "1ccf99a8-732b-4d19-aad6-6b57595bdf79"
       ],
       "mode": "tiled",
       "frames": [
@@ -7859,7 +7858,7 @@
        "maximizeMode": 0,
        "onAllDesktops": false,
        "desktops": [
-        "7a550279-6f2a-49ba-af60-fad63b44549f"
+        "1d5ffb4f-5598-4798-af01-9e45077c07e1"
        ]
       },
       "plastile-fixture 2": {
@@ -7877,7 +7876,7 @@
        "maximizeMode": 0,
        "onAllDesktops": false,
        "desktops": [
-        "7a550279-6f2a-49ba-af60-fad63b44549f"
+        "1d5ffb4f-5598-4798-af01-9e45077c07e1"
        ]
       },
       "plastile-fixture 3": {
@@ -7895,7 +7894,7 @@
        "maximizeMode": 0,
        "onAllDesktops": false,
        "desktops": [
-        "7a550279-6f2a-49ba-af60-fad63b44549f"
+        "1d5ffb4f-5598-4798-af01-9e45077c07e1"
        ]
       },
       "plastile-fixture 4": {
@@ -7913,7 +7912,7 @@
        "maximizeMode": 0,
        "onAllDesktops": false,
        "desktops": [
-        "7a550279-6f2a-49ba-af60-fad63b44549f"
+        "1d5ffb4f-5598-4798-af01-9e45077c07e1"
        ]
       },
       "plastile-fixture 2 child": {
@@ -7931,7 +7930,7 @@
        "maximizeMode": 0,
        "onAllDesktops": false,
        "desktops": [
-        "7a550279-6f2a-49ba-af60-fad63b44549f"
+        "1d5ffb4f-5598-4798-af01-9e45077c07e1"
        ]
       }
      }
@@ -8357,7 +8356,7 @@
      "pass": true,
      "detail": {
       "solves": 7,
-      "flushes": 5,
+      "flushes": 4,
       "commands": 12,
       "writes": 16,
       "corrections": 2,
@@ -8456,12 +8455,11 @@
       "solves": 18,
       "flushes": 14,
       "commands": 12,
-      "writes": 38,
-      "corrections": 2,
-      "observations": 45,
-      "settled": 28,
-      "stale": 2,
-      "superseded": 2,
+      "writes": 36,
+      "observations": 47,
+      "observationsDuringApply": 1,
+      "settled": 30,
+      "superseded": 4,
       "partial": 2,
       "activations": 5,
       "liveSolves": 11
@@ -8553,14 +8551,14 @@
      "pass": true,
      "detail": {
       "solves": 7,
-      "flushes": 6,
+      "flushes": 4,
       "commands": 12,
-      "writes": 16,
-      "corrections": 3,
-      "skipNoop": 1,
-      "observations": 22,
-      "settled": 8,
-      "stale": 3,
+      "writes": 14,
+      "corrections": 1,
+      "skipOutstanding": 1,
+      "observations": 18,
+      "settled": 6,
+      "stale": 1,
       "superseded": 2,
       "activations": 5
      }
@@ -9223,8 +9221,8 @@
     "C06: KWin emitted a frame signal for each moved window (independent listener)": {
      "pass": true,
      "detail": [
-      "  7696.095 js PLT-L frame plastile-fixture 3|{5a8fd810-2219-45c8-891d-47ffb1403bfc} [707,8,565,388]",
-      "  7696.095 js PLT-L frame plastile-fixture 2|{4ae7c169-4a51-4414-9598-520a945fd5ea} [707,404,565,388]"
+      " 20587.480 js PLT-L frame plastile-fixture 3|{16ce6ad0-f857-40ab-af8a-d115de624e5a} [707,8,565,388]",
+      " 20587.481 js PLT-L frame plastile-fixture 2|{bf9cf96a-3cd2-40fc-aa22-fae3d069f3c9} [707,404,565,388]"
      ]
     },
     "C06: the signals arrived inside Plastile's writes (observationsDuringApply rose by >= 2)": {
@@ -9251,9 +9249,9 @@
      "detail": {
       "writes": [
        {
-        "t": 1792974223006,
+        "t": 1792987114391,
         "kind": "write",
-        "id": "{5a8fd810-2219-45c8-891d-47ffb1403bfc}",
+        "id": "{16ce6ad0-f857-40ab-af8a-d115de624e5a}",
         "data": {
          "reason": "plan",
          "seq": 4,
@@ -9261,9 +9259,9 @@
         }
        },
        {
-        "t": 1792974223006,
+        "t": 1792987114392,
         "kind": "write",
-        "id": "{4ae7c169-4a51-4414-9598-520a945fd5ea}",
+        "id": "{bf9cf96a-3cd2-40fc-aa22-fae3d069f3c9}",
         "data": {
          "reason": "plan",
          "seq": 5,
@@ -9328,22 +9326,22 @@
      "pass": true,
      "detail": {
       "added": [
-       "  7700.675 js PLT-L added c04-noclass|{187c7b77-f7ae-4e39-9e5d-b30faa62e072} {\"cls\":\"\"}"
+       " 20592.075 js PLT-L added c04-noclass|{e93debde-9848-4a33-86e4-f0d0e938cc42} {\"cls\":\"\"}"
       ],
       "removed": [
-       "  7700.791 js PLT-L removed c04-noclass|{187c7b77-f7ae-4e39-9e5d-b30faa62e072}"
+       " 20592.191 js PLT-L removed c04-noclass|{e93debde-9848-4a33-86e4-f0d0e938cc42}"
       ]
      }
     },
     "A precondition: KWin reported it with an empty resourceClass": {
      "pass": true,
      "detail": [
-      "  7700.675 js PLT-L added c04-noclass|{187c7b77-f7ae-4e39-9e5d-b30faa62e072} {\"cls\":\"\"}"
+      " 20592.075 js PLT-L added c04-noclass|{e93debde-9848-4a33-86e4-f0d0e938cc42} {\"cls\":\"\"}"
      ]
     },
     "A precondition: removed inside Plastile's 300 ms readiness window": {
      "pass": true,
-     "detail": 0.11599999999998545
+     "detail": 0.11599999999816646
     },
     "A C04: Plastile registered and dropped it (adopted +1, removed +1)": {
      "pass": true,
@@ -9431,10 +9429,10 @@
      "pass": true,
      "detail": {
       "added": [
-       "  7702.530 js PLT-L added plastile-fixture 41|{f40a8a83-d424-4847-93eb-785c38cfdabc} {\"cls\":\"plastile-fixture\"}"
+       " 20593.931 js PLT-L added plastile-fixture 41|{0ded7809-a8fa-4b42-8c83-d8d926a0d884} {\"cls\":\"plastile-fixture\"}"
       ],
       "removed": [
-       "  7702.532 js PLT-L removed plastile-fixture 41|{f40a8a83-d424-4847-93eb-785c38cfdabc}"
+       " 20593.933 js PLT-L removed plastile-fixture 41|{0ded7809-a8fa-4b42-8c83-d8d926a0d884}"
       ]
      }
     },
@@ -9484,9 +9482,9 @@
     "facts (recorded, always passes)": {
      "pass": true,
      "detail": {
-      "A.lifetimeSeconds": 0.11599999999998545,
+      "A.lifetimeSeconds": 0.11599999999816646,
       "A.addedLine": [
-       "  7700.675 js PLT-L added c04-noclass|{187c7b77-f7ae-4e39-9e5d-b30faa62e072} {\"cls\":\"\"}"
+       " 20592.075 js PLT-L added c04-noclass|{e93debde-9848-4a33-86e4-f0d0e938cc42} {\"cls\":\"\"}"
       ],
       "B.kwinReported": [],
       "C.windowRecords": [
@@ -9519,7 +9517,7 @@
     "precondition: KWin removed the window (independent listener)": {
      "pass": true,
      "detail": [
-      "  7706.812 js PLT-L removed plastile-fixture 2|{8ad95f7e-5ee5-45b7-9226-cd88ab3a7b3d}"
+      " 20598.206 js PLT-L removed plastile-fixture 2|{58c7c4a8-9632-47a1-aaac-9ca8ae52cf6f}"
      ]
     },
     "C07: tombstoned: nothing is written to or recorded for the window after its removal (trace)": {
@@ -9595,7 +9593,7 @@
      "detail": {
       "first": [
        {
-        "t_ns": 7709759604653,
+        "t_ns": 20601119513251,
         "ev": "configure",
         "win": "main",
         "serial": 9,
@@ -9706,24 +9704,24 @@
      "pass": true,
      "detail": [
       {
-       "t": 1792974236673,
+       "t": 1792987128033,
        "kind": "open-maximized",
-       "id": "{8a96af0f-d3c8-4d47-aba9-86fa04228586}",
+       "id": "{6b3e0d98-9462-4523-8294-4ae8a79dd624}",
        "data": {
         "action": "unmaximized"
        }
       },
       {
-       "t": 1792974236680,
+       "t": 1792987128039,
        "kind": "unmaximized",
-       "id": "{8a96af0f-d3c8-4d47-aba9-86fa04228586}"
+       "id": "{6b3e0d98-9462-4523-8294-4ae8a79dd624}"
       }
      ]
     },
     "a later maximize (KWin's maximize action) stays maximized: not un-maximized again": {
      "pass": true,
      "detail": {
-      "id": "{8a96af0f-d3c8-4d47-aba9-86fa04228586}",
+      "id": "{6b3e0d98-9462-4523-8294-4ae8a79dd624}",
       "caption": "plastile-fixture 2",
       "appId": "plastile-fixture",
       "frame": {
@@ -9745,7 +9743,7 @@
       "tile": false,
       "output": "Virtual-0",
       "desktops": [
-       "b6e23b93-ed0e-45f2-b924-1a84401d7aef"
+       "5ca33e6a-b268-414c-a1f9-76a54fd1aae2"
       ],
       "onAllDesktops": false,
       "keepAbove": false,
@@ -9797,7 +9795,7 @@
     }
    },
    "error": null,
-   "seconds": 7.4,
+   "seconds": 7.3,
    "pass": true
   },
   "maximized-open-keep-T17": {
@@ -9805,7 +9803,7 @@
     "keep: it stays maximized at the maximize area": {
      "pass": true,
      "detail": {
-      "id": "{4f451c75-0f54-49aa-9c4b-03c35403c331}",
+      "id": "{a596ad04-f97d-4c45-a676-66523dc18cbd}",
       "caption": "plastile-fixture 2",
       "appId": "plastile-fixture",
       "frame": {
@@ -9827,7 +9825,7 @@
       "tile": false,
       "output": "Virtual-0",
       "desktops": [
-       "5c1ec1e7-30ee-473d-9e56-56aa59ace547"
+       "4417cf5f-f8ed-409f-a985-36847e566dd1"
       ],
       "onAllDesktops": false,
       "keepAbove": false,
@@ -9884,7 +9882,7 @@
     "start: a window already maximized when Plastile starts stays maximized": {
      "pass": true,
      "detail": {
-      "id": "{33e1dd1f-bbc4-47c4-9afc-eafe1906943d}",
+      "id": "{fabc6895-d766-4423-a992-49ea864e7540}",
       "caption": "plastile-fixture 1",
       "appId": "plastile-fixture",
       "frame": {
@@ -9906,7 +9904,7 @@
       "tile": false,
       "output": "Virtual-0",
       "desktops": [
-       "adcedce6-b7ed-4ca1-8ec7-092a4ba10bcd"
+       "8f6094c4-6843-43d1-ad27-8756804a4851"
       ],
       "onAllDesktops": false,
       "keepAbove": false,
@@ -9934,7 +9932,7 @@
     "reload: still maximized (windows adopted at a re-enable are left as they are)": {
      "pass": true,
      "detail": {
-      "id": "{33e1dd1f-bbc4-47c4-9afc-eafe1906943d}",
+      "id": "{fabc6895-d766-4423-a992-49ea864e7540}",
       "caption": "plastile-fixture 1",
       "appId": "plastile-fixture",
       "frame": {
@@ -9956,7 +9954,7 @@
       "tile": false,
       "output": "Virtual-0",
       "desktops": [
-       "adcedce6-b7ed-4ca1-8ec7-092a4ba10bcd"
+       "8f6094c4-6843-43d1-ad27-8756804a4851"
       ],
       "onAllDesktops": false,
       "keepAbove": false,
@@ -9968,7 +9966,7 @@
     "resume: a window opened maximized while suspended is adopted as it is": {
      "pass": true,
      "detail": {
-      "id": "{6b272987-d271-4171-8d1d-3cc8e8850dc8}",
+      "id": "{02b0b1b7-6e38-4525-893c-4f7bf79370d2}",
       "caption": "plastile-fixture 3",
       "appId": "plastile-fixture",
       "frame": {
@@ -9990,7 +9988,7 @@
       "tile": false,
       "output": "Virtual-0",
       "desktops": [
-       "adcedce6-b7ed-4ca1-8ec7-092a4ba10bcd"
+       "8f6094c4-6843-43d1-ad27-8756804a4851"
       ],
       "onAllDesktops": false,
       "keepAbove": false,
@@ -10010,7 +10008,7 @@
      "pass": true,
      "detail": [
       {
-       "t_ns": 7724263389819,
+       "t_ns": 20615574107467,
        "ev": "remaximize",
        "win": "main",
        "serial": 18
@@ -10055,7 +10053,7 @@
     "the client's maximize is honoured: maximized at the maximize area (KWin)": {
      "pass": true,
      "detail": {
-      "id": "{dc8325b8-b4b5-462e-b4f8-d63c3418ae25}",
+      "id": "{ccd4ddde-ebb9-4003-8a6a-92e599cc91e5}",
       "caption": "plastile-fixture 2",
       "appId": "plastile-fixture",
       "frame": {
@@ -10077,7 +10075,7 @@
       "tile": false,
       "output": "Virtual-0",
       "desktops": [
-       "0ce0d75d-4dfd-4644-a5ca-55491505fb1f"
+       "9b8ec613-40e2-4cd3-bede-26f79ec0f62c"
       ],
       "onAllDesktops": false,
       "keepAbove": false,
@@ -10110,28 +10108,28 @@
      "pass": true,
      "detail": [
       {
-       "t": 1792974251170,
+       "t": 1792987142479,
        "kind": "open-maximized",
-       "id": "{dc8325b8-b4b5-462e-b4f8-d63c3418ae25}",
+       "id": "{ccd4ddde-ebb9-4003-8a6a-92e599cc91e5}",
        "data": {
         "action": "unmaximized"
        }
       },
       {
-       "t": 1792974251175,
+       "t": 1792987142486,
        "kind": "unmaximized",
-       "id": "{dc8325b8-b4b5-462e-b4f8-d63c3418ae25}"
+       "id": "{ccd4ddde-ebb9-4003-8a6a-92e599cc91e5}"
       },
       {
-       "t": 1792974251176,
+       "t": 1792987142486,
        "kind": "remaximized",
-       "id": "{dc8325b8-b4b5-462e-b4f8-d63c3418ae25}"
+       "id": "{ccd4ddde-ebb9-4003-8a6a-92e599cc91e5}"
       }
      ]
     }
    },
    "error": null,
-   "seconds": 4.3,
+   "seconds": 4.2,
    "pass": true
   },
   "maximized-open-xwayland-T17": {
@@ -10236,7 +10234,7 @@
     }
    },
    "error": null,
-   "seconds": 2.1,
+   "seconds": 2.2,
    "pass": true
   },
   "maximized-open-late-T17": {
@@ -10246,7 +10244,7 @@
      "detail": {
       "requests": [
        {
-        "t_ns": 7730682850510,
+        "t_ns": 20622001222474,
         "ev": "maximize_requested",
         "win": "main",
         "reason": "after-map"
@@ -10453,7 +10451,7 @@
      "pass": true,
      "detail": [
       {
-       "t_ns": 7735736489978,
+       "t_ns": 20627041581759,
        "ev": "configure",
        "win": "main",
        "serial": 9,
@@ -10470,7 +10468,7 @@
     "it stays maximized at the maximize area (KWin)": {
      "pass": true,
      "detail": {
-      "id": "{0a540b77-29ee-4b76-8d5a-b2af317433ee}",
+      "id": "{834bfbeb-8a46-4ad0-aefb-a818700830be}",
       "caption": "plastile-fixture 2",
       "appId": "plastile-fixture",
       "frame": {
@@ -10492,7 +10490,7 @@
       "tile": false,
       "output": "Virtual-0",
       "desktops": [
-       "dc4e949d-4098-4cd4-8770-783794b54a97"
+       "8bf11a3a-0ca3-4d81-a6b1-8b20de097f07"
       ],
       "onAllDesktops": false,
       "keepAbove": false,
@@ -10565,7 +10563,7 @@
      "pass": true,
      "detail": {
       "desktops": [
-       "d395a9e0-4dda-496f-9e37-5b19740ff739"
+       "5ec40f0d-d512-4a42-bfc6-75a455cb7e58"
       ],
       "maximizeMode": 3
      }
@@ -10595,9 +10593,9 @@
      "pass": true,
      "detail": [
       {
-       "t": 1792974264704,
+       "t": 1792987156014,
        "kind": "open-maximized",
-       "id": "{8830aff9-0e04-493c-8137-cae8b63490e4}",
+       "id": "{9cd0ed9d-e656-4e3c-a8c8-e5f2ad9be6c7}",
        "data": {
         "action": "deferred",
         "why": "hidden"
@@ -10659,26 +10657,26 @@
      "pass": true,
      "detail": [
       {
-       "t": 1792974264704,
+       "t": 1792987156014,
        "kind": "open-maximized",
-       "id": "{8830aff9-0e04-493c-8137-cae8b63490e4}",
+       "id": "{9cd0ed9d-e656-4e3c-a8c8-e5f2ad9be6c7}",
        "data": {
         "action": "deferred",
         "why": "hidden"
        }
       },
       {
-       "t": 1792974265946,
+       "t": 1792987157257,
        "kind": "open-maximized",
-       "id": "{8830aff9-0e04-493c-8137-cae8b63490e4}",
+       "id": "{9cd0ed9d-e656-4e3c-a8c8-e5f2ad9be6c7}",
        "data": {
         "action": "unmaximized"
        }
       },
       {
-       "t": 1792974265956,
+       "t": 1792987157266,
        "kind": "unmaximized",
-       "id": "{8830aff9-0e04-493c-8137-cae8b63490e4}"
+       "id": "{9cd0ed9d-e656-4e3c-a8c8-e5f2ad9be6c7}"
       }
      ]
     }
@@ -10695,7 +10693,7 @@
       "1": {
        "output": "Virtual-0",
        "desktops": [
-        "4ea69304-8427-4c20-a5e2-0335b640349d"
+        "f22ef041-a1df-4af3-8674-b899d18b503a"
        ],
        "onAllDesktops": false,
        "activities": []
@@ -10703,7 +10701,7 @@
       "2": {
        "output": "Virtual-0",
        "desktops": [
-        "4ea69304-8427-4c20-a5e2-0335b640349d"
+        "f22ef041-a1df-4af3-8674-b899d18b503a"
        ],
        "onAllDesktops": false,
        "activities": []
@@ -10711,7 +10709,7 @@
       "3": {
        "output": "Virtual-0",
        "desktops": [
-        "31f4eb23-dc08-42fe-8985-1e1af6ac22e4"
+        "29d17e1f-2c80-4862-a02e-2f471eea4bc8"
        ],
        "onAllDesktops": false,
        "activities": []
@@ -10719,7 +10717,7 @@
       "4": {
        "output": "Virtual-0",
        "desktops": [
-        "0c433b12-4b99-45dd-992e-79c9a8024747"
+        "88caaec7-3d2c-4f6c-a2a4-89b00345e8da"
        ],
        "onAllDesktops": false,
        "activities": []
@@ -10727,7 +10725,7 @@
       "5": {
        "output": "Virtual-1",
        "desktops": [
-        "4ea69304-8427-4c20-a5e2-0335b640349d"
+        "f22ef041-a1df-4af3-8674-b899d18b503a"
        ],
        "onAllDesktops": false,
        "activities": []
@@ -10735,7 +10733,7 @@
       "6": {
        "output": "Virtual-1",
        "desktops": [
-        "31f4eb23-dc08-42fe-8985-1e1af6ac22e4"
+        "29d17e1f-2c80-4862-a02e-2f471eea4bc8"
        ],
        "onAllDesktops": false,
        "activities": []
@@ -12134,7 +12132,7 @@
     }
    },
    "error": null,
-   "seconds": 8.6,
+   "seconds": 8.5,
    "pass": true
   },
   "membership-two-activities-T24": {
@@ -12145,51 +12143,51 @@
       "1": {
        "output": "Virtual-0",
        "desktops": [
-        "94eb511f-32fc-48b2-bf7a-500ef5093a9b"
+        "92ee73ec-d98c-4242-86c1-64810e84149e"
        ],
        "onAllDesktops": false,
        "activities": [
-        "8a110e0e-6abf-490e-845b-e55d15df0f05"
+        "a4469e54-4c84-4ad5-afb8-8b417e6d2dca"
        ]
       },
       "2": {
        "output": "Virtual-0",
        "desktops": [
-        "94eb511f-32fc-48b2-bf7a-500ef5093a9b"
+        "92ee73ec-d98c-4242-86c1-64810e84149e"
        ],
        "onAllDesktops": false,
        "activities": [
-        "8a110e0e-6abf-490e-845b-e55d15df0f05"
+        "a4469e54-4c84-4ad5-afb8-8b417e6d2dca"
        ]
       },
       "3": {
        "output": "Virtual-0",
        "desktops": [
-        "94eb511f-32fc-48b2-bf7a-500ef5093a9b"
+        "92ee73ec-d98c-4242-86c1-64810e84149e"
        ],
        "onAllDesktops": false,
        "activities": [
-        "8a110e0e-6abf-490e-845b-e55d15df0f05"
+        "a4469e54-4c84-4ad5-afb8-8b417e6d2dca"
        ]
       },
       "4": {
        "output": "Virtual-0",
        "desktops": [
-        "94eb511f-32fc-48b2-bf7a-500ef5093a9b"
+        "92ee73ec-d98c-4242-86c1-64810e84149e"
        ],
        "onAllDesktops": false,
        "activities": [
-        "e433418d-bcb8-4261-a1e0-c601b9657fc8"
+        "6cce3758-51bd-4fdb-80a0-6afdb57bc64e"
        ]
       },
       "5": {
        "output": "Virtual-0",
        "desktops": [
-        "94eb511f-32fc-48b2-bf7a-500ef5093a9b"
+        "92ee73ec-d98c-4242-86c1-64810e84149e"
        ],
        "onAllDesktops": false,
        "activities": [
-        "66134750-fa7f-4e4f-a1ea-5b5f55996d7e"
+        "2a2f1574-911d-4062-8de1-a7a8e522d719"
        ]
       }
      }
@@ -12537,12 +12535,12 @@
       "state": {
        "output": "Virtual-0",
        "desktops": [
-        "c370535a-3c5e-44f1-85b2-b1dccceb829f"
+        "9c70e273-c749-48ea-902a-9306e3b4a8e5"
        ],
        "onAllDesktops": false,
        "activities": [
-        "8a110e0e-6abf-490e-845b-e55d15df0f05",
-        "e433418d-bcb8-4261-a1e0-c601b9657fc8"
+        "a4469e54-4c84-4ad5-afb8-8b417e6d2dca",
+        "6cce3758-51bd-4fdb-80a0-6afdb57bc64e"
        ]
       },
       "modes": [
@@ -12851,7 +12849,7 @@
     }
    },
    "error": null,
-   "seconds": 8.4,
+   "seconds": 8.3,
    "pass": true
   },
   "send-activity-switch-T24": {
@@ -12862,67 +12860,67 @@
       "1": {
        "output": "Virtual-0",
        "desktops": [
-        "2ce0b839-3420-4204-8010-3a5a321b5b70"
+        "bb4b19bc-9db0-4a27-b45f-38835e69e102"
        ],
        "onAllDesktops": false,
        "activities": [
-        "b8ff2690-c704-482a-ac2f-69886bc17c06"
+        "4751df38-d02a-44cc-a817-074f86188c7b"
        ]
       },
       "2": {
        "output": "Virtual-0",
        "desktops": [
-        "2ce0b839-3420-4204-8010-3a5a321b5b70"
+        "bb4b19bc-9db0-4a27-b45f-38835e69e102"
        ],
        "onAllDesktops": false,
        "activities": [
-        "b8ff2690-c704-482a-ac2f-69886bc17c06"
+        "4751df38-d02a-44cc-a817-074f86188c7b"
        ]
       },
       "3": {
        "output": "Virtual-0",
        "desktops": [
-        "2ce0b839-3420-4204-8010-3a5a321b5b70"
+        "bb4b19bc-9db0-4a27-b45f-38835e69e102"
        ],
        "onAllDesktops": false,
        "activities": [
-        "b8ff2690-c704-482a-ac2f-69886bc17c06"
+        "4751df38-d02a-44cc-a817-074f86188c7b"
        ]
       },
       "4": {
        "output": "Virtual-0",
        "desktops": [
-        "312d7b47-1594-43ff-9db3-0f67cf9b754a"
+        "8544a436-48d4-4691-a450-f0bb00440875"
        ],
        "onAllDesktops": false,
        "activities": [
-        "b8ff2690-c704-482a-ac2f-69886bc17c06"
+        "4751df38-d02a-44cc-a817-074f86188c7b"
        ]
       },
       "5": {
        "output": "Virtual-0",
        "desktops": [
-        "2ce0b839-3420-4204-8010-3a5a321b5b70"
+        "bb4b19bc-9db0-4a27-b45f-38835e69e102"
        ],
        "onAllDesktops": false,
        "activities": [
-        "2da318b5-3dc9-4e04-b0fd-a7e7ba37f9f9"
+        "4a63d824-a6ec-4c7e-aade-2fdc331280eb"
        ]
       },
       "6": {
        "output": "Virtual-0",
        "desktops": [
-        "2ce0b839-3420-4204-8010-3a5a321b5b70"
+        "bb4b19bc-9db0-4a27-b45f-38835e69e102"
        ],
        "onAllDesktops": false,
        "activities": [
-        "2da318b5-3dc9-4e04-b0fd-a7e7ba37f9f9"
+        "4a63d824-a6ec-4c7e-aade-2fdc331280eb"
        ]
       },
       "7": {
        "output": "Virtual-0",
        "desktops": [
-        "2ce0b839-3420-4204-8010-3a5a321b5b70"
+        "bb4b19bc-9db0-4a27-b45f-38835e69e102"
        ],
        "onAllDesktops": false,
        "activities": []
@@ -12947,20 +12945,20 @@
      "detail": {
       "current": {
        "activities": [
-        "b8ff2690-c704-482a-ac2f-69886bc17c06",
-        "2da318b5-3dc9-4e04-b0fd-a7e7ba37f9f9"
+        "4751df38-d02a-44cc-a817-074f86188c7b",
+        "4a63d824-a6ec-4c7e-aade-2fdc331280eb"
        ],
-       "current": "2da318b5-3dc9-4e04-b0fd-a7e7ba37f9f9"
+       "current": "4a63d824-a6ec-4c7e-aade-2fdc331280eb"
       },
-      "desktop": "2ce0b839-3420-4204-8010-3a5a321b5b70",
+      "desktop": "bb4b19bc-9db0-4a27-b45f-38835e69e102",
       "2": {
        "output": "Virtual-0",
        "desktops": [
-        "312d7b47-1594-43ff-9db3-0f67cf9b754a"
+        "8544a436-48d4-4691-a450-f0bb00440875"
        ],
        "onAllDesktops": false,
        "activities": [
-        "b8ff2690-c704-482a-ac2f-69886bc17c06"
+        "4751df38-d02a-44cc-a817-074f86188c7b"
        ]
       }
      }
@@ -12986,7 +12984,7 @@
     "same-turn: the helper sent 2 inside KWin's currentActivityChanged emission (log)": {
      "pass": true,
      "detail": [
-      "  7768.156 js PLT-SAMETURN sent"
+      " 20659.159 js PLT-SAMETURN sent"
      ]
     },
     "same-turn: the send and the switch reached Plastile with no flush work between them (trace)": {
@@ -13247,67 +13245,67 @@
       "1": {
        "output": "Virtual-0",
        "desktops": [
-        "86939880-b25b-45fe-8518-9dc227b75857"
+        "55923117-1bb5-435a-9772-cdd17005d620"
        ],
        "onAllDesktops": false,
        "activities": [
-        "fce958d4-703c-4119-b905-b476c2367e76"
+        "83141473-e82e-4aa0-bbe4-ba395b2fd7b1"
        ]
       },
       "2": {
        "output": "Virtual-0",
        "desktops": [
-        "86939880-b25b-45fe-8518-9dc227b75857"
+        "55923117-1bb5-435a-9772-cdd17005d620"
        ],
        "onAllDesktops": false,
        "activities": [
-        "fce958d4-703c-4119-b905-b476c2367e76"
+        "83141473-e82e-4aa0-bbe4-ba395b2fd7b1"
        ]
       },
       "3": {
        "output": "Virtual-0",
        "desktops": [
-        "86939880-b25b-45fe-8518-9dc227b75857"
+        "55923117-1bb5-435a-9772-cdd17005d620"
        ],
        "onAllDesktops": false,
        "activities": [
-        "fce958d4-703c-4119-b905-b476c2367e76"
+        "83141473-e82e-4aa0-bbe4-ba395b2fd7b1"
        ]
       },
       "4": {
        "output": "Virtual-0",
        "desktops": [
-        "b87414e7-c5d7-4a90-a297-a74fd79a916c"
+        "62c62a1d-a9a5-4d8d-aa35-eace82d3710f"
        ],
        "onAllDesktops": false,
        "activities": [
-        "fce958d4-703c-4119-b905-b476c2367e76"
+        "83141473-e82e-4aa0-bbe4-ba395b2fd7b1"
        ]
       },
       "5": {
        "output": "Virtual-0",
        "desktops": [
-        "86939880-b25b-45fe-8518-9dc227b75857"
+        "55923117-1bb5-435a-9772-cdd17005d620"
        ],
        "onAllDesktops": false,
        "activities": [
-        "cbcf0f91-67b3-4002-a853-80f3c28b4013"
+        "14e0ae28-00b7-4961-a72a-677e02bdba9b"
        ]
       },
       "6": {
        "output": "Virtual-0",
        "desktops": [
-        "86939880-b25b-45fe-8518-9dc227b75857"
+        "55923117-1bb5-435a-9772-cdd17005d620"
        ],
        "onAllDesktops": false,
        "activities": [
-        "cbcf0f91-67b3-4002-a853-80f3c28b4013"
+        "14e0ae28-00b7-4961-a72a-677e02bdba9b"
        ]
       },
       "7": {
        "output": "Virtual-0",
        "desktops": [
-        "86939880-b25b-45fe-8518-9dc227b75857"
+        "55923117-1bb5-435a-9772-cdd17005d620"
        ],
        "onAllDesktops": false,
        "activities": []
@@ -13332,20 +13330,20 @@
      "detail": {
       "current": {
        "activities": [
-        "fce958d4-703c-4119-b905-b476c2367e76",
-        "cbcf0f91-67b3-4002-a853-80f3c28b4013"
+        "83141473-e82e-4aa0-bbe4-ba395b2fd7b1",
+        "14e0ae28-00b7-4961-a72a-677e02bdba9b"
        ],
-       "current": "cbcf0f91-67b3-4002-a853-80f3c28b4013"
+       "current": "14e0ae28-00b7-4961-a72a-677e02bdba9b"
       },
-      "desktop": "86939880-b25b-45fe-8518-9dc227b75857",
+      "desktop": "55923117-1bb5-435a-9772-cdd17005d620",
       "2": {
        "output": "Virtual-0",
        "desktops": [
-        "b87414e7-c5d7-4a90-a297-a74fd79a916c"
+        "62c62a1d-a9a5-4d8d-aa35-eace82d3710f"
        ],
        "onAllDesktops": false,
        "activities": [
-        "fce958d4-703c-4119-b905-b476c2367e76"
+        "83141473-e82e-4aa0-bbe4-ba395b2fd7b1"
        ]
       }
      }
@@ -13627,67 +13625,67 @@
       "1": {
        "output": "Virtual-0",
        "desktops": [
-        "0ddb6ba3-d1c1-4dc5-a04d-b88e1d257a77"
+        "1ec7f78d-ca14-4155-840e-8799850c15b5"
        ],
        "onAllDesktops": false,
        "activities": [
-        "7ed98382-0662-4f44-9ddb-1b02afeafc9d"
+        "543894c4-4e16-4cd6-9cd7-8b745a72a21c"
        ]
       },
       "2": {
        "output": "Virtual-0",
        "desktops": [
-        "0ddb6ba3-d1c1-4dc5-a04d-b88e1d257a77"
+        "1ec7f78d-ca14-4155-840e-8799850c15b5"
        ],
        "onAllDesktops": false,
        "activities": [
-        "7ed98382-0662-4f44-9ddb-1b02afeafc9d"
+        "543894c4-4e16-4cd6-9cd7-8b745a72a21c"
        ]
       },
       "3": {
        "output": "Virtual-0",
        "desktops": [
-        "0ddb6ba3-d1c1-4dc5-a04d-b88e1d257a77"
+        "1ec7f78d-ca14-4155-840e-8799850c15b5"
        ],
        "onAllDesktops": false,
        "activities": [
-        "7ed98382-0662-4f44-9ddb-1b02afeafc9d"
+        "543894c4-4e16-4cd6-9cd7-8b745a72a21c"
        ]
       },
       "4": {
        "output": "Virtual-0",
        "desktops": [
-        "7f6f6156-95bf-4ca4-bf60-45f8170acda3"
+        "1e07949a-dd97-4fd6-aba3-07940d4aa256"
        ],
        "onAllDesktops": false,
        "activities": [
-        "7ed98382-0662-4f44-9ddb-1b02afeafc9d"
+        "543894c4-4e16-4cd6-9cd7-8b745a72a21c"
        ]
       },
       "5": {
        "output": "Virtual-0",
        "desktops": [
-        "0ddb6ba3-d1c1-4dc5-a04d-b88e1d257a77"
+        "1ec7f78d-ca14-4155-840e-8799850c15b5"
        ],
        "onAllDesktops": false,
        "activities": [
-        "2579c93f-48e6-4116-9b5a-b33230ec66f3"
+        "781995af-fbe2-432e-81e9-8cc2cd2eb047"
        ]
       },
       "6": {
        "output": "Virtual-0",
        "desktops": [
-        "0ddb6ba3-d1c1-4dc5-a04d-b88e1d257a77"
+        "1ec7f78d-ca14-4155-840e-8799850c15b5"
        ],
        "onAllDesktops": false,
        "activities": [
-        "2579c93f-48e6-4116-9b5a-b33230ec66f3"
+        "781995af-fbe2-432e-81e9-8cc2cd2eb047"
        ]
       },
       "7": {
        "output": "Virtual-0",
        "desktops": [
-        "0ddb6ba3-d1c1-4dc5-a04d-b88e1d257a77"
+        "1ec7f78d-ca14-4155-840e-8799850c15b5"
        ],
        "onAllDesktops": false,
        "activities": []
@@ -13712,20 +13710,20 @@
      "detail": {
       "current": {
        "activities": [
-        "7ed98382-0662-4f44-9ddb-1b02afeafc9d",
-        "2579c93f-48e6-4116-9b5a-b33230ec66f3"
+        "543894c4-4e16-4cd6-9cd7-8b745a72a21c",
+        "781995af-fbe2-432e-81e9-8cc2cd2eb047"
        ],
-       "current": "2579c93f-48e6-4116-9b5a-b33230ec66f3"
+       "current": "781995af-fbe2-432e-81e9-8cc2cd2eb047"
       },
-      "desktop": "0ddb6ba3-d1c1-4dc5-a04d-b88e1d257a77",
+      "desktop": "1ec7f78d-ca14-4155-840e-8799850c15b5",
       "2": {
        "output": "Virtual-0",
        "desktops": [
-        "7f6f6156-95bf-4ca4-bf60-45f8170acda3"
+        "1e07949a-dd97-4fd6-aba3-07940d4aa256"
        ],
        "onAllDesktops": false,
        "activities": [
-        "7ed98382-0662-4f44-9ddb-1b02afeafc9d"
+        "543894c4-4e16-4cd6-9cd7-8b745a72a21c"
        ]
       }
      }
@@ -14083,7 +14081,7 @@
     }
    },
    "error": null,
-   "seconds": 17.0,
+   "seconds": 17.1,
    "pass": true
   },
   "motion-swap-T31": {
@@ -14140,12 +14138,12 @@
      "pass": true,
      "detail": {
       "endMsAfterCommand": [
-       203,
-       220
+       205,
+       205
       ],
       "ends": [
-       "target=[707,404,565,388] frame=[707,404,565,388]",
-       "target=[8,8,691,784] frame=[8,8,691,784]"
+       "target=[8,8,691,784] frame=[8,8,691,784]",
+       "target=[707,404,565,388] frame=[707,404,565,388]"
       ]
      }
     },
@@ -14178,7 +14176,7 @@
     }
    },
    "error": null,
-   "seconds": 2.3,
+   "seconds": 2.2,
    "pass": true
   },
   "motion-client-cost-T31": {
@@ -14705,13 +14703,13 @@
      "pass": true,
      "detail": {
       "on": {
-       "p50": 1.2,
-       "max": 1.37,
+       "p50": 1.32,
+       "max": 1.79,
        "n": 19
       },
       "off": {
-       "p50": 1.07,
-       "max": 1.44,
+       "p50": 1.27,
+       "max": 1.52,
        "n": 19
       }
      }
@@ -14721,12 +14719,12 @@
      "detail": {
       "on": {
        "p50": 2.5,
-       "max": 4.8,
+       "max": 4.4,
        "n": 19
       },
       "off": {
-       "p50": 2.1,
-       "max": 4.1,
+       "p50": 2.4,
+       "max": 3.5,
        "n": 19
       }
      }
@@ -14736,25 +14734,25 @@
      "detail": {
       "configureMs": {
        "on": {
-        "p50": 1.2,
-        "max": 1.37,
+        "p50": 1.32,
+        "max": 1.79,
         "n": 19
        },
        "off": {
-        "p50": 1.07,
-        "max": 1.44,
+        "p50": 1.27,
+        "max": 1.52,
         "n": 19
        }
       },
       "frameChangedMs": {
        "on": {
         "p50": 2.5,
-        "max": 4.8,
+        "max": 4.4,
         "n": 19
        },
        "off": {
-        "p50": 2.1,
-        "max": 4.1,
+        "p50": 2.4,
+        "max": 3.5,
         "n": 19
        }
       }
@@ -14802,21 +14800,21 @@
     "(4) each animation ends once, about one duration after the last command (each retarget restarts the full duration from the current visual)": {
      "pass": true,
      "detail": [
-      181,
-      181,
-      181
+      192,
+      192,
+      192
      ]
     },
     "(4) the end is at the final frame (oracle)": {
      "pass": true,
      "detail": [
       [
-       "plastile-fixture 1",
-       "target=[8,8,150,784] frame=[8,8,150,784]"
-      ],
-      [
        "plastile-fixture 3",
        "target=[166,404,1106,388] frame=[166,404,1106,388]"
+      ],
+      [
+       "plastile-fixture 1",
+       "target=[8,8,150,784] frame=[8,8,150,784]"
       ],
       [
        "plastile-fixture 2",
@@ -14850,7 +14848,7 @@
        "plastile-fixture 3"
       ],
       "errors": [
-       "plastile-fixture 1 not drawn at its client rect [707, 432, 565, 360]: centre (177, 126, 94), off-colour points [(755, 480, (147, 66, 159)), (1224, 480, (0, 0, 0)), (755, 744, (147, 66, 159))], strip [(147, 66, 159), (146, 104, 77), (147, 66, 159)], beyond the strip [(163, 115, 86), (147, 66, 159)]",
+       "plastile-fixture 1 not drawn at its client rect [707, 432, 565, 360]: centre (177, 126, 94), off-colour points [(755, 480, (147, 66, 159)), (1224, 480, (0, 0, 0)), (755, 744, (147, 66, 159))], strip [(147, 66, 159), (148, 105, 78), (147, 66, 159)], beyond the strip [(164, 116, 86), (147, 66, 159)]",
        "plastile-fixture 3 not drawn at its client rect [8, 36, 691, 756]: centre (147, 66, 159), off-colour points [(56, 84, (0, 0, 0)), (651, 84, (0, 0, 0)), (56, 744, (0, 0, 0))], strip [(0, 0, 0), (0, 0, 0), (0, 0, 0)], beyond the strip [(0, 0, 0), (0, 0, 0)]"
       ]
      }
@@ -14902,7 +14900,7 @@
        "plastile-fixture 3"
       ],
       "errors": [
-       "plastile-fixture 1 not drawn at its client rect [707, 36, 565, 360]: centre (171, 121, 90), off-colour points [(755, 84, (0, 0, 0)), (1224, 84, (0, 0, 0)), (755, 348, (167, 143, 146))], strip [(0, 0, 0), (0, 0, 0), (0, 0, 0)], beyond the strip [(0, 0, 0), (0, 0, 0)]",
+       "plastile-fixture 1 not drawn at its client rect [707, 36, 565, 360]: centre (171, 121, 91), off-colour points [(755, 84, (0, 0, 0)), (1224, 84, (0, 0, 0)), (755, 348, (167, 143, 146))], strip [(0, 0, 0), (0, 0, 0), (0, 0, 0)], beyond the strip [(0, 0, 0), (0, 0, 0)]",
        "plastile-fixture 3 not drawn at its client rect [707, 432, 565, 360]: centre (167, 143, 146), off-colour points [(755, 744, (0, 0, 0)), (1224, 744, (0, 0, 0)), (990, 744, (0, 0, 0))], strip [(167, 143, 146), (167, 143, 146), (167, 143, 146)], beyond the strip [(167, 143, 146), (167, 143, 146)]"
       ]
      }
@@ -15152,7 +15150,7 @@
      "pass": true,
      "detail": {
       "errors": [],
-      "shotMs": 16
+      "shotMs": 15
      }
     },
     "no errors in KWin's log": {
@@ -15215,13 +15213,13 @@
      "detail": [
       [
        "start",
-       "plastile-fixture 4",
-       "from=[1288,8,691,784] to=[1987,8,565,784] ms=1000 easing=Out"
+       "plastile-fixture 3",
+       "from=[1987,8,565,784] to=[1288,8,691,784] ms=1000 easing=Out"
       ],
       [
        "start",
-       "plastile-fixture 3",
-       "from=[1987,8,565,784] to=[1288,8,691,784] ms=1000 easing=Out"
+       "plastile-fixture 4",
+       "from=[1288,8,691,784] to=[1987,8,565,784] ms=1000 easing=Out"
       ],
       [
        "cancel",
@@ -15286,8 +15284,8 @@
     "release: two builds yield identical bytes": {
      "pass": true,
      "detail": {
-      "sha256": "6e9f8933a30c40bfc8afa018efc697d80ad4c6ff39dccfbd82158074f47845b6",
-      "bytes": 99694
+      "sha256": "9aebdf7e1881b0c36ebfcc370cd0d610bf64fb01abd556a9309d4f6945e4b3c4",
+      "bytes": 99871
      }
     },
     "release: required entries present and sorted": {
@@ -15308,7 +15306,7 @@
      "detail": {
       "rc": 0,
       "stderr": "",
-      "cliSha256": "6e9f8933a30c40bfc8afa018efc697d80ad4c6ff39dccfbd82158074f47845b6"
+      "cliSha256": "9aebdf7e1881b0c36ebfcc370cd0d610bf64fb01abd556a9309d4f6945e4b3c4"
      }
     },
     "install: script and effect installed into the nested data home (rc 0), kwinrc untouched": {
@@ -15385,7 +15383,7 @@
     }
    },
    "error": null,
-   "seconds": 1.0,
+   "seconds": 0.8,
    "pass": true
   },
   "motion-edges-T31": {
@@ -15434,13 +15432,13 @@
      "detail": [
       [
        "skip",
-       "plastile-fixture 2",
-       "reason=transition from=[707,8,565.33,388] to=[472,8,373.33,255.33]"
+       "plastile-fixture 3",
+       "reason=transition from=[707,404,565.33,388] to=[472,271,373.33,255.33]"
       ],
       [
        "skip",
-       "plastile-fixture 3",
-       "reason=transition from=[707,404,565.33,388] to=[472,271,373.33,255.33]"
+       "plastile-fixture 2",
+       "reason=transition from=[707,8,565.33,388] to=[472,8,373.33,255.33]"
       ],
       [
        "skip",
@@ -15560,6 +15558,11 @@
       ],
       [
        "end",
+       "plastile-fixture 2",
+       "target=[8,8,691,784] frame=[8,8,691,784]"
+      ],
+      [
+       "end",
        "plastile-fixture 3",
        "target=[707,8,565,388] frame=[707,8,565,388]"
       ],
@@ -15567,11 +15570,6 @@
        "end",
        "plastile-fixture 1",
        "target=[707,404,565,388] frame=[707,404,565,388]"
-      ],
-      [
-       "end",
-       "plastile-fixture 2",
-       "target=[8,8,691,784] frame=[8,8,691,784]"
       ]
      ]
     },
@@ -16163,7 +16161,7 @@
     }
    },
    "error": null,
-   "seconds": 1.1,
+   "seconds": 1.0,
    "pass": true
   },
   "native-unmanage-config-L14": {
@@ -16219,8 +16217,8 @@
     "release: two builds yield identical bytes": {
      "pass": true,
      "detail": {
-      "sha256": "6e9f8933a30c40bfc8afa018efc697d80ad4c6ff39dccfbd82158074f47845b6",
-      "bytes": 99694
+      "sha256": "9aebdf7e1881b0c36ebfcc370cd0d610bf64fb01abd556a9309d4f6945e4b3c4",
+      "bytes": 99871
      }
     },
     "release: required entries present and sorted": {
@@ -16241,7 +16239,7 @@
      "detail": {
       "rc": 0,
       "stderr": "",
-      "cliSha256": "6e9f8933a30c40bfc8afa018efc697d80ad4c6ff39dccfbd82158074f47845b6"
+      "cliSha256": "9aebdf7e1881b0c36ebfcc370cd0d610bf64fb01abd556a9309d4f6945e4b3c4"
      }
     },
     "install.sh install into nested XDG_DATA_HOME: rc 0, directory and bundle present": {
@@ -16253,7 +16251,7 @@
       "argv": [
        "tools/install.sh",
        "install",
-       "<repo>/artifacts/integration/20261025T201613/package-install-autoload-T32/dist/plastile-0.1.0.kwinscript"
+       "<repo>/artifacts/integration/20261025T235105/package-install-autoload-T32/dist/plastile-0.1.0.kwinscript"
       ],
       "stdout": "Successfully installed <session>/data/kwin/scripts/plastile/\n\nInstalled to: <session>/data/kwin/scripts/plastile\nNothing was enabled, reloaded or restarted. KWin discovers packages when it (re)scans\nkwin/scripts; a package installed while KWin is running may not be visible until the\nscript list is refreshed (log out and in). To enable Plastile, either:\n\n  System Settings > Window Management > KWin Scripts > tick \"Plastile\" > Apply\n\nor, from a terminal in the same session:\n\n  kwriteconfig6 --file kwinrc --group Plugins --key plastileEnabled true\n  qdbus6 org.kde.KWin /Scripting org.kde.kwin.Scripting.start\n\nTo disable later, set the same key to false and run the same Scripting.start command.\nThis script prints these commands; it does not execute them.\n\nLayout preferences (layouts, ratios, floated windows) are kept across restarts only with\nthe persistence helper: tools/install.sh install-helper. Without it they last until\nKWin restarts or the script reloads.\nSuccessfully installed <session>/data/kwin/effects/plastile_motion/\n\nEffect installed to: <session>/data/kwin/effects/plastile_motion (disabled: nothing was enabled or loaded)\nPlastile Motion animates how a window looks while it slides or resizes to the place Plastile\n(or any program) gave it; the window itself is already there. To turn it on:\n\n  System Settings > Window Management > Desktop Effects > tick \"Plastile Motion\" > Apply\n\nor, from a terminal in the same session (KWin loads it when it sees the change):\n\n  kwriteconfig6 --file kwinrc --group Plugins --key plastile_motionEnabled --notify true\n\nTo turn it off, untick it or run the same command with false. Animation speed \"Instant\"\n(System Settings > General Behavior) also turns it off. This script prints these commands;\nit does not execute them. A running KWin reads the effect's files when it loads it: after an\nupgrade, turn the effect off and on again (or log out and in) to run the new version.\n",
       "stderr": "",
@@ -16272,7 +16270,7 @@
     "autoload: 'plastile notice started' observed after KWin start without manual load": {
      "pass": true,
      "detail": [
-      "  7869.555 qml plastile notice started 0.1.0: 0 windows, configuration revision 1; layout master-stack on Virtual-0 / Desktop 1"
+      " 20760.354 qml plastile notice started 0.1.0: 0 windows, configuration revision 1; layout master-stack on Virtual-0 / Desktop 1"
      ]
     },
     "autoload: Scripting.isScriptLoaded(plastile) is true": {
@@ -16349,7 +16347,7 @@
     "disable: kwinrc plastileEnabled=false + Scripting.start -> 'plastile notice stopped'": {
      "pass": true,
      "detail": [
-      "  7869.912 qml plastile notice stopped"
+      " 20760.696 qml plastile notice stopped"
      ]
     },
     "disable: isScriptLoaded false afterwards": {
@@ -16369,16 +16367,16 @@
       "argv": [
        "tools/install.sh",
        "upgrade",
-       "<repo>/artifacts/integration/20261025T201613/package-install-autoload-T32/dist/plastile-0.1.0.kwinscript"
+       "<repo>/artifacts/integration/20261025T235105/package-install-autoload-T32/dist/plastile-0.1.0.kwinscript"
       ],
-      "stdout": "Upgrading package from file: <repo>/artifacts/integration/20261025T201613/package-install-autoload-T32/dist/plastile-0.1.0.kwinscript\nSuccessfully upgraded <session>/data/kwin/scripts/plastile/\n\nUpgraded: <session>/data/kwin/scripts/plastile\nA running KWin keeps executing the previously loaded version until KWin itself restarts:\nlog out and back in. Disabling and re-enabling the script (System Settings > Window\nManagement > KWin Scripts, or kwriteconfig6 + Scripting.start) is not enough: KWin 6.7.5\nstarts the older version again from its QML cache (measured in a nested session).\nSettings in kwinrc and your shortcut bindings are kept. This script restarts nothing.\nUpgrading package from file: <repo>/effect\nSuccessfully upgraded <session>/data/kwin/effects/plastile_motion/\n\nEffect installed to: <session>/data/kwin/effects/plastile_motion (disabled: nothing was enabled or loaded)\nPlastile Motion animates how a window looks while it slides or resizes to the place Plastile\n(or any program) gave it; the window itself is already there. To turn it on:\n\n  System Settings > Window Management > Desktop Effects > tick \"Plastile Motion\" > Apply\n\nor, from a terminal in the same session (KWin loads it when it sees the change):\n\n  kwriteconfig6 --file kwinrc --group Plugins --key plastile_motionEnabled --notify true\n\nTo turn it off, untick it or run the same command with false. Animation speed \"Instant\"\n(System Settings > General Behavior) also turns it off. This script prints these commands;\nit does not execute them. A running KWin reads the effect's files when it loads it: after an\nupgrade, turn the effect off and on again (or log out and in) to run the new version.\n",
+      "stdout": "Upgrading package from file: <repo>/artifacts/integration/20261025T235105/package-install-autoload-T32/dist/plastile-0.1.0.kwinscript\nSuccessfully upgraded <session>/data/kwin/scripts/plastile/\n\nUpgraded: <session>/data/kwin/scripts/plastile\nA running KWin keeps executing the previously loaded version until KWin itself restarts:\nlog out and back in. Disabling and re-enabling the script (System Settings > Window\nManagement > KWin Scripts, or kwriteconfig6 + Scripting.start) is not enough: KWin 6.7.5\nstarts the older version again from its QML cache (measured in a nested session).\nSettings in kwinrc and your shortcut bindings are kept. This script restarts nothing.\nUpgrading package from file: <repo>/effect\nSuccessfully upgraded <session>/data/kwin/effects/plastile_motion/\n\nEffect installed to: <session>/data/kwin/effects/plastile_motion (disabled: nothing was enabled or loaded)\nPlastile Motion animates how a window looks while it slides or resizes to the place Plastile\n(or any program) gave it; the window itself is already there. To turn it on:\n\n  System Settings > Window Management > Desktop Effects > tick \"Plastile Motion\" > Apply\n\nor, from a terminal in the same session (KWin loads it when it sees the change):\n\n  kwriteconfig6 --file kwinrc --group Plugins --key plastile_motionEnabled --notify true\n\nTo turn it off, untick it or run the same command with false. Animation speed \"Instant\"\n(System Settings > General Behavior) also turns it off. This script prints these commands;\nit does not execute them. A running KWin reads the effect's files when it loads it: after an\nupgrade, turn the effect off and on again (or log out and in) to run the new version.\n",
       "stderr": ""
      }
     },
     "re-enable after upgrade: 'plastile notice started' again": {
      "pass": true,
      "detail": [
-      "  7870.264 qml plastile notice started 0.1.0: 2 windows, configuration revision 1; layout master-stack on Virtual-0 / Desktop 1"
+      " 20761.057 qml plastile notice started 0.1.0: 2 windows, configuration revision 1; layout master-stack on Virtual-0 / Desktop 1"
      ]
     },
     "re-enable: 2 fixtures still tiled (oracle)": {
@@ -16404,21 +16402,21 @@
      "pass": true,
      "detail": {
       "rc": 1,
-      "stderr": "install.sh: <repo>/artifacts/integration/20261025T201613/package-install-autoload-T32/package-without-bundle/contents/code/plastile.mjs is missing: run npm run build\n"
+      "stderr": "install.sh: <repo>/artifacts/integration/20261025T235105/package-install-autoload-T32/package-without-bundle/contents/code/plastile.mjs is missing: run npm run build\n"
      }
     },
     "refuse upgradeDir without contents/code/plastile.mjs: rc 1, says 'run npm run build', nothing installed": {
      "pass": true,
      "detail": {
       "rc": 1,
-      "stderr": "install.sh: <repo>/artifacts/integration/20261025T201613/package-install-autoload-T32/package-without-bundle/contents/code/plastile.mjs is missing: run npm run build\n"
+      "stderr": "install.sh: <repo>/artifacts/integration/20261025T235105/package-install-autoload-T32/package-without-bundle/contents/code/plastile.mjs is missing: run npm run build\n"
      }
     },
     "refuse installZip without contents/code/plastile.mjs: rc 1, says 'run npm run build', nothing installed": {
      "pass": true,
      "detail": {
       "rc": 1,
-      "stderr": "install.sh: <repo>/artifacts/integration/20261025T201613/package-install-autoload-T32/package-without-bundle.kwinscript lacks contents/code/plastile.mjs: run npm run build, then tools/release.py\n"
+      "stderr": "install.sh: <repo>/artifacts/integration/20261025T235105/package-install-autoload-T32/package-without-bundle.kwinscript lacks contents/code/plastile.mjs: run npm run build, then tools/release.py\n"
      }
     },
     "install with default source (package/) succeeds; second install refuses (rc 4); remove cleans up": {
@@ -16447,8 +16445,8 @@
     "release: two builds yield identical bytes": {
      "pass": true,
      "detail": {
-      "sha256": "6e9f8933a30c40bfc8afa018efc697d80ad4c6ff39dccfbd82158074f47845b6",
-      "bytes": 99694
+      "sha256": "9aebdf7e1881b0c36ebfcc370cd0d610bf64fb01abd556a9309d4f6945e4b3c4",
+      "bytes": 99871
      }
     },
     "release: required entries present and sorted": {
@@ -16469,7 +16467,7 @@
      "detail": {
       "rc": 0,
       "stderr": "",
-      "cliSha256": "6e9f8933a30c40bfc8afa018efc697d80ad4c6ff39dccfbd82158074f47845b6"
+      "cliSha256": "9aebdf7e1881b0c36ebfcc370cd0d610bf64fb01abd556a9309d4f6945e4b3c4"
      }
     },
     "pre-install: Plastile is not loaded (nothing to load)": {
@@ -16485,7 +16483,7 @@
       "argv": [
        "tools/install.sh",
        "install",
-       "<repo>/artifacts/integration/20261025T201613/package-post-start-discovery-T32/dist/plastile-0.1.0.kwinscript"
+       "<repo>/artifacts/integration/20261025T235105/package-post-start-discovery-T32/dist/plastile-0.1.0.kwinscript"
       ],
       "stdout": "Successfully installed <session>/data/kwin/scripts/plastile/\n\nInstalled to: <session>/data/kwin/scripts/plastile\nNothing was enabled, reloaded or restarted. KWin discovers packages when it (re)scans\nkwin/scripts; a package installed while KWin is running may not be visible until the\nscript list is refreshed (log out and in). To enable Plastile, either:\n\n  System Settings > Window Management > KWin Scripts > tick \"Plastile\" > Apply\n\nor, from a terminal in the same session:\n\n  kwriteconfig6 --file kwinrc --group Plugins --key plastileEnabled true\n  qdbus6 org.kde.KWin /Scripting org.kde.kwin.Scripting.start\n\nTo disable later, set the same key to false and run the same Scripting.start command.\nThis script prints these commands; it does not execute them.\n\nLayout preferences (layouts, ratios, floated windows) are kept across restarts only with\nthe persistence helper: tools/install.sh install-helper. Without it they last until\nKWin restarts or the script reloads.\nSuccessfully installed <session>/data/kwin/effects/plastile_motion/\n\nEffect installed to: <session>/data/kwin/effects/plastile_motion (disabled: nothing was enabled or loaded)\nPlastile Motion animates how a window looks while it slides or resizes to the place Plastile\n(or any program) gave it; the window itself is already there. To turn it on:\n\n  System Settings > Window Management > Desktop Effects > tick \"Plastile Motion\" > Apply\n\nor, from a terminal in the same session (KWin loads it when it sees the change):\n\n  kwriteconfig6 --file kwinrc --group Plugins --key plastile_motionEnabled --notify true\n\nTo turn it off, untick it or run the same command with false. Animation speed \"Instant\"\n(System Settings > General Behavior) also turns it off. This script prints these commands;\nit does not execute them. A running KWin reads the effect's files when it loads it: after an\nupgrade, turn the effect off and on again (or log out and in) to run the new version.\n",
       "stderr": ""
@@ -16552,7 +16550,7 @@
        "status"
       ],
       "rc": 0,
-      "stdout": "data home : <session>/data\ntarget    : <session>/data/kwin/scripts/plastile\ninstalled : no\nenabled   : unset (kwinrc [Plugins] plastileEnabled)\nhelper    : not installed (no <session>/data/dbus-1/services/org.kde.plastile.State.service): preferences are kept in memory only\nstate     : <repo>/artifacts/integration/20261025T201613/package-helper-install-T32/xdg/state/plastile\neffect    : not installed (<session>/data/kwin/effects/plastile_motion)\neffect on : unset (default: off) (kwinrc [Plugins] plastile_motionEnabled)\nkpackagetool6 --type KWin/Script --show plastile:\n  Error: Can't find plugin metadata: plastile\n",
+      "stdout": "data home : <session>/data\ntarget    : <session>/data/kwin/scripts/plastile\ninstalled : no\nenabled   : unset (kwinrc [Plugins] plastileEnabled)\nhelper    : not installed (no <session>/data/dbus-1/services/org.kde.plastile.State.service): preferences are kept in memory only\nstate     : <repo>/artifacts/integration/20261025T235105/package-helper-install-T32/xdg/state/plastile\neffect    : not installed (<session>/data/kwin/effects/plastile_motion)\neffect on : unset (default: off) (kwinrc [Plugins] plastile_motionEnabled)\nkpackagetool6 --type KWin/Script --show plastile:\n  Error: Can't find plugin metadata: plastile\n",
       "stderr": ""
      }
     },
@@ -16565,7 +16563,7 @@
         "install-helper"
        ],
        "rc": 0,
-       "stdout": "The session bus re-read its service files.\n\nInstalled: <session>/helper prefix/libexec/plastile-state\nActivation file: <session>/data/dbus-1/services/org.kde.plastile.State.service\nThe session bus starts the helper when Plastile first asks for it (when the script starts\nor reloads); nothing is running now. A Plastile that already runs without it keeps its\npreferences in memory until the script is reloaded or KWin restarts.\nSaved state: <repo>/artifacts/integration/20261025T201613/package-helper-install-T32/xdg/state/plastile\n",
+       "stdout": "The session bus re-read its service files.\n\nInstalled: <session>/helper prefix/libexec/plastile-state\nActivation file: <session>/data/dbus-1/services/org.kde.plastile.State.service\nThe session bus starts the helper when Plastile first asks for it (when the script starts\nor reloads); nothing is running now. A Plastile that already runs without it keeps its\npreferences in memory until the script is reloaded or KWin restarts.\nSaved state: <repo>/artifacts/integration/20261025T235105/package-helper-install-T32/xdg/state/plastile\n",
        "stderr": ""
       },
       "service": "[D-BUS Service]\nName=org.kde.plastile.State\nExec=\"<session>/helper prefix/libexec/plastile-state\"\n"
@@ -16573,19 +16571,19 @@
     },
     "install-helper asked the session's own bus to re-read its service files": {
      "pass": true,
-     "detail": "ta/dbus-1/services/org.kde.plastile.State.service\nThe session bus starts the helper when Plastile first asks for it (when the script starts\nor reloads); nothing is running now. A Plastile that already runs without it keeps its\npreferences in memory until the script is reloaded or KWin restarts.\nSaved state: <repo>/artifacts/integration/20261025T201613/package-helper-install-T32/xdg/state/plastile\n"
+     "detail": "ta/dbus-1/services/org.kde.plastile.State.service\nThe session bus starts the helper when Plastile first asks for it (when the script starts\nor reloads); nothing is running now. A Plastile that already runs without it keeps its\npreferences in memory until the script is reloaded or KWin restarts.\nSaved state: <repo>/artifacts/integration/20261025T235105/package-helper-install-T32/xdg/state/plastile\n"
     },
     "install-helper with no helper on the bus: nothing is running now": {
      "pass": true,
-     "detail": "ta/dbus-1/services/org.kde.plastile.State.service\nThe session bus starts the helper when Plastile first asks for it (when the script starts\nor reloads); nothing is running now. A Plastile that already runs without it keeps its\npreferences in memory until the script is reloaded or KWin restarts.\nSaved state: <repo>/artifacts/integration/20261025T201613/package-helper-install-T32/xdg/state/plastile\n"
+     "detail": "ta/dbus-1/services/org.kde.plastile.State.service\nThe session bus starts the helper when Plastile first asks for it (when the script starts\nor reloads); nothing is running now. A Plastile that already runs without it keeps its\npreferences in memory until the script is reloaded or KWin restarts.\nSaved state: <repo>/artifacts/integration/20261025T235105/package-helper-install-T32/xdg/state/plastile\n"
     },
     "status after install: helper installed, at the path with the space": {
      "pass": true,
-     "detail": "data home : <session>/data\ntarget    : <session>/data/kwin/scripts/plastile\ninstalled : no\nenabled   : unset (kwinrc [Plugins] plastileEnabled)\nhelper    : installed (<session>/helper prefix/libexec/plastile-state, started by the session bus)\nstate     : <repo>/artifacts/integration/20261025T201613/package-helper-install-T32/xdg/state/plastile\neffect    : not installed (<session>/data/kwin/effects/plastile_motion)\neffect on : unset (default: off) (kwinrc [Plugins] plastile_motionEnabled)\nkpackagetool6 --type KWin/Script --show plastile:\n  Error: Can't find plugin metadata: plastile\n"
+     "detail": "data home : <session>/data\ntarget    : <session>/data/kwin/scripts/plastile\ninstalled : no\nenabled   : unset (kwinrc [Plugins] plastileEnabled)\nhelper    : installed (<session>/helper prefix/libexec/plastile-state, started by the session bus)\nstate     : <repo>/artifacts/integration/20261025T235105/package-helper-install-T32/xdg/state/plastile\neffect    : not installed (<session>/data/kwin/effects/plastile_motion)\neffect on : unset (default: off) (kwinrc [Plugins] plastile_motionEnabled)\nkpackagetool6 --type KWin/Script --show plastile:\n  Error: Can't find plugin metadata: plastile\n"
     },
     "Plastile reaches the installed helper through D-Bus activation (no saved state yet, no diagnostic)": {
      "pass": true,
-     "detail": "  7898.662 qml plastile info no saved state {\"applyNs\":null,\"parseNs\":null,\"replyMs\":5}"
+     "detail": " 20789.391 qml plastile info no saved state {\"applyNs\":null,\"parseNs\":null,\"replyMs\":5}"
     },
     "a save lands through the installed helper (generation 1 in the state directory)": {
      "pass": true,
@@ -16595,7 +16593,7 @@
     },
     "install-helper over the running helper: rc 0, and it says that helper keeps serving until KWin exits": {
      "pass": true,
-     "detail": "led: <session>/helper prefix/libexec/plastile-state\nActivation file: <session>/data/dbus-1/services/org.kde.plastile.State.service\nA helper started before this install is running: it keeps serving this session until\nKWin exits (a logout), and the session bus starts the installed one after that.\nSaved state: <repo>/artifacts/integration/20261025T201613/package-helper-install-T32/xdg/state/plastile\n"
+     "detail": "led: <session>/helper prefix/libexec/plastile-state\nActivation file: <session>/data/dbus-1/services/org.kde.plastile.State.service\nA helper started before this install is running: it keeps serving this session until\nKWin exits (a logout), and the session bus starts the installed one after that.\nSaved state: <repo>/artifacts/integration/20261025T235105/package-helper-install-T32/xdg/state/plastile\n"
     },
     "remove-helper: rc 0, the activation file and the binary are gone, the saved state is kept": {
      "pass": true,
@@ -16605,13 +16603,13 @@
        "remove-helper"
       ],
       "rc": 0,
-      "stdout": "The session bus re-read its service files.\n\nRemoved: <session>/data/dbus-1/services/org.kde.plastile.State.service and <session>/helper prefix/libexec/plastile-state\nA helper that is running keeps serving this session until KWin exits (a logout). Plastile\nthen keeps its preferences in memory from its next start. The saved state in <repo>/artifacts/integration/20261025T201613/package-helper-install-T32/xdg/state/plastile was left as it\nis; delete that directory to forget it.\n",
+      "stdout": "The session bus re-read its service files.\n\nRemoved: <session>/data/dbus-1/services/org.kde.plastile.State.service and <session>/helper prefix/libexec/plastile-state\nA helper that is running keeps serving this session until KWin exits (a logout). Plastile\nthen keeps its preferences in memory from its next start. The saved state in <repo>/artifacts/integration/20261025T235105/package-helper-install-T32/xdg/state/plastile was left as it\nis; delete that directory to forget it.\n",
       "stderr": ""
      }
     },
     "status after remove: helper not installed": {
      "pass": true,
-     "detail": ">/data\ntarget    : <session>/data/kwin/scripts/plastile\ninstalled : no\nenabled   : unset (kwinrc [Plugins] plastileEnabled)\nhelper    : not installed (no <session>/data/dbus-1/services/org.kde.plastile.State.service): preferences are kept in memory only\nstate     : <repo>/artifacts/integration/20261025T201613/package-helper-install-T32/xdg/state/plastile\neffect    : not installed (<session>/data/kwin/effects/plastile_motion)\neffect on : unset (default: off) (kwinrc [Plugins] plastile_motionEnabled)\nkpackagetool6 --type KWin/Script --show plastile:\n  Error: Can't find plugin metadata: plastile\n"
+     "detail": ">/data\ntarget    : <session>/data/kwin/scripts/plastile\ninstalled : no\nenabled   : unset (kwinrc [Plugins] plastileEnabled)\nhelper    : not installed (no <session>/data/dbus-1/services/org.kde.plastile.State.service): preferences are kept in memory only\nstate     : <repo>/artifacts/integration/20261025T235105/package-helper-install-T32/xdg/state/plastile\neffect    : not installed (<session>/data/kwin/effects/plastile_motion)\neffect on : unset (default: off) (kwinrc [Plugins] plastile_motionEnabled)\nkpackagetool6 --type KWin/Script --show plastile:\n  Error: Can't find plugin metadata: plastile\n"
     },
     "remove-helper again: refuses with rc 2 (nothing installed)": {
      "pass": true,
@@ -16631,7 +16629,7 @@
     }
    },
    "error": null,
-   "seconds": 7.9,
+   "seconds": 7.7,
    "pass": true
   },
   "package-files-replaced-T32": {
@@ -16662,7 +16660,7 @@
     }
    },
    "error": null,
-   "seconds": 1.4,
+   "seconds": 1.3,
    "pass": true
   },
   "realapps-dolphin": {
@@ -16674,7 +16672,7 @@
     "dolphin: window mapped within 20 s": {
      "pass": true,
      "detail": {
-      "seconds": 0.17,
+      "seconds": 0.16,
       "exit": null
      }
     },
@@ -16822,7 +16820,7 @@
     }
    },
    "error": null,
-   "seconds": 6.1,
+   "seconds": 6.0,
    "pass": true
   },
   "realapps-systemsettings": {
@@ -16834,7 +16832,7 @@
     "systemsettings: window mapped within 20 s": {
      "pass": true,
      "detail": {
-      "seconds": 0.71,
+      "seconds": 0.65,
       "exit": null
      }
     },
@@ -16890,7 +16888,7 @@
      "pass": true,
      "detail": {
       "mode": "floating",
-      "exception": "overflow: {5107f3cf-2e8e-48bb-8dc7-55069c6a89dd}: does not fit (stack column of 2 needs 864 px height, has 784); overflow float-new"
+      "exception": "overflow: {0691e337-ae0a-4c3e-a261-c03eb635731f}: does not fit (stack column of 2 needs 864 px height, has 784); overflow float-new"
      }
     },
     "systemsettings: corrections <= 2 over 3 s after settle": {
@@ -16993,7 +16991,7 @@
     }
    },
    "error": null,
-   "seconds": 6.7,
+   "seconds": 6.5,
    "pass": true
   },
   "realapps-systemsettings-tall": {
@@ -17005,7 +17003,7 @@
     "systemsettings-tall: window mapped within 20 s": {
      "pass": true,
      "detail": {
-      "seconds": 0.67,
+      "seconds": 0.65,
       "exit": null
      }
     },
@@ -17153,7 +17151,7 @@
     }
    },
    "error": null,
-   "seconds": 6.6,
+   "seconds": 6.5,
    "pass": true
   },
   "realapps-gnome-calculator": {
@@ -17165,7 +17163,7 @@
     "gnome-calculator: window mapped within 20 s": {
      "pass": true,
      "detail": {
-      "seconds": 3.28,
+      "seconds": 2.99,
       "exit": null
      }
     },
@@ -17221,7 +17219,7 @@
      "pass": true,
      "detail": {
       "mode": "floating",
-      "exception": "overflow: {8ae19e12-2909-4f4d-9de1-271e250a4970}: does not fit (stack column of 2 needs 802 px height, has 784); overflow float-new"
+      "exception": "overflow: {ea8056a7-f598-45fe-b522-3ed66129546c}: does not fit (stack column of 2 needs 802 px height, has 784); overflow float-new"
      }
     },
     "gnome-calculator: corrections <= 2 over 3 s after settle": {
@@ -17324,7 +17322,7 @@
     }
    },
    "error": null,
-   "seconds": 9.1,
+   "seconds": 8.8,
    "pass": true
   },
   "realapps-gnome-calculator-tall": {
@@ -17336,7 +17334,7 @@
     "gnome-calculator-tall: window mapped within 20 s": {
      "pass": true,
      "detail": {
-      "seconds": 3.48,
+      "seconds": 2.99,
       "exit": null
      }
     },
@@ -17484,7 +17482,7 @@
     }
    },
    "error": null,
-   "seconds": 9.3,
+   "seconds": 8.8,
    "pass": true
   },
   "realapps-gnome-calculator-x11-tall": {
@@ -17496,7 +17494,7 @@
     "gnome-calculator-x11-tall: window mapped within 20 s": {
      "pass": true,
      "detail": {
-      "seconds": 3.09,
+      "seconds": 2.81,
       "exit": null
      }
     },
@@ -17644,7 +17642,7 @@
     }
    },
    "error": null,
-   "seconds": 9.0,
+   "seconds": 8.7,
    "pass": true
   },
   "realapps-alacritty": {
@@ -17656,7 +17654,7 @@
     "alacritty: window mapped within 20 s": {
      "pass": true,
      "detail": {
-      "seconds": 0.1,
+      "seconds": 0.09,
       "exit": null
      }
     },
@@ -17816,7 +17814,7 @@
     "firefox: window mapped within 40 s": {
      "pass": true,
      "detail": {
-      "seconds": 0.46,
+      "seconds": 0.5,
       "exit": null
      }
     },
@@ -17976,7 +17974,7 @@
     "chromium: window mapped within 40 s": {
      "pass": true,
      "detail": {
-      "seconds": 0.41,
+      "seconds": 0.4,
       "exit": null
      }
     },
@@ -18136,7 +18134,7 @@
     "xmessage: window mapped within 20 s": {
      "pass": true,
      "detail": {
-      "seconds": 0.15,
+      "seconds": 0.13,
       "exit": null
      }
     },
@@ -18296,7 +18294,7 @@
     "zenity-info: window mapped within 20 s": {
      "pass": true,
      "detail": {
-      "seconds": 3.19,
+      "seconds": 2.88,
       "exit": null
      }
     },
@@ -18460,7 +18458,7 @@
     }
    },
    "error": null,
-   "seconds": 9.2,
+   "seconds": 8.8,
    "pass": true
   },
   "realapps-zenity-info-x11": {
@@ -18472,7 +18470,7 @@
     "zenity-info-x11: window mapped within 20 s": {
      "pass": true,
      "detail": {
-      "seconds": 2.9,
+      "seconds": 2.76,
       "exit": null
      }
     },
@@ -18636,7 +18634,7 @@
     }
    },
    "error": null,
-   "seconds": 8.9,
+   "seconds": 8.7,
    "pass": true
   },
   "workarea-panel-add-remove-O07": {
@@ -18868,7 +18866,7 @@
     }
    },
    "error": null,
-   "seconds": 3.5,
+   "seconds": 3.4,
    "pass": true
   },
   "workarea-bar-namespace-O07": {
@@ -19376,7 +19374,7 @@
     }
    },
    "error": null,
-   "seconds": 2.3,
+   "seconds": 2.2,
    "pass": true
   },
   "workarea-panel-one-output-O07": {
@@ -19504,7 +19502,7 @@
      "pass": true,
      "detail": {
       "before": {
-       "{ca1b68a7-caa8-4efa-8c6c-2d5c20b07828}": {
+       "{3851c8a3-fb6d-4023-ba5b-86b4e4a79dc4}": {
         "x": 8,
         "y": 8,
         "width": 1264,
@@ -19512,7 +19510,7 @@
        }
       },
       "after": {
-       "{ca1b68a7-caa8-4efa-8c6c-2d5c20b07828}": {
+       "{3851c8a3-fb6d-4023-ba5b-86b4e4a79dc4}": {
         "x": 8,
         "y": 8,
         "width": 1264,
@@ -19602,19 +19600,19 @@
      "detail": {
       "moved": [],
       "before": {
-       "{2f2efa68-ab57-407c-ac93-bbac306b505f}": {
+       "{df44aaeb-6544-4c2b-8b97-579d9567eaa2}": {
         "x": 8,
         "y": 8,
         "width": 691,
         "height": 784
        },
-       "{ae67d07f-f03a-48f1-ace4-459ba396d601}": {
+       "{ee1213c6-f308-4141-a960-732e26582cf2}": {
         "x": 707,
         "y": 8,
         "width": 565,
         "height": 388
        },
-       "{1684ac2b-0360-467b-959c-97b9145b385a}": {
+       "{56e407f7-bfce-4076-9aa5-9c963bef7688}": {
         "x": 707,
         "y": 404,
         "width": 565,
@@ -19622,19 +19620,19 @@
        }
       },
       "after": {
-       "{2f2efa68-ab57-407c-ac93-bbac306b505f}": {
+       "{df44aaeb-6544-4c2b-8b97-579d9567eaa2}": {
         "x": 8,
         "y": 8,
         "width": 691,
         "height": 784
        },
-       "{ae67d07f-f03a-48f1-ace4-459ba396d601}": {
+       "{ee1213c6-f308-4141-a960-732e26582cf2}": {
         "x": 707,
         "y": 8,
         "width": 565,
         "height": 388
        },
-       "{1684ac2b-0360-467b-959c-97b9145b385a}": {
+       "{56e407f7-bfce-4076-9aa5-9c963bef7688}": {
         "x": 707,
         "y": 404,
         "width": 565,
@@ -19726,7 +19724,7 @@
      "pass": true,
      "detail": [
       [
-       "{2f2efa68-ab57-407c-ac93-bbac306b505f}",
+       "{df44aaeb-6544-4c2b-8b97-579d9567eaa2}",
        null,
        {
         "status": "settled",
@@ -19741,7 +19739,7 @@
        }
       ],
       [
-       "{ae67d07f-f03a-48f1-ace4-459ba396d601}",
+       "{ee1213c6-f308-4141-a960-732e26582cf2}",
        null,
        {
         "status": "settled",
@@ -19756,7 +19754,7 @@
        }
       ],
       [
-       "{1684ac2b-0360-467b-959c-97b9145b385a}",
+       "{56e407f7-bfce-4076-9aa5-9c963bef7688}",
        null,
        {
         "status": "settled",
@@ -19805,7 +19803,7 @@
      "detail": {
       "moved": [],
       "before": {
-       "{9389d7be-a0ac-4641-b2be-36602822df76}": {
+       "{898070b0-0f43-4bed-9647-13594319a3fc}": {
         "x": 8,
         "y": 8,
         "width": 1264,
@@ -19813,7 +19811,7 @@
        }
       },
       "after": {
-       "{9389d7be-a0ac-4641-b2be-36602822df76}": {
+       "{898070b0-0f43-4bed-9647-13594319a3fc}": {
         "x": 8,
         "y": 8,
         "width": 1264,
@@ -19891,7 +19889,7 @@
      "pass": true,
      "detail": [
       [
-       "{9389d7be-a0ac-4641-b2be-36602822df76}",
+       "{898070b0-0f43-4bed-9647-13594319a3fc}",
        null,
        {
         "status": "settled",
@@ -19940,7 +19938,7 @@
      "detail": {
       "moved": [],
       "before": {
-       "{64509426-9541-4b3a-a8f6-0afcf22c7f51}": {
+       "{6c26aeec-5263-4e77-8119-29bf4effa354}": {
         "x": 8,
         "y": 8,
         "width": 1264,
@@ -19948,7 +19946,7 @@
        }
       },
       "after": {
-       "{64509426-9541-4b3a-a8f6-0afcf22c7f51}": {
+       "{6c26aeec-5263-4e77-8119-29bf4effa354}": {
         "x": 8,
         "y": 8,
         "width": 1264,
@@ -20028,7 +20026,7 @@
      "pass": true,
      "detail": [
       [
-       "{64509426-9541-4b3a-a8f6-0afcf22c7f51}",
+       "{6c26aeec-5263-4e77-8119-29bf4effa354}",
        null,
        {
         "status": "settled",
@@ -20050,7 +20048,7 @@
     }
    },
    "error": null,
-   "seconds": 28.6,
+   "seconds": 28.4,
    "pass": true
   },
   "plasmashell-panels-O07": {
@@ -20684,7 +20682,7 @@
      "detail": {
       "4": "Virtual-2",
       "7": [
-       "ff4c45b5-2f7b-4e0b-8e57-58553c07d358"
+       "5bc27aae-f1c0-45fb-8f3c-e4738bc4219e"
       ]
      }
     },
@@ -20781,10 +20779,10 @@
      "pass": true,
      "detail": {
       "members": {
-       "Virtual-0/77cbb9b6-b731-43db-a515-87e357968e15/default": 3,
-       "Virtual-1/77cbb9b6-b731-43db-a515-87e357968e15/default": 1,
-       "Virtual-2/77cbb9b6-b731-43db-a515-87e357968e15/default": 1,
-       "Virtual-1/ff4c45b5-2f7b-4e0b-8e57-58553c07d358/default": 1
+       "Virtual-0/625a45aa-75cd-4c2a-9638-22641f852c23/default": 3,
+       "Virtual-1/625a45aa-75cd-4c2a-9638-22641f852c23/default": 1,
+       "Virtual-2/625a45aa-75cd-4c2a-9638-22641f852c23/default": 1,
+       "Virtual-1/5bc27aae-f1c0-45fb-8f3c-e4738bc4219e/default": 1
       },
       "windows": 6,
       "live": 6
@@ -20835,19 +20833,19 @@
     "resume: one solve per visible context (Virtual-0, -1, -2 on Desktop 1), none for the hidden one": {
      "pass": true,
      "detail": {
-      "Virtual-0/77cbb9b6-b731-43db-a515-87e357968e15/default": 1,
-      "Virtual-1/77cbb9b6-b731-43db-a515-87e357968e15/default": 1,
-      "Virtual-2/77cbb9b6-b731-43db-a515-87e357968e15/default": 1
+      "Virtual-0/625a45aa-75cd-4c2a-9638-22641f852c23/default": 1,
+      "Virtual-1/625a45aa-75cd-4c2a-9638-22641f852c23/default": 1,
+      "Virtual-2/625a45aa-75cd-4c2a-9638-22641f852c23/default": 1
      }
     },
     "resume: the window moved to desktop Two (7) is tracked there, not written while hidden": {
      "pass": true,
      "detail": {
       "members": {
-       "Virtual-0/77cbb9b6-b731-43db-a515-87e357968e15/default": 3,
-       "Virtual-1/77cbb9b6-b731-43db-a515-87e357968e15/default": 1,
-       "Virtual-2/77cbb9b6-b731-43db-a515-87e357968e15/default": 1,
-       "Virtual-1/ff4c45b5-2f7b-4e0b-8e57-58553c07d358/default": 1
+       "Virtual-0/625a45aa-75cd-4c2a-9638-22641f852c23/default": 3,
+       "Virtual-1/625a45aa-75cd-4c2a-9638-22641f852c23/default": 1,
+       "Virtual-2/625a45aa-75cd-4c2a-9638-22641f852c23/default": 1,
+       "Virtual-1/5bc27aae-f1c0-45fb-8f3c-e4738bc4219e/default": 1
       }
      }
     },
@@ -20918,15 +20916,15 @@
      "detail": {
       "resume": {
        "writes": {
-        "{0c6e565a-a62f-46f5-a595-9c9ff6359260}": 1,
-        "{3cef4547-a7fc-4444-b2d7-a02224c50c53}": 1,
-        "{0c5d7cc3-d2bf-4b6b-86e5-098a44b9f016}": 1,
-        "{dc976ec9-c005-4a7e-8cbc-24a8e3d2c0bd}": 1
+        "{0b24c598-508f-4ea3-a98c-5fcea57aef62}": 1,
+        "{7a610cd3-30dd-4e15-941c-6c5e34cf6692}": 1,
+        "{a3a8540e-877d-456d-a1ce-476086e72b52}": 1,
+        "{88d5bc87-5f99-42dd-b558-fce49a3afad5}": 1
        },
        "solves": {
-        "Virtual-0/77cbb9b6-b731-43db-a515-87e357968e15/default": 1,
-        "Virtual-1/77cbb9b6-b731-43db-a515-87e357968e15/default": 1,
-        "Virtual-2/77cbb9b6-b731-43db-a515-87e357968e15/default": 1
+        "Virtual-0/625a45aa-75cd-4c2a-9638-22641f852c23/default": 1,
+        "Virtual-1/625a45aa-75cd-4c2a-9638-22641f852c23/default": 1,
+        "Virtual-2/625a45aa-75cd-4c2a-9638-22641f852c23/default": 1
        },
        "delta": {
         "solves": 3,
@@ -20943,7 +20941,7 @@
     }
    },
    "error": null,
-   "seconds": 5.2,
+   "seconds": 5.1,
    "pass": true
   },
   "reenable-missed-events-T19": {
@@ -21037,10 +21035,10 @@
      "pass": true,
      "detail": {
       "members": {
-       "Virtual-0/4933406f-5cab-44b2-bd2b-860fdc5ea10a/default": 3,
-       "Virtual-2/4933406f-5cab-44b2-bd2b-860fdc5ea10a/default": 1,
-       "Virtual-1/4933406f-5cab-44b2-bd2b-860fdc5ea10a/default": 1,
-       "Virtual-1/2e98b387-f2e4-4185-bdf4-992664aa8837/default": 1
+       "Virtual-0/4b8670cc-6c2f-43b6-b813-10a573e04a4e/default": 3,
+       "Virtual-2/4b8670cc-6c2f-43b6-b813-10a573e04a4e/default": 1,
+       "Virtual-1/4b8670cc-6c2f-43b6-b813-10a573e04a4e/default": 1,
+       "Virtual-1/5a602a45-0068-441c-bf25-a049371861c7/default": 1
       },
       "windows": 6,
       "live": 6
@@ -21091,19 +21089,19 @@
     "re-enable: one solve per visible context (Virtual-0, -1, -2 on Desktop 1), none for the hidden one": {
      "pass": true,
      "detail": {
-      "Virtual-0/4933406f-5cab-44b2-bd2b-860fdc5ea10a/default": 1,
-      "Virtual-2/4933406f-5cab-44b2-bd2b-860fdc5ea10a/default": 1,
-      "Virtual-1/4933406f-5cab-44b2-bd2b-860fdc5ea10a/default": 1
+      "Virtual-0/4b8670cc-6c2f-43b6-b813-10a573e04a4e/default": 1,
+      "Virtual-2/4b8670cc-6c2f-43b6-b813-10a573e04a4e/default": 1,
+      "Virtual-1/4b8670cc-6c2f-43b6-b813-10a573e04a4e/default": 1
      }
     },
     "re-enable: the window moved to desktop Two (7) is tracked there, not written while hidden": {
      "pass": true,
      "detail": {
       "members": {
-       "Virtual-0/4933406f-5cab-44b2-bd2b-860fdc5ea10a/default": 3,
-       "Virtual-2/4933406f-5cab-44b2-bd2b-860fdc5ea10a/default": 1,
-       "Virtual-1/4933406f-5cab-44b2-bd2b-860fdc5ea10a/default": 1,
-       "Virtual-1/2e98b387-f2e4-4185-bdf4-992664aa8837/default": 1
+       "Virtual-0/4b8670cc-6c2f-43b6-b813-10a573e04a4e/default": 3,
+       "Virtual-2/4b8670cc-6c2f-43b6-b813-10a573e04a4e/default": 1,
+       "Virtual-1/4b8670cc-6c2f-43b6-b813-10a573e04a4e/default": 1,
+       "Virtual-1/5a602a45-0068-441c-bf25-a049371861c7/default": 1
       }
      }
     },
@@ -21153,15 +21151,15 @@
      "detail": {
       "adopt": {
        "writes": {
-        "{d8f08b64-1ba1-432b-9716-a82d61552eb6}": 1,
-        "{e01dae33-2bd6-4a5a-baea-fefceeccdb9a}": 1,
-        "{056ec004-27af-40b3-867e-344eb2e578c7}": 1,
-        "{6cf296e1-dd7b-41d5-abfc-02ae6ba38090}": 1
+        "{c9362a29-a51f-42da-b8ee-692ed57e0e28}": 1,
+        "{7a6c9b98-5570-4e2b-bda3-f21c5c06eb9c}": 1,
+        "{65bdf417-ba19-4b77-95c4-bb1c75e63656}": 1,
+        "{3d8e57f8-3cee-4cc2-8680-ceb716392c51}": 1
        },
        "solves": {
-        "Virtual-0/4933406f-5cab-44b2-bd2b-860fdc5ea10a/default": 1,
-        "Virtual-2/4933406f-5cab-44b2-bd2b-860fdc5ea10a/default": 1,
-        "Virtual-1/4933406f-5cab-44b2-bd2b-860fdc5ea10a/default": 1
+        "Virtual-0/4b8670cc-6c2f-43b6-b813-10a573e04a4e/default": 1,
+        "Virtual-2/4b8670cc-6c2f-43b6-b813-10a573e04a4e/default": 1,
+        "Virtual-1/4b8670cc-6c2f-43b6-b813-10a573e04a4e/default": 1
        }
       },
       "cycles": {
@@ -21178,7 +21176,7 @@
     }
    },
    "error": null,
-   "seconds": 5.9,
+   "seconds": 6.2,
    "pass": true
   },
   "send-reflow-once-T24": {
@@ -21186,7 +21184,7 @@
     "default: output send landed: 3 on Virtual-1, tiled full there (oracle)": {
      "pass": true,
      "detail": {
-      "id": "{f2e030e3-b991-4dfa-ba5e-cf03bb7c9100}",
+      "id": "{7da5d686-4d1d-4762-983d-446ca043f0c0}",
       "caption": "plastile-fixture 3",
       "appId": "plastile-fixture",
       "frame": {
@@ -21208,7 +21206,7 @@
       "tile": false,
       "output": "Virtual-1",
       "desktops": [
-       "f6a5a969-426a-4ace-9ae3-aede8f849021"
+       "91a5b91e-2121-4ba0-8f27-549289f5d153"
       ],
       "onAllDesktops": false,
       "keepAbove": false,
@@ -21221,11 +21219,11 @@
      "pass": true,
      "detail": {
       "solves": {
-       "Virtual-0/c6e6d274-2d0b-4567-991c-2d82bef19304/default": 1,
-       "Virtual-1/f6a5a969-426a-4ace-9ae3-aede8f849021/default": 1
+       "Virtual-0/33184aab-8a55-4500-a945-9ddab5247cb9/default": 1,
+       "Virtual-1/91a5b91e-2121-4ba0-8f27-549289f5d153/default": 1
       },
-      "src": "Virtual-0/c6e6d274-2d0b-4567-991c-2d82bef19304/default",
-      "dst": "Virtual-1/f6a5a969-426a-4ace-9ae3-aede8f849021/default",
+      "src": "Virtual-0/33184aab-8a55-4500-a945-9ddab5247cb9/default",
+      "dst": "Virtual-1/91a5b91e-2121-4ba0-8f27-549289f5d153/default",
       "delta": {
        "solves": 2,
        "flushes": 1,
@@ -21278,7 +21276,7 @@
      "pass": true,
      "detail": {
       "solves": {
-       "Virtual-0/c6e6d274-2d0b-4567-991c-2d82bef19304/default": 1
+       "Virtual-0/33184aab-8a55-4500-a945-9ddab5247cb9/default": 1
       },
       "delta": {
        "solves": 1,
@@ -21321,9 +21319,9 @@
      "pass": true,
      "detail": {
       "solves": {
-       "Virtual-0/f6a5a969-426a-4ace-9ae3-aede8f849021/default": 1
+       "Virtual-0/91a5b91e-2121-4ba0-8f27-549289f5d153/default": 1
       },
-      "expected": "Virtual-0/f6a5a969-426a-4ace-9ae3-aede8f849021/default",
+      "expected": "Virtual-0/91a5b91e-2121-4ba0-8f27-549289f5d153/default",
       "delta": {
        "solves": 1,
        "flushes": 1,
@@ -21358,7 +21356,7 @@
     "follow: output send landed: 3 on Virtual-1, tiled full there (oracle)": {
      "pass": true,
      "detail": {
-      "id": "{4bc184e0-7bdd-4faf-9568-3aee160b0467}",
+      "id": "{bb8e5e23-cb06-49d7-9519-387e2aa2b82d}",
       "caption": "plastile-fixture 3",
       "appId": "plastile-fixture",
       "frame": {
@@ -21380,7 +21378,7 @@
       "tile": false,
       "output": "Virtual-1",
       "desktops": [
-       "907e2ca0-65b9-4071-99d3-78d85ddddd6c"
+       "7fa703c5-c330-47df-864d-62260aa84587"
       ],
       "onAllDesktops": false,
       "keepAbove": false,
@@ -21393,11 +21391,11 @@
      "pass": true,
      "detail": {
       "solves": {
-       "Virtual-0/dacc9607-c6a4-4bcc-a11d-4f13fbe6790d/default": 1,
-       "Virtual-1/907e2ca0-65b9-4071-99d3-78d85ddddd6c/default": 1
+       "Virtual-0/663dc581-c674-402a-b88f-91099e2f991c/default": 1,
+       "Virtual-1/7fa703c5-c330-47df-864d-62260aa84587/default": 1
       },
-      "src": "Virtual-0/dacc9607-c6a4-4bcc-a11d-4f13fbe6790d/default",
-      "dst": "Virtual-1/907e2ca0-65b9-4071-99d3-78d85ddddd6c/default",
+      "src": "Virtual-0/663dc581-c674-402a-b88f-91099e2f991c/default",
+      "dst": "Virtual-1/7fa703c5-c330-47df-864d-62260aa84587/default",
       "delta": {
        "solves": 2,
        "flushes": 1,
@@ -21452,7 +21450,7 @@
      "pass": true,
      "detail": {
       "solves": {
-       "Virtual-0/907e2ca0-65b9-4071-99d3-78d85ddddd6c/default": 1
+       "Virtual-0/7fa703c5-c330-47df-864d-62260aa84587/default": 1
       },
       "views": {
        "Virtual-0": "Two",
@@ -21501,9 +21499,9 @@
      "pass": true,
      "detail": {
       "solves": {
-       "Virtual-0/dacc9607-c6a4-4bcc-a11d-4f13fbe6790d/default": 1
+       "Virtual-0/663dc581-c674-402a-b88f-91099e2f991c/default": 1
       },
-      "expected": "Virtual-0/dacc9607-c6a4-4bcc-a11d-4f13fbe6790d/default",
+      "expected": "Virtual-0/663dc581-c674-402a-b88f-91099e2f991c/default",
       "delta": {
        "solves": 1,
        "flushes": 1,
@@ -21540,12 +21538,12 @@
      "detail": {
       "default.output": {
        "solves": {
-        "Virtual-0/c6e6d274-2d0b-4567-991c-2d82bef19304/default": 1,
-        "Virtual-1/f6a5a969-426a-4ace-9ae3-aede8f849021/default": 1
+        "Virtual-0/33184aab-8a55-4500-a945-9ddab5247cb9/default": 1,
+        "Virtual-1/91a5b91e-2121-4ba0-8f27-549289f5d153/default": 1
        },
        "writes": {
-        "{ff2a8344-eb24-40a3-9f2c-66426c0c6af9}": 1,
-        "{f2e030e3-b991-4dfa-ba5e-cf03bb7c9100}": 1
+        "{900cf7a2-c757-4de6-ae40-2a3182a27546}": 1,
+        "{7da5d686-4d1d-4762-983d-446ca043f0c0}": 1
        },
        "delta": {
         "solves": 2,
@@ -21561,10 +21559,10 @@
       },
       "default.desktop": {
        "solves": {
-        "Virtual-0/c6e6d274-2d0b-4567-991c-2d82bef19304/default": 1
+        "Virtual-0/33184aab-8a55-4500-a945-9ddab5247cb9/default": 1
        },
        "writes": {
-        "{1cbfcad5-e82c-44b5-a968-f347bc82954d}": 1
+        "{24074763-5c95-4a74-b6fb-59ac6d9efac7}": 1
        },
        "delta": {
         "solves": 1,
@@ -21582,10 +21580,10 @@
       },
       "default.show": {
        "solves": {
-        "Virtual-0/f6a5a969-426a-4ace-9ae3-aede8f849021/default": 1
+        "Virtual-0/91a5b91e-2121-4ba0-8f27-549289f5d153/default": 1
        },
        "writes": {
-        "{ff2a8344-eb24-40a3-9f2c-66426c0c6af9}": 1
+        "{900cf7a2-c757-4de6-ae40-2a3182a27546}": 1
        },
        "delta": {
         "solves": 1,
@@ -21597,12 +21595,12 @@
       },
       "follow.output": {
        "solves": {
-        "Virtual-0/dacc9607-c6a4-4bcc-a11d-4f13fbe6790d/default": 1,
-        "Virtual-1/907e2ca0-65b9-4071-99d3-78d85ddddd6c/default": 1
+        "Virtual-0/663dc581-c674-402a-b88f-91099e2f991c/default": 1,
+        "Virtual-1/7fa703c5-c330-47df-864d-62260aa84587/default": 1
        },
        "writes": {
-        "{d4e87435-6cc9-44e4-95c7-3d4b2e4807f8}": 1,
-        "{4bc184e0-7bdd-4faf-9568-3aee160b0467}": 1
+        "{aa4b05fa-4daf-4e66-aad2-0c58a287dbe8}": 1,
+        "{bb8e5e23-cb06-49d7-9519-387e2aa2b82d}": 1
        },
        "delta": {
         "solves": 2,
@@ -21619,10 +21617,10 @@
       },
       "follow.desktop": {
        "solves": {
-        "Virtual-0/907e2ca0-65b9-4071-99d3-78d85ddddd6c/default": 1
+        "Virtual-0/7fa703c5-c330-47df-864d-62260aa84587/default": 1
        },
        "writes": {
-        "{d4e87435-6cc9-44e4-95c7-3d4b2e4807f8}": 1
+        "{aa4b05fa-4daf-4e66-aad2-0c58a287dbe8}": 1
        },
        "delta": {
         "solves": 1,
@@ -21641,10 +21639,10 @@
       },
       "follow.show": {
        "solves": {
-        "Virtual-0/dacc9607-c6a4-4bcc-a11d-4f13fbe6790d/default": 1
+        "Virtual-0/663dc581-c674-402a-b88f-91099e2f991c/default": 1
        },
        "writes": {
-        "{018dda32-c90c-4817-8aa4-5f80bf2e9fd5}": 1
+        "{5033c363-f2ad-493b-8e5c-2bbc3ac2bb20}": 1
        },
        "delta": {
         "solves": 1,
@@ -21658,7 +21656,7 @@
     }
    },
    "error": null,
-   "seconds": 6.9,
+   "seconds": 6.8,
    "pass": true
   },
   "send-stale-close-T24": {
@@ -21739,7 +21737,7 @@
      "pass": true,
      "detail": {
       "members": {
-       "Virtual-0/bec4ab7e-0305-40f5-adfd-e7d63bda1170/default": 2
+       "Virtual-0/e0b90109-ebe3-463d-9080-eeb8436e4dd3/default": 2
       },
       "windows": 2
      }
@@ -21801,7 +21799,7 @@
      "pass": true,
      "detail": {
       "members": {
-       "Virtual-0/ac963c28-b598-4135-911b-22f0c1bc05f9/default": 2
+       "Virtual-0/3bed6aca-fe8a-47a3-a895-1d2ccf77d029/default": 2
       },
       "windows": 2
      }
@@ -21853,7 +21851,7 @@
         "remove"
        ],
        "members": {
-        "Virtual-0/bec4ab7e-0305-40f5-adfd-e7d63bda1170/default": 2
+        "Virtual-0/e0b90109-ebe3-463d-9080-eeb8436e4dd3/default": 2
        }
       },
       "immediate": {
@@ -21875,14 +21873,14 @@
         "remove"
        ],
        "members": {
-        "Virtual-0/ac963c28-b598-4135-911b-22f0c1bc05f9/default": 2
+        "Virtual-0/3bed6aca-fe8a-47a3-a895-1d2ccf77d029/default": 2
        }
       }
      }
     }
    },
    "error": null,
-   "seconds": 6.7,
+   "seconds": 6.5,
    "pass": true
   },
   "resume-floats-T19": {
@@ -22075,7 +22073,7 @@
     "resume: one solve for the one visible context (trace)": {
      "pass": true,
      "detail": {
-      "Virtual-0/7062172f-5210-4554-bbce-34d310cd8b8b/default": 1
+      "Virtual-0/5677bc65-2186-44f0-a2de-06c053c0ddac/default": 1
      }
     },
     "resume: the closed window is not revived: Plastile tracks the 5 live windows (counters)": {
@@ -22216,7 +22214,7 @@
         "plastile-fixture 6": 1
        },
        "solves": {
-        "Virtual-0/7062172f-5210-4554-bbce-34d310cd8b8b/default": 1
+        "Virtual-0/5677bc65-2186-44f0-a2de-06c053c0ddac/default": 1
        },
        "delta": {
         "solves": 1,
@@ -22366,7 +22364,7 @@
     }
    },
    "error": null,
-   "seconds": 5.1,
+   "seconds": 5.2,
    "pass": true
   },
   "reenable-floats-T19": {
@@ -22412,7 +22410,7 @@
      "pass": true,
      "detail": {
       "saves": [
-       "  8080.644 qml plastile debug state save issued {\"reason\":\"unload\",\"slot\":0,\"generation\":1,\"bytes\":840,\"issueNs\":null,\"buildNs\":null,\"serializeNs\":null,\"callNs\":null}"
+       " 20969.245 qml plastile debug state save issued {\"reason\":\"unload\",\"slot\":0,\"generation\":1,\"bytes\":840,\"issueNs\":null,\"buildNs\":null,\"serializeNs\":null,\"callNs\":null}"
       ],
       "moved": true
      }
@@ -22420,7 +22418,7 @@
     "re-enable: the first solve waited for the saved state and was released by the helper's reply (log)": {
      "pass": true,
      "detail": [
-      "{\"by\":\"reply\",\"heldMs\":2,\"heldNs\":null}"
+      "{\"by\":\"reply\",\"heldMs\":1,\"heldNs\":null}"
      ]
     },
     "re-enable: 9 floats again at the user's rectangle, matched as the same window; KWin's frame never changed and Plastile wrote nothing to it (oracle, KWin frame signals, explain, trace)": {
@@ -22652,7 +22650,7 @@
         }
        },
        "solves": {
-        "Virtual-0/7010e720-13e1-44a1-9fef-a601283ae283/default": 1
+        "Virtual-0/d2000a42-8124-41b2-92fc-1c35c8128b4b/default": 1
        },
        "counters": {
         "restored": 3,
@@ -22728,7 +22726,7 @@
         "plastile-fixture 10": []
        },
        "hold": [
-        "{\"by\":\"reply\",\"heldMs\":2,\"heldNs\":null}"
+        "{\"by\":\"reply\",\"heldMs\":1,\"heldNs\":null}"
        ]
       },
       "movedWhileDisabled": {
@@ -22773,7 +22771,7 @@
     }
    },
    "error": null,
-   "seconds": 4.2,
+   "seconds": 4.1,
    "pass": true
   },
   "replay-capture-T10": {
@@ -22783,12 +22781,12 @@
      "detail": {
       "truncated": false,
       "anomalies": 0,
-      "nodes": 128
+      "nodes": 160
      }
     },
     "open-close-burst: the recording contains frame writes and ends with stop": {
      "pass": true,
-     "detail": 48
+     "detail": 57
     },
     "open-close-burst: every fixture window KWin reports is in the recording (oracle joined)": {
      "pass": true,
@@ -22953,12 +22951,12 @@
       "\u2139 cancelled 0",
       "\u2139 skipped 0",
       "\u2139 todo 0",
-      "\u2139 duration_ms 200.382592"
+      "\u2139 duration_ms 196.302931"
      ]
     }
    },
    "error": null,
-   "seconds": 20.7,
+   "seconds": 20.6,
    "pass": true
   },
   "scrolling-park-M8": {
@@ -23103,7 +23101,7 @@
      "pass": true,
      "detail": [
       {
-       "id": "Virtual-0\u241f28d830e2-2f1e-4723-ad0d-9fd2d83b857d\u241fdefault",
+       "id": "Virtual-0\u241f5e0cd8f6-c7a0-4c8a-8b2a-c3083b22e62c\u241fdefault",
        "layout": "scrolling",
        "members": 4,
        "tiled": 4,
@@ -23390,7 +23388,7 @@
     }
    },
    "error": null,
-   "seconds": 2.7,
+   "seconds": 2.6,
    "pass": true
   },
   "scrolling-topology-M8": {
@@ -23460,10 +23458,10 @@
     "precondition: KWin pulled parked windows partly back on screen during the change (independent listener)": {
      "pass": true,
      "detail": [
-      "  8111.615 js PLT-L frame plastile-fixture 1|{cd80e9e2-1099-455a-83ac-e125efeba33c} [0,-584,628,784]",
-      "  8111.615 js PLT-L frame plastile-fixture 2|{9917bcb1-f750-4b60-8aa5-d9d8808705d5} [0,-584,628,784]",
-      "  8111.620 js PLT-L frame plastile-fixture 1|{cd80e9e2-1099-455a-83ac-e125efeba33c} [0,-848,628,784]",
-      "  8111.620 js PLT-L frame plastile-fixture 2|{9917bcb1-f750-4b60-8aa5-d9d8808705d5} [0,-848,628,784]"
+      " 21000.150 js PLT-L frame plastile-fixture 1|{07f5dc6e-ba1e-4f18-939a-b6f2cc8f249b} [0,-584,628,784]",
+      " 21000.150 js PLT-L frame plastile-fixture 2|{54c81514-96b7-4173-9b72-099142c771ac} [0,-584,628,784]",
+      " 21000.156 js PLT-L frame plastile-fixture 1|{07f5dc6e-ba1e-4f18-939a-b6f2cc8f249b} [0,-848,628,784]",
+      " 21000.156 js PLT-L frame plastile-fixture 2|{54c81514-96b7-4173-9b72-099142c771ac} [0,-848,628,784]"
      ]
     },
     "topology changed (kscreen-doctor exit 0; Virtual-1 is narrower in logical px)": {
@@ -23559,7 +23557,7 @@
      "pass": true,
      "detail": [
       {
-       "id": "Virtual-0\u241f7b5a41f9-3de5-4cef-aac6-d10c064089c7\u241fdefault",
+       "id": "Virtual-0\u241fdff3d3ab-f6d3-4f4c-ae41-60685c02a4c7\u241fdefault",
        "layout": "scrolling",
        "members": 4,
        "tiled": 4,
@@ -23639,7 +23637,7 @@
       },
       "contexts": [
        {
-        "id": "Virtual-0\u241f7b5a41f9-3de5-4cef-aac6-d10c064089c7\u241fdefault",
+        "id": "Virtual-0\u241fdff3d3ab-f6d3-4f4c-ae41-60685c02a4c7\u241fdefault",
         "layout": "scrolling",
         "members": 4,
         "tiled": 4,
@@ -24037,7 +24035,7 @@
     }
    },
    "error": null,
-   "seconds": 4.8,
+   "seconds": 4.7,
    "pass": true
   },
   "scrolling-pullback-M8": {
@@ -24125,7 +24123,7 @@
     }
    },
    "error": null,
-   "seconds": 5.1,
+   "seconds": 5.3,
    "pass": true
   },
   "shortcuts-defaults-real-input": {
@@ -24150,7 +24148,7 @@
     }
    },
    "error": null,
-   "seconds": 2.5,
+   "seconds": 2.4,
    "pass": true
   },
   "settings-dialog-T28": {
@@ -24164,7 +24162,7 @@
       "argv": [
        "tools/install.sh",
        "install",
-       "<repo>/artifacts/integration/20261025T201613/settings-dialog-T28/dist/plastile-0.1.0.kwinscript"
+       "<repo>/artifacts/integration/20261025T235105/settings-dialog-T28/dist/plastile-0.1.0.kwinscript"
       ],
       "stdout": "Successfully installed <session>/data/kwin/scripts/plastile/\n\nInstalled to: <session>/data/kwin/scripts/plastile\nNothing was enabled, reloaded or restarted. KWin discovers packages when it (re)scans\nkwin/scripts; a package installed while KWin is running may not be visible until the\nscript list is refreshed (log out and in). To enable Plastile, either:\n\n  System Settings > Window Management > KWin Scripts > tick \"Plastile\" > Apply\n\nor, from a terminal in the same session:\n\n  kwriteconfig6 --file kwinrc --group Plugins --key plastileEnabled true\n  qdbus6 org.kde.KWin /Scripting org.kde.kwin.Scripting.start\n\nTo disable later, set the same key to false and run the same Scripting.start command.\nThis script prints these commands; it does not execute them.\n\nLayout preferences (layouts, ratios, floated windows) are kept across restarts only with\nthe persistence helper: tools/install.sh install-helper. Without it they last until\nKWin restarts or the script reloads.\nSuccessfully installed <session>/data/kwin/effects/plastile_motion/\n\nEffect installed to: <session>/data/kwin/effects/plastile_motion (disabled: nothing was enabled or loaded)\nPlastile Motion animates how a window looks while it slides or resizes to the place Plastile\n(or any program) gave it; the window itself is already there. To turn it on:\n\n  System Settings > Window Management > Desktop Effects > tick \"Plastile Motion\" > Apply\n\nor, from a terminal in the same session (KWin loads it when it sees the change):\n\n  kwriteconfig6 --file kwinrc --group Plugins --key plastile_motionEnabled --notify true\n\nTo turn it off, untick it or run the same command with false. Animation speed \"Instant\"\n(System Settings > General Behavior) also turns it off. This script prints these commands;\nit does not execute them. A running KWin reads the effect's files when it loads it: after an\nupgrade, turn the effect off and on again (or log out and in) to run the new version.\n",
       "stderr": ""
@@ -24204,7 +24202,7 @@
        "caption": "KWin Scripts",
        "popup": false,
        "desktops": [
-        "710767b2-7e33-4506-be45-52609e99ec70"
+        "d2ec7f77-d568-431d-a898-a431713774ab"
        ],
        "client": {
         "x": 8,
@@ -24223,7 +24221,7 @@
        "caption": "Configure",
        "popup": false,
        "desktops": [
-        "710767b2-7e33-4506-be45-52609e99ec70"
+        "d2ec7f77-d568-431d-a898-a431713774ab"
        ],
        "client": {
         "x": 707,
@@ -24336,7 +24334,7 @@
     "Reload configuration activates the applied settings once": {
      "pass": true,
      "detail": [
-      "  8133.068 qml plastile info configuration activated {\"revision\":2}"
+      " 21021.325 qml plastile info configuration activated {\"revision\":2}"
      ]
     },
     "singleWindowGaps=false: the lone KWin Scripts window now fills the whole work area (oracle)": {
@@ -24386,7 +24384,7 @@
        "caption": "KWin Scripts",
        "popup": false,
        "desktops": [
-        "710767b2-7e33-4506-be45-52609e99ec70"
+        "d2ec7f77-d568-431d-a898-a431713774ab"
        ],
        "client": {
         "x": 8,
@@ -24405,7 +24403,7 @@
        "caption": "Configure",
        "popup": false,
        "desktops": [
-        "710767b2-7e33-4506-be45-52609e99ec70"
+        "d2ec7f77-d568-431d-a898-a431713774ab"
        ],
        "client": {
         "x": 650,
@@ -24522,7 +24520,7 @@
     }
    },
    "error": null,
-   "seconds": 11.5,
+   "seconds": 11.2,
    "pass": true
   },
   "settings-keyboard-only-inspector-T28": {
@@ -25023,7 +25021,7 @@
     }
    },
    "error": null,
-   "seconds": 5.0,
+   "seconds": 5.1,
    "pass": true
   },
   "transient-parent-desktop-T16": {
@@ -25396,7 +25394,7 @@
      "detail": {
       "minimized": false,
       "hidden": false,
-      "stack": 4,
+      "stack": 3,
       "active": true,
       "transient": true,
       "transientFor": null,
@@ -25436,7 +25434,7 @@
       "after": {
        "minimized": false,
        "hidden": false,
-       "stack": 4,
+       "stack": 3,
        "active": true,
        "transient": true,
        "transientFor": null,
@@ -25546,7 +25544,7 @@
     }
    },
    "error": null,
-   "seconds": 2.9,
+   "seconds": 3.1,
    "pass": true
   },
   "package-upgrade-bindings-T26-T32": {
@@ -25554,8 +25552,8 @@
     "release: two builds yield identical bytes": {
      "pass": true,
      "detail": {
-      "sha256": "6e9f8933a30c40bfc8afa018efc697d80ad4c6ff39dccfbd82158074f47845b6",
-      "bytes": 99694
+      "sha256": "9aebdf7e1881b0c36ebfcc370cd0d610bf64fb01abd556a9309d4f6945e4b3c4",
+      "bytes": 99871
      }
     },
     "release: required entries present and sorted": {
@@ -25576,7 +25574,7 @@
      "detail": {
       "rc": 0,
       "stderr": "",
-      "cliSha256": "6e9f8933a30c40bfc8afa018efc697d80ad4c6ff39dccfbd82158074f47845b6"
+      "cliSha256": "9aebdf7e1881b0c36ebfcc370cd0d610bf64fb01abd556a9309d4f6945e4b3c4"
      }
     },
     "older package: built from commit 34204e2, relabelled 0.0.1": {
@@ -25592,7 +25590,7 @@
       "argv": [
        "tools/install.sh",
        "install",
-       "<repo>/artifacts/integration/20261025T201613/package-upgrade-bindings-T26-T32/old-tree/package"
+       "<repo>/artifacts/integration/20261025T235105/package-upgrade-bindings-T26-T32/old-tree/package"
       ],
       "stdout": "Successfully installed <profile>/data/kwin/scripts/plastile/\n\nInstalled to: <profile>/data/kwin/scripts/plastile\nNothing was enabled, reloaded or restarted. KWin discovers packages when it (re)scans\nkwin/scripts; a package installed while KWin is running may not be visible until the\nscript list is refreshed (log out and in). To enable Plastile, either:\n\n  System Settings > Window Management > KWin Scripts > tick \"Plastile\" > Apply\n\nor, from a terminal in the same session:\n\n  kwriteconfig6 --file kwinrc --group Plugins --key plastileEnabled true\n  qdbus6 org.kde.KWin /Scripting org.kde.kwin.Scripting.start\n\nTo disable later, set the same key to false and run the same Scripting.start command.\nThis script prints these commands; it does not execute them.\n\nLayout preferences (layouts, ratios, floated windows) are kept across restarts only with\nthe persistence helper: tools/install.sh install-helper. Without it they last until\nKWin restarts or the script reloads.\nSuccessfully installed <profile>/data/kwin/effects/plastile_motion/\n\nEffect installed to: <profile>/data/kwin/effects/plastile_motion (disabled: nothing was enabled or loaded)\nPlastile Motion animates how a window looks while it slides or resizes to the place Plastile\n(or any program) gave it; the window itself is already there. To turn it on:\n\n  System Settings > Window Management > Desktop Effects > tick \"Plastile Motion\" > Apply\n\nor, from a terminal in the same session (KWin loads it when it sees the change):\n\n  kwriteconfig6 --file kwinrc --group Plugins --key plastile_motionEnabled --notify true\n\nTo turn it off, untick it or run the same command with false. Animation speed \"Instant\"\n(System Settings > General Behavior) also turns it off. This script prints these commands;\nit does not execute them. A running KWin reads the effect's files when it loads it: after an\nupgrade, turn the effect off and on again (or log out and in) to run the new version.\n",
       "stderr": ""
@@ -25649,7 +25647,7 @@
     "control on 0.0.1: Meta+Alt+N (libei) already reaches focus.next before the upgrade": {
      "pass": true,
      "detail": [
-      "  8156.819 qml plastile debug command {\"command\":\"plastile.focus.next\",\"status\":\"accepted\",\"targets\":[\"{b832bee4-e80e-41d3-9729-7c09981987f0}\"],\"revision\":1,\"requested\":false}"
+      " 21045.040 qml plastile debug command {\"command\":\"plastile.focus.next\",\"status\":\"accepted\",\"targets\":[\"{6ae25e3e-2e04-4c07-adcc-9c1e6f3cfdb5}\"],\"revision\":1,\"requested\":false}"
      ]
     },
     "upgrade: install.sh upgrade plastile-0.1.0.kwinscript rc 0, installed version 0.1.0, kwinrc untouched": {
@@ -25661,9 +25659,9 @@
       "argv": [
        "tools/install.sh",
        "upgrade",
-       "<repo>/artifacts/integration/20261025T201613/package-upgrade-bindings-T26-T32/dist/plastile-0.1.0.kwinscript"
+       "<repo>/artifacts/integration/20261025T235105/package-upgrade-bindings-T26-T32/dist/plastile-0.1.0.kwinscript"
       ],
-      "stdout": "Upgrading package from file: <repo>/artifacts/integration/20261025T201613/package-upgrade-bindings-T26-T32/dist/plastile-0.1.0.kwinscript\nSuccessfully upgraded <profile>/data/kwin/scripts/plastile/\n\nUpgraded: <profile>/data/kwin/scripts/plastile\nA running KWin keeps executing the previously loaded version until KWin itself restarts:\nlog out and back in. Disabling and re-enabling the script (System Settings > Window\nManagement > KWin Scripts, or kwriteconfig6 + Scripting.start) is not enough: KWin 6.7.5\nstarts the older version again from its QML cache (measured in a nested session).\nSettings in kwinrc and your shortcut bindings are kept. This script restarts nothing.\nUpgrading package from file: <repo>/effect\nSuccessfully upgraded <profile>/data/kwin/effects/plastile_motion/\n\nEffect installed to: <profile>/data/kwin/effects/plastile_motion (disabled: nothing was enabled or loaded)\nPlastile Motion animates how a window looks while it slides or resizes to the place Plastile\n(or any program) gave it; the window itself is already there. To turn it on:\n\n  System Settings > Window Management > Desktop Effects > tick \"Plastile Motion\" > Apply\n\nor, from a terminal in the same session (KWin loads it when it sees the change):\n\n  kwriteconfig6 --file kwinrc --group Plugins --key plastile_motionEnabled --notify true\n\nTo turn it off, untick it or run the same command with false. Animation speed \"Instant\"\n(System Settings > General Behavior) also turns it off. This script prints these commands;\nit does not execute them. A running KWin reads the effect's files when it loads it: after an\nupgrade, turn the effect off and on again (or log out and in) to run the new version.\n",
+      "stdout": "Upgrading package from file: <repo>/artifacts/integration/20261025T235105/package-upgrade-bindings-T26-T32/dist/plastile-0.1.0.kwinscript\nSuccessfully upgraded <profile>/data/kwin/scripts/plastile/\n\nUpgraded: <profile>/data/kwin/scripts/plastile\nA running KWin keeps executing the previously loaded version until KWin itself restarts:\nlog out and back in. Disabling and re-enabling the script (System Settings > Window\nManagement > KWin Scripts, or kwriteconfig6 + Scripting.start) is not enough: KWin 6.7.5\nstarts the older version again from its QML cache (measured in a nested session).\nSettings in kwinrc and your shortcut bindings are kept. This script restarts nothing.\nUpgrading package from file: <repo>/effect\nSuccessfully upgraded <profile>/data/kwin/effects/plastile_motion/\n\nEffect installed to: <profile>/data/kwin/effects/plastile_motion (disabled: nothing was enabled or loaded)\nPlastile Motion animates how a window looks while it slides or resizes to the place Plastile\n(or any program) gave it; the window itself is already there. To turn it on:\n\n  System Settings > Window Management > Desktop Effects > tick \"Plastile Motion\" > Apply\n\nor, from a terminal in the same session (KWin loads it when it sees the change):\n\n  kwriteconfig6 --file kwinrc --group Plugins --key plastile_motionEnabled --notify true\n\nTo turn it off, untick it or run the same command with false. Animation speed \"Instant\"\n(System Settings > General Behavior) also turns it off. This script prints these commands;\nit does not execute them. A running KWin reads the effect's files when it loads it: after an\nupgrade, turn the effect off and on again (or log out and in) to run the new version.\n",
       "stderr": ""
      }
     },
@@ -25777,10 +25775,10 @@
        },
        "presses": {
         "Meta+Alt+N": [
-         "debug command {\"command\":\"plastile.focus.next\",\"status\":\"accepted\",\"targets\":[\"{b832bee4-e80e-41d3-9729-7c09981987f0}\"],"
+         "debug command {\"command\":\"plastile.focus.next\",\"status\":\"accepted\",\"targets\":[\"{6ae25e3e-2e04-4c07-adcc-9c1e6f3cfdb5}\"],"
         ],
         "Meta+Alt+P": [
-         "debug command {\"command\":\"plastile.focus.previous\",\"status\":\"accepted\",\"targets\":[\"{236add73-19c8-43b3-8163-9ff22fd0d498"
+         "debug command {\"command\":\"plastile.focus.previous\",\"status\":\"accepted\",\"targets\":[\"{dd8ac740-c8fe-4516-ab09-99fe878a103c"
         ],
         "Meta+Alt+C": [
          "counters {\"counters\":{\"solves\":1,\"flushes\":1,\"commands\":2,\"commandsQueued\":0,\"writes\":0,\"corrections\":0,\"skipOutstanding"
@@ -25934,13 +25932,13 @@
     "script restart: pressing Meta+Alt+N (libei) dispatches plastile.focus.next exactly once": {
      "pass": true,
      "detail": [
-      "debug command {\"command\":\"plastile.focus.next\",\"status\":\"accepted\",\"targets\":[\"{b832bee4-e80e-41d3-9729-7c09981987f0}\"],"
+      "debug command {\"command\":\"plastile.focus.next\",\"status\":\"accepted\",\"targets\":[\"{6ae25e3e-2e04-4c07-adcc-9c1e6f3cfdb5}\"],"
      ]
     },
     "script restart: pressing Meta+Alt+P (libei) dispatches plastile.focus.previous exactly once": {
      "pass": true,
      "detail": [
-      "debug command {\"command\":\"plastile.focus.previous\",\"status\":\"accepted\",\"targets\":[\"{236add73-19c8-43b3-8163-9ff22fd0d498"
+      "debug command {\"command\":\"plastile.focus.previous\",\"status\":\"accepted\",\"targets\":[\"{dd8ac740-c8fe-4516-ab09-99fe878a103c"
      ]
     },
     "script restart: pressing Meta+Shift+H (libei) dispatches plastile.focus.left exactly once": {
@@ -25988,7 +25986,7 @@
      "pass": true,
      "detail": {
       "qmlcacheEntries": 13,
-      "installedBundleMtime": "2026-10-26T00:31:30Z"
+      "installedBundleMtime": "2026-10-26T04:06:18Z"
      }
     },
     "KWin restart: autoload starts 0.1.0 exactly once": {
@@ -26122,13 +26120,13 @@
     "KWin restart: pressing Meta+Alt+N (libei) dispatches plastile.focus.next exactly once": {
      "pass": true,
      "detail": [
-      "debug command {\"command\":\"plastile.focus.next\",\"status\":\"accepted\",\"targets\":[\"{78921d74-19fd-4e3e-a848-cf15d32ac23d}\"],"
+      "debug command {\"command\":\"plastile.focus.next\",\"status\":\"accepted\",\"targets\":[\"{db7aac4c-7424-42d4-bfc6-e57e49b16e0b}\"],"
      ]
     },
     "KWin restart: pressing Meta+Alt+P (libei) dispatches plastile.focus.previous exactly once": {
      "pass": true,
      "detail": [
-      "debug command {\"command\":\"plastile.focus.previous\",\"status\":\"accepted\",\"targets\":[\"{e1eebd6e-c590-447d-82a5-a0c7dd19c61a"
+      "debug command {\"command\":\"plastile.focus.previous\",\"status\":\"accepted\",\"targets\":[\"{aebea4e8-15be-4779-9df0-ea71dc615818"
      ]
     },
     "KWin restart: pressing Meta+Shift+H (libei) dispatches plastile.focus.left exactly once": {
@@ -26229,7 +26227,7 @@
     }
    },
    "error": null,
-   "seconds": 19.0,
+   "seconds": 18.9,
    "pass": true
   },
   "xwayland-tile-close-G10": {
@@ -26238,7 +26236,7 @@
      "pass": true,
      "detail": [
       {
-       "id": "{fe1ef517-6285-4213-bcdd-b344793fae0e}",
+       "id": "{95b49ddd-60d7-4a45-b721-1c9c792d6376}",
        "caption": "plastile-fixture 1",
        "appId": "plastile-fixture",
        "frame": {
@@ -26260,7 +26258,7 @@
        "tile": false,
        "output": "Virtual-0",
        "desktops": [
-        "5fdc708a-fa9a-4923-a91c-c4cc749c9263"
+        "3d115f0f-7ed0-44ae-aa98-1915c9b68e41"
        ],
        "onAllDesktops": false,
        "keepAbove": false,
@@ -26269,7 +26267,7 @@
        "normal": true
       },
       {
-       "id": "{dbf85299-6fb3-4cbe-aca0-8d9f18b6ae44}",
+       "id": "{e3d60c2f-3020-4553-a1ab-63ee278a6061}",
        "caption": "plastile-fixture 2",
        "appId": "plastile-fixture",
        "frame": {
@@ -26291,7 +26289,7 @@
        "tile": false,
        "output": "Virtual-0",
        "desktops": [
-        "5fdc708a-fa9a-4923-a91c-c4cc749c9263"
+        "3d115f0f-7ed0-44ae-aa98-1915c9b68e41"
        ],
        "onAllDesktops": false,
        "keepAbove": false,
@@ -26574,7 +26572,7 @@
        "corrections": 0
       },
       "slot": null,
-      "exception": "overflow: {10d24b62-e906-447c-b970-68e2c7c0773b}: does not fit (stack column of 2 needs 914 px height, has 784); overflow float-new"
+      "exception": "overflow: {ec521b6b-1714-482d-8ca3-409b5dc3e55b}: does not fit (stack column of 2 needs 914 px height, has 784); overflow float-new"
      }
     }
    },
@@ -26861,7 +26859,7 @@
     "dialog stays visible after retiles (not minimized/hidden, on the work area)": {
      "pass": true,
      "detail": {
-      "id": "{b0eb55cd-6379-49b1-b5b1-7bf51ff252ad}",
+      "id": "{044c2ccb-1ccc-4225-8dc8-6b0e85aee42b}",
       "caption": "xc dlg dialog",
       "resourceClass": "plastile-xclient",
       "resourceName": "plastile-xclient",
@@ -26994,7 +26992,7 @@
      "pass": true,
      "detail": {
       "dialog": {
-       "id": "{6cd1b659-570a-4fa6-ac51-09f33fc7d99f}",
+       "id": "{566001bf-7906-4734-9009-0a4ed95db1f5}",
        "minimized": false,
        "hidden": false,
        "stack": 2,
@@ -27145,7 +27143,7 @@
      "pass": true,
      "detail": {
       "plastile": {
-       "id": "{6cd1b659-570a-4fa6-ac51-09f33fc7d99f}",
+       "id": "{566001bf-7906-4734-9009-0a4ed95db1f5}",
        "minimized": false,
        "hidden": false,
        "stack": 3,
@@ -27386,7 +27384,7 @@
     "dialog restored: visible above its parent again (oracle, stacking order)": {
      "pass": true,
      "detail": {
-      "id": "{6cd1b659-570a-4fa6-ac51-09f33fc7d99f}",
+      "id": "{566001bf-7906-4734-9009-0a4ed95db1f5}",
       "minimized": false,
       "hidden": false,
       "stack": 3,
@@ -27549,7 +27547,7 @@
      "pass": true,
      "detail": {
       "xc parent": {
-       "id": "{94be9112-09ab-4dd4-a377-098446be77d9}",
+       "id": "{fc46be0b-f2fd-43d2-84bd-8d584ab13770}",
        "minimized": false,
        "hidden": false,
        "stack": 1,
@@ -27568,7 +27566,7 @@
        }
       },
       "xc parent dialog": {
-       "id": "{9d2720f1-9543-46c4-9bd6-a14af5c6d049}",
+       "id": "{18f01e8d-de12-4ad5-b862-669ef663cb04}",
        "minimized": false,
        "hidden": false,
        "stack": 2,
@@ -27612,7 +27610,7 @@
      "pass": true,
      "detail": {
       "parent": {
-       "id": "{94be9112-09ab-4dd4-a377-098446be77d9}",
+       "id": "{fc46be0b-f2fd-43d2-84bd-8d584ab13770}",
        "minimized": false,
        "hidden": false,
        "stack": 1,
@@ -27631,7 +27629,7 @@
        }
       },
       "dialog": {
-       "id": "{9d2720f1-9543-46c4-9bd6-a14af5c6d049}",
+       "id": "{18f01e8d-de12-4ad5-b862-669ef663cb04}",
        "minimized": false,
        "hidden": false,
        "stack": 2,
@@ -27668,7 +27666,7 @@
      "detail": {
       "errors": [],
       "dialog": {
-       "id": "{9d2720f1-9543-46c4-9bd6-a14af5c6d049}",
+       "id": "{18f01e8d-de12-4ad5-b862-669ef663cb04}",
        "minimized": false,
        "hidden": false,
        "stack": 3,
@@ -27715,7 +27713,7 @@
     "the dialog's desktop shown: it is not stranded: visible, not minimized, at its own frame inside the area (oracle)": {
      "pass": true,
      "detail": {
-      "id": "{9d2720f1-9543-46c4-9bd6-a14af5c6d049}",
+      "id": "{18f01e8d-de12-4ad5-b862-669ef663cb04}",
       "minimized": false,
       "hidden": false,
       "stack": 3,
@@ -27835,7 +27833,7 @@
       "plastile": [
        true,
        {
-        "id": "{8910ef89-29e3-4840-92db-8169671ac7d9}",
+        "id": "{d07b46f3-58a0-4e19-850d-dbb27951a376}",
         "minimized": false,
         "hidden": false,
         "stack": 2,
@@ -27857,7 +27855,7 @@
       "native": [
        true,
        {
-        "id": "{8196a39a-0063-4fcf-9a14-b86c94c5d8c2}",
+        "id": "{9264a974-bd2a-4a4a-8e24-9c3a013b9b9c}",
         "minimized": false,
         "hidden": false,
         "stack": 2,
@@ -27909,7 +27907,7 @@
      "pass": true,
      "detail": {
       "before": {
-       "id": "{8910ef89-29e3-4840-92db-8169671ac7d9}",
+       "id": "{d07b46f3-58a0-4e19-850d-dbb27951a376}",
        "minimized": false,
        "hidden": false,
        "stack": 3,
@@ -27928,7 +27926,7 @@
        }
       },
       "after": {
-       "id": "{8910ef89-29e3-4840-92db-8169671ac7d9}",
+       "id": "{d07b46f3-58a0-4e19-850d-dbb27951a376}",
        "minimized": false,
        "hidden": false,
        "stack": 2,
@@ -28022,7 +28020,7 @@
      "pass": true,
      "detail": {
       "orphanPlastile": {
-       "id": "{8910ef89-29e3-4840-92db-8169671ac7d9}",
+       "id": "{d07b46f3-58a0-4e19-850d-dbb27951a376}",
        "minimized": false,
        "hidden": false,
        "stack": 2,
@@ -28041,7 +28039,7 @@
        }
       },
       "orphanNative": {
-       "id": "{8196a39a-0063-4fcf-9a14-b86c94c5d8c2}",
+       "id": "{9264a974-bd2a-4a4a-8e24-9c3a013b9b9c}",
        "minimized": false,
        "hidden": false,
        "stack": 2,
@@ -28068,7 +28066,7 @@
     }
    },
    "error": null,
-   "seconds": 8.1,
+   "seconds": 8.0,
    "pass": true
   },
   "zones-assign-M9": {
@@ -28116,7 +28114,7 @@
     "precondition: fixture 3 on Virtual-1": {
      "pass": true,
      "detail": {
-      "id": "{39a788a3-6b72-44ec-a478-de21ef7a4eb8}",
+      "id": "{b3580de3-15be-44dd-af3b-440886b402d5}",
       "caption": "plastile-fixture 3",
       "appId": "plastile-fixture",
       "frame": {
@@ -28138,7 +28136,7 @@
       "tile": false,
       "output": "Virtual-1",
       "desktops": [
-       "c29ea9c6-9faf-4b60-b7c8-2fc6acfdce93"
+       "f4f4bd5e-0dcb-434c-bf04-06cda68cb377"
       ],
       "onAllDesktops": false,
       "keepAbove": false,
@@ -28426,7 +28424,7 @@
     }
    },
    "error": null,
-   "seconds": 3.9,
+   "seconds": 3.8,
    "pass": true
   },
   "zones-overlay-M9": {
@@ -28442,7 +28440,7 @@
      "pass": true,
      "detail": [
       {
-       "id": "{e2bc6761-dcc0-4314-8340-2c33cbc69440}",
+       "id": "{991ed9d0-afd3-430d-ac5f-3b4789c4bced}",
        "popup": false,
        "appId": "",
        "pid": -1,
@@ -28455,7 +28453,7 @@
        }
       },
       {
-       "id": "{63056200-a76c-4508-9eaf-89ed1c73ba69}",
+       "id": "{0bd80207-f4cb-4e34-9c67-ab33a7daa14e}",
        "popup": true,
        "appId": "",
        "pid": -1,
@@ -28473,7 +28471,7 @@
      "pass": true,
      "detail": [
       {
-       "id": "{e2bc6761-dcc0-4314-8340-2c33cbc69440}",
+       "id": "{991ed9d0-afd3-430d-ac5f-3b4789c4bced}",
        "popup": false,
        "appId": "",
        "pid": -1,
@@ -28541,7 +28539,7 @@
       },
       "own": [
        {
-        "id": "{e2bc6761-dcc0-4314-8340-2c33cbc69440}",
+        "id": "{991ed9d0-afd3-430d-ac5f-3b4789c4bced}",
         "popup": false,
         "appId": "",
         "pid": -1,
@@ -28554,7 +28552,7 @@
         }
        },
        {
-        "id": "{63056200-a76c-4508-9eaf-89ed1c73ba69}",
+        "id": "{0bd80207-f4cb-4e34-9c67-ab33a7daa14e}",
         "popup": true,
         "appId": "",
         "pid": -1,
@@ -28581,7 +28579,7 @@
      "pass": true,
      "detail": [
       {
-       "id": "{d2cf3460-3ef8-454d-83ff-7e004dfbceef}",
+       "id": "{aa4397e8-5779-454b-8a66-7d66f67c4b90}",
        "popup": false,
        "appId": "",
        "pid": -1,
@@ -28594,7 +28592,7 @@
        }
       },
       {
-       "id": "{5616a15d-45c2-4cd8-89f7-7f3d170695c7}",
+       "id": "{c53309d6-a77a-405a-9f85-48eada4edaa2}",
        "popup": true,
        "appId": "",
        "pid": -1,
@@ -28624,16 +28622,126 @@
    "error": null,
    "seconds": 4.1,
    "pass": true
+  },
+  "zones-overlay-activation-M9": {
+   "checks": {
+    "toggle-float while shown refreshes the overlay: zone 2 is drawn empty (log), the overlay stays": {
+     "pass": true,
+     "detail": {
+      "log": {
+       "output": "Virtual-0",
+       "layout": "halves",
+       "zones": [
+        {
+         "n": 1,
+         "rect": {
+          "x": 8,
+          "y": 8,
+          "width": 628,
+          "height": 784
+         },
+         "windows": 1
+        },
+        {
+         "n": 2,
+         "rect": {
+          "x": 644,
+          "y": 8,
+          "width": 628,
+          "height": 784
+         },
+         "windows": 0
+        }
+       ]
+      },
+      "own": [
+       {
+        "id": "{13b6d2cd-8c77-4408-97c2-fee569625517}",
+        "popup": false,
+        "appId": "",
+        "pid": -1,
+        "output": "Virtual-0",
+        "frame": {
+         "x": 0,
+         "y": 0,
+         "width": 1280,
+         "height": 800
+        }
+       },
+       {
+        "id": "{e903517f-4f5b-4b3c-8660-0620ae0af3b9}",
+        "popup": true,
+        "appId": "",
+        "pid": -1,
+        "output": "Virtual-0",
+        "frame": {
+         "x": 430,
+         "y": 16,
+         "width": 420,
+         "height": 56
+        }
+       }
+      ]
+     }
+    },
+    "an activating command hides the shown overlay and does not map it again (oracle: active window, no overlay window left; trace: no window added since; log: no refresh)": {
+     "pass": true,
+     "detail": {
+      "active": "plastile-fixture 1",
+      "added": [],
+      "own": [],
+      "log": []
+     }
+    },
+    "shown again afterwards": {
+     "pass": true,
+     "detail": [
+      {
+       "id": "{abab0253-43ee-46ff-8168-c782e22a09a0}",
+       "popup": false,
+       "appId": "",
+       "pid": -1,
+       "output": "Virtual-0",
+       "frame": {
+        "x": 0,
+        "y": 0,
+        "width": 1280,
+        "height": 800
+       }
+      },
+      {
+       "id": "{1bbd428e-1882-43bb-8c28-8274588af694}",
+       "popup": true,
+       "appId": "",
+       "pid": -1,
+       "output": "Virtual-0",
+       "frame": {
+        "x": 430,
+        "y": 16,
+        "width": 420,
+        "height": 56
+       }
+      }
+     ]
+    },
+    "no errors, warnings, JS exceptions or QML warnings": {
+     "pass": true,
+     "detail": []
+    }
+   },
+   "error": null,
+   "seconds": 2.5,
+   "pass": true
   }
  },
  "summary": {
-  "scenarios": 154,
+  "scenarios": 155,
   "failedScenarios": 0,
   "skippedScenarios": 1,
   "skipped": {
-   "output-negative-origin-G02": "KWin rejects a negative position for an enabled output and normalizes logical output origins to (0, 0) (kscreen-doctor: 'sition of enabled output Virtual-0 is negative (-1,280, 0)\\n  7619.037 kscreen.doctor Set output position QPoint(-1280,0)'); a negative origin cannot occur"
+   "output-negative-origin-G02": "KWin rejects a negative position for an enabled output and normalizes logical output origins to (0, 0) (kscreen-doctor: 'sition of enabled output Virtual-0 is negative (-1,280, 0)\\n 20510.617 kscreen.doctor Set output position QPoint(-1280,0)'); a negative origin cannot occur"
   },
-  "checks": 2041,
-  "passedChecks": 2041
+  "checks": 2045,
+  "passedChecks": 2045
  }
 }
